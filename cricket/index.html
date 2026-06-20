@@ -64,7 +64,8 @@
     <button class="btn alt" onclick="quickMatch()">QUICK MATCH</button>
     <div class="sub" style="margin-top:24px;max-width:480px">
       Press <b>SPACE</b> / tap to play the shot at the right moment.<br>
-      Use <b>← ↑ →</b> or swipe to aim leg-side / straight / off-side.
+      Aim with arrows (or swipe): <b>←</b> leg • <b>→</b> off • <b>↑</b> straight • <b>↓</b> fine.<br>
+      Your aim sticks for the next ball — change it any time, even as the ball comes. Beware the fielders!
     </div>
   </div>
 
@@ -110,7 +111,7 @@
     <div class="hud-box" id="hud-right" style="text-align:right"></div>
   </div>
   <div id="msg"></div>
-  <div id="help" class="hidden">GO = bowl • SPACE/Tap = shot • ← ↑ → / swipe = aim</div>
+  <div id="help" class="hidden">GO = bowl • SPACE/Tap = shot • ←→↑↓ / swipe = aim (leg / off / straight / fine)</div>
   <button id="goBtn" class="hidden" onclick="pressGo()">▶ GO</button>
 </div>
 
@@ -260,7 +261,7 @@ function startMatch(opp, difficulty, label){
     state:'between',          // between -> (GO) -> runup -> delivery -> animating -> result -> between
     timer:0,
     ball:null,
-    aim:0,                    // -1 leg, 0 straight, 1 off (set by input)
+    shot:'straight',          // hit direction (persists between balls): leg/off/straight/reverse
     shotPlayed:false,
     pressT:null,
     bowlerType: difficulty>=3 ? 'spin' : 'pace',  // final = spin challenge
@@ -268,7 +269,7 @@ function startMatch(opp, difficulty, label){
     fielders: makeFielders(),
     over:[],                  // this over's outcomes
     ballTrail:[],
-    catchAnim:null,           // ball-in-air -> fielder catch
+    hit:null,                 // post-contact ball flight (direction-aware)
     runAnim:null,             // batters crossing for run(s)
     milestone:null,           // {name, kind, score, t}
     pendingResult:null,
@@ -283,13 +284,43 @@ function striker(){ return M.batters[M.strikerIdx]; }
 function nonStriker(){ return M.batters[M.nonStrikerIdx]; }
 
 function makeFielders(){
-  // positions in normalized field coords around the batsman (cx,cy at crease)
-  // angle around circle + radius; drawn in perspective
-  const pts = [
-    [-0.85,-0.2],[ -0.55,-0.75],[0.0,-0.95],[0.55,-0.75],[0.85,-0.2],
-    [-0.9,0.35],[0.9,0.35],[-0.45,0.55],[0.45,0.55],[0,0.85]
+  // each fielder has an angle (radians, see DIRS convention below) and a
+  // radius fraction (0 = close infield .. 1 = boundary). A realistic T20 ring.
+  return [
+    { a:0.32,  r:0.95, role:'long-off' },
+    { a:-0.32, r:0.95, role:'long-on' },
+    { a:1.15,  r:0.95, role:'deep cover' },
+    { a:-1.15, r:0.95, role:'deep midwicket' },
+    { a:1.95,  r:0.90, role:'third man' },
+    { a:-2.15, r:0.90, role:'fine leg' },
+    { a:1.00,  r:0.52, role:'cover' },
+    { a:-1.00, r:0.52, role:'midwicket' },
+    { a:0.18,  r:0.45, role:'mid-off' },
   ];
-  return pts.map(p=>({x:p[0],y:p[1]}));
+}
+
+/* ---------------- SHOT DIRECTION (wagon-wheel) ---------------- */
+// angle convention: 0 = straight (toward the bowler / up screen), increasing
+// clockwise.  off = right, leg = left, reverse/fine = behind (down screen).
+const DIRS = {
+  straight:{ a:0,           side:0.0,  label:'STRAIGHT' },
+  off:     { a:Math.PI/2,   side:1.0,  label:'OFF SIDE' },
+  reverse: { a:Math.PI,     side:-0.4, label:'FINE / BEHIND' },
+  leg:     { a:3*Math.PI/2, side:-1.0, label:'LEG SIDE' },
+};
+function setDir(key){ if(M && DIRS[key]) M.shot=key; }   // allowed any time
+function dirA(){ return DIRS[M.shot].a; }
+function fieldCenter(){ return { x:W/2, y:H*0.585, rx:W*0.44, ry:H*0.30 }; }
+function fieldPoint(a,r){ const c=fieldCenter();
+  return { x:c.x + c.rx*r*Math.sin(a), y:c.y - c.ry*r*Math.cos(a) }; }
+function batContact(){ return { x:pitchX(0.02,0.9), y:pitchY(0.9)-26 }; }
+function angDiff(x,y){ let d=Math.abs(x-y)%(Math.PI*2); return d>Math.PI?Math.PI*2-d:d; }
+function nearestFielder(a, deepOnly){
+  let best=null, bd=1e9;
+  M.fielders.forEach(f=>{ if(deepOnly && f.r<0.7) return;
+    const d=angDiff(f.a,a); if(d<bd){ bd=d; best=f; } });
+  if(!best){ M.fielders.forEach(f=>{ const d=angDiff(f.a,a); if(d<bd){ bd=d; best=f; } }); }
+  return { f:best, da:bd };
 }
 
 /* -------- deliveries -------- */
@@ -319,7 +350,7 @@ function showGo(on){ goBtn.classList.toggle('hidden', !on); }
 function pressGo(){
   if(!M || M.state!=='between') return;
   showGo(false);
-  M.shotPlayed=false; M.pressT=null; M.aim=0; M.ballTrail=[];
+  M.shotPlayed=false; M.pressT=null; M.ballTrail=[]; M.hit=null;
   M.ball=newDelivery();
   M.state='runup'; M.timer=650;
 }
@@ -328,9 +359,10 @@ function pressGo(){
 window.addEventListener('keydown',e=>{
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Enter'].includes(e.key)) e.preventDefault();
   if(!M) return;
-  if(e.key==='ArrowLeft') M.aim=-1;
-  else if(e.key==='ArrowRight') M.aim=1;
-  else if(e.key==='ArrowUp') M.aim=0;
+  if(e.key==='ArrowLeft') setDir('leg');
+  else if(e.key==='ArrowRight') setDir('off');
+  else if(e.key==='ArrowUp') setDir('straight');
+  else if(e.key==='ArrowDown') setDir('reverse');
   if(e.key===' '){ if(M.state==='between') pressGo(); else playShot(); }
   if(e.key==='Enter' && M.state==='between') pressGo();
 });
@@ -346,9 +378,10 @@ let lastTouch=null;
 cv.addEventListener('touchmove',e=>{ lastTouch=ptFromEvt(e); },{passive:true});
 function handleSwipe(end){
   if(!swipeStart||!M) return;
-  const dx=end.x-swipeStart.x;
-  if(Math.abs(dx)<20) M.aim=0;
-  else M.aim = dx>0?1:-1;   // swipe right = off side, left = leg side
+  const dx=end.x-swipeStart.x, dy=end.y-swipeStart.y;
+  if(Math.abs(dx)<18 && Math.abs(dy)<18) return;   // a tap keeps the current aim
+  if(Math.abs(dx) > Math.abs(dy)) setDir(dx>0?'off':'leg');      // horizontal swipe
+  else setDir(dy<0?'straight':'reverse');                       // vertical swipe
 }
 
 /* -------- shot resolution -------- */
@@ -376,18 +409,19 @@ function resolveShot(){
   const w=getWindows();
   const diff = M.pressT - b.idealT;     // - early, + late
   const absd = Math.abs(diff);
-  let runs=0, out=false, aerial=false, dir=M.aim, txt='', col='#ffd54a', kind='runs';
+  const a = dirA();                     // the direction the player aimed
+  let runs=0, out=false, aerial=false, txt='', col='#ffd54a', kind='runs', perfect=false, fielder=null;
 
   if(absd < w.perfect){             // PERFECT — middled it
-    aerial = (b.len==='full'||b.len==='goodlength'||b.len==='short'||b.len==='bouncer');
-    if(b.len==='full' && dir!==0){ txt='SIX! 🔥'; runs=6; }
-    else if(b.len==='short'||b.len==='bouncer'){ txt = dir!==0?'PULLED FOR SIX! 🔥':'UPPERCUT — FOUR!'; runs = dir!==0?6:4; }
-    else if(b.len==='yorker'){ txt='DUG OUT — FOUR!'; runs=4; aerial=false; }
+    perfect=true;
+    aerial = (b.len!=='yorker');
+    if(b.len==='yorker'){ txt='DUG OUT — FOUR!'; runs=4; aerial=false; }
+    else if(b.len==='short'||b.len==='bouncer'){ txt = M.shot==='leg'?'PULLED FOR SIX! 🔥':'SIX! 🔥'; runs=6; }
     else { txt='SIX! 🔥'; runs=6; }
     col='#39ff88';
   } else if(absd < w.good){         // GOOD — timed well
     runs = pick([1,2,2,3,4,6]);
-    aerial = runs>=4 && Math.random()<0.45;
+    aerial = runs>=4 && Math.random()<0.5;
     txt = runs>=4 ? (runs===6?'SIX!':'FOUR!') : runs+' run'+(runs>1?'s':'');
     col = runs>=4?'#39ff88':'#ffd54a';
   } else if(absd < w.ok){           // OK — pushed for a single
@@ -401,17 +435,27 @@ function resolveShot(){
   } else {                          // VERY mistimed — out
     out=true;
     aerial = Math.random()<0.6;
-    if(aerial){ kind='caught'; txt=(diff<0?'EARLY — ':'LATE — ')+'CAUGHT!'; }
+    if(aerial){ kind='caught'; txt=(diff<0?'EARLY — ':'LATE — ')+'SKIED!'; }
     else { kind='bowled'; txt=(diff<0?'EARLY — ':'LATE — ')+'BOWLED!'; }
     col='#ff5252';
   }
 
-  // a well-hit aerial shot can still occasionally find a fielder (rarer now)
-  if(aerial && !out && runs>=4){
-    if(Math.random() < 0.10){ out=true; runs=0; kind='caught'; txt='CAUGHT IN THE DEEP!'; col='#ff5252'; aerial=true; }
+  // DIRECTION MATTERS: a lofted shot hit toward a deep fielder can be caught.
+  // Aim into a gap (away from fielders) to clear them. Picking a fielder's
+  // throat is risky; a perfectly-middled six only rarely gets pouched.
+  if(aerial && !out){
+    const nf = nearestFielder(a, true);        // closest boundary rider to the aim
+    fielder = nf.f;
+    const gap = clamp(nf.da/0.5, 0, 1);        // 1 = clean gap, 0 = straight at him
+    const catchP = (perfect ? 0.06 : 0.5) * (1-gap);
+    if(Math.random() < catchP){
+      out=true; kind='caught'; runs=0; col='#ff5252'; aerial=true;
+      txt = gap<0.28 ? 'CAUGHT — STRAIGHT TO HIM!' : 'CAUGHT IN THE DEEP!';
+    }
   }
+  if(out && kind==='caught' && !fielder) fielder = nearestFielder(a, true).f;
 
-  concludeBall({runs, out, txt, col, aerial, dir, kind});
+  concludeBall({runs, out, txt, col, aerial, a, kind, perfect, fielder});
 }
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 
@@ -426,14 +470,34 @@ function noShotPlayed(){
   concludeBall({runs:0, out, txt, col, aerial:false, dir:0, kind});
 }
 
-/* route through animations before committing the ball */
+/* route through a direction-aware ball flight before committing the ball */
 function concludeBall(res){
   M.pendingResult=res;
-  if(res.out && res.kind==='caught'){
-    startCatch(res); M.state='catching';
+  const a = (res.a!==undefined) ? res.a : 0;
+  const from = batContact();
+  // no shot to track for a clean miss / bowled / lbw / left-alone dot
+  const noTravel = res.kind==='bowled' || res.kind==='lbw' ||
+                   (res.runs===0 && !res.out && !res.aerial);
+  if(noTravel){ commitBall(res); return; }
+
+  let to, peak, dur=700;
+  if(res.out && res.kind==='caught' && res.fielder){
+    to = fieldPoint(res.fielder.a, res.fielder.r);
+    peak = Math.min(from.y,to.y) - H*0.22; dur=850;
+  } else if(res.runs>=6){
+    to = fieldPoint(a, 1.08);                       // sails over the rope
+    peak = Math.min(from.y,to.y) - H*0.26; dur=820;
+  } else if(res.runs>=4){
+    to = fieldPoint(a, 1.0);                        // races to / clears the rope
+    peak = res.aerial ? Math.min(from.y,to.y)-H*0.20 : from.y-6; dur=760;
   } else {
-    commitBall(res);
+    to = fieldPoint(a, 0.45+0.12*res.runs);         // into the gap for 1-3
+    peak = from.y-8; dur=600;
   }
+  M.hit = { from, to, peak, a, aerial:res.aerial, caught:res.out&&res.kind==='caught',
+            fielder:res.fielder, kind:res.kind, t:0, dur };
+  sndHit();
+  M.state='hitting';
 }
 
 /* apply runs/wickets/strike-rotation and queue the between-ball gap */
@@ -469,18 +533,6 @@ function commitBall(res){
   setHud();
 
   M.state='result'; M.timer=res.out?1300:1000;
-}
-
-/* set up ball-in-the-air -> fielder runs in and takes the catch */
-function startCatch(res){
-  const x0=pitchX(-0.05,0.88), y0=pitchY(0.88)-34;   // off the bat
-  const cand = M.fielders.map(f=>({x:W/2+f.x*W*0.4, y:H*0.62+f.y*H*0.26})).filter(p=>p.y>H*0.30);
-  let best;
-  if(M.aim<0) best=cand[0]||cand[5];          // leg side
-  else if(M.aim>0) best=cand[4]||cand[6];      // off side
-  else best=cand[2]||cand[9];                  // straight
-  M.catchAnim={ x0,y0, x1:best.x, y1:best.y,
-                peakY: Math.min(y0,best.y)-H*0.20, t:0, caught:false, fx:best.x, fy:best.y };
 }
 
 function endMatch(won){
@@ -597,17 +649,17 @@ function update(dt){
     if(M.ballTrail.length>12) M.ballTrail.shift();
     if(b.t>=1.0 && !M.shotPlayed){ noShotPlayed(); }
   }
-  else if(M.state==='catching'){
-    const c=M.catchAnim;
-    c.t += dt/900;
-    if(c.t>=1 && !c.caught){ c.caught=true; commitBall(M.pendingResult); }
+  else if(M.state==='hitting'){
+    const h=M.hit;
+    h.t += dt/h.dur;
+    if(h.t>=1 && !h.committed){ h.committed=true; commitBall(M.pendingResult); }
   }
   else if(M.state==='result'){
     M.timer-=dt;
     if(M.timer<=0){
       const won=M.score>=M.target, allOut=M.wkts>=M.maxWkts, ballsDone=M.balls<=0;
       if(won||allOut||ballsDone){ M.state='ending'; endMatch(won); }
-      else { M.state='between'; M.catchAnim=null; M.runAnim=null; M.outFocus=null; showGo(true); }
+      else { M.state='between'; M.hit=null; M.runAnim=null; M.outFocus=null; showGo(true); }
     }
   }
   if(M.runAnim){ M.runAnim.t+=dt/ (450*M.runAnim.runs); if(M.runAnim.t>=1) M.runAnim=null; }
@@ -660,8 +712,9 @@ function render(){
   drawBowler();
   drawBatsmen();
   if(M.ball && M.state==='delivery') drawBall();
-  if(M.state==='catching') drawCatch();
+  if(M.state==='hitting') drawHit();
   drawTimingBar();
+  drawDirCompass();
   if(M.state==='between') drawScorecard();
   if(M.outFocus && (M.state==='result'||M.state==='ending')) drawOutFocus();
   if(M.milestone) drawMilestone();
@@ -752,8 +805,8 @@ function drawBatsmen(){
 
   // striker
   const sx=pitchX(stN,stT), sy=pitchY(stT);
-  const swing=(M.shotPlayed && M.state==='delivery')?1:(M.state==='result'&&!M.runAnim?0.5:0);
-  drawPlayer(sx,sy, myTeam.c1,myTeam.c2, 0.7+0.5*stT, running, swing, M.aim);
+  const swing=(M.shotPlayed && (M.state==='delivery'||M.state==='hitting'))?1:(M.state==='result'&&!M.runAnim?0.5:0);
+  drawPlayer(sx,sy, myTeam.c1,myTeam.c2, 0.7+0.5*stT, running, swing, DIRS[M.shot].side);
   drawName(sx, sy+12, striker().name+'*');
 }
 function drawName(x,y,txt){
@@ -762,18 +815,47 @@ function drawName(x,y,txt){
   ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x-w/2,y-9,w,13);
   ctx.fillStyle='#fff'; ctx.fillText(txt,x,y+1);
 }
-function drawCatch(){
-  const c=M.catchAnim, t=clamp(c.t,0,1);
-  const mx=(c.x0+c.x1)/2;
-  const x=(1-t)*(1-t)*c.x0 + 2*(1-t)*t*mx + t*t*c.x1;
-  const y=(1-t)*(1-t)*c.y0 + 2*(1-t)*t*c.peakY + t*t*c.y1;
-  drawPlayer(c.fx,c.fy, M.opp.c1,M.opp.c2, 0.95, t<0.85, 0,0,false);
-  // gloves up reaching
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(c.fx,c.fy-34,4,0,7); ctx.fill();
-  // the ball arcing through the air
-  ctx.fillStyle='#e21b1b'; ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.fill();
-  ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,5,0.5,2.2); ctx.stroke();
-  if(t>0.92){ ctx.font='18px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText('🙌', c.fx, c.fy-42); }
+/* the struck ball flying toward its destination (boundary, gap, or a fielder) */
+function drawHit(){
+  const h=M.hit, t=clamp(h.t,0,1);
+  const cx=(h.from.x+h.to.x)/2;                       // quadratic-bezier control x
+  const x=(1-t)*(1-t)*h.from.x + 2*(1-t)*t*cx     + t*t*h.to.x;
+  const y=(1-t)*(1-t)*h.from.y + 2*(1-t)*t*h.peak + t*t*h.to.y;
+  // a fielder reaching for a catch
+  if(h.caught && h.fielder){
+    const fp=fieldPoint(h.fielder.a, h.fielder.r);
+    drawPlayer(fp.x,fp.y, M.opp.c1,M.opp.c2, 0.95, t<0.85, 0,0,false);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(fp.x,fp.y-34,4,0,7); ctx.fill();
+    if(t>0.9){ ctx.font='18px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText('🙌', fp.x, fp.y-44); }
+  }
+  // the ball
+  const r=5 + (h.aerial?1:0);
+  ctx.fillStyle='#e21b1b'; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,r,0.5,2.2); ctx.stroke();
+}
+
+/* a little compass near the batsman showing the current aim (persists each ball) */
+function drawDirCompass(){
+  if(!M || M.state==='ending') return;
+  const R=34, cx=R+18, cy=H-R-44;
+  ctx.save();
+  ctx.fillStyle='rgba(8,14,28,0.68)'; ctx.beginPath(); ctx.arc(cx,cy,R+7,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+  const arrows=[['straight',0,-1],['off',1,0],['reverse',0,1],['leg',-1,0]];
+  arrows.forEach(([key,dx,dy])=>{
+    const sel = M.shot===key;
+    const ax=cx+dx*R*0.6, ay=cy+dy*R*0.6;
+    ctx.save(); ctx.translate(ax,ay); ctx.rotate(Math.atan2(dy,dx)+Math.PI/2);
+    ctx.fillStyle = sel?'#39ff88':'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(7,6); ctx.lineTo(-7,6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+  ctx.fillStyle='#39ff88'; ctx.font='bold 10px Trebuchet MS'; ctx.textAlign='center';
+  const lbl={straight:'STRGHT',off:'OFF',reverse:'FINE',leg:'LEG'}[M.shot];
+  ctx.fillText(lbl, cx, cy+4);
+  ctx.fillStyle='#9fb3d8'; ctx.font='9px Trebuchet MS';
+  ctx.fillText('AIM', cx, cy-R-3);
+  ctx.restore();
 }
 function drawScorecard(){
   const w=Math.min(W*0.84,360), h=150, x=(W-w)/2, y=H*0.42;
@@ -904,12 +986,10 @@ function drawPlayer(x,y,c1,c2,scale,running,swing=0,aim=0,keeper=false){
 }
 function drawFielders(){
   M.fielders.forEach(f=>{
-    // map normalized field pos to screen around batsman crease
-    const bx=W/2, by=H*0.62;
-    const x=bx + f.x*W*0.4;
-    const y=by + f.y*H*0.26;
-    if(y<H*0.30) return;
-    drawPlayer(x,y, M.opp.c1,M.opp.c2, 0.55+ (y-H*0.3)/(H)*0.5);
+    const p=fieldPoint(f.a, f.r);
+    if(p.y<H*0.30) return;
+    const sc=clamp(0.5 + (p.y-H*0.3)/H*0.55, 0.45, 1);
+    drawPlayer(p.x,p.y, M.opp.c1,M.opp.c2, sc);
   });
 }
 function drawBall(){
