@@ -2,6 +2,8 @@
 
 Games made by Ilan!
 
+🌐 **Play online:** https://ilamara31.github.io/ilan-games/
+
 ## Games
 - 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
@@ -10,7 +12,7 @@ Games made by Ilan!
 Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.
 
 ## Live website
-Published with GitHub Pages (link added after setup).
+Published with GitHub Pages: **https://ilamara31.github.io/ilan-games/**
 
 ## Working on a different laptop
 1. Install Git and the GitHub CLI (`gh`).
