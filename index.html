@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ilan's Arcade</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { min-height:100%; font-family:'Trebuchet MS','Segoe UI',sans-serif; color:#fff;
+    background:radial-gradient(circle at 50% 20%, #1b3a6b, #0a0e1a 75%); }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center; }
+  h1 { font-size:clamp(36px,9vw,72px); letter-spacing:2px; margin-bottom:6px;
+    background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:#9fb3d8; margin-bottom:36px; font-size:clamp(14px,3.5vw,19px); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; max-width:720px; width:100%; }
+  a.card { display:block; text-decoration:none; color:#fff; padding:34px 22px; border-radius:22px;
+    border:3px solid rgba(255,255,255,.12); transition:transform .12s, border-color .12s, box-shadow .12s; }
+  a.card:hover { transform:translateY(-6px) scale(1.02); border-color:#fff; box-shadow:0 14px 36px rgba(0,0,0,.45); }
+  a.card:active { transform:scale(.97); }
+  .emoji { font-size:64px; display:block; margin-bottom:14px; }
+  .card h2 { font-size:26px; margin-bottom:8px; }
+  .card p { color:#cdd9f0; font-size:14px; line-height:1.4; }
+  .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
+  .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
+  footer { margin-top:42px; color:#5e6f93; font-size:13px; }
+</style>
+</head>
+<body>
+  <h1>ILAN'S ARCADE</h1>
+  <div class="sub">Games made by Ilan 🎮 — pick one and play!</div>
+  <div class="cards">
+    <a class="card cricket" href="cricket/">
+      <span class="emoji">🏏</span>
+      <h2>Super Over Cricket</h2>
+      <p>Time your shots, chase the target, and win the IPL-style cup.</p>
+    </a>
+    <a class="card catch" href="catch/">
+      <span class="emoji">🧺</span>
+      <h2>Basket Catch</h2>
+      <p>Move the basket and catch everything before it falls!</p>
+    </a>
+  </div>
+  <footer>Made with ❤️ by Ilan • More games coming soon</footer>
+</body>
+</html>

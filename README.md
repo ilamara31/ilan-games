@@ -1,0 +1,19 @@
+# Ilan's Arcade 🎮
+
+Games made by Ilan!
+
+## Games
+- 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
+- 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
+
+## How to play locally
+Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.
+
+## Live website
+Published with GitHub Pages (link added after setup).
+
+## Working on a different laptop
+1. Install Git and the GitHub CLI (`gh`).
+2. `gh auth login` and sign in as Ilan.
+3. `git clone https://github.com/<username>/ilan-games.git`
+4. Edit the games, then `git add .`, `git commit -m "..."`, `git push`.

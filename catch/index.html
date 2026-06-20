@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basket Catch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: linear-gradient(#87ceeb, #c9f0ff 60%, #a8e6a3);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    background: transparent;
+    display: block;
+    touch-action: none;
+  }
+  #hud {
+    position: absolute;
+    top: 14px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 22px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1b3a4b;
+    text-shadow: 0 1px 0 rgba(255,255,255,.5);
+    pointer-events: none;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: rgba(10, 30, 45, 0.55);
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+  }
+  #overlay h1 { font-size: 40px; letter-spacing: 1px; }
+  #overlay p { font-size: 18px; max-width: 420px; line-height: 1.5; opacity: .95; }
+  #overlay button {
+    margin-top: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 999px;
+    background: #ff8c42;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #d9722f;
+    transition: transform .05s;
+  }
+  #overlay button:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9722f; }
+  .hidden { display: none !important; }
+  .small { font-size: 15px; opacity: .8; }
+  #banner {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 22px;
+    border-radius: 16px;
+    background: rgba(255, 140, 66, 0.92);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.4;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    pointer-events: none;
+    animation: pop .4s ease, glow 1s ease-in-out infinite alternate;
+  }
+  #banner span { font-size: 18px; }
+  #banner.bomb { background: rgba(205, 30, 30, 0.93); }
+  #best { font-size: 15px; font-weight: 700; color: #8a5a00; margin-top: 2px; }
+  @keyframes pop { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
+  @keyframes glow { to { box-shadow: 0 4px 24px rgba(255,180,80,.9); } }
+  #muteBtn {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    font-size: 22px;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,.7);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div>
+      <div id="score">Score: 0</div>
+      <div id="best">🏆 Best: 0</div>
+    </div>
+    <div id="level">Level: 1</div>
+    <div id="lives">❤️❤️❤️</div>
+  </div>
+  <button id="muteBtn" title="Toggle music">🔊</button>
+  <div id="banner" class="hidden">🌧️ FRUIT SHOWER! 🍎<br><span id="bannerTime">10</span>s — no bombs, catch them all!</div>
+  <div id="overlay">
+    <h1>🧺 Basket Catch</h1>
+    <p>Move with the <b>← →</b> arrow keys (or drag / A &amp; D).<br>
+       Catch the falling fruits &amp; eggs for points. Each catch makes them fall a little faster.<br>
+       Miss one and you lose a life. Catch a 💣 bomb and it's game over!<br>
+       Grab the rare ✨golden apple✨ for +50!</p>
+    <p class="small">You have 3 lives.</p>
+    <p class="small" id="startBest"></p>
+    <button id="startBtn">Start Game</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const levelEl = document.getElementById('level');
+const livesEl = document.getElementById('lives');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('startBtn');
+const banner = document.getElementById('banner');
+let bannerTime = document.getElementById('bannerTime');
+function showBanner(html, kind) {
+  banner.innerHTML = html;
+  banner.className = kind === 'bomb' ? 'bomb' : '';  // also clears the 'hidden' class
+  bannerTime = banner.querySelector('#bannerTime');
+}
+
+let W, H;
+function resize() {
+  W = canvas.width = Math.min(window.innerWidth, 700);
+  H = canvas.height = window.innerHeight;
+  if (basket) basket.y = H - 90;
+}
+window.addEventListener('resize', resize);
+
+// ---- Game state ----
+const GOOD = ['🍎','🍊','🍌','🍓','🍇','🍑','🥚','🍐','🍉'];
+const BOMB = '💣';
+
+let basket, items, score, lives, level, baseSpeed, running, lastSpawn, spawnGap, raf, leftHeld, rightHeld;
+let shower, showerEnd, nextShower, clearing, showerStep;
+let bombShower, bombShowerEnd, nextBomb, nextGolden;
+const SHOWER_MS = 10000;        // fruit shower lasts 10 seconds
+const BOMB_SHOWER_MS = 5000;    // bomb shower lasts 5 seconds
+const BOMB_STEP = 100;          // bomb shower roughly every 100 points
+const BOMB_GAP = 520;           // ms between bombs (escapable spacing)
+const BOMB_FALL = 3.0;          // fixed, gentle bomb fall speed during bomb shower
+const GOLDEN_STEP = 200;        // golden apple roughly every 200 points (+50 pts)
+const GOLDEN_VALUE = 50;        // points for catching the golden apple
+let highScore = +(localStorage.getItem('basketCatchHigh') || 0);
+
+// ============================================================
+//  AUDIO ENGINE  (all synthesized — no external files needed)
+// ============================================================
+const Audio = (() => {
+  let ac = null, master = null, musicGain = null, musicTimer = null, musicOn = true, started = false;
+
+  function init() {
+    if (ac) return;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain();
+    master.gain.value = 0.9;
+    master.connect(ac.destination);
+    musicGain = ac.createGain();
+    musicGain.gain.value = 0.16;          // background sits softly under SFX
+    musicGain.connect(master);
+  }
+  function ensure() {
+    init();
+    if (ac.state === 'suspended') ac.resume();
+  }
+
+  // --- one synth note ---
+  function note(freq, t, dur, type = 'sine', gain = 0.5, dest = master, glideTo = null) {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(dest);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  // --- noise burst (for the bomb) ---
+  function noise(t, dur, gain = 0.8) {
+    const n = Math.floor(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, n, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.setValueAtTime(1800, t);
+    lp.frequency.exponentialRampToValueAtTime(120, t + dur);
+    src.connect(lp); lp.connect(g); g.connect(master);
+    src.start(t); src.stop(t + dur);
+  }
+
+  // ---- Sound effects ----
+  function sfxCatch() {                    // bright happy chime
+    ensure();
+    const t = ac.currentTime;
+    note(880, t, 0.12, 'triangle', 0.4);
+    note(1320, t + 0.06, 0.16, 'triangle', 0.35);
+  }
+  function sfxBomb() {                      // explosion
+    ensure();
+    const t = ac.currentTime;
+    noise(t, 0.6, 0.9);
+    note(90, t, 0.5, 'sawtooth', 0.6, master, 40);
+  }
+  function sfxLife() {                      // short "uh-oh" drop
+    ensure();
+    const t = ac.currentTime;
+    note(440, t, 0.18, 'sine', 0.4, master, 300);
+    note(300, t + 0.16, 0.22, 'sine', 0.4, master, 200);
+  }
+  function sfxSad() {                       // sad descending phrase (game over)
+    ensure();
+    const t = ac.currentTime;
+    const seq = [523.25, 466.16, 392.0, 311.13]; // C5 Bb4 G4 Eb4-ish, mournful
+    seq.forEach((f, i) => note(f, t + i * 0.28, 0.4, 'sine', 0.45));
+  }
+  function sfxShower() {                    // happy rising fanfare (bonus start)
+    ensure();
+    const t = ac.currentTime;
+    const seq = [392.0, 523.25, 659.25, 783.99, 1046.5]; // rising arpeggio
+    seq.forEach((f, i) => note(f, t + i * 0.09, 0.3, 'triangle', 0.5));
+  }
+  function sfxGolden() {                    // sparkly chime (golden apple +50)
+    ensure();
+    const t = ac.currentTime;
+    const seq = [659.25, 880, 1108.73, 1318.5, 1760];
+    seq.forEach((f, i) => note(f, t + i * 0.07, 0.25, 'triangle', 0.55));
+    note(1760, t + 0.36, 0.5, 'sine', 0.3);
+  }
+
+  // ---- Background music: looping Indian-style melody ----
+  // A pleasant raga-flavoured scale (Raag Bhupali / pentatonic): Sa Re Ga Pa Dha
+  const SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
+  // a flowing phrase pattern (indexes into SCALE), with a little ornament
+  const PHRASE = [0,1,2,4,3,2,1,2, 4,5,4,3,2,1,0,1, 2,3,4,5,7,5,4,3, 2,1,0,2,1,0,-1,0];
+  let step = 0;
+
+  function tickMusic() {
+    if (!musicOn) return;
+    const t = ac.currentTime + 0.02;
+    const idx = PHRASE[step % PHRASE.length];
+    if (idx >= 0) {
+      const f = SCALE[idx];
+      note(f, t, 0.34, 'triangle', 0.5, musicGain);      // melody
+      note(f / 2, t, 0.42, 'sine', 0.35, musicGain);     // soft lower octave
+    }
+    // a gentle tonic drone pulse every 4 steps (tanpura feel)
+    if (step % 4 === 0) note(130.81, t, 0.9, 'sine', 0.3, musicGain);
+    step++;
+  }
+
+  function startMusic() {
+    ensure();
+    if (musicTimer) return;
+    step = 0;
+    musicTimer = setInterval(tickMusic, 260);   // ~ tempo
+    tickMusic();
+  }
+  function stopMusic() {
+    clearInterval(musicTimer); musicTimer = null;
+  }
+  function toggleMusic() {
+    musicOn = !musicOn;
+    if (musicOn) startMusic(); else stopMusic();
+    return musicOn;
+  }
+
+  return { ensure, sfxCatch, sfxBomb, sfxLife, sfxSad, sfxShower, sfxGolden, startMusic, stopMusic, toggleMusic,
+           get musicOn() { return musicOn; } };
+})();
+
+function newBasket() {
+  return { x: (W || 400) / 2, y: (H || 600) - 90, w: 96, h: 56, speed: 9 };
+}
+
+function reset() {
+  basket = newBasket();
+  items = [];
+  score = 0;
+  lives = 3;
+  level = 1;
+  baseSpeed = 2.6;      // starting fall speed (px/frame)
+  spawnGap = 1100;      // ms between drops
+  lastSpawn = 0;
+  leftHeld = rightHeld = false;
+  shower = false;
+  showerEnd = 0;
+  showerStep = 25;          // points needed for the FIRST fruit shower
+  nextShower = showerStep;
+  bombShower = false;
+  bombShowerEnd = 0;
+  nextBomb = BOMB_STEP;     // first bomb shower at 100 points
+  nextGolden = GOLDEN_STEP; // first golden apple at 200 points
+  clearing = false;
+  updateHud();
+}
+
+function updateHud() {
+  scoreEl.textContent = 'Score: ' + score;
+  bestEl.textContent = '🏆 Best: ' + Math.max(highScore, score);
+  levelEl.textContent = 'Level: ' + level;
+  livesEl.textContent = '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives));
+}
+
+function startShower(now) {
+  shower = true;
+  showerEnd = now + SHOWER_MS;
+  // advance the threshold here (at trigger), so shower-earned points don't skew it.
+  showerStep += 25;          // each shower is progressively rarer
+  nextShower += showerStep;  // absolute thresholds: 25, 75, 150, 250, ...
+  Audio.sfxShower();
+  showBanner('🌧️ FRUIT SHOWER! 🍎<br><span id="bannerTime"></span>s — no bombs, catch them all!', 'fruit');
+}
+function endShower() {
+  shower = false;
+  banner.classList.add('hidden');
+  clearing = true;                  // clear the screen before normal play resumes
+}
+
+function startBombShower(now) {
+  bombShower = true;
+  bombShowerEnd = now + BOMB_SHOWER_MS;
+  nextBomb += BOMB_STEP;     // next bomb shower 100 points later: 100, 200, 300, ...
+  Audio.sfxBomb();
+  showBanner('💣 BOMB SHOWER! 💣<br>Dodge for <span id="bannerTime"></span>s!', 'bomb');
+}
+function endBombShower() {
+  bombShower = false;
+  banner.classList.add('hidden');
+  clearing = true;
+  // keep the two modes apart: offset the next fruit shower so it can't fire
+  // right on the heels of a bomb shower (resets its countdown from here).
+  nextShower = Math.max(nextShower, score + 25);
+}
+
+function spawnGolden() {
+  nextGolden += GOLDEN_STEP;          // next golden apple ~200 points later
+  spawn({ golden: true, vy: baseSpeed * 1.25 });  // a little faster than the rest
+  Audio.sfxGolden();
+}
+
+function spawn(opts = {}) {
+  const golden = !!opts.golden;
+  const isBomb = golden ? false
+               : (opts.bomb !== undefined ? opts.bomb : Math.random() < 0.16);  // ~16%
+  const emoji = golden ? '🍎' : (isBomb ? BOMB : GOOD[(Math.random() * GOOD.length) | 0]);
+  const size = golden ? 52 : 40;
+  const vy = opts.vy !== undefined ? opts.vy : baseSpeed * (0.9 + Math.random() * 0.3);
+  items.push({
+    x: size + Math.random() * (W - size * 2),
+    y: -size,
+    size,
+    bomb: isBomb,
+    golden,
+    emoji,
+    vy
+  });
+}
+
+function loseLife() {
+  lives--;
+  updateHud();
+  if (lives <= 0) gameOver(false);
+  else Audio.sfxLife();
+}
+
+function gameOver(byBomb) {
+  running = false;
+  cancelAnimationFrame(raf);
+  Audio.stopMusic();
+  banner.classList.add('hidden');
+  if (!byBomb) Audio.sfxSad();   // sad tune when you run out of lives
+
+  const isNewHigh = score > highScore;
+  if (isNewHigh) {
+    highScore = score;
+    localStorage.setItem('basketCatchHigh', highScore);
+  }
+
+  overlay.classList.remove('hidden');
+  overlay.innerHTML = `
+    <h1>${byBomb ? '💥 Boom!' : 'Game Over'}</h1>
+    <p>${byBomb ? 'You caught a bomb!' : 'You ran out of lives.'}</p>
+    <p>Final score: <b>${score}</b> &nbsp;•&nbsp; Level <b>${level}</b></p>
+    ${isNewHigh
+      ? `<p style="color:#ffd34d;font-size:22px">🏆 New High Score!</p>`
+      : `<p class="small">🏆 Highest score ever: <b>${highScore}</b> — beat it!</p>`}
+    <button id="startBtn">Play Again</button>`;
+  document.getElementById('startBtn').addEventListener('click', start);
+}
+
+function start() {
+  resize();
+  reset();
+  overlay.classList.add('hidden');
+  running = true;
+  Audio.ensure();
+  Audio.startMusic();
+  lastSpawn = performance.now() - spawnGap; // spawn first item promptly
+  raf = requestAnimationFrame(loop);
+}
+
+function loop(now) {
+  if (!running) return;
+  raf = requestAnimationFrame(loop);
+
+  // move basket
+  if (leftHeld) basket.x -= basket.speed;
+  if (rightHeld) basket.x += basket.speed;
+  basket.x = Math.max(basket.w / 2, Math.min(W - basket.w / 2, basket.x));
+
+  // fruit-shower timer / countdown
+  if (shower) {
+    if (now > showerEnd) endShower();
+    else if (bannerTime) bannerTime.textContent = Math.ceil((showerEnd - now) / 1000);
+  }
+  // bomb-shower timer / countdown
+  if (bombShower) {
+    if (now > bombShowerEnd) endBombShower();
+    else if (bannerTime) bannerTime.textContent = Math.ceil((bombShowerEnd - now) / 1000);
+  }
+
+  // spawning
+  if (clearing) {
+    // hold all spawns until leftover items have fallen away -> blank screen
+    if (items.length === 0) { clearing = false; lastSpawn = now; }
+  } else if (bombShower) {
+    // bombs at an escapable spacing, plus exactly one catchable fruit on screen
+    if (now - lastSpawn > BOMB_GAP) { spawn({ bomb: true, vy: BOMB_FALL }); lastSpawn = now; }
+    if (!items.some(it => !it.bomb)) spawn({ bomb: false, vy: BOMB_FALL });
+  } else if (shower) {
+    if (now - lastSpawn > 150) { spawn({ bomb: false }); lastSpawn = now; }
+  } else {
+    // give a golden apple a clear lane: hold other spawns until it has fallen
+    // past the upper part of the screen, so nothing comes near it up top.
+    const golden = items.find(it => it.golden);
+    const laneBusy = golden && golden.y < H * 0.45;
+    if (!laneBusy && now - lastSpawn > spawnGap) { spawn(); lastSpawn = now; }
+  }
+
+  ctx.clearRect(0, 0, W, H);
+
+  // update + draw items
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    it.y += it.vy;
+
+    // catch test: item center within basket mouth
+    const inX = it.x > basket.x - basket.w / 2 && it.x < basket.x + basket.w / 2;
+    const inY = it.y + it.size / 2 > basket.y - basket.h / 2 &&
+                it.y - it.size / 2 < basket.y + basket.h / 2;
+
+    if (inX && inY) {
+      if (it.bomb) { Audio.sfxBomb(); gameOver(true); return; }
+      items.splice(i, 1);
+      if (it.golden) { score += GOLDEN_VALUE; Audio.sfxGolden(); }
+      else { score++; Audio.sfxCatch(); }
+      // difficulty only ramps during normal play
+      if (!shower && !bombShower && !clearing) {
+        baseSpeed *= 1.01;
+        spawnGap = Math.max(420, spawnGap * 0.99);
+      }
+      const newLevel = Math.floor(score / 8) + 1;
+      if (newLevel !== level) level = newLevel;
+      // trigger special events (normal play only); bomb shower takes priority
+      if (!shower && !bombShower && !clearing) {
+        if (score >= nextBomb) startBombShower(now);
+        else if (score >= nextGolden) spawnGolden();
+        else if (score >= nextShower) startShower(now);
+      }
+      updateHud();
+      continue;
+    }
+
+    if (it.y - it.size > H) {
+      items.splice(i, 1);
+      // missed a good item -> lose a life (golden apple is a bonus: no penalty;
+      // also no penalty during special modes)
+      if (!it.bomb && !it.golden && !shower && !bombShower && !clearing) loseLife();
+      if (!running) return;
+      continue;
+    }
+
+    if (it.golden) {
+      // glowing golden halo + "+50" label so it reads as special & valuable
+      const r = it.size;
+      const g = ctx.createRadialGradient(it.x, it.y, 4, it.x, it.y, r);
+      g.addColorStop(0, 'rgba(255,235,120,0.95)');
+      g.addColorStop(0.6, 'rgba(255,205,40,0.55)');
+      g.addColorStop(1, 'rgba(255,200,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(it.x, it.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#a9700a';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+50', it.x, it.y + r * 0.85);
+    }
+
+    ctx.font = it.size + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(it.emoji, it.x, it.y);
+  }
+
+  drawBasket();
+}
+
+function drawBasket() {
+  const { x, y, w, h } = basket;
+  const left = x - w / 2, top = y - h / 2;
+
+  // basket body
+  ctx.fillStyle = '#a9651f';
+  ctx.strokeStyle = '#6e3f12';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left + w, top);
+  ctx.lineTo(left + w - 12, top + h);
+  ctx.lineTo(left + 12, top + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // rim
+  ctx.fillStyle = '#c98235';
+  ctx.fillRect(left - 4, top - 8, w + 8, 12);
+  ctx.strokeRect(left - 4, top - 8, w + 8, 12);
+
+  // weave lines
+  ctx.strokeStyle = 'rgba(110,63,18,.6)';
+  ctx.lineWidth = 2;
+  for (let gx = 14; gx < w - 10; gx += 16) {
+    ctx.beginPath();
+    ctx.moveTo(left + gx, top + 2);
+    ctx.lineTo(left + gx - 3, top + h - 2);
+    ctx.stroke();
+  }
+}
+
+// ---- Input ----
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = true;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = true;
+  if ((e.key === ' ' || e.key === 'Enter') && !running) start();
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = false;
+});
+
+// touch / mouse drag
+function pointTo(clientX) {
+  const rect = canvas.getBoundingClientRect();
+  if (basket) basket.x = clientX - rect.left;
+}
+canvas.addEventListener('mousemove', e => { if (running && (e.buttons & 1)) pointTo(e.clientX); });
+canvas.addEventListener('mousedown', e => { if (running) pointTo(e.clientX); });
+canvas.addEventListener('touchmove', e => { if (running) { pointTo(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+canvas.addEventListener('touchstart', e => { if (running) pointTo(e.touches[0].clientX); }, { passive: false });
+
+startBtn.addEventListener('click', start);
+
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.addEventListener('click', () => {
+  Audio.ensure();
+  const on = Audio.toggleMusic();
+  muteBtn.textContent = on ? '🔊' : '🔇';
+});
+
+// show the saved high score on the opening screen
+const startBest = document.getElementById('startBest');
+if (startBest) {
+  startBest.innerHTML = highScore > 0
+    ? `🏆 Highest score ever: <b>${highScore}</b> — beat it!`
+    : `🏆 No high score yet — set one!`;
+}
+bestEl.textContent = '🏆 Best: ' + highScore;
+
+resize();
+</script>
+</body>
+</html>
