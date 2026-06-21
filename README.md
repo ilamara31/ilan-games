@@ -7,6 +7,7 @@ Games made by Ilan!
 ## Games
 - 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
+- 🏎️ **Indian Grand Prix** — `f1/` — pseudo-3D F1 racer, beat the grid over 3 laps for the podium.
 
 ## How to play locally
 Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.

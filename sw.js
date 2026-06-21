@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v2';
+const CACHE = 'ilan-arcade-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,9 @@ const ASSETS = [
   './cricket/',
   './cricket/index.html',
   './catch/',
-  './catch/index.html'
+  './catch/index.html',
+  './f1/',
+  './f1/index.html'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
