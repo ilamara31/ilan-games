@@ -63,6 +63,15 @@
     <div class="sub" id="startStats" style="font-size:12px"></div>
   </div>
 
+  <!-- BRACKET -->
+  <div id="scr-bracket" class="screen hidden">
+    <h1 id="brTitle">QUARTER-FINAL</h1>
+    <div class="sub" id="brSub"></div>
+    <div class="board" id="brBoard" style="margin-bottom:8px"></div>
+    <button class="btn" id="brPlay">▶ PLAY YOUR MATCH</button>
+    <a class="btn alt" href="../">🏠 ALL GAMES</a>
+  </div>
+
   <!-- END -->
   <div id="scr-end" class="screen hidden" style="justify-content:center">
     <h1 id="endTitle">RESULT</h1>
@@ -90,7 +99,8 @@ function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(
 function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
 const acctStore=igLoad();
 const acct=acctStore.accounts.find(a=>a.id===acctStore.activeId)||null;
-if(acct && !acct.pk) acct.pk={played:0,won:0,goals:0,saves:0,streak:0,bestStreak:0};
+if(acct && !acct.pk) acct.pk={played:0,won:0,goals:0,saves:0,streak:0,bestStreak:0,cups:0};
+if(acct && acct.pk && acct.pk.cups===undefined) acct.pk.cups=0;
 const playerName=acct?acct.name:'You';
 function savePK(){ if(acct) igSave(); }
 
@@ -126,10 +136,12 @@ function zoneOf(x,y){
 function sameZone(a,b){ return a&&b&&a.col===b.col&&a.row===b.row; }
 function inGoal(x,y){ return x>=G.left && x<=G.right && y>=G.topY && y<=G.lineY; }   // strictly between posts & under bar
 function reachR(){ return G.goalW*0.20; }                                            // how far the keeper's hands stretch
-function saved(targetPt, keeperPt){ if(!keeperPt) return false; const dx=targetPt.x-keeperPt.x, dy=(targetPt.y-keeperPt.y)*0.72; return Math.hypot(dx,dy)<reachR(); }
+function saved(targetPt, keeperPt, mult){ if(!keeperPt) return false; const dx=targetPt.x-keeperPt.x, dy=(targetPt.y-keeperPt.y)*0.72; return Math.hypot(dx,dy)<reachR()*(mult||1); }
 
 /* ---- state ---- */
 const S={ phase:'menu', youScore:0,oppScore:0, youKicks:0,oppKicks:0, sd:false, youDots:[], oppDots:[], turn:'you' };
+const TOUR={ active:false, round:0, teams:[], names:['QUARTER-FINAL','SEMI-FINAL','FINAL'] };
+function curDiff(){ return TOUR.active?TOUR.round:0; }   // 0..2, harder each round
 function decidedRegulation(){ const yRem=5-S.youKicks,oRem=5-S.oppKicks; return S.youScore>S.oppScore+oRem || S.oppScore>S.youScore+yRem; }
 function gameOver(){ if(!S.sd){ if(decidedRegulation())return true; return S.youKicks>=5&&S.oppKicks>=5&&S.youScore!==S.oppScore; }
   return S.youKicks===S.oppKicks && S.youKicks>5 && S.youScore!==S.oppScore; }
@@ -155,10 +167,26 @@ function cheer(){ noise(0.7,0.32); beep(540,0.3,'sawtooth',0.1); for(let i=0;i<6
 const sfx={ kick:()=>beep(150,0.12,'square',0.22), goal:cheer, save:()=>{beep(280,0.16,'square',0.22); noise(0.12,0.18);}, miss:()=>beep(110,0.3,'sine',0.16), whistle:()=>beep(2000,0.18,'sine',0.1) };
 
 /* ---- flow ---- */
-function startShootout(){
-  oppTeam=TEAMS[(TEAMS.indexOf(myTeam)+1+Math.floor(Math.random()*(TEAMS.length-1)))%TEAMS.length];
+function startTournament(){
+  const others=TEAMS.filter(t=>t!==myTeam);
+  for(let i=others.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [others[i],others[j]]=[others[j],others[i]]; }
+  TOUR.teams=[myTeam,...others.slice(0,7)]; TOUR.round=0; TOUR.active=true;
+  document.getElementById('scr-start').classList.add('hidden'); showBracket();
+}
+function showBracket(){
+  S.phase='bracket'; document.getElementById('scr-end').classList.add('hidden'); document.getElementById('scr-start').classList.add('hidden');
+  document.getElementById('brTitle').textContent='🏆 '+TOUR.names[TOUR.round];
+  document.getElementById('brSub').innerHTML=`Round ${TOUR.round+1} of 3 — win to advance! Your team: ${myTeam.flag} <b>${myTeam.name}</b>`;
+  const t=TOUR.teams; let h='';
+  for(let i=0;i<t.length;i+=2){ const you=(i===0);
+    h+=`<div class="brow" style="${you?'background:rgba(255,213,74,.2);border:1px solid #ffd54a;':''}">
+      <span>${t[i].flag} ${t[i].name}${you?' (you)':''}</span><span style="color:#7e90b5;font-size:12px">vs</span><span>${t[i+1].flag} ${t[i+1].name}</span></div>`; }
+  document.getElementById('brBoard').innerHTML=h;
+  document.getElementById('scr-bracket').classList.remove('hidden');
+}
+function beginShootout(){
   S.phase='play'; S.youScore=S.oppScore=S.youKicks=S.oppKicks=0; S.sd=false; S.youDots=[]; S.oppDots=[]; S.turn='you';
-  document.getElementById('scr-start').classList.add('hidden'); document.getElementById('scr-end').classList.add('hidden');
+  document.getElementById('scr-start').classList.add('hidden'); document.getElementById('scr-end').classList.add('hidden'); document.getElementById('scr-bracket').classList.add('hidden');
   if(acct){ acct.pk.played++; savePK(); }
   if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
   sfx.whistle(); beginTurn();
@@ -168,14 +196,14 @@ function beginTurn(){
   ball.x=G.spotX; ball.y=G.spotY; ball.scale=1; ball.rot=0; ball.fly=0; ball.flying=false; ball.deflecting=false; ball.target=null;
   keeper.x=G.cx; keeper.y=G.lineY-G.goalH*0.46; keeper.t=0; keeper.dir=0; keeper.divePt=null; keeper.jump=0; striker.anim=0;
   if(S.turn==='you'){ S.phase='youAim'; cross.x=G.cx; cross.dir=1; cross.y=G.midY; cross.vy=1; power=0; holding=false; }
-  else { S.phase='oppAim'; aiTarget={ col:Math.floor(Math.random()*3), row:Math.random()<0.5?'high':'low' }; aimTimer=1.5; aimShow=true; }
+  else { S.phase='oppAim'; aiTarget={ col:Math.floor(Math.random()*3), row:Math.random()<0.5?'high':'low' }; aimTimer=Math.max(0.85,1.5-curDiff()*0.28); aimShow=true; }
 }
 function shoot(){
   shotPower=power; const pt={x:cross.x,y:cross.y}, isIn=inGoal(pt.x,pt.y);
   const gz={col:Math.floor(Math.random()*3),row:Math.random()<0.5?'high':'low'}, kp=zoneCenter(gz);   // AI keeper guess
   if(!isIn){ outcome='miss'; keeper.divePt=kp; }                       // over the bar / wide of the posts
   else if(power<0.26){ outcome='save'; keeper.divePt={x:pt.x,y:pt.y}; } // too soft, keeper smothers it
-  else { keeper.divePt=kp; outcome = saved(pt,kp)?'save':'goal'; }     // in goal: goal unless keeper reaches it
+  else { keeper.divePt=kp; outcome = saved(pt,kp,1+curDiff()*0.13)?'save':'goal'; }  // keeper stretches more each round
   ball.target=pt; launchBall(1.2); sfx.kick(); S.phase='youKick';
 }
 function oppShoot(){
@@ -199,14 +227,27 @@ function resolveTurn(){
 }
 function afterResult(){ if(gameOver()){ endGame(); return; } nextTurn(); beginTurn(); }
 function endGame(){
-  S.phase='over'; const won=S.youScore>S.oppScore; if(won&&acct) acct.pk.won++; savePK();
-  document.getElementById('endTitle').textContent=won?'🏆 CHAMPIONS!':'😞 YOU LOST';
-  document.getElementById('endTitle').style.color=won?'#ffd54a':'#fb7185';
-  document.getElementById('endSub').innerHTML=`${myTeam.flag} ${myTeam.name} <b>${S.youScore} – ${S.oppScore}</b> ${oppTeam.name} ${oppTeam.flag}${S.sd?' (sudden death)':''}`;
-  let b=`<div class="brow"><span>${myTeam.flag} ${playerName}</span><b>${S.youScore}</b></div><div class="brow"><span>${oppTeam.flag} ${oppTeam.name}</span><b>${S.oppScore}</b></div>`;
-  if(acct) b+=`<div class="brow" style="background:none"><span class="sub" style="margin:0">Career: ${acct.pk.won} wins • ${acct.pk.goals} goals • ${acct.pk.saves} saves • best streak ${acct.pk.bestStreak}</span></div>`;
+  running=false; const won=S.youScore>S.oppScore; if(won&&acct){ acct.pk.won++; savePK(); }
+  if(!won){ TOUR.active=false; showResult('lost'); return; }
+  const t=TOUR.teams, winners=[t[0]];                         // you go through; sim the other ties
+  for(let i=2;i<t.length;i+=2) winners.push(Math.random()<0.5?t[i]:t[i+1]);
+  if(winners.length===1){ TOUR.active=false; if(acct){ acct.pk.cups=(acct.pk.cups||0)+1; savePK(); } showResult('cup'); return; }
+  TOUR.teams=winners; TOUR.round++; showResult('advance');
+}
+function showResult(kind){
+  S.phase='over';
+  const e=document.getElementById('scr-end'), title=document.getElementById('endTitle'), sub=document.getElementById('endSub'), btn=document.getElementById('againBtn');
+  const score=`${myTeam.flag} ${S.youScore} – ${S.oppScore} ${oppTeam.flag} ${oppTeam.name}`;
+  if(kind==='cup'){ title.textContent='🏆 CHAMPIONS! 🏆'; title.style.color='#ffd54a';
+    sub.innerHTML=`${myTeam.flag} <b>${myTeam.name}</b> win the tournament!<br>Final: ${score}`; btn.textContent='🔁 NEW TOURNAMENT'; }
+  else if(kind==='advance'){ title.textContent='✅ MATCH WON!'; title.style.color='#39ff88';
+    sub.innerHTML=`${score}${S.sd?' (sudden death)':''}<br>You're through to the <b>${TOUR.names[TOUR.round]}</b>!`; btn.textContent='CONTINUE →'; }
+  else { title.textContent='❌ KNOCKED OUT'; title.style.color='#fb7185';
+    sub.innerHTML=`Lost ${score}<br>Out in the ${TOUR.names[TOUR.round]}.`; btn.textContent='🔁 TRY AGAIN'; }
+  let b=''; if(acct) b=`<div class="brow" style="background:none"><span class="sub" style="margin:0">Career: ${acct.pk.cups||0} cups 🏆 • ${acct.pk.won} wins • ${acct.pk.goals} goals • ${acct.pk.saves} saves</span></div>`;
   document.getElementById('endBoard').innerHTML=b;
-  running=false; document.getElementById('scr-end').classList.remove('hidden');
+  btn.onclick = (kind==='advance') ? (()=>{ e.classList.add('hidden'); showBracket(); }) : (()=>{ e.classList.add('hidden'); document.getElementById('scr-start').classList.remove('hidden'); });
+  e.classList.remove('hidden');
 }
 function spawnConfetti(){ confetti=[]; for(let i=0;i<40;i++) confetti.push({x:Math.random()*W,y:-20-Math.random()*H*0.3,vx:(Math.random()-0.5)*60,vy:120+Math.random()*120,c:`hsl(${Math.floor(Math.random()*360)},90%,60%)`,r:3+Math.random()*4,rot:Math.random()*6}); }
 
@@ -400,13 +441,13 @@ resize();
   TEAMS.forEach(t=>{ const d=document.createElement('div'); d.className='teamcard'; d.style.background=`linear-gradient(135deg,${t.c1},${shade(t.c1)})`;
     d.innerHTML=`<span class="jersey">👕</span><span>${t.flag} ${t.name}</span>`;
     d.onclick=()=>{ myTeam=t; grid.querySelectorAll('.teamcard').forEach(c=>c.classList.remove('sel')); d.classList.add('sel');
-      document.getElementById('playBtn').disabled=false; document.getElementById('playBtn').textContent='START SHOOTOUT';
+      document.getElementById('playBtn').disabled=false; document.getElementById('playBtn').textContent='🏆 ENTER TOURNAMENT';
       document.getElementById('vsLine').innerHTML=`You picked <b style="color:${t.c1==='#f2f2f2'||t.c1==='#e8e8e8'?'#fff':t.c1}">${t.flag} ${t.name}</b>`; };
     grid.appendChild(d); });
 })();
 function shade(hex){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join(''); const r=Math.round(parseInt(c.slice(0,2),16)*0.55),g=Math.round(parseInt(c.slice(2,4),16)*0.55),b=Math.round(parseInt(c.slice(4,6),16)*0.55); return `rgb(${r},${g},${b})`; }
-document.getElementById('playBtn').addEventListener('click',()=>{ if(myTeam) startShootout(); });
-document.getElementById('againBtn').addEventListener('click',()=>{ document.getElementById('scr-end').classList.add('hidden'); document.getElementById('scr-start').classList.remove('hidden'); });
+document.getElementById('playBtn').addEventListener('click',()=>{ if(myTeam) startTournament(); });
+document.getElementById('brPlay').addEventListener('click',()=>{ oppTeam=TOUR.teams[1]; beginShootout(); });
 render();
 
 if('serviceWorker' in navigator){ let r=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(r)return; r=true; location.reload(); });
