@@ -54,6 +54,19 @@
   .brow.me { background:rgba(255,213,74,.18); }
   .brow .pos { width:26px; color:#ffd54a; font-weight:bold; }
   .brow .nm { flex:1; }
+  .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  #wallet { background:rgba(8,14,28,.6); border:1px solid #2a3c63; border-radius:14px; padding:10px 16px; margin:0 0 16px;
+    font-size:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+  #wallet b { color:#ffd54a; }
+  .list { max-width:520px; width:100%; display:flex; flex-direction:column; gap:10px; }
+  .item { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:12px 14px; text-align:left; }
+  .item .ic { font-size:30px; width:40px; text-align:center; }
+  .item .info { flex:1; }
+  .item .info .t { font-weight:bold; font-size:17px; }
+  .item .info .d { color:#9fb3d8; font-size:13px; margin-top:2px; }
+  .item .act { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .pill { font-size:12px; color:#04220f; background:#39ff88; border-radius:20px; padding:3px 10px; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -76,12 +89,23 @@
     <h1>🏁 INDIAN GRAND PRIX</h1>
     <div class="sub">F1-style race at the Buddh circuit. Beat the grid over <b>3 laps</b> — climb from the back to the podium!</div>
     <div class="sub" id="startWho" style="color:#ffd54a;margin-top:-6px"></div>
+    <div id="wallet"></div>
     <div class="sub" id="startBest"></div>
     <button class="btn" id="raceBtn">START RACE</button>
+    <button class="btn green" id="garageBtn">🛒 GARAGE</button>
     <a class="btn alt" href="../">🏠 ALL GAMES</a>
     <div class="sub" style="margin-top:16px;font-size:12px">
       Steer: <b>← →</b> / A D, or hold the left/right side of the screen.<br>You auto-accelerate; brake with <b>↓</b> or the bottom of the screen.
     </div>
+  </div>
+
+  <!-- GARAGE / SHOP -->
+  <div id="scr-shop" class="screen hidden" style="justify-content:flex-start;padding-top:20px">
+    <h1>🛒 GARAGE</h1>
+    <div class="sub">Win prize money, then buy a faster car — a higher top speed makes overtaking the grid much easier.</div>
+    <div id="shopWallet" class="sub" style="color:#ffd54a;font-weight:bold"></div>
+    <div id="carList" class="list"></div>
+    <button class="btn alt" id="shopBack" style="margin-top:14px">⬅ BACK</button>
   </div>
 
   <!-- FINISH -->
@@ -91,6 +115,7 @@
     <div id="finBoard" class="board"></div>
     <div class="row" style="margin-top:10px">
       <button class="btn" id="againBtn">RACE AGAIN</button>
+      <button class="btn green" id="menuBtn">🛒 MENU / GARAGE</button>
       <a class="btn alt" href="../">🏠 ALL GAMES</a>
     </div>
   </div>
@@ -113,8 +138,25 @@ function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore
 const acctStore=igLoad();
 const acct=acctStore.accounts.find(a=>a.id===acctStore.activeId)||null;
 if(acct && !acct.f1) acct.f1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0};
+// economy fields (migrate older accounts that have f1 stats but no garage yet)
+if(acct && acct.f1 && acct.f1.money===undefined){ acct.f1.money=300; acct.f1.owned=['kart']; acct.f1.car='kart'; igSave(); }
+// guests (no account) get an in-session career so the garage still works
+const guestF1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0,money:300,owned:['kart'],car:'kart'};
+function career(){ return acct ? acct.f1 : guestF1; }
 const playerName = acct ? acct.name : 'You';
 function saveF1(){ if(acct){ igSave(); } }
+
+/* ---- buyable cars: faster car = higher top speed ---- */
+const CARS=[
+  {id:'kart',  name:'Starter Kart', top:330, price:0,    color:'#e10600'},
+  {id:'turbo', name:'Turbo GT',     top:360, price:400,  color:'#1e90ff'},
+  {id:'speed', name:'Speedster',    top:390, price:900,  color:'#39ff88'},
+  {id:'hyper', name:'Hyper X',      top:430, price:1800, color:'#ffd21f'},
+  {id:'apex',  name:'Apex Pro',     top:470, price:3500, color:'#b14bff'},
+];
+function getCar(id){ return CARS.find(c=>c.id===id)||CARS[0]; }
+// prize money by finishing position (P1 first)
+const PRIZE=[500,350,250,170,120,90,60,40];
 
 /* ---- drivers (player races against these) ---- */
 const DRIVERS=[
@@ -135,8 +177,14 @@ const segmentLength=200, rumbleLength=3, roadWidth=2800;
 const cameraHeight=1500, fov=100, drawDistance=180, centrifugal=0.3;
 const cameraDepth=1/Math.tan((fov/2)*Math.PI/180);
 const playerZ=cameraHeight*cameraDepth;
-const maxSpeed=segmentLength*60;
-const accel=maxSpeed/5, breaking=-maxSpeed, decel=-maxSpeed/5, offDecel=-maxSpeed/2, offLimit=maxSpeed/4;
+const BASE_MAX=segmentLength*60;                 // ~330 km/h reference (Starter Kart)
+let maxSpeed=BASE_MAX;                            // set from the chosen car at race start
+let accel, breaking, decel, offDecel, offLimit;
+function applyCarPhysics(){
+  maxSpeed=BASE_MAX*(getCar(career().car).top/330);
+  accel=maxSpeed/5; breaking=-maxSpeed; decel=-maxSpeed/5; offDecel=-maxSpeed/2; offLimit=maxSpeed/4;
+}
+applyCarPhysics();
 
 const COL={
   LIGHT:{road:'#6b6b6b',grass:'#11a52b',rumble:'#ffffff',lane:'#ffffff'},
@@ -193,7 +241,7 @@ function resetRace(){
       driver:DRIVERS[i],
       offset:(i%2===0? -0.45 : 0.45),       // two grid columns
       z: (N - i) * gap,                     // P1 at the front, last car just ahead of you
-      speed: maxSpeed*(0.74 + Math.random()*0.18),
+      speed: BASE_MAX*(0.74 + Math.random()*0.18),   // absolute — independent of your car, so buying speed helps
       lap:1
     });
   }
@@ -347,7 +395,7 @@ function render(){
   if(state!=='menu'){
     const pw=Math.max(70, W*0.16);
     const tilt=(rightHeld?1:leftHeld?-1:0)*pw*0.06;
-    drawCar(W/2+tilt, H-18, pw, PLAYER_COLOR, true);
+    drawCar(W/2+tilt, H-18, pw, getCar(career().car).color, true);
   }
   if(state==='race'||state==='countdown') updateHud();
 }
@@ -358,7 +406,7 @@ function updateHud(){
     `P <b>${myPosition()}</b>/${cars.length+1}<br>Lap <b>${Math.min(lap,LAPS_TOTAL)}</b>/${LAPS_TOTAL}<br>`+
     `<span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
   document.getElementById('speedo').innerHTML =
-    `<span class="kmh">${Math.round(speed/maxSpeed*330)}</span> km/h<br>`+
+    `<span class="kmh">${Math.round(speed/maxSpeed*getCar(career().car).top)}</span> km/h<br>`+
     `<span style="color:#9fb3d8">best lap ${fastestLap?fmt(fastestLap):'--'}</span>`;
 }
 
@@ -373,8 +421,10 @@ function setLights(c){
   t.style.color = c==='green'?'#27e36a':'#fff';
 }
 function startRace(){
+  applyCarPhysics();                 // top speed comes from the car you bought
   resetRace();
   document.getElementById('scr-start').classList.add('hidden');
+  document.getElementById('scr-shop').classList.add('hidden');
   document.getElementById('scr-finish').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
@@ -391,25 +441,25 @@ function finishRace(){
   document.getElementById('lights').style.display='none';
   document.getElementById('steerhint').classList.add('hidden');
   // final standings
-  const board=[{name:playerName, dist:playerDist(), me:true, color:PLAYER_COLOR}];
+  const board=[{name:playerName, dist:playerDist(), me:true, color:getCar(career().car).color}];
   cars.forEach(c=>board.push({name:c.driver.name, dist:carDist(c), color:c.driver.c}));
   board.sort((a,b)=>b.dist-a.dist);
   const pos=board.findIndex(b=>b.me)+1;
   const pts=POINTS[pos-1]||0;
-  // save to account
-  if(acct){
-    const f=acct.f1; f.races++; f.points+=pts;
-    if(pos===1) f.wins++; if(pos<=3) f.podiums++;
-    if(pos<f.bestPos) f.bestPos=pos;
-    if(fastestLap>0 && (f.bestLapMs===0 || fastestLap<f.bestLapMs)) f.bestLapMs=fastestLap;
-    saveF1();
-  }
+  const prize=PRIZE[pos-1]||0;
+  // update career (works for guests in-session; persists when signed in)
+  const f=career();
+  f.races++; f.points+=pts; f.money+=prize;
+  if(pos===1) f.wins++; if(pos<=3) f.podiums++;
+  if(pos<f.bestPos) f.bestPos=pos;
+  if(fastestLap>0 && (f.bestLapMs===0 || fastestLap<f.bestLapMs)) f.bestLapMs=fastestLap;
+  saveF1();
   const podium = pos===1?'🏆 RACE WIN!' : pos<=3?'🏆 PODIUM!' : `P${pos} finish`;
   document.getElementById('finTitle').textContent = podium;
   document.getElementById('finTitle').style.color = pos===1?'#ffd54a':pos<=3?'#39ff88':'#fff';
   document.getElementById('finSub').innerHTML =
-    `${playerName} finished <b>P${pos}</b> of ${board.length} • <b>${pts}</b> pts • fastest lap ${fastestLap?fmt(fastestLap):'--'}`+
-    (acct?`<br><span style="font-size:13px;color:#9fb3d8">Career: ${acct.f1.wins} wins • ${acct.f1.podiums} podiums • ${acct.f1.points} pts • best finish P${acct.f1.bestPos}</span>`:'');
+    `${playerName} finished <b>P${pos}</b> of ${board.length} • <b>${pts}</b> pts • 💰 won <b>₹${prize}</b> • fastest lap ${fastestLap?fmt(fastestLap):'--'}`+
+    `<br><span style="font-size:13px;color:#9fb3d8">Balance 💰 ₹${f.money} • Career: ${f.wins} wins • ${f.podiums} podiums • ${f.points} pts • best finish P${f.bestPos}</span>`;
   let h='';
   board.forEach((b,i)=>{
     h+=`<div class="brow${b.me?' me':''}"><span class="pos">${i+1}</span>
@@ -450,19 +500,59 @@ window.addEventListener('mouseup',clearTouch);
 
 document.getElementById('raceBtn').addEventListener('click',startRace);
 document.getElementById('againBtn').addEventListener('click',startRace);
+document.getElementById('menuBtn').addEventListener('click',showStart);
 
-/* ---- start screen info ---- */
-(function initStart(){
-  buildTrack();
+/* ---- start screen + garage ---- */
+function renderStart(){
+  const f=career(), car=getCar(f.car);
   document.getElementById('startWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Guest (set a name on the home screen)';
-  if(acct && acct.f1 && acct.f1.races>0){
-    const f=acct.f1;
+  document.getElementById('wallet').innerHTML =
+    `💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${car.name}</b> (${car.top} km/h)`;
+  if(f.races>0){
     document.getElementById('startBest').innerHTML =
       `🏆 ${f.wins} wins • ${f.podiums} podiums • best finish <b>P${f.bestPos}</b> • ${f.points} career pts`;
   } else {
-    document.getElementById('startBest').textContent='No races yet — go win the cup!';
+    document.getElementById('startBest').textContent='No races yet — win prize money, then upgrade in the garage!';
   }
-})();
+}
+function showStart(){
+  document.getElementById('scr-shop').classList.add('hidden');
+  document.getElementById('scr-finish').classList.add('hidden');
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('scr-start').classList.remove('hidden');
+  state='menu';
+  renderStart();
+}
+function openShop(){
+  const f=career();
+  document.getElementById('shopWallet').textContent='💰 ₹'+f.money;
+  const list=document.getElementById('carList'); list.innerHTML='';
+  CARS.forEach(C=>{
+    const owned=f.owned.includes(C.id), selected=f.car===C.id, afford=f.money>=C.price;
+    const d=document.createElement('div'); d.className='item';
+    const actHtml = selected ? `<span class="pill">SELECTED</span>`
+                  : owned   ? `<button class="btn alt" style="padding:9px 16px;font-size:14px;margin:0">SELECT</button>`
+                  : `<button class="btn ${afford?'':'alt'}" ${afford?'':'disabled'} style="padding:9px 16px;font-size:14px;margin:0">₹${C.price}</button>`;
+    d.innerHTML=`<div class="ic">🏎️</div>
+      <div class="info"><div class="t" style="color:${C.color}">${C.name}</div>
+        <div class="d">Top speed ${C.top} km/h${C.price?'':' • starter car'}</div></div>
+      <div class="act">${actHtml}</div>`;
+    const b=d.querySelector('button');
+    if(b){
+      if(owned) b.onclick=()=>{ f.car=C.id; saveF1(); openShop(); };
+      else b.onclick=()=>{ if(f.money>=C.price){ f.money-=C.price; f.owned.push(C.id); f.car=C.id; saveF1(); openShop(); } };
+    }
+    list.appendChild(d);
+  });
+  document.getElementById('scr-start').classList.add('hidden');
+  document.getElementById('scr-finish').classList.add('hidden');
+  document.getElementById('scr-shop').classList.remove('hidden');
+}
+document.getElementById('garageBtn').addEventListener('click',openShop);
+document.getElementById('shopBack').addEventListener('click',showStart);
+
+buildTrack();
+renderStart();
 
 /* PWA: register the service worker for offline play */
 if('serviceWorker' in navigator){
