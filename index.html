@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ilan's Arcade</title>
+<title>Ilan Games</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0e1a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ilan's Arcade">
+<meta name="apple-mobile-web-app-title" content="Ilan Games">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <style>
@@ -31,11 +31,32 @@
   .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
   .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
+  /* account bar + modal */
+  #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
+    padding:8px 16px; border-radius:30px; margin-bottom:26px; font-size:15px; }
+  #acctBar b { color:#ffd54a; }
+  .mini { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; border:none; padding:7px 16px;
+    font-size:13px; font-weight:bold; border-radius:20px; cursor:pointer; }
+  .modal { position:fixed; inset:0; background:rgba(4,8,18,.86); display:flex; align-items:center;
+    justify-content:center; z-index:50; padding:20px; }
+  .modalbox { background:#0f1d36; border:1px solid #2a3c63; border-radius:18px; padding:24px;
+    max-width:420px; width:100%; text-align:center; }
+  .modalbox h2 { font-size:24px; margin-bottom:14px; color:#fff; }
+  .modalbox input { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:12px 14px;
+    border-radius:10px; font-size:18px; text-align:center; width:100%; margin-bottom:12px; }
+  .btn2 { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; border:none; padding:12px 26px;
+    font-size:16px; font-weight:bold; border-radius:26px; cursor:pointer; margin:5px; }
+  .btn2.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
+  .acctrow { display:flex; align-items:center; gap:8px; background:#16243f; padding:10px 14px;
+    border-radius:10px; margin:6px 0; }
+  .acctrow .nm { flex:1; text-align:left; color:#fff; }
+  .acctrow .nm small { color:#7e90b5; }
 </style>
 </head>
 <body>
-  <h1>ILAN'S ARCADE</h1>
+  <h1>ILAN GAMES</h1>
   <div class="sub">Games made by Ilan 🎮 — pick one and play!</div>
+  <div id="acctBar"></div>
   <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
     border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
@@ -56,8 +77,77 @@
     </a>
   </div>
   <footer>Made with ❤️ by Ilan • More games coming soon</footer>
+
+  <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
+
   <script>
     if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+
+    /* ===== shared accounts (same storage all games use) ===== */
+    const STORE_KEY='soc_store_v1';
+    function blankStats(){ return {matches:0,runs:0,balls:0,hs:0,cups:0,awards:0,tours:0}; }
+    function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){}
+      return { activeId:null, accounts:[] }; }
+    function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
+    function igId(){ return 'a'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
+    function igActive(){ return store.accounts.find(a=>a.id===store.activeId)||null; }
+    let store=igLoad();
+
+    const modal=document.getElementById('acctModal'), box=document.getElementById('acctBox'), bar=document.getElementById('acctBar');
+    function renderBar(){
+      const a=igActive();
+      bar.innerHTML = a ? `👤 Playing as <b>${a.name}</b> <button class="mini" id="switchBtn">Switch</button>`
+                        : `👤 <b>No player yet</b> <button class="mini" id="switchBtn">Set up</button>`;
+      document.getElementById('switchBtn').onclick=openAccounts;
+    }
+    function closeModal(){ modal.style.display='none'; }
+    function openEnter(canCancel){
+      modal.style.display='flex';
+      box.innerHTML = `<h2>Enter your name</h2>
+        <p class="sub" style="margin-bottom:14px">You'll open the batting in cricket, and your high scores are saved to this name.</p>
+        <input id="nmeInput" maxlength="16" placeholder="Your name">
+        <div><button class="btn2" id="nmeOk">Save</button>${canCancel?'<button class="btn2 alt" id="nmeCancel">Back</button>':''}</div>`;
+      const i=document.getElementById('nmeInput');
+      setTimeout(()=>i&&i.focus(),120);
+      i.addEventListener('keydown',e=>{ if(e.key==='Enter') createAcct(); });
+      document.getElementById('nmeOk').addEventListener('click',createAcct);
+      const c=document.getElementById('nmeCancel'); if(c) c.onclick=openAccounts;
+    }
+    function createAcct(){
+      const v=document.getElementById('nmeInput').value.trim(); if(!v){ document.getElementById('nmeInput').focus(); return; }
+      const a={ id:igId(), name:v, ipl:blankStats(), odi:blankStats(), basket:{best:0} };
+      store.accounts.push(a); store.activeId=a.id; igSave();
+      closeModal(); renderBar();
+    }
+    function openAccounts(){
+      if(!store.accounts.length){ openEnter(false); return; }
+      modal.style.display='flex';
+      let h=`<h2>Choose account</h2>`;
+      store.accounts.forEach(a=>{
+        const runs=(a.ipl?a.ipl.runs:0)+(a.odi?a.odi.runs:0), best=a.basket?a.basket.best:0;
+        h+=`<div class="acctrow">
+          <span class="nm"><b>${a.name}</b>${a.id===store.activeId?' <small>• active</small>':''}<br><small>${runs} cricket runs • 🧺 best ${best}</small></span>
+          <button class="btn2" data-play="${a.id}" style="padding:8px 16px;font-size:14px;margin:0">Play</button>
+          <button class="btn2 alt" data-del="${a.id}" style="padding:8px 12px;font-size:14px;margin:0">✕</button></div>`;
+      });
+      h+=`<div style="margin-top:12px"><button class="btn2" id="addAcct">➕ New account</button>
+           <button class="btn2 alt" id="closeAcct">Done</button></div>`;
+      box.innerHTML=h;
+      box.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>{ store.activeId=b.dataset.play; igSave(); closeModal(); renderBar(); });
+      box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(confirm('Delete this account and its stats?')) delAcct(b.dataset.del); });
+      document.getElementById('addAcct').onclick=()=>openEnter(true);
+      document.getElementById('closeAcct').onclick=()=>{ if(igActive()) closeModal(); };
+    }
+    function delAcct(id){
+      store.accounts=store.accounts.filter(a=>a.id!==id);
+      if(store.activeId===id) store.activeId = store.accounts[0]?store.accounts[0].id:null;
+      igSave();
+      if(igActive()) openAccounts(); else openEnter(false);
+      renderBar();
+    }
+    /* boot: make sure there's an active player */
+    renderBar();
+    if(!igActive()) openEnter(false);
 
     /* prominent install flow */
     const installBtn=document.getElementById('installBtn');

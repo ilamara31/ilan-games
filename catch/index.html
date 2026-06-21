@@ -125,11 +125,15 @@
     <div>
       <div id="score">Score: 0</div>
       <div id="best">🏆 Best: 0</div>
+      <div id="who" style="font-size:13px;font-weight:700;color:#1b3a4b;opacity:.85"></div>
     </div>
     <div id="level">Level: 1</div>
     <div id="lives">❤️❤️❤️</div>
   </div>
   <button id="muteBtn" title="Toggle music">🔊</button>
+  <a id="homeBtn" href="../" title="Back to games" style="position:absolute;bottom:14px;left:14px;font-size:22px;
+     width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;
+     justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.2)">🏠</a>
   <div id="banner" class="hidden">🌧️ FRUIT SHOWER! 🍎<br><span id="bannerTime">10</span>s — no bombs, catch them all!</div>
   <div id="overlay">
     <h1>🧺 Basket Catch</h1>
@@ -182,7 +186,25 @@ const BOMB_GAP = 520;           // ms between bombs (escapable spacing)
 const BOMB_FALL = 3.0;          // fixed, gentle bomb fall speed during bomb shower
 const GOLDEN_STEP = 200;        // golden apple roughly every 200 points (+50 pts)
 const GOLDEN_VALUE = 50;        // points for catching the golden apple
-let highScore = +(localStorage.getItem('basketCatchHigh') || 0);
+/* ---- shared account: the whole app uses the same store, so the high score is per player ---- */
+const STORE_KEY = 'soc_store_v1';
+function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
+function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
+const acctStore = igLoad();
+const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
+const legacyHigh = +(localStorage.getItem('basketCatchHigh') || 0);
+let highScore;
+if (acct) {
+  if (!acct.basket) acct.basket = {best:0};
+  if (legacyHigh > acct.basket.best) { acct.basket.best = legacyHigh; igSave(); }   // bring across old global best once
+  highScore = acct.basket.best;
+} else {
+  highScore = legacyHigh;
+}
+function saveHigh(){
+  if (acct) { acct.basket.best = highScore; igSave(); }
+  else { try{ localStorage.setItem('basketCatchHigh', highScore); }catch(e){} }
+}
 
 // ============================================================
 //  AUDIO ENGINE  (all synthesized — no external files needed)
@@ -421,7 +443,7 @@ function gameOver(byBomb) {
   const isNewHigh = score > highScore;
   if (isNewHigh) {
     highScore = score;
-    localStorage.setItem('basketCatchHigh', highScore);
+    saveHigh();
   }
 
   overlay.classList.remove('hidden');
@@ -618,12 +640,17 @@ muteBtn.addEventListener('click', () => {
   muteBtn.textContent = on ? '🔊' : '🔇';
 });
 
+// who is playing (from the shared account)
+const whoEl = document.getElementById('who');
+if (whoEl) whoEl.textContent = acct ? '👤 ' + acct.name : '👤 Guest';
+
 // show the saved high score on the opening screen
 const startBest = document.getElementById('startBest');
 if (startBest) {
-  startBest.innerHTML = highScore > 0
-    ? `🏆 Highest score ever: <b>${highScore}</b> — beat it!`
-    : `🏆 No high score yet — set one!`;
+  const whoLine = acct ? `Playing as <b>${acct.name}</b><br>` : '';
+  startBest.innerHTML = whoLine + (highScore > 0
+    ? `🏆 Your best: <b>${highScore}</b> — beat it!`
+    : `🏆 No high score yet — set one!`);
 }
 bestEl.textContent = '🏆 Best: ' + highScore;
 
