@@ -657,7 +657,11 @@ bestEl.textContent = '🏆 Best: ' + highScore;
 resize();
 
 /* PWA: register the service worker for offline play */
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }); }
+if('serviceWorker' in navigator){
+  let _ref=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_ref) return; _ref=true; location.reload(); });
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>

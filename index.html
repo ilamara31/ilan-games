@@ -87,7 +87,11 @@
   <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
 
   <script>
-    if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+    if('serviceWorker' in navigator){
+      let _ref=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_ref) return; _ref=true; location.reload(); });
+      window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+    }
 
     /* ===== shared accounts (same storage all games use) ===== */
     const STORE_KEY='soc_store_v1';

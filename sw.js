@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v4';
+const CACHE = 'ilan-arcade-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -33,10 +33,26 @@ self.addEventListener('activate', e => {
   })());
 });
 
-// cache-first, fall back to network and cache the result; offline page falls back to cache
+// HTML pages: NETWORK-FIRST so updates appear immediately when online (fall back to cache offline).
+// Other assets (icons, manifest): cache-first for speed/offline.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const accept = req.headers.get('accept') || '';
+  const isHTML = req.mode === 'navigate' || accept.includes('text/html');
+  if (isHTML) {
+    e.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        const cache = await caches.open(CACHE);
+        cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        return (await caches.match(req)) || (await caches.match('./index.html'));
+      }
+    })());
+    return;
+  }
   e.respondWith((async () => {
     const cached = await caches.match(req);
     if (cached) return cached;
@@ -48,7 +64,6 @@ self.addEventListener('fetch', e => {
       }
       return res;
     } catch (err) {
-      // last resort for navigations when offline
       if (req.mode === 'navigate') return caches.match('./index.html');
       throw err;
     }
