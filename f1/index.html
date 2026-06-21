@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>Indian Grand Prix — F1 Racer</title>
+<title>Grand Prix World Tour — F1 Racer</title>
 <link rel="manifest" href="../manifest.webmanifest" />
 <meta name="theme-color" content="#0a0e1a" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -25,19 +25,33 @@
   #speedo { text-align:right; }
   #speedo .kmh { font-size:26px; font-weight:900; color:#39ff88; }
   .screen { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; text-align:center; padding:22px; background:radial-gradient(circle at 50% 30%, #18305a, #0a0e1a 75%); overflow-y:auto; }
+    justify-content:flex-start; text-align:center; padding:20px 18px 30px; overflow-y:auto;
+    background:radial-gradient(circle at 50% 22%, #18305a, #0a0e1a 78%); }
   .hidden { display:none !important; }
-  h1 { font-size:clamp(30px,8vw,56px); letter-spacing:1px; margin-bottom:6px;
+  h1 { font-size:clamp(26px,7vw,48px); letter-spacing:1px; margin:6px 0;
     background:linear-gradient(90deg,#ff9933,#ffffff 50%,#138808); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .sub { color:#9fb3d8; margin-bottom:18px; font-size:clamp(13px,3vw,16px); max-width:460px; }
-  .btn { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; border:none; padding:14px 34px; font-size:18px;
-    font-weight:bold; border-radius:30px; cursor:pointer; margin:6px; box-shadow:0 6px 18px rgba(255,160,50,.35); text-decoration:none; display:inline-block; }
+  .sub { color:#9fb3d8; margin-bottom:10px; font-size:clamp(13px,3vw,16px); max-width:540px; }
+  .btn { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; border:none; padding:13px 30px; font-size:17px;
+    font-weight:bold; border-radius:28px; cursor:pointer; margin:6px; box-shadow:0 6px 18px rgba(255,160,50,.35); text-decoration:none; display:inline-block; }
   .btn.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
-  .row { display:flex; flex-wrap:wrap; justify-content:center; }
-  #lights { position:absolute; top:16%; left:50%; transform:translateX(-50%); z-index:8; display:none;
+  .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  #wallet { background:rgba(8,14,28,.6); border:1px solid #2a3c63; border-radius:14px; padding:10px 16px; margin:4px 0 14px;
+    font-size:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+  #wallet b { color:#ffd54a; }
+  .list { max-width:560px; width:100%; display:flex; flex-direction:column; gap:10px; }
+  .item { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:12px 14px; text-align:left; }
+  .item.locked { opacity:.55; }
+  .item .ic { font-size:30px; width:42px; text-align:center; }
+  .item .info { flex:1; }
+  .item .info .t { font-weight:bold; font-size:17px; }
+  .item .info .d { color:#9fb3d8; font-size:13px; margin-top:2px; }
+  .item .act { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .pill { font-size:12px; color:#04220f; background:#39ff88; border-radius:20px; padding:3px 10px; font-weight:bold; }
+  .pill.lock { background:#3a4566; color:#cdd9f0; }
+  #lights { position:absolute; top:15%; left:50%; transform:translateX(-50%); z-index:8; display:none;
     flex-direction:column; align-items:center; gap:12px; pointer-events:none; }
-  #lights .lamps { display:flex; gap:16px; background:#0c0c0c; padding:16px 20px; border-radius:16px;
-    box-shadow:0 10px 34px rgba(0,0,0,.6); border:2px solid #222; }
+  #lights .lamps { display:flex; gap:16px; background:#0c0c0c; padding:16px 20px; border-radius:16px; border:2px solid #222; box-shadow:0 10px 34px rgba(0,0,0,.6); }
   #lights .lamp { width:clamp(34px,9vw,52px); height:clamp(34px,9vw,52px); border-radius:50%; background:#2a2a2a; opacity:.4; transition:opacity .1s; }
   #lights .lamp.on { opacity:1; }
   #lampR.on { background:#ff2b2b; box-shadow:0 0 26px #ff2b2b; }
@@ -45,28 +59,22 @@
   #lampG.on { background:#27e36a; box-shadow:0 0 26px #27e36a; }
   #lightsTxt { font-size:clamp(22px,6vw,34px); font-weight:900; text-shadow:0 3px 14px rgba(0,0,0,.6); }
   #homeBtn { position:absolute; bottom:14px; left:14px; z-index:6; font-size:22px; width:46px; height:46px; border-radius:50%;
-    background:rgba(255,255,255,.75); color:#111; display:flex; align-items:center; justify-content:center; text-decoration:none;
-    box-shadow:0 2px 6px rgba(0,0,0,.3); }
+    background:rgba(255,255,255,.75); color:#111; display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   .steerhint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:6; color:#9fb3d8; font-size:12px;
     background:rgba(8,14,28,.6); padding:6px 14px; border-radius:20px; pointer-events:none; }
-  .board { max-width:460px; width:100%; text-align:left; }
+  .board { max-width:480px; width:100%; text-align:left; }
   .brow { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; border-radius:8px; margin:3px 0; background:#16243f; font-size:15px; }
   .brow.me { background:rgba(255,213,74,.18); }
-  .brow .pos { width:26px; color:#ffd54a; font-weight:bold; }
+  .brow .pos { width:30px; color:#ffd54a; font-weight:bold; }
   .brow .nm { flex:1; }
-  .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
-  .btn:disabled { opacity:.45; cursor:not-allowed; }
-  #wallet { background:rgba(8,14,28,.6); border:1px solid #2a3c63; border-radius:14px; padding:10px 16px; margin:0 0 16px;
-    font-size:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
-  #wallet b { color:#ffd54a; }
-  .list { max-width:520px; width:100%; display:flex; flex-direction:column; gap:10px; }
-  .item { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:12px 14px; text-align:left; }
-  .item .ic { font-size:30px; width:40px; text-align:center; }
-  .item .info { flex:1; }
-  .item .info .t { font-weight:bold; font-size:17px; }
-  .item .info .d { color:#9fb3d8; font-size:13px; margin-top:2px; }
-  .item .act { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
-  .pill { font-size:12px; color:#04220f; background:#39ff88; border-radius:20px; padding:3px 10px; font-weight:bold; }
+  /* results ledger */
+  #ledger { max-width:420px; width:100%; background:rgba(8,14,28,.6); border:1px solid #2a3c63; border-radius:16px;
+    padding:14px 16px; margin:6px 0 12px; }
+  #ledger .lrow { display:flex; justify-content:space-between; font-size:16px; padding:4px 0; }
+  #ledger .lrow b { font-weight:bold; }
+  #ledger .net { font-size:20px; font-weight:900; border-top:1px dashed #2a3c63; margin-top:6px; padding-top:8px; }
+  #ledger .bal { color:#ffd54a; }
+  #unlockMsg { font-size:17px; font-weight:bold; color:#39ff88; margin:4px 0 8px; }
 </style>
 </head>
 <body>
@@ -84,38 +92,39 @@
   <div class="steerhint hidden" id="steerhint">Hold LEFT / RIGHT side to steer • brake = ↓ / bottom</div>
   <a id="homeBtn" href="../" title="Back to games">🏠</a>
 
-  <!-- START -->
-  <div id="scr-start" class="screen">
-    <h1>🏁 INDIAN GRAND PRIX</h1>
-    <div class="sub">F1-style race at the Buddh circuit. Beat the grid over <b>3 laps</b> — climb from the back to the podium!</div>
-    <div class="sub" id="startWho" style="color:#ffd54a;margin-top:-6px"></div>
+  <!-- MENU / WORLD TOUR -->
+  <div id="scr-menu" class="screen">
+    <h1>🏁 GRAND PRIX WORLD TOUR</h1>
+    <div class="sub">Pay the entry fee, beat the grid, win prize money — then buy faster cars and unlock new countries.</div>
+    <div class="sub" id="menuWho" style="color:#ffd54a;margin-top:-6px"></div>
     <div id="wallet"></div>
-    <div class="sub" id="startBest"></div>
-    <button class="btn" id="raceBtn">START RACE</button>
-    <button class="btn green" id="garageBtn">🛒 GARAGE</button>
+    <div id="locList" class="list"></div>
+    <button class="btn green" id="garageBtn" style="margin-top:12px">🛒 GARAGE</button>
     <a class="btn alt" href="../">🏠 ALL GAMES</a>
-    <div class="sub" style="margin-top:16px;font-size:12px">
+    <div class="sub" style="margin-top:14px;font-size:12px">
       Steer: <b>← →</b> / A D, or hold the left/right side of the screen.<br>You auto-accelerate; brake with <b>↓</b> or the bottom of the screen.
     </div>
   </div>
 
   <!-- GARAGE / SHOP -->
-  <div id="scr-shop" class="screen hidden" style="justify-content:flex-start;padding-top:20px">
+  <div id="scr-shop" class="screen hidden">
     <h1>🛒 GARAGE</h1>
-    <div class="sub">Win prize money, then buy a faster car — a higher top speed makes overtaking the grid much easier.</div>
+    <div class="sub">Buy a faster car — a higher top speed makes overtaking the grid much easier.</div>
     <div id="shopWallet" class="sub" style="color:#ffd54a;font-weight:bold"></div>
     <div id="carList" class="list"></div>
     <button class="btn alt" id="shopBack" style="margin-top:14px">⬅ BACK</button>
   </div>
 
   <!-- FINISH -->
-  <div id="scr-finish" class="screen hidden" style="justify-content:flex-start;padding-top:20px">
+  <div id="scr-finish" class="screen hidden">
     <h1 id="finTitle">FINISH</h1>
     <div class="sub" id="finSub"></div>
+    <div id="ledger"></div>
+    <div id="unlockMsg" class="hidden"></div>
     <div id="finBoard" class="board"></div>
-    <div class="row" style="margin-top:10px">
+    <div class="row" style="margin-top:12px">
       <button class="btn" id="againBtn">RACE AGAIN</button>
-      <button class="btn green" id="menuBtn">🛒 MENU / GARAGE</button>
+      <button class="btn green" id="menuBtn">🌍 WORLD TOUR</button>
       <a class="btn alt" href="../">🏠 ALL GAMES</a>
     </div>
   </div>
@@ -123,13 +132,12 @@
 
 <script>
 /* ============================================================
-   INDIAN GRAND PRIX — pseudo-3D F1 racer (single file)
+   GRAND PRIX WORLD TOUR — pseudo-3D F1 racer (single file)
    ============================================================ */
-const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
-let W=0, H=0;
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+let W=0,H=0;
 function resize(){ W=cv.width=Math.min(window.innerWidth,1000); H=cv.height=window.innerHeight; }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize',resize); resize();
 
 /* ---- shared account (same store the whole app uses) ---- */
 const STORE_KEY='soc_store_v1';
@@ -138,10 +146,14 @@ function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore
 const acctStore=igLoad();
 const acct=acctStore.accounts.find(a=>a.id===acctStore.activeId)||null;
 if(acct && !acct.f1) acct.f1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0};
-// economy fields (migrate older accounts that have f1 stats but no garage yet)
-if(acct && acct.f1 && acct.f1.money===undefined){ acct.f1.money=300; acct.f1.owned=['kart']; acct.f1.car='kart'; igSave(); }
-// guests (no account) get an in-session career so the garage still works
-const guestF1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0,money:300,owned:['kart'],car:'kart'};
+// economy + progression fields (migrate older accounts)
+if(acct && acct.f1){
+  const f=acct.f1;
+  if(f.money===undefined){ f.money=300; f.owned=['kart']; f.car='kart'; }
+  if(f.unlocked===undefined){ f.unlocked=1; }   // India unlocked to start
+  igSave();
+}
+const guestF1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0,money:300,owned:['kart'],car:'kart',unlocked:1};
 function career(){ return acct ? acct.f1 : guestF1; }
 const playerName = acct ? acct.name : 'You';
 function saveF1(){ if(acct){ igSave(); } }
@@ -155,20 +167,47 @@ const CARS=[
   {id:'apex',  name:'Apex Pro',     top:470, price:3500, color:'#b14bff'},
 ];
 function getCar(id){ return CARS.find(c=>c.id===id)||CARS[0]; }
-// prize money by finishing position (P1 first)
-const PRIZE=[500,350,250,170,120,90,60,40];
 
-/* ---- drivers (player races against these) ---- */
-const DRIVERS=[
-  {name:'Verstappen', c:'#1736a8'},
-  {name:'Norris',     c:'#ff8000'},
-  {name:'Leclerc',    c:'#e8002d'},
-  {name:'Piastri',    c:'#ff8000'},
-  {name:'Hamilton',   c:'#27f4d2'},
-  {name:'Russell',    c:'#27f4d2'},
-  {name:'Alonso',     c:'#229971'},
+/* ---- circuits (levels): unlock in order, harder + faster each step ---- */
+const LOCS=[
+  {id:'india',     name:'India',     flag:'🇮🇳', fee:100,  win:200,  opp:310, grid:8,  track:'india',
+    theme:{sky:['#2f6fb8','#cfe6ff'], gA:'#11a52b', gB:'#0c9325', hill:'#5aa05a'}},
+  {id:'dubai',     name:'Dubai',     flag:'🇦🇪', fee:200,  win:450,  opp:330, grid:10, track:'dubai',
+    theme:{sky:['#ffb35c','#ffe6c2'], gA:'#d9b36b', gB:'#c79e57', hill:'#caa45e'}},
+  {id:'england',   name:'England',   flag:'🇬🇧', fee:300,  win:650,  opp:345, grid:12, track:'england',
+    theme:{sky:['#5b6b80','#c3ccd6'], gA:'#2e7d4f', gB:'#256b42', hill:'#4f7a5a'}},
+  {id:'japan',     name:'Japan',     flag:'🇯🇵', fee:400,  win:900,  opp:360, grid:13, track:'japan',
+    theme:{sky:['#6a8fc0','#dde9ff'], gA:'#1f9a4a', gB:'#178040', hill:'#5a9a6a'}},
+  {id:'italy',     name:'Italy',     flag:'🇮🇹', fee:550,  win:1200, opp:375, grid:14, track:'italy',
+    theme:{sky:['#3a7fce','#dbeeff'], gA:'#3a9d3a', gB:'#2f8a2f', hill:'#6aa05a'}},
+  {id:'brazil',    name:'Brazil',    flag:'🇧🇷', fee:700,  win:1500, opp:390, grid:16, track:'brazil',
+    theme:{sky:['#2f9b8f','#d8f5ef'], gA:'#16a52b', gB:'#0c9325', hill:'#3aa07a'}},
+  {id:'usa',       name:'USA',       flag:'🇺🇸', fee:900,  win:2000, opp:405, grid:17, track:'usa',
+    theme:{sky:['#3a4f9b','#cdd6ff'], gA:'#1f8a3b', gB:'#188031', hill:'#4f8a5a'}},
+  {id:'singapore', name:'Singapore', flag:'🇸🇬', fee:1100, win:2500, opp:425, grid:18, track:'singapore',
+    theme:{sky:['#0c1430','#23314f'], gA:'#1a2236', gB:'#141b2c', hill:'#22304a'}},
+  {id:'australia', name:'Australia', flag:'🇦🇺', fee:1300, win:3200, opp:445, grid:20, track:'australia',
+    theme:{sky:['#9fc0e8','#eef6ff'], gA:'#3aa53b', gB:'#2f9230', hill:'#6ab06a'}},
+  {id:'monaco',    name:'Monaco',    flag:'🇲🇨', fee:1500, win:4000, opp:460, grid:22, track:'monaco',
+    theme:{sky:['#3a6fb0','#cfe6ff'], gA:'#2f7d8a', gB:'#256b76', hill:'#4f7a8a'}},
 ];
-const PLAYER_COLOR='#e10600';
+LOCS.forEach((L,i)=>L.idx=i);
+
+/* ---- drivers pool (different names appear per level) ---- */
+const DRIVERS=[
+  {name:'Verstappen',c:'#1736a8'},{name:'Perez',c:'#1736a8'},
+  {name:'Norris',c:'#ff8000'},    {name:'Piastri',c:'#ff8000'},
+  {name:'Leclerc',c:'#e8002d'},   {name:'Sainz',c:'#e8002d'},
+  {name:'Hamilton',c:'#27f4d2'},  {name:'Russell',c:'#27f4d2'},
+  {name:'Alonso',c:'#229971'},    {name:'Stroll',c:'#229971'},
+  {name:'Gasly',c:'#0090ff'},     {name:'Ocon',c:'#0090ff'},
+  {name:'Albon',c:'#005aff'},     {name:'Sargeant',c:'#3a82ff'},
+  {name:'Tsunoda',c:'#2b4562'},   {name:'Ricciardo',c:'#637a9e'},
+  {name:'Hulkenberg',c:'#b6babd'},{name:'Magnussen',c:'#9aa0a6'},
+  {name:'Bottas',c:'#52e252'},    {name:'Zhou',c:'#37b337'},
+  {name:'Lawson',c:'#6692ff'},    {name:'Bearman',c:'#ff6b6b'},
+  {name:'Colapinto',c:'#7a5cff'}, {name:'Doohan',c:'#ffb84d'},
+];
 const POINTS=[25,18,15,12,10,8,6,4,2,1];
 const LAPS_TOTAL=3;
 
@@ -178,18 +217,35 @@ const cameraHeight=1500, fov=100, drawDistance=180, centrifugal=0.3;
 const cameraDepth=1/Math.tan((fov/2)*Math.PI/180);
 const playerZ=cameraHeight*cameraDepth;
 const BASE_MAX=segmentLength*60;                 // ~330 km/h reference (Starter Kart)
-let maxSpeed=BASE_MAX;                            // set from the chosen car at race start
-let accel, breaking, decel, offDecel, offLimit;
+const UNIT=BASE_MAX/330;                          // engine speed units per km/h
+let maxSpeed=BASE_MAX;                            // player top speed, set from chosen car
+let accel, breaking, offDecel, offLimit;
 function applyCarPhysics(){
   maxSpeed=BASE_MAX*(getCar(career().car).top/330);
-  accel=maxSpeed/5; breaking=-maxSpeed; decel=-maxSpeed/5; offDecel=-maxSpeed/2; offLimit=maxSpeed/4;
+  accel=maxSpeed/5; breaking=-maxSpeed; offDecel=-maxSpeed/2; offLimit=maxSpeed/4;
 }
 applyCarPhysics();
 
 const COL={
-  LIGHT:{road:'#6b6b6b',grass:'#11a52b',rumble:'#ffffff',lane:'#ffffff'},
-  DARK :{road:'#666666',grass:'#0c9325',rumble:'#c8453b',lane:null},
-  START:{road:'#dddddd',grass:'#11a52b',rumble:'#dddddd',lane:null},
+  LIGHT:{road:'#6b6b6b',rumble:'#ffffff',lane:'#ffffff'},
+  DARK :{road:'#666666',rumble:'#c8453b',lane:null},
+  START:{road:'#dddddd',rumble:'#dddddd',lane:null},
+};
+let theme=LOCS[0].theme, curLoc=LOCS[0];
+
+/* ---- track templates (distinct shape per country) ---- */
+const LEN={s:25,m:50,l:100}, CRV={e:2,m:4,h:5,x:7};
+const TRACKS={
+  india:    [[LEN.s,LEN.s,LEN.s,0],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.m,LEN.m,LEN.m,-CRV.e],[LEN.l,LEN.m,LEN.l,-CRV.h],[LEN.m,LEN.m,LEN.m,CRV.e],[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,CRV.h],[LEN.m,LEN.m,LEN.m,-CRV.m],[LEN.s,LEN.s,LEN.s,0]],
+  dubai:    [[LEN.m,LEN.l,LEN.m,CRV.m],[LEN.m,LEN.m,LEN.m,-CRV.m],[LEN.l,LEN.l,LEN.l,CRV.h],[LEN.m,LEN.l,LEN.m,-CRV.h],[LEN.m,LEN.m,LEN.m,CRV.e],[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.s,LEN.s,LEN.s,0]],
+  england:  [[LEN.s,LEN.s,LEN.s,0],[LEN.m,LEN.m,LEN.m,CRV.x],[LEN.m,LEN.l,LEN.m,-CRV.x],[LEN.s,LEN.m,LEN.s,CRV.h],[LEN.m,LEN.m,LEN.m,-CRV.h],[LEN.m,LEN.l,LEN.m,CRV.x],[LEN.s,LEN.s,LEN.s,0],[LEN.m,LEN.m,LEN.m,-CRV.m],[LEN.s,LEN.s,LEN.s,0]],
+  japan:    [[LEN.s,LEN.s,LEN.s,CRV.m],[LEN.s,LEN.s,LEN.s,-CRV.m],[LEN.s,LEN.m,LEN.s,CRV.h],[LEN.s,LEN.s,LEN.s,-CRV.h],[LEN.s,LEN.s,LEN.s,CRV.x],[LEN.s,LEN.s,LEN.s,-CRV.e],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.s,LEN.s,LEN.s,-CRV.h],[LEN.s,LEN.s,LEN.s,0]],
+  italy:    [[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,CRV.e],[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,-CRV.e],[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.l,LEN.l,LEN.l,0]],
+  brazil:   [[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.s,LEN.s,LEN.s,-CRV.h],[LEN.m,LEN.m,LEN.m,CRV.x],[LEN.l,LEN.m,LEN.l,-CRV.m],[LEN.m,LEN.m,LEN.m,CRV.e],[LEN.s,LEN.s,LEN.s,-CRV.x],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.s,LEN.s,LEN.s,0]],
+  usa:      [[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,-CRV.m],[LEN.l,LEN.m,LEN.l,CRV.h],[LEN.m,LEN.m,LEN.m,-CRV.e],[LEN.l,LEN.l,LEN.l,0],[LEN.m,LEN.m,LEN.m,CRV.m],[LEN.l,LEN.m,LEN.l,-CRV.h],[LEN.m,LEN.m,LEN.m,0]],
+  singapore:[[LEN.s,LEN.s,LEN.s,CRV.h],[LEN.s,LEN.s,LEN.s,-CRV.h],[LEN.s,LEN.m,LEN.s,CRV.x],[LEN.s,LEN.s,LEN.s,-CRV.x],[LEN.s,LEN.s,LEN.s,CRV.m],[LEN.s,LEN.s,LEN.s,-CRV.m],[LEN.s,LEN.m,LEN.s,CRV.h],[LEN.s,LEN.s,LEN.s,-CRV.x],[LEN.s,LEN.s,LEN.s,0]],
+  australia:[[LEN.m,LEN.l,LEN.m,CRV.m],[LEN.m,LEN.l,LEN.m,-CRV.m],[LEN.l,LEN.l,LEN.l,CRV.e],[LEN.m,LEN.m,LEN.m,-CRV.h],[LEN.l,LEN.l,LEN.l,CRV.m],[LEN.m,LEN.m,LEN.m,-CRV.e],[LEN.m,LEN.m,LEN.m,0]],
+  monaco:   [[LEN.s,LEN.s,LEN.s,CRV.x],[LEN.s,LEN.s,LEN.s,-CRV.x],[LEN.s,LEN.s,LEN.s,CRV.h],[LEN.s,LEN.m,LEN.s,-CRV.x],[LEN.s,LEN.s,LEN.s,CRV.x],[LEN.s,LEN.s,LEN.s,-CRV.h],[LEN.s,LEN.m,LEN.s,CRV.x],[LEN.s,LEN.s,LEN.s,-CRV.x],[LEN.s,LEN.s,LEN.s,CRV.m],[LEN.s,LEN.s,LEN.s,0]],
 };
 
 let segments=[], trackLength=0;
@@ -201,158 +257,112 @@ function addSeg(curve){
     p2:{world:{z:(n+1)*segmentLength}, camera:{}, screen:{}},
     color: Math.floor(n/rumbleLength)%2 ? COL.DARK : COL.LIGHT, frame:-1 });
 }
-function easeIn(a,b,p){ return a+(b-a)*Math.pow(p,2); }
+function easeIn(a,b,p){ return a+(b-a)*p*p; }
 function easeInOut(a,b,p){ return a+(b-a)*((-Math.cos(p*Math.PI)/2)+0.5); }
-function addRoad(enter,hold,leave,curve){
-  for(let i=0;i<enter;i++) addSeg(easeIn(0,curve,i/enter));
-  for(let i=0;i<hold;i++)  addSeg(curve);
-  for(let i=0;i<leave;i++) addSeg(easeInOut(curve,0,i/leave));
-}
-const LEN={short:25,med:50,long:100}, CRV={easy:2,med:4,hard:5};
-function buildTrack(){
+function addRoad(en,ho,le,cu){ for(let i=0;i<en;i++)addSeg(easeIn(0,cu,i/en)); for(let i=0;i<ho;i++)addSeg(cu); for(let i=0;i<le;i++)addSeg(easeInOut(cu,0,i/le)); }
+function buildTrack(key){
   segments=[];
-  addRoad(LEN.short,LEN.short,LEN.short,0);
-  addRoad(LEN.med,LEN.med,LEN.med,CRV.med);
-  addRoad(LEN.med,LEN.med,LEN.med,-CRV.easy);
-  addRoad(LEN.long,LEN.med,LEN.long,-CRV.hard);
-  addRoad(LEN.med,LEN.med,LEN.med,CRV.easy);
-  addRoad(LEN.long,LEN.long,LEN.long,0);
-  addRoad(LEN.med,LEN.med,LEN.med,CRV.hard);
-  addRoad(LEN.med,LEN.med,LEN.med,-CRV.med);
-  addRoad(LEN.short,LEN.short,LEN.short,0);
-  // start/finish band
-  for(let i=0;i<rumbleLength;i++) segments[i].color=COL.START;
+  (TRACKS[key]||TRACKS.india).forEach(s=>addRoad(s[0],s[1],s[2],s[3]));
+  for(let i=0;i<rumbleLength;i++) segments[i].color=COL.START;     // start/finish band
   trackLength=segments.length*segmentLength;
 }
 
 /* ---- race state ---- */
 let cars=[], position=0, playerX=0, speed=0, lap=1, raceTime=0, lapStart=0, fastestLap=0;
-let state='menu';   // menu | countdown | race | finish
-let frame=0;
-let leftHeld=false, rightHeld=false, brakeHeld=false;
+let state='menu', frame=0, leftHeld=false, rightHeld=false, brakeHeld=false;
 
 function resetRace(){
-  buildTrack();
+  buildTrack(curLoc.track);
   position=0; playerX=0; speed=0; lap=1; raceTime=0; lapStart=0; fastestLap=0; frame=0;
   cars=[];
-  const N=DRIVERS.length, gap=segmentLength*1.1;
-  for(let i=0;i<N;i++){
-    cars.push({
-      driver:DRIVERS[i],
-      offset:(i%2===0? -0.45 : 0.45),       // two grid columns
-      z: (N - i) * gap,                     // P1 at the front, last car just ahead of you
-      speed: BASE_MAX*(0.74 + Math.random()*0.18),   // absolute — independent of your car, so buying speed helps
-      lap:1
-    });
+  const G=curLoc.grid, gap=segmentLength*1.1;
+  for(let i=0;i<G;i++){
+    const d=DRIVERS[(curLoc.idx*2 + i)%DRIVERS.length];
+    const kmh=curLoc.opp*(0.95 + Math.random()*0.12);     // fixed per-country pace (independent of your car)
+    cars.push({ driver:d, offset:(i%2===0?-0.45:0.45), z:(G-i)*gap, speed:UNIT*kmh, lap:1 });
   }
 }
 function carDist(c){ return (c.lap-1)*trackLength + c.z; }
 function playerDist(){ return (lap-1)*trackLength + position; }
-function myPosition(){
-  const d=playerDist(); let p=1;
-  for(const c of cars) if(carDist(c)>d) p++;
-  return p;
-}
+function myPosition(){ const d=playerDist(); let p=1; for(const c of cars) if(carDist(c)>d) p++; return p; }
 
-/* ---- projection ---- */
-function project(p, camX, camZ){
-  p.camera.x=(p.world.x||0)-camX;
-  p.camera.y=(p.world.y||0)-cameraHeight;
-  p.camera.z=(p.world.z||0)-camZ;
+/* ---- projection / drawing ---- */
+function project(p,camX,camZ){
+  p.camera.x=(p.world.x||0)-camX; p.camera.y=(p.world.y||0)-cameraHeight; p.camera.z=(p.world.z||0)-camZ;
   p.screen.scale=cameraDepth/p.camera.z;
   p.screen.x=Math.round((W/2)+(p.screen.scale*p.camera.x*W/2));
   p.screen.y=Math.round((H/2)-(p.screen.scale*p.camera.y*H/2));
   p.screen.w=Math.round(p.screen.scale*roadWidth*W/2);
 }
-function poly(x1,y1,x2,y2,x3,y3,x4,y4,col){
-  ctx.fillStyle=col; ctx.beginPath();
-  ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.lineTo(x4,y4);
-  ctx.closePath(); ctx.fill();
-}
+function poly(x1,y1,x2,y2,x3,y3,x4,y4,col){ ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.lineTo(x4,y4); ctx.closePath(); ctx.fill(); }
+function hexA(hex,a){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join('');
+  return 'rgba('+parseInt(c.slice(0,2),16)+','+parseInt(c.slice(2,4),16)+','+parseInt(c.slice(4,6),16)+','+a.toFixed(3)+')'; }
+function shade(hex,f){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join('');
+  const r=Math.min(255,Math.round(parseInt(c.slice(0,2),16)*f)), g=Math.min(255,Math.round(parseInt(c.slice(2,4),16)*f)), b=Math.min(255,Math.round(parseInt(c.slice(4,6),16)*f));
+  return 'rgb('+r+','+g+','+b+')'; }
+function rr(x,y,w,h,r){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h); ctx.fill(); }
 function renderSegment(x1,y1,w1,x2,y2,w2,c,fog){
-  ctx.fillStyle=c.grass; ctx.fillRect(0,y2,W,y1-y2);
-  const r1=w1/4, r2=w2/4;
-  poly(x1-w1-r1,y1, x1-w1,y1, x2-w2,y2, x2-w2-r2,y2, c.rumble);
-  poly(x1+w1+r1,y1, x1+w1,y1, x2+w2,y2, x2+w2+r2,y2, c.rumble);
-  poly(x1-w1,y1, x1+w1,y1, x2+w2,y2, x2-w2,y2, c.road);
-  if(c.lane){
-    const l1=w1/24, l2=w2/24;
-    poly(x1-l1,y1, x1+l1,y1, x2+l2,y2, x2-l2,y2, c.lane);
-  }
-  if(fog<1){ ctx.fillStyle='rgba(196,224,255,'+(1-fog).toFixed(3)+')'; ctx.fillRect(0,y2,W,y1-y2); }
+  ctx.fillStyle=(c===COL.DARK?theme.gB:theme.gA); ctx.fillRect(0,y2,W,y1-y2);
+  const r1=w1/4,r2=w2/4;
+  poly(x1-w1-r1,y1,x1-w1,y1,x2-w2,y2,x2-w2-r2,y2,c.rumble);
+  poly(x1+w1+r1,y1,x1+w1,y1,x2+w2,y2,x2+w2+r2,y2,c.rumble);
+  poly(x1-w1,y1,x1+w1,y1,x2+w2,y2,x2-w2,y2,c.road);
+  if(c.lane){ const l1=w1/24,l2=w2/24; poly(x1-l1,y1,x1+l1,y1,x2+l2,y2,x2-l2,y2,c.lane); }
+  if(fog<1){ ctx.fillStyle=hexA(theme.sky[1],(1-fog)); ctx.fillRect(0,y2,W,y1-y2); }
 }
-
-/* ---- car drawing (behind view) ---- */
-function drawCar(cx, bottomY, w, color, isPlayer){
-  const h=w*0.55, top=bottomY-h;
-  ctx.fillStyle='#111'; ctx.fillRect(cx-w*0.5, top, w, h*0.16);          // rear wing
-  ctx.fillStyle='#111';                                                  // rear tyres
-  ctx.fillRect(cx-w*0.5, bottomY-h*0.30, w*0.20, h*0.30);
-  ctx.fillRect(cx+w*0.30, bottomY-h*0.30, w*0.20, h*0.30);
-  ctx.fillStyle=color;                                                   // body
-  ctx.beginPath();
-  ctx.moveTo(cx-w*0.18, top+h*0.16); ctx.lineTo(cx+w*0.18, top+h*0.16);
-  ctx.lineTo(cx+w*0.30, bottomY-h*0.16); ctx.lineTo(cx-w*0.30, bottomY-h*0.16);
+function drawCar(cx,bottomY,w,color,isPlayer){
+  const h=w*0.62, top=bottomY-h;
+  ctx.fillStyle='rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(cx,bottomY+w*0.02,w*0.54,h*0.13,0,0,7); ctx.fill();
+  ctx.fillStyle='#15140f';                                  // rear tyres
+  rr(cx-w*0.54,bottomY-h*0.36,w*0.24,h*0.36,4); rr(cx+w*0.30,bottomY-h*0.36,w*0.24,h*0.36,4);
+  ctx.fillStyle='#cfcfcf'; rr(cx-w*0.50,bottomY-h*0.30,w*0.06,h*0.18,2); rr(cx+w*0.44,bottomY-h*0.30,w*0.06,h*0.18,2);
+  ctx.fillStyle='#1a1a1a'; rr(cx-w*0.50,top,w*1.00,h*0.13,3);   // rear wing
+  ctx.fillStyle='#3a3a3a'; rr(cx-w*0.44,top+h*0.02,w*0.88,h*0.045,2);
+  const g=ctx.createLinearGradient(0,top,0,bottomY);          // glossy body
+  g.addColorStop(0,shade(color,1.4)); g.addColorStop(0.5,color); g.addColorStop(1,shade(color,0.65));
+  ctx.fillStyle=g; ctx.beginPath();
+  ctx.moveTo(cx-w*0.17,top+h*0.13); ctx.lineTo(cx+w*0.17,top+h*0.13);
+  ctx.quadraticCurveTo(cx+w*0.36,bottomY-h*0.30,cx+w*0.30,bottomY-h*0.05);
+  ctx.lineTo(cx-w*0.30,bottomY-h*0.05);
+  ctx.quadraticCurveTo(cx-w*0.36,bottomY-h*0.30,cx-w*0.17,top+h*0.13);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle=isPlayer?'#fff':'#e8e8e8';                               // helmet
-  ctx.beginPath(); ctx.arc(cx, top+h*0.30, w*0.12, 0, 7); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.20)'; rr(cx-w*0.12,top+h*0.18,w*0.09,h*0.55,3);
+  ctx.fillStyle='#0c0c0c'; ctx.beginPath(); ctx.arc(cx,top+h*0.46,w*0.17,Math.PI,0); ctx.fill();   // halo
+  ctx.fillStyle=isPlayer?'#fff':'#dcdcdc'; ctx.beginPath(); ctx.arc(cx,top+h*0.44,w*0.105,0,7); ctx.fill();
+  ctx.fillStyle=color; rr(cx-w*0.03,top+h*0.36,w*0.06,w*0.05,1);
 }
 
 /* ---- main loop ---- */
 let last=0, running=false;
-function loop(ts){
-  const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts;
-  if(state==='race') update(dt);
-  render();
-  if(running) requestAnimationFrame(loop);
-}
+function loop(ts){ const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts; if(state==='race') update(dt); render(); if(running) requestAnimationFrame(loop); }
 function update(dt){
-  raceTime+=dt; frame++;
-  const seg=findSegment(position+playerZ);
-  const speedPct=speed/maxSpeed;
-  const dx=dt*2*speedPct;
+  raceTime+=dt;
+  const seg=findSegment(position+playerZ), sp=speed/maxSpeed, dx=dt*2*sp;
   if(leftHeld) playerX-=dx; else if(rightHeld) playerX+=dx;
-  playerX-=dx*speedPct*seg.curve*centrifugal;          // pushed wide on curves
-
-  if(brakeHeld) speed+=breaking*dt;
-  else speed+=accel*dt;
-  if((playerX<-1||playerX>1) && speed>offLimit) speed+=offDecel*dt;   // grass slows you
+  playerX-=dx*sp*seg.curve*centrifugal;                    // pushed wide on curves
+  speed += (brakeHeld? breaking : accel)*dt;
+  if((playerX<-1||playerX>1) && speed>offLimit) speed += offDecel*dt;   // grass slows you
   speed=Math.max(0,Math.min(maxSpeed,speed));
   playerX=Math.max(-2,Math.min(2,playerX));
-
-  // opponents
   for(const c of cars){ c.z+=c.speed*dt; while(c.z>=trackLength){ c.z-=trackLength; c.lap++; } }
-
-  // collision with cars just ahead in the same lane
+  // overtaking: nudge AROUND a car so you slip past — NO speed loss
   for(const c of cars){
-    let dz=c.z-(position%trackLength); if(dz<-trackLength/2) dz+=trackLength; if(dz>trackLength/2) dz-=trackLength;
-    if(dz>-segmentLength*0.4 && dz<segmentLength*1.8 && Math.abs(playerX-c.offset)<0.55){
-      if(speed>c.speed){ speed=c.speed*0.55; playerX+= (playerX>c.offset?0.04:-0.04); }
+    let dz=c.z-(position%trackLength); if(dz<-trackLength/2)dz+=trackLength; if(dz>trackLength/2)dz-=trackLength;
+    if(dz>-segmentLength*0.4 && dz<segmentLength*1.4 && Math.abs(playerX-c.offset)<0.42){
+      playerX += (playerX>=c.offset?0.06:-0.06);
     }
   }
-
   position+=speed*dt;
   while(position>=trackLength){ position-=trackLength; onLap(); }
 }
-function onLap(){
-  const t=raceTime-lapStart; lapStart=raceTime;
-  if(t>0 && (fastestLap===0 || t<fastestLap)) fastestLap=t;
-  lap++;
-  if(lap>LAPS_TOTAL){ finishRace(); }
-}
+function onLap(){ const t=raceTime-lapStart; lapStart=raceTime; if(t>0&&(fastestLap===0||t<fastestLap)) fastestLap=t; lap++; if(lap>LAPS_TOTAL) finishRace(); }
 
 function render(){
-  // sky
-  const g=ctx.createLinearGradient(0,0,0,H*0.62); g.addColorStop(0,'#2f6fb8'); g.addColorStop(1,'#cfe6ff');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // sun glow
-  ctx.fillStyle='rgba(255,245,210,0.9)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.06,0,7); ctx.fill();
-  ctx.fillStyle='rgba(255,250,225,0.35)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.11,0,7); ctx.fill();
-  // distant hills
-  ctx.fillStyle='#5aa05a'; ctx.beginPath(); ctx.moveTo(0,H*0.52);
-  for(let i=0;i<=10;i++) ctx.lineTo(W*i/10, H*(0.47-0.035*Math.sin(i*1.6+1)));
-  ctx.lineTo(W,H*0.52); ctx.closePath(); ctx.fill();
-  // grandstand band near the horizon
+  const sky=ctx.createLinearGradient(0,0,0,H*0.62); sky.addColorStop(0,theme.sky[0]); sky.addColorStop(1,theme.sky[1]);
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,245,210,0.85)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.06,0,7); ctx.fill();
+  ctx.fillStyle=theme.hill; ctx.beginPath(); ctx.moveTo(0,H*0.52);
+  for(let i=0;i<=10;i++) ctx.lineTo(W*i/10,H*(0.47-0.035*Math.sin(i*1.6+1))); ctx.lineTo(W,H*0.52); ctx.closePath(); ctx.fill();
   ctx.fillStyle='#2c3a57'; ctx.fillRect(0,H*0.475,W,H*0.045);
   ctx.fillStyle='rgba(255,255,255,0.06)'; for(let i=0;i<W;i+=8) ctx.fillRect(i,H*0.475,4,H*0.045);
 
@@ -360,57 +370,92 @@ function render(){
   const base=findSegment(position), basePct=(position%segmentLength)/segmentLength;
   let x=0, dxx=-(base.curve*basePct), maxy=H;
   for(let n=0;n<drawDistance;n++){
-    const seg=segments[(base.index+n)%segments.length];
-    const looped=seg.index<base.index;
-    const camZ=position-(looped?trackLength:0);
-    project(seg.p1,(playerX*roadWidth)-x, camZ);
-    project(seg.p2,(playerX*roadWidth)-x-dxx, camZ);
-    x+=dxx; dxx+=seg.curve;
-    seg.frame=frame;
-    if(seg.p1.camera.z<=cameraDepth || seg.p2.screen.y>=maxy) continue;
-    const fog=1/Math.pow(Math.E,(n/drawDistance)*(n/drawDistance)*4);   // distance haze
-    renderSegment(seg.p1.screen.x,seg.p1.screen.y,seg.p1.screen.w,
-                  seg.p2.screen.x,seg.p2.screen.y,seg.p2.screen.w, seg.color, fog);
+    const seg=segments[(base.index+n)%segments.length], looped=seg.index<base.index, camZ=position-(looped?trackLength:0);
+    project(seg.p1,(playerX*roadWidth)-x,camZ); project(seg.p2,(playerX*roadWidth)-x-dxx,camZ);
+    x+=dxx; dxx+=seg.curve; seg.frame=frame;
+    if(seg.p1.camera.z<=cameraDepth||seg.p2.screen.y>=maxy) continue;
+    const fog=1/Math.pow(Math.E,(n/drawDistance)*(n/drawDistance)*4);
+    renderSegment(seg.p1.screen.x,seg.p1.screen.y,seg.p1.screen.w,seg.p2.screen.x,seg.p2.screen.y,seg.p2.screen.w,seg.color,fog);
     maxy=seg.p2.screen.y;
   }
-  // opponent cars (far to near) with name tags
   const ordered=cars.slice().sort((a,b)=>b.z-a.z);
   for(const c of ordered){
-    const seg=findSegment(c.z);
-    if(seg.frame!==frame) continue;
-    const sc=seg.p2.screen;
-    if(!sc || !sc.w) continue;
-    const cx=sc.x + c.offset*sc.w;
-    const cw=Math.max(8, sc.w*0.62);
-    if(sc.y<H*0.30 || sc.y>H+50) continue;
-    drawCar(cx, sc.y, cw, c.driver.c, false);
-    if(cw>24){                                              // name above the car
-      const fs=Math.max(9,Math.round(cw*0.22)), ty=sc.y-cw*0.66;
+    const seg=findSegment(c.z); if(seg.frame!==frame) continue;
+    const sc=seg.p2.screen; if(!sc||!sc.w) continue;
+    const cx=sc.x+c.offset*sc.w, cw=Math.max(8,sc.w*0.62);
+    if(sc.y<H*0.30||sc.y>H+50) continue;
+    drawCar(cx,sc.y,cw,c.driver.c,false);
+    if(cw>24){ const fs=Math.max(9,Math.round(cw*0.22)), ty=sc.y-cw*0.66;
       ctx.font='bold '+fs+'px Trebuchet MS'; ctx.textAlign='center';
-      ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.strokeText(c.driver.name, cx, ty);
-      ctx.fillStyle=c.driver.c; ctx.fillText(c.driver.name, cx, ty);
-    }
+      ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.strokeText(c.driver.name,cx,ty);
+      ctx.fillStyle=c.driver.c; ctx.fillText(c.driver.name,cx,ty); }
   }
-  // player car
-  if(state!=='menu'){
-    const pw=Math.max(70, W*0.16);
-    const tilt=(rightHeld?1:leftHeld?-1:0)*pw*0.06;
-    drawCar(W/2+tilt, H-18, pw, getCar(career().car).color, true);
+  if(state==='race'||state==='countdown'){
+    const pw=Math.max(70,W*0.16), tilt=(rightHeld?1:leftHeld?-1:0)*pw*0.06;
+    drawCar(W/2+tilt,H-18,pw,getCar(career().car).color,true);
+    updateHud();
   }
-  if(state==='race'||state==='countdown') updateHud();
 }
-
-function fmt(ms){ if(!ms) return '--:--'; const s=ms; const m=Math.floor(s/60); const r=(s-m*60); return (m>0?m+':':'')+r.toFixed(2).padStart(m>0?5:4,'0'); }
+function fmt(s){ if(!s) return '--'; const m=Math.floor(s/60), r=s-m*60; return (m>0?m+':':'')+r.toFixed(2).padStart(m>0?5:4,'0'); }
 function updateHud(){
-  document.getElementById('hud-left').innerHTML =
-    `P <b>${myPosition()}</b>/${cars.length+1}<br>Lap <b>${Math.min(lap,LAPS_TOTAL)}</b>/${LAPS_TOTAL}<br>`+
-    `<span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
-  document.getElementById('speedo').innerHTML =
-    `<span class="kmh">${Math.round(speed/maxSpeed*getCar(career().car).top)}</span> km/h<br>`+
-    `<span style="color:#9fb3d8">best lap ${fastestLap?fmt(fastestLap):'--'}</span>`;
+  const car=getCar(career().car);
+  document.getElementById('hud-left').innerHTML=`${curLoc.flag} P <b>${myPosition()}</b>/${cars.length+1}<br>Lap <b>${Math.min(lap,LAPS_TOTAL)}</b>/${LAPS_TOTAL}<br><span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
+  document.getElementById('speedo').innerHTML=`<span class="kmh">${Math.round(speed/maxSpeed*car.top)}</span> km/h<br><span style="color:#9fb3d8">best lap ${fastestLap?fmt(fastestLap):'--'}</span>`;
 }
 
-/* ---- flow ---- */
+/* ---- screens ---- */
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden');
+  document.getElementById('hud').classList.add('hidden'); document.getElementById('steerhint').classList.add('hidden'); document.getElementById('lights').style.display='none'; }
+
+function renderMenu(){
+  state='menu';
+  const f=career(), car=getCar(f.car);
+  document.getElementById('menuWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Guest (set a name on the home screen)';
+  document.getElementById('wallet').innerHTML=`💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${car.name}</b> (${car.top} km/h)`;
+  const list=document.getElementById('locList'); list.innerHTML='';
+  LOCS.forEach(L=>{
+    const unlocked=L.idx<f.unlocked, afford=f.money>=L.fee;
+    const d=document.createElement('div'); d.className='item'+(unlocked?'':' locked');
+    let act;
+    if(!unlocked) act=`<span class="pill lock">🔒</span>`;
+    else if(afford) act=`<button class="btn green" style="padding:9px 18px;font-size:14px;margin:0">RACE</button>`;
+    else act=`<button class="btn alt" disabled style="padding:9px 14px;font-size:13px;margin:0">Need ₹${L.fee}</button>`;
+    const sub = unlocked
+      ? `Entry ₹${L.fee} • Win ₹${L.win} • rivals ~${L.opp} km/h • ${L.grid} cars • 3 laps`
+      : `🔒 Finish ${LOCS[L.idx-1].name} to unlock`;
+    d.innerHTML=`<div class="ic">${L.flag}</div>
+      <div class="info"><div class="t">${L.name} Grand Prix</div><div class="d">${sub}</div></div>
+      <div class="act">${act}</div>`;
+    const b=d.querySelector('button');
+    if(b && unlocked && afford) b.onclick=()=>enterRace(L);
+    list.appendChild(d);
+  });
+  show('scr-menu');
+}
+
+function openShop(){
+  const f=career();
+  document.getElementById('shopWallet').textContent='💰 ₹'+f.money;
+  const list=document.getElementById('carList'); list.innerHTML='';
+  CARS.forEach(C=>{
+    const owned=f.owned.includes(C.id), selected=f.car===C.id, afford=f.money>=C.price;
+    const d=document.createElement('div'); d.className='item';
+    const act = selected ? `<span class="pill">SELECTED</span>`
+              : owned   ? `<button class="btn alt" style="padding:9px 16px;font-size:14px;margin:0">SELECT</button>`
+              : `<button class="btn ${afford?'green':'alt'}" ${afford?'':'disabled'} style="padding:9px 16px;font-size:14px;margin:0">₹${C.price}</button>`;
+    d.innerHTML=`<div class="ic">🏎️</div>
+      <div class="info"><div class="t" style="color:${C.color}">${C.name}</div>
+        <div class="d">Top speed ${C.top} km/h${C.price?'':' • starter car'}</div></div>
+      <div class="act">${act}</div>`;
+    const b=d.querySelector('button');
+    if(b){ if(owned) b.onclick=()=>{ f.car=C.id; saveF1(); openShop(); };
+      else b.onclick=()=>{ if(f.money>=C.price){ f.money-=C.price; f.owned.push(C.id); f.car=C.id; saveF1(); openShop(); } }; }
+    list.appendChild(d);
+  });
+  show('scr-shop');
+}
+
+/* ---- race flow ---- */
 function setLights(c){
   document.getElementById('lights').style.display='flex';
   document.getElementById('lampR').classList.toggle('on', c==='red');
@@ -420,55 +465,73 @@ function setLights(c){
   t.textContent = c==='red'?'On your marks…' : c==='yellow'?'Get ready…' : 'GO! GO! GO!';
   t.style.color = c==='green'?'#27e36a':'#fff';
 }
-function startRace(){
-  applyCarPhysics();                 // top speed comes from the car you bought
+function enterRace(L){
+  const f=career();
+  if(L.idx>=f.unlocked || f.money<L.fee) return;
+  f.money-=L.fee; saveF1();                 // pay the entry fee
+  curLoc=L; theme=L.theme;
+  applyCarPhysics();                        // top speed from the car you bought
   resetRace();
-  document.getElementById('scr-start').classList.add('hidden');
-  document.getElementById('scr-shop').classList.add('hidden');
-  document.getElementById('scr-finish').classList.add('hidden');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
   state='countdown';
   if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
-  // F1 start lights: red, then yellow, then green = GO
   setLights('red');
-  setTimeout(()=>{ if(state==='countdown') setLights('yellow'); }, 1100);
-  setTimeout(()=>{ if(state==='countdown'){ setLights('green'); state='race'; raceTime=0; lapStart=0; } }, 2200);
-  setTimeout(()=>{ document.getElementById('lights').style.display='none'; }, 2900);
+  setTimeout(()=>{ if(state==='countdown') setLights('yellow'); },1100);
+  setTimeout(()=>{ if(state==='countdown'){ setLights('green'); state='race'; raceTime=0; lapStart=0; } },2200);
+  setTimeout(()=>{ document.getElementById('lights').style.display='none'; },2900);
+}
+function prizeFor(pos,total,L){
+  const floor=Math.round(L.fee*0.5);
+  return Math.round(floor + (L.win-floor)*Math.pow((total-pos)/(total-1),1.6));
 }
 function finishRace(){
   state='finish';
   document.getElementById('lights').style.display='none';
   document.getElementById('steerhint').classList.add('hidden');
-  // final standings
-  const board=[{name:playerName, dist:playerDist(), me:true, color:getCar(career().car).color}];
+  const f=career();
+  const board=[{name:playerName, dist:playerDist(), me:true, color:getCar(f.car).color}];
   cars.forEach(c=>board.push({name:c.driver.name, dist:carDist(c), color:c.driver.c}));
   board.sort((a,b)=>b.dist-a.dist);
-  const pos=board.findIndex(b=>b.me)+1;
-  const pts=POINTS[pos-1]||0;
-  const prize=PRIZE[pos-1]||0;
-  // update career (works for guests in-session; persists when signed in)
-  const f=career();
+  const total=board.length, pos=board.findIndex(b=>b.me)+1;
+  const pts=POINTS[pos-1]||0, prize=prizeFor(pos,total,curLoc), net=prize-curLoc.fee;
+  // update career
   f.races++; f.points+=pts; f.money+=prize;
   if(pos===1) f.wins++; if(pos<=3) f.podiums++;
   if(pos<f.bestPos) f.bestPos=pos;
   if(fastestLap>0 && (f.bestLapMs===0 || fastestLap<f.bestLapMs)) f.bestLapMs=fastestLap;
+  let unlocked=null;
+  if(curLoc.idx+1<LOCS.length && f.unlocked<curLoc.idx+2){ f.unlocked=curLoc.idx+2; unlocked=LOCS[curLoc.idx+1]; }
   saveF1();
-  const podium = pos===1?'🏆 RACE WIN!' : pos<=3?'🏆 PODIUM!' : `P${pos} finish`;
-  document.getElementById('finTitle').textContent = podium;
+  // header
+  document.getElementById('finTitle').textContent = pos===1?'🏆 RACE WIN!' : pos<=3?'🏆 PODIUM!' : `P${pos} FINISH`;
   document.getElementById('finTitle').style.color = pos===1?'#ffd54a':pos<=3?'#39ff88':'#fff';
   document.getElementById('finSub').innerHTML =
-    `${playerName} finished <b>P${pos}</b> of ${board.length} • <b>${pts}</b> pts • 💰 won <b>₹${prize}</b> • fastest lap ${fastestLap?fmt(fastestLap):'--'}`+
-    `<br><span style="font-size:13px;color:#9fb3d8">Balance 💰 ₹${f.money} • Career: ${f.wins} wins • ${f.podiums} podiums • ${f.points} pts • best finish P${f.bestPos}</span>`;
+    `${curLoc.flag} ${curLoc.name} Grand Prix — ${playerName} finished <b>P${pos}</b> of ${total}`+
+    `<br><span style="font-size:13px">${pts} championship pts • fastest lap ${fastestLap?fmt(fastestLap):'--'}</span>`;
+  // money ledger with emoji
+  document.getElementById('ledger').innerHTML =
+    `<div class="lrow"><span>💸 Entry fee</span><b style="color:#ff7b7b">−₹${curLoc.fee}</b></div>`+
+    `<div class="lrow"><span>🏆 Prize money</span><b style="color:#39ff88">+₹${prize}</b></div>`+
+    `<div class="lrow net"><span>${net>=0?'📈 Net profit 🤑':'📉 Net loss 😬'}</span><b style="color:${net>=0?'#39ff88':'#ff7b7b'}">${net>=0?'+':'−'}₹${Math.abs(net)}</b></div>`+
+    `<div class="lrow bal" style="margin-top:6px"><span>💰 Balance</span><b>₹${f.money}</b></div>`;
+  const um=document.getElementById('unlockMsg');
+  if(unlocked){ um.textContent=`🔓 New circuit unlocked: ${unlocked.flag} ${unlocked.name}!`; um.classList.remove('hidden'); }
+  else um.classList.add('hidden');
+  // leaderboard (top 10 shown)
   let h='';
-  board.forEach((b,i)=>{
+  board.slice(0,10).forEach((b,i)=>{
     h+=`<div class="brow${b.me?' me':''}"><span class="pos">${i+1}</span>
       <span class="nm"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${b.color};margin-right:8px"></span>${b.name}${b.me?' (you)':''}</span>
-      <span style="color:#9fb3d8">${POINTS[i]||0} pts</span></div>`;
+      <span style="color:#9fb3d8">₹${prizeFor(i+1,total,curLoc)}</span></div>`;
   });
+  if(!board.slice(0,10).some(b=>b.me)){
+    h+=`<div class="brow me"><span class="pos">${pos}</span><span class="nm">${playerName} (you)</span><span style="color:#9fb3d8">₹${prize}</span></div>`;
+  }
   document.getElementById('finBoard').innerHTML=h;
   document.getElementById('hud').classList.add('hidden');
-  document.getElementById('scr-finish').classList.remove('hidden');
+  show('scr-finish');
 }
 
 /* ---- input ---- */
@@ -477,82 +540,30 @@ window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=true;
   if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=true;
   if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') brakeHeld=true;
-  if((e.key===' '||e.key==='Enter') && state==='menu') startRace();
 });
 window.addEventListener('keyup',e=>{
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=false;
   if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=false;
   if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') brakeHeld=false;
 });
-function touchAt(clientX,clientY){
-  const r=cv.getBoundingClientRect(); const x=clientX-r.left, y=clientY-r.top;
-  brakeHeld = y > H*0.78;                 // bottom strip = brake
-  if(brakeHeld){ leftHeld=rightHeld=false; return; }
-  leftHeld = x < W/2; rightHeld = x >= W/2;
-}
+function touchAt(clientX,clientY){ const r=cv.getBoundingClientRect(); const x=clientX-r.left, y=clientY-r.top;
+  brakeHeld=y>H*0.78; if(brakeHeld){ leftHeld=rightHeld=false; return; } leftHeld=x<W/2; rightHeld=x>=W/2; }
 function clearTouch(){ leftHeld=rightHeld=brakeHeld=false; }
 cv.addEventListener('touchstart',e=>{ const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 cv.addEventListener('touchmove', e=>{ const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 cv.addEventListener('touchend', e=>{ if(e.touches.length===0) clearTouch(); },{passive:false});
-cv.addEventListener('mousedown',e=>{ touchAt(e.clientX,e.clientY); });
+cv.addEventListener('mousedown',e=>touchAt(e.clientX,e.clientY));
 cv.addEventListener('mousemove',e=>{ if(e.buttons&1) touchAt(e.clientX,e.clientY); });
 window.addEventListener('mouseup',clearTouch);
 
-document.getElementById('raceBtn').addEventListener('click',startRace);
-document.getElementById('againBtn').addEventListener('click',startRace);
-document.getElementById('menuBtn').addEventListener('click',showStart);
-
-/* ---- start screen + garage ---- */
-function renderStart(){
-  const f=career(), car=getCar(f.car);
-  document.getElementById('startWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Guest (set a name on the home screen)';
-  document.getElementById('wallet').innerHTML =
-    `💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${car.name}</b> (${car.top} km/h)`;
-  if(f.races>0){
-    document.getElementById('startBest').innerHTML =
-      `🏆 ${f.wins} wins • ${f.podiums} podiums • best finish <b>P${f.bestPos}</b> • ${f.points} career pts`;
-  } else {
-    document.getElementById('startBest').textContent='No races yet — win prize money, then upgrade in the garage!';
-  }
-}
-function showStart(){
-  document.getElementById('scr-shop').classList.add('hidden');
-  document.getElementById('scr-finish').classList.add('hidden');
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('scr-start').classList.remove('hidden');
-  state='menu';
-  renderStart();
-}
-function openShop(){
-  const f=career();
-  document.getElementById('shopWallet').textContent='💰 ₹'+f.money;
-  const list=document.getElementById('carList'); list.innerHTML='';
-  CARS.forEach(C=>{
-    const owned=f.owned.includes(C.id), selected=f.car===C.id, afford=f.money>=C.price;
-    const d=document.createElement('div'); d.className='item';
-    const actHtml = selected ? `<span class="pill">SELECTED</span>`
-                  : owned   ? `<button class="btn alt" style="padding:9px 16px;font-size:14px;margin:0">SELECT</button>`
-                  : `<button class="btn ${afford?'':'alt'}" ${afford?'':'disabled'} style="padding:9px 16px;font-size:14px;margin:0">₹${C.price}</button>`;
-    d.innerHTML=`<div class="ic">🏎️</div>
-      <div class="info"><div class="t" style="color:${C.color}">${C.name}</div>
-        <div class="d">Top speed ${C.top} km/h${C.price?'':' • starter car'}</div></div>
-      <div class="act">${actHtml}</div>`;
-    const b=d.querySelector('button');
-    if(b){
-      if(owned) b.onclick=()=>{ f.car=C.id; saveF1(); openShop(); };
-      else b.onclick=()=>{ if(f.money>=C.price){ f.money-=C.price; f.owned.push(C.id); f.car=C.id; saveF1(); openShop(); } };
-    }
-    list.appendChild(d);
-  });
-  document.getElementById('scr-start').classList.add('hidden');
-  document.getElementById('scr-finish').classList.add('hidden');
-  document.getElementById('scr-shop').classList.remove('hidden');
-}
 document.getElementById('garageBtn').addEventListener('click',openShop);
-document.getElementById('shopBack').addEventListener('click',showStart);
+document.getElementById('shopBack').addEventListener('click',renderMenu);
+document.getElementById('menuBtn').addEventListener('click',renderMenu);
+document.getElementById('againBtn').addEventListener('click',()=>{ const f=career(); if(curLoc.idx<f.unlocked && f.money>=curLoc.fee) enterRace(curLoc); else renderMenu(); });
 
-buildTrack();
-renderStart();
+/* ---- boot ---- */
+buildTrack(curLoc.track);
+renderMenu();
 
 /* PWA: register the service worker for offline play */
 if('serviceWorker' in navigator){
