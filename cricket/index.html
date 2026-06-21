@@ -18,7 +18,12 @@
   #wrap { position:relative; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; }
   canvas { background:#0a0e1a; touch-action:none; display:block; max-width:100%; max-height:100%; }
   .screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-            background:radial-gradient(circle at 50% 30%, #18305a, #0a0e1a 75%); padding:20px; text-align:center; z-index:10; }
+            background:radial-gradient(circle at 50% 30%, #18305a, #0a0e1a 75%); padding:20px; text-align:center; z-index:10;
+            overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* On short / landscape phone screens, top-align and scroll so buttons (BACK etc.) are always reachable */
+  @media (max-height:600px){
+    .screen { justify-content:flex-start !important; padding-top:16px; padding-bottom:24px; }
+  }
   .hidden { display:none !important; }
   h1 { font-size:clamp(28px,7vw,56px); letter-spacing:2px; margin-bottom:6px;
        background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
