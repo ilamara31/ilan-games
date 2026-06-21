@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Super Over Cricket</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Super Over Cricket">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="icon" href="../icon-192.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#0a0e1a; font-family:'Trebuchet MS','Segoe UI',sans-serif; overflow:hidden; color:#fff; }
@@ -56,16 +64,73 @@
 <div id="wrap">
   <canvas id="game"></canvas>
 
+  <!-- NAME ENTRY (new account) -->
+  <div id="scr-enter" class="screen hidden">
+    <h1 style="font-size:34px">CREATE ACCOUNT</h1>
+    <div class="sub" style="max-width:420px">Enter your name. You will open the batting for whichever team you pick — in every match.</div>
+    <input id="playerNameInput" maxlength="16" placeholder="Your name" style="background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:12px 14px;border-radius:10px;font-size:18px;text-align:center;max-width:300px;width:100%;margin:10px 0">
+    <div class="row">
+      <button class="btn" onclick="confirmName()">LET'S PLAY</button>
+      <button class="btn alt" id="enterBack" onclick="showAccounts()" style="display:none">BACK</button>
+    </div>
+  </div>
+
+  <!-- ACCOUNT PICKER -->
+  <div id="scr-accounts" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
+    <h1 style="font-size:30px">CHOOSE ACCOUNT</h1>
+    <div class="sub">Saved on this device — pick one or add a new one.</div>
+    <div id="accountList" style="max-width:460px;width:100%"></div>
+    <button class="btn" onclick="newAccountScreen()" style="margin-top:8px">➕ NEW ACCOUNT</button>
+  </div>
+
   <!-- TITLE -->
-  <div id="scr-title" class="screen">
+  <div id="scr-title" class="screen hidden">
     <h1>SUPER OVER</h1>
-    <div class="sub">Timing-based cricket • Pick your format • Chase the target</div>
-    <button class="btn" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">5 overs • 30 balls • 5 wkts</span></button>
-    <button class="btn alt" onclick="chooseFormat('ipl')">IPL MATCH<br><span style="font-size:12px;font-weight:normal">10 overs • 60 balls • 7 wkts</span></button>
-    <button class="btn" onclick="chooseFormat('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">15 overs • 90 balls • 10 wkts</span></button>
-    <div class="sub" style="margin-top:24px;max-width:480px">
-      Press <b>SPACE</b> / tap to play the shot at the right moment.<br>
-      Use <b>← ↑ →</b> or swipe to aim leg-side / straight / off-side.
+    <div class="sub" id="titleSub">Timing-based cricket • Pick your mode</div>
+    <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
+    <button class="btn" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
+    <button class="btn" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
+    <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
+    <div class="sub" style="margin-top:18px;max-width:480px;font-size:12px">
+      <b>SPACE</b>/tap = shot • <b>← ↑ →</b>/swipe = aim leg / straight / off
+    </div>
+  </div>
+
+  <!-- LEAGUE TABLE -->
+  <div id="scr-league" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="leagueTitle" style="font-size:28px">POINTS TABLE</h1>
+    <div class="sub" id="leagueSub" style="margin-bottom:6px"></div>
+    <div id="leagueTable" style="max-width:520px;width:100%"></div>
+    <button class="btn" id="leagueBtn" onclick="playLeagueRound()" style="margin-top:8px">PLAY MY MATCH</button>
+  </div>
+
+  <!-- PLAYOFFS -->
+  <div id="scr-playoffs" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 style="font-size:28px">🏆 PLAYOFFS</h1>
+    <div class="sub" id="playoffSub" style="margin-bottom:6px"></div>
+    <div id="playoffBracket" style="max-width:480px;width:100%"></div>
+    <button class="btn" id="playoffBtn" onclick="playNextPlayoff()" style="margin-top:8px">PLAY</button>
+  </div>
+
+  <!-- TOURNAMENT END / AWARDS -->
+  <div id="scr-tend" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="tendTitle" style="font-size:30px">TOURNAMENT OVER</h1>
+    <div class="sub" id="tendSub" style="margin-bottom:6px"></div>
+    <div id="tendBody" style="max-width:520px;width:100%"></div>
+    <button class="btn" onclick="show('scr-title')" style="margin-top:8px">BACK TO MENU</button>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="scr-profile" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="profileName" style="font-size:30px">PROFILE</h1>
+    <div class="row" style="margin:6px 0">
+      <button class="btn" id="tabIpl" onclick="setProfileTab('ipl')">IPL</button>
+      <button class="btn alt" id="tabOdi" onclick="setProfileTab('odi')">ODI</button>
+    </div>
+    <div id="profileBody" style="max-width:480px;width:100%"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn alt" onclick="show('scr-title')">BACK</button>
+      <button class="btn" onclick="showAccounts()">🔄 SWITCH ACCOUNT</button>
     </div>
   </div>
 
@@ -74,7 +139,7 @@
     <h1 style="font-size:34px">CHOOSE YOUR TEAM</h1>
     <div class="sub">10 teams. Pick your side.</div>
     <div id="teamgrid" class="teamgrid"></div>
-    <button class="btn" id="teamNext" onclick="goNames()" disabled style="opacity:.4">NEXT</button>
+    <button class="btn" id="teamNext" onclick="teamChosen()" disabled style="opacity:.4">NEXT</button>
     <button class="btn alt" onclick="show('scr-title')">BACK</button>
   </div>
 
@@ -128,19 +193,38 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-/* ---------------- TEAMS ---------------- */
+/* ---------------- IPL TEAMS (Quick + IPL formats) ---------------- */
 const TEAMS = [
-  { id:'MI',  name:'Mumbai',     c1:'#0044aa', c2:'#d4af37', players:['Rohit S.','Ishan K.','S. Yadav','Tilak V.','Hardik P.'] },
-  { id:'CSK', name:'Chennai',    c1:'#f9cd05', c2:'#005db4', players:['Ruturaj G.','Devon C.','Dube','Jadeja','Dhoni'] },
-  { id:'RCB', name:'Bangalore',  c1:'#d11f2d', c2:'#000000', players:['Kohli','Du Plessis','Maxwell','Patidar','Green'] },
-  { id:'KKR', name:'Kolkata',    c1:'#3b1f6e', c2:'#d4af37', players:['Narine','Gurbaz','S. Iyer','Rinku','Russell'] },
-  { id:'GT',  name:'Gujarat',    c1:'#1b2a4a', c2:'#b9962e', players:['Gill','Sudharsan','Miller','Tewatia','Rashid'] },
-  { id:'SRH', name:'Hyderabad',  c1:'#f26522', c2:'#000000', players:['Abhishek','Head','Klaasen','Markram','Cummins'] },
-  { id:'RR',  name:'Rajasthan',  c1:'#ea1a85', c2:'#143a8a', players:['Jaiswal','Buttler','Samson','Hetmyer','Parag'] },
-  { id:'DC',  name:'Delhi',      c1:'#17449b', c2:'#d71920', players:['Warner','Pant','Marsh','Stubbs','Axar'] },
-  { id:'PBKS',name:'Punjab',     c1:'#d71920', c2:'#a3a3a3', players:['Bairstow','Prabhsimran','Shashank','Curran','Livingstone'] },
-  { id:'LSG', name:'Lucknow',    c1:'#00b4d8', c2:'#ff7b00', players:['Rahul','Q. de Kock','Pooran','Stoinis','Badoni'] },
+  { id:'MI',  name:'Mumbai',     c1:'#0044aa', c2:'#d4af37', players:['Rohit S.','Ishan K.','S. Yadav','Tilak V.','Hardik P.','Tim David','Bumrah','Chawla'] },
+  { id:'CSK', name:'Chennai',    c1:'#f9cd05', c2:'#005db4', players:['Ruturaj G.','Devon C.','Dube','Jadeja','Dhoni','Moeen Ali','Deshpande','Pathirana'] },
+  { id:'RCB', name:'Bangalore',  c1:'#d11f2d', c2:'#000000', players:['Kohli','Du Plessis','Maxwell','Patidar','Green','Karthik','Siraj','Dayal'] },
+  { id:'KKR', name:'Kolkata',    c1:'#3b1f6e', c2:'#d4af37', players:['Narine','Gurbaz','S. Iyer','Rinku','Russell','Venkatesh I.','Chakravarthy','Starc'] },
+  { id:'GT',  name:'Gujarat',    c1:'#1b2a4a', c2:'#b9962e', players:['Gill','Sudharsan','Miller','Tewatia','Rashid','Wade','Mohit S.','Noor A.'] },
+  { id:'SRH', name:'Hyderabad',  c1:'#f26522', c2:'#000000', players:['Abhishek','Head','Klaasen','Markram','Cummins','Nitish R.','Bhuvneshwar','Natarajan'] },
+  { id:'RR',  name:'Rajasthan',  c1:'#ea1a85', c2:'#143a8a', players:['Jaiswal','Buttler','Samson','Hetmyer','Parag','Ashwin','Boult','Avesh K.'] },
+  { id:'DC',  name:'Delhi',      c1:'#17449b', c2:'#d71920', players:['Warner','Pant','Marsh','Stubbs','Axar','McGurk','Kuldeep Y.','Nortje'] },
+  { id:'PBKS',name:'Punjab',     c1:'#d71920', c2:'#a3a3a3', players:['Bairstow','Prabhsimran','Shashank','Curran','Livingstone','Shahrukh K.','Arshdeep','Rabada'] },
+  { id:'LSG', name:'Lucknow',    c1:'#00b4d8', c2:'#ff7b00', players:['Rahul','Q. de Kock','Pooran','Stoinis','Badoni','Hooda','Bishnoi','M. Wood'] },
 ];
+
+/* ---------------- INTERNATIONAL TEAMS (ODI World Cup format) ---------------- */
+const INTL_TEAMS = [
+  { id:'IND', name:'India',        c1:'#1a4ba0', c2:'#ff9933', players:['Rohit Sharma','Virat Kohli','Suryakumar Yadav','Rishabh Pant','Hardik Pandya','Ravindra Jadeja','Axar Patel','Kuldeep Yadav','Jasprit Bumrah','Arshdeep Singh','Mohammed Siraj'] },
+  { id:'PAK', name:'Pakistan',     c1:'#046a38', c2:'#e9e9e9', players:['Babar Azam','Mohammad Rizwan','Fakhar Zaman','Saim Ayub','Shadab Khan','Iftikhar Ahmed','Imad Wasim','Shaheen Afridi','Naseem Shah','Haris Rauf','Mohammad Amir'] },
+  { id:'AFG', name:'Afghanistan',  c1:'#0066b3', c2:'#d32011', players:['Rahmanullah Gurbaz','Ibrahim Zadran','Gulbadin Naib','Najibullah Zadran','Mohammad Nabi','Azmatullah Omarzai','Rashid Khan','Karim Janat','Naveen-ul-Haq','Noor Ahmad','Fazalhaq Farooqi'] },
+  { id:'BAN', name:'Bangladesh',   c1:'#006a4e', c2:'#f42a41', players:['Litton Das','Tanzid Hasan','Najmul Shanto','Towhid Hridoy','Shakib Al Hasan','Mahmudullah','Mushfiqur Rahim','Rishad Hossain','Taskin Ahmed','Mustafizur Rahman','Shoriful Islam'] },
+  { id:'ENG', name:'England',      c1:'#003478', c2:'#cf142b', players:['Jos Buttler','Phil Salt','Jonny Bairstow','Harry Brook','Liam Livingstone','Moeen Ali','Sam Curran','Chris Jordan','Adil Rashid','Jofra Archer','Mark Wood'] },
+  { id:'AUS', name:'Australia',    c1:'#11643b', c2:'#ffcd00', players:['Travis Head','David Warner','Mitchell Marsh','Glenn Maxwell','Marcus Stoinis','Tim David','Matthew Wade','Pat Cummins','Mitchell Starc','Adam Zampa','Josh Hazlewood'] },
+  { id:'NZ',  name:'New Zealand',  c1:'#1d1d1d', c2:'#bcbcbc', players:['Finn Allen','Devon Conway','Kane Williamson','Daryl Mitchell','Glenn Phillips','Mark Chapman','Jimmy Neesham','Mitchell Santner','Tim Southee','Trent Boult','Lockie Ferguson'] },
+  { id:'SA',  name:'South Africa', c1:'#007749', c2:'#ffb81c', players:['Quinton de Kock','Reeza Hendricks','Aiden Markram','Heinrich Klaasen','David Miller','Tristan Stubbs','Marco Jansen','Keshav Maharaj','Kagiso Rabada','Anrich Nortje','Tabraiz Shamsi'] },
+  { id:'SL',  name:'Sri Lanka',    c1:'#1c3f94', c2:'#f5c518', players:['Pathum Nissanka','Kusal Mendis','Kamindu Mendis','Charith Asalanka','Dasun Shanaka','Wanindu Hasaranga','Dhananjaya de Silva','Maheesh Theekshana','Matheesha Pathirana','Nuwan Thushara','Dushmantha Chameera'] },
+  { id:'NED', name:'Netherlands',  c1:'#ff6c00', c2:'#1e3a8a', players:['Max O’Dowd','Michael Levitt','Vikramjit Singh','Bas de Leede','Scott Edwards','Sybrand Engelbrecht','Logan van Beek','Tim Pringle','Aryan Dutt','Paul van Meekeren','Vivian Kingma'] },
+  { id:'SCO', name:'Scotland',     c1:'#0065bf', c2:'#e9e9e9', players:['George Munsey','Michael Jones','Brandon McMullen','Richie Berrington','Matthew Cross','Michael Leask','Mark Watt','Chris Greaves','Safyaan Sharif','Brad Wheal','Josh Davey'] },
+  { id:'ESP', name:'Spain',        c1:'#aa151b', c2:'#f1bf00', players:['Awais Ahmed','Hamza Saleem','Muhammad Kamran','Atif Mahmood','Christian Munoz','Yasir Ali','Raja Adeel','Burhan Niaz','Daniel Doyle-Calle','Suresh Chandramohan','Hassan Khalid'] },
+];
+
+/* which pool the current format draws from */
+function teamPool(){ return chosenFormat && chosenFormat.key==='odi' ? INTL_TEAMS : TEAMS; }
 
 /* ---------------- GLOBAL STATE ---------------- */
 let myTeam = null;          // chosen team object (with editable players)
@@ -148,9 +232,9 @@ let tour = null;            // kept null — single-match modes only
 
 /* ---------------- MATCH FORMATS ---------------- */
 const FORMATS = {
-  quick: { key:'quick', label:'QUICK MATCH',   overs:5,  maxWkts:5,  targetLo:52,  targetHi:67  },
-  ipl:   { key:'ipl',   label:'IPL MATCH',     overs:10, maxWkts:7,  targetLo:155, targetHi:172 },
-  odi:   { key:'odi',   label:'ODI WORLD CUP', overs:15, maxWkts:10, targetLo:240, targetHi:264 },
+  quick: { key:'quick', label:'QUICK MATCH',   overs:5,  maxWkts:5,  targetLo:52,  targetHi:67,  simLo:48,  simHi:75,  tournament:false },
+  ipl:   { key:'ipl',   label:'IPL TOURNAMENT', overs:10, maxWkts:7,  targetLo:155, targetHi:172, simLo:132, simHi:205, tournament:true },
+  odi:   { key:'odi',   label:'ODI WORLD CUP', overs:15, maxWkts:10, targetLo:235, targetHi:305, simLo:210, simHi:330, tournament:true },
 };
 let chosenFormat = FORMATS.quick;
 function chooseFormat(key){ chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
@@ -161,6 +245,13 @@ function padNames(players, count){
   let i=0;
   while(names.length<count){ names.push(extras[i++] || ('Batter '+(names.length+1))); }
   return names.slice(0, count);
+}
+/* surname for scorecard dismissals; keeps lowercase particles (de Kock, van Beek, Al Hasan) */
+function shortName(n){
+  const p=String(n).trim().split(/\s+/);
+  if(p.length<=1) return n;
+  const last=p[p.length-1], prev=p[p.length-2];
+  return /^(de|van|al|ul|von|da)$/i.test(prev) ? prev+' '+last : last;
 }
 
 /* ---------------- SCREEN HELPERS ---------------- */
@@ -179,8 +270,12 @@ function showGame(){
 
 function goTeamSelect(){
   show('scr-team');
+  selectedTeamId=null;
+  const nb=document.getElementById('teamNext'); nb.disabled=true; nb.style.opacity=.4;
+  const pool=teamPool();
+  document.querySelector('#scr-team .sub').textContent = `${pool.length} teams. Pick your side.`;
   const grid = document.getElementById('teamgrid'); grid.innerHTML='';
-  TEAMS.forEach(t=>{
+  pool.forEach(t=>{
     const d=document.createElement('div');
     d.className='teamcard'; d.style.background=`linear-gradient(135deg,${t.c1},${t.c2})`;
     d.textContent=t.name; d.dataset.id=t.id;
@@ -191,15 +286,31 @@ function goTeamSelect(){
   });
 }
 let selectedTeamId=null;
+function teamChosen(){
+  if(!selectedTeamId) return;
+  if(chosenFormat.tournament) beginTournament();
+  else goNames();
+}
+/* clone a team and slot the player in as the off-strike opener (index 1), dropping the tail-ender */
+function buildMyTeam(base){
+  const t=JSON.parse(JSON.stringify(base));
+  if(profile && profile.name){
+    const p=t.players.slice();
+    if(p.length>2) p.splice(p.length-1,1);   // cut the last player (bowler/tail)
+    p.splice(1,0,profile.name);              // insert as 2nd opener
+    t.players=p;
+  }
+  return t;
+}
 function goNames(){
   if(!selectedTeamId) return;
-  const base = TEAMS.find(t=>t.id===selectedTeamId);
-  myTeam = JSON.parse(JSON.stringify(base));
+  const base = teamPool().find(t=>t.id===selectedTeamId);
+  myTeam = buildMyTeam(base);
   show('scr-names');
   const list=document.getElementById('namelist'); list.innerHTML='';
   myTeam.players.forEach((p,i)=>{
     const row=document.createElement('div'); row.className='namerow';
-    row.innerHTML=`<span>${i+1}</span><input value="${p}" maxlength="14" data-i="${i}">`;
+    row.innerHTML=`<span>${i+1}</span><input value="${p}" maxlength="20" data-i="${i}">`;
     list.appendChild(row);
   });
 }
@@ -207,10 +318,318 @@ function startSingle(){
   document.querySelectorAll('#namelist input').forEach(inp=>{
     myTeam.players[+inp.dataset.i]= inp.value.trim()||('Batter '+(+inp.dataset.i+1));
   });
-  // random opponent from the other nine teams
-  const opp = TEAMS.filter(t=>t.id!==myTeam.id)[Math.floor(Math.random()*9)];
+  // random opponent from the same pool
+  const others = teamPool().filter(t=>t.id!==myTeam.id);
+  const opp = others[Math.floor(Math.random()*others.length)];
   tour = null;
   startMatch(opp, chosenFormat);
+}
+
+/* ============================================================
+   PLAYER ACCOUNTS  (multiple profiles, persisted per device)
+   ============================================================ */
+const STORE_KEY='soc_store_v1';
+let store=loadStore();
+let profile=null;   // the currently-active account
+function blankStats(){ return {matches:0, runs:0, balls:0, hs:0, cups:0, awards:0, tours:0}; }
+function newId(){ return 'a'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
+function loadStore(){
+  try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){}
+  // migrate an older single-profile save into the first account
+  try{ const old=JSON.parse(localStorage.getItem('soc_profile_v2'));
+    if(old&&old.name&&old.ipl&&old.odi){ const a={id:newId(),name:old.name,ipl:old.ipl,odi:old.odi};
+      return {activeId:a.id, accounts:[a]}; } }catch(e){}
+  return { activeId:null, accounts:[] };
+}
+function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
+function saveProfile(){ saveStore(); }   // active account lives inside the store
+function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return; store.activeId=id; profile=a; saveStore(); }
+
+/* name entry creates a NEW account, then logs in to it */
+function confirmName(){
+  const inp=document.getElementById('playerNameInput');
+  const v=inp.value.trim();
+  if(!v){ inp.focus(); return; }
+  const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() };
+  store.accounts.push(a); setActive(a.id);
+  show('scr-title'); refreshTitle();
+}
+function refreshTitle(){
+  document.getElementById('titleSub').innerHTML =
+    `Welcome, <b style="color:#ffd54a">${profile?profile.name:'Skipper'}</b> • Pick your mode`;
+}
+
+/* ---- account picker (switch / add / remove accounts on this device) ---- */
+function showAccounts(){ renderAccounts(); show('scr-accounts'); }
+function renderAccounts(){
+  const wrap=document.getElementById('accountList'); wrap.innerHTML='';
+  store.accounts.forEach(a=>{
+    const tot=a.ipl.matches+a.odi.matches, runs=a.ipl.runs+a.odi.runs;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;background:#16243f;padding:10px 14px;border-radius:10px;margin:5px 0';
+    row.innerHTML=`<span style="flex:1;text-align:left">
+        <b style="color:#ffd54a;font-size:16px">${a.name}</b>${a.id===store.activeId?' <span style="color:#39ff88;font-size:12px">• active</span>':''}
+        <br><span style="color:#7e90b5;font-size:12px">${tot} matches • ${runs} runs</span></span>`;
+    const play=document.createElement('button'); play.className='btn'; play.textContent='PLAY';
+    play.style.cssText='padding:8px 18px;font-size:14px;margin:0';
+    play.onclick=()=>{ setActive(a.id); show('scr-title'); refreshTitle(); };
+    const del=document.createElement('button'); del.className='btn alt'; del.textContent='✕';
+    del.style.cssText='padding:8px 12px;font-size:14px;margin:0';
+    del.onclick=()=>{ if(confirm('Delete account "'+a.name+'" and its stats?')) deleteAccount(a.id); };
+    row.appendChild(play); row.appendChild(del); wrap.appendChild(row);
+  });
+}
+function deleteAccount(id){
+  store.accounts=store.accounts.filter(a=>a.id!==id);
+  if(store.activeId===id){ store.activeId = store.accounts[0] ? store.accounts[0].id : null;
+    profile = store.accounts[0] || null; }
+  saveStore();
+  if(store.accounts.length) renderAccounts(); else { const i=document.getElementById('playerNameInput'); if(i) i.value=''; show('scr-enter'); }
+}
+function newAccountScreen(){ const i=document.getElementById('playerNameInput'); if(i){ i.value=''; setTimeout(()=>i.focus(),150); }
+  document.getElementById('enterBack').style.display = store.accounts.length? 'inline-block':'none';
+  show('scr-enter'); }
+/* add a finished interactive match into the player's profile */
+function recordProfile(fmtKey){
+  if(!profile) return;
+  const me=M.batters.find(b=>b.name===profile.name);
+  if(!me) return;
+  const st=profile[fmtKey]; if(!st) return;
+  st.matches++; st.runs+=me.runs; st.balls+=me.balls;
+  if(me.runs>st.hs) st.hs=me.runs;
+  saveProfile();
+}
+
+/* ============================================================
+   TOURNAMENT  (round-robin league -> playoffs)
+   ============================================================ */
+let T=null;   // tournament state
+function startTournamentFlow(key){ chosenFormat=FORMATS[key]; goTeamSelect(); }
+
+function beginTournament(){
+  const base=teamPool().find(t=>t.id===selectedTeamId);
+  myTeam=buildMyTeam(base);
+  const teams=teamPool().map(t=> t.id===myTeam.id ? myTeam : t);
+  const ids=teams.map(t=>t.id);
+  T={ fmt:chosenFormat, teams, myId:myTeam.id,
+      table:{}, schedule:roundRobin(ids), roundIdx:0,
+      stage:'league',
+      stats:{ runs:{}, wkts:{}, team:{} },
+      pendingSim:[], playoff:null, champion:null };
+  teams.forEach(t=> T.table[t.id]={p:0,w:0,l:0,pts:0,rf:0,ra:0});
+  showLeague();
+}
+function byId(id){ return T.teams.find(t=>t.id===id); }
+/* circle-method round robin for an even number of teams */
+function roundRobin(ids){
+  const a=ids.slice(), n=a.length, rounds=[];
+  const fixed=a[0]; let rot=a.slice(1);
+  for(let r=0;r<n-1;r++){
+    const arr=[fixed,...rot], round=[];
+    for(let i=0;i<n/2;i++) round.push([arr[i], arr[n-1-i]]);
+    rounds.push(round);
+    rot.unshift(rot.pop());
+  }
+  return rounds;
+}
+/* ---- stats accumulation ---- */
+function addRuns(name,team,r){ T.stats.runs[name]=(T.stats.runs[name]||0)+r; T.stats.team[name]=team; }
+function addWkts(name,team,w){ T.stats.wkts[name]=(T.stats.wkts[name]||0)+w; T.stats.team[name]=team; }
+function applyResult(idA,idB,sA,sB,aWon){
+  const A=T.table[idA], B=T.table[idB];
+  A.p++; B.p++; A.rf+=sA; A.ra+=sB; B.rf+=sB; B.ra+=sA;
+  if(aWon){ A.w++; A.pts+=2; B.l++; } else { B.w++; B.pts+=2; A.l++; }
+}
+/* distribute an innings total across a team's top order for the run charts */
+function distributeBatting(team,total){
+  const order=team.players, n=Math.min(order.length,8);
+  let rem=total;
+  for(let i=0;i<n;i++){
+    const last=(i===n-1);
+    let r= last? rem : Math.min(rem, Math.round(total*(0.05+Math.random()*0.26)));
+    addRuns(order[i], team.name, Math.max(0,r)); rem-=r; if(rem<0) rem=0;
+  }
+}
+/* give a team's bowlers some wickets (lower order tends to bowl) */
+function assignWickets(team,total){
+  const bowlers=team.players.slice(-5);
+  for(let k=0;k<total;k++) addWkts(pick(bowlers), team.name, 1);
+}
+function randScore(){ const f=T.fmt; return Math.round(f.simLo + Math.random()*(f.simHi-f.simLo)); }
+function simMatch(idA,idB){
+  const A=byId(idA), B=byId(idB);
+  let sA=randScore(), sB=randScore(); if(sA===sB) sB+=1;
+  const aWon=sA>sB;
+  applyResult(idA,idB,sA,sB,aWon);
+  distributeBatting(A,sA); distributeBatting(B,sB);
+  assignWickets(A, pick([4,5,6,7,8])); assignWickets(B, pick([4,5,6,7,8]));
+  return {win: aWon?idA:idB, lose: aWon?idB:idA, sA, sB};
+}
+
+/* ---- LEAGUE screen ---- */
+function standings(){
+  return T.teams.map(t=>t.id).sort((x,y)=>{
+    const A=T.table[x], B=T.table[y];
+    return B.pts-A.pts || (B.rf-B.ra)-(A.rf-A.ra) || B.rf-A.rf;
+  });
+}
+function showLeague(){
+  show('scr-league');
+  document.getElementById('leagueTitle').textContent = T.fmt.label.replace('TOURNAMENT','').trim()+' — POINTS TABLE';
+  const done=T.roundIdx, total=T.schedule.length;
+  document.getElementById('leagueSub').innerHTML =
+    `Round <b>${Math.min(done+1,total)}</b> of ${total} • top 4 reach the playoffs`;
+  const order=standings();
+  let h=`<div style="display:flex;font-size:12px;color:#7e90b5;padding:4px 10px"><span style="flex:1">#  Team</span><span style="width:34px">P</span><span style="width:34px">W</span><span style="width:34px">L</span><span style="width:42px">Pts</span></div>`;
+  order.forEach((id,i)=>{
+    const r=T.table[id], t=byId(id), me=id===T.myId, q=i<4;
+    h+=`<div style="display:flex;align-items:center;font-size:14px;padding:6px 10px;border-radius:8px;margin:2px 0;
+         background:${me?'rgba(255,213,74,.16)':'#16243f'};${q?'border-left:4px solid #39ff88':'border-left:4px solid transparent'}">
+       <span style="flex:1"><b style="color:${q?'#39ff88':'#7e90b5'}">${i+1}</b>&nbsp; ${t.name}${me?' <span style="color:#ffd54a">(you)</span>':''}</span>
+       <span style="width:34px">${r.p}</span><span style="width:34px">${r.w}</span><span style="width:34px">${r.l}</span><span style="width:42px"><b style="color:#ffd54a">${r.pts}</b></span></div>`;
+  });
+  document.getElementById('leagueTable').innerHTML=h;
+  const btn=document.getElementById('leagueBtn');
+  if(T.roundIdx<total){
+    const round=T.schedule[T.roundIdx];
+    const mine=round.find(p=>p.includes(T.myId));
+    const oppId=mine[0]===T.myId?mine[1]:mine[0];
+    btn.textContent=`PLAY MY MATCH  (vs ${byId(oppId).name})`;
+    btn.onclick=playLeagueRound;
+  } else {
+    btn.textContent='➡ GO TO PLAYOFFS'; btn.onclick=startPlayoffs;
+  }
+}
+function playLeagueRound(){
+  const round=T.schedule[T.roundIdx];
+  const mine=round.find(p=>p.includes(T.myId));
+  const oppId=mine[0]===T.myId?mine[1]:mine[0];
+  T.pendingSim=round.filter(p=>!p.includes(T.myId));
+  T.ctx={type:'league'};
+  startMatch(byId(oppId), chosenFormat);
+}
+/* record my interactive league/playoff match from the live match state M */
+function recordMyMatch(){
+  const myId=myTeam.id, oppId=M.opp.id, myScore=M.score, oppScore=M.target-1, won=M._won;
+  applyResult(myId,oppId,myScore,oppScore,won);
+  M.batters.forEach(b=>{ if(b.balls>0) addRuns(b.name, myTeam.name, b.runs); });
+  if(M._oppCard) M._oppCard.forEach(b=>{ if(b.balls>0) addRuns(b.name, M.opp.name, b.runs); });
+  // wickets: my bowlers took the opp's wickets; opp bowlers took mine
+  assignWickets(myTeam, Math.min(M.maxWkts, (M._oppWkts||0)));
+  assignWickets(M.opp, M.wkts);
+  recordProfile(chosenFormat.key);
+}
+
+/* ---- PLAYOFFS ---- */
+function startPlayoffs(){
+  T.stage='playoffs';
+  const s=standings().slice(0,4);
+  T.playoff={ seeds:s, q1:null, elim:null, q2:null, final:null, step:'q1', champion:null };
+  showPlayoffs();
+}
+function poTeams(step){
+  const P=T.playoff, s=P.seeds;
+  if(step==='q1')    return [s[0], s[1]];
+  if(step==='elim')  return [s[2], s[3]];
+  if(step==='q2')    return [P.q1.lose, P.elim.win];
+  if(step==='final') return [P.q1.win, P.q2.win];
+}
+function showPlayoffs(){
+  show('scr-playoffs');
+  const P=T.playoff, qualified=P.seeds.includes(T.myId);
+  document.getElementById('playoffSub').innerHTML = qualified
+    ? `You qualified! Win it all to lift the cup.`
+    : `Your team didn't make the top 4 — watch it play out.`;
+  const line=(name,res)=>{
+    if(!res) return `<div style="background:#16243f;padding:8px 12px;border-radius:8px;margin:4px 0;color:#7e90b5">${name} — <i>to be played</i></div>`;
+    return `<div style="background:#16243f;padding:8px 12px;border-radius:8px;margin:4px 0">
+        <b style="color:#ffd54a">${name}</b><br>${byId(res.a).name} ${res.aScore} vs ${res.bScore} ${byId(res.b).name}
+        &nbsp;→ <b style="color:#39ff88">${byId(res.win).name} won</b></div>`;
+  };
+  let h='';
+  h+=line('Qualifier 1 (1 v 2)', P.q1);
+  h+=line('Eliminator (3 v 4)', P.elim);
+  h+=line('Qualifier 2', P.q2);
+  h+=line('FINAL', P.final);
+  document.getElementById('playoffBracket').innerHTML=h;
+  const btn=document.getElementById('playoffBtn');
+  if(P.step==='done'){ btn.textContent='🏆 SEE AWARDS'; btn.onclick=showTournamentEnd; return; }
+  const [a,b]=poTeams(P.step);
+  const names={q1:'Qualifier 1',elim:'Eliminator',q2:'Qualifier 2',final:'Final'}[P.step];
+  const involves=(a===T.myId||b===T.myId);
+  btn.textContent = involves ? `PLAY ${names} (vs ${byId(a===T.myId?b:a).name})` : `SIMULATE ${names}`;
+  btn.onclick=playNextPlayoff;
+}
+function playNextPlayoff(){
+  const P=T.playoff, step=P.step, [a,b]=poTeams(step);
+  if(a===T.myId||b===T.myId){
+    T.pendingSim=[]; T.ctx={type:'playoff', step};
+    startMatch(byId(a===T.myId?b:a), chosenFormat);
+  } else {
+    const r=simMatch(a,b);
+    resolvePlayoff(step, r.win, r.lose, r.sA, r.sB);
+    showPlayoffs();
+  }
+}
+function resolvePlayoff(step, win, lose, aScore, bScore){
+  const [a,b]=poTeams(step);
+  T.playoff[step]={a,b,win,lose,aScore:aScore??'-',bScore:bScore??'-'};
+  T.playoff.step = step==='q1'?'elim' : step==='elim'?'q2' : step==='q2'?'final' : 'done';
+  if(step==='final'){ T.playoff.champion=win; T.champion=win; }
+}
+
+/* ---- TOURNAMENT END: awards + man of the tournament ---- */
+function topOf(map){ let best=null,bv=-1; for(const k in map){ if(map[k]>bv){ bv=map[k]; best=k; } } return best?{name:best,val:bv,team:T.stats.team[best]}:null; }
+function showTournamentEnd(){
+  show('scr-tend');
+  const orange=topOf(T.stats.runs), purple=topOf(T.stats.wkts);
+  const motm=orange; // highest run scorer
+  const champ=T.champion?byId(T.champion):null;
+  const iWon = T.champion===T.myId;
+  // profile rewards
+  const st=profile[chosenFormat.key];
+  if(st){ st.tours++; if(iWon) st.cups++; if(motm && motm.name===profile.name) st.awards++; if(orange && orange.name===profile.name) st.awards++; saveProfile(); }
+  document.getElementById('tendTitle').innerHTML = champ?`🏆 ${champ.name} are CHAMPIONS!`:'TOURNAMENT OVER';
+  document.getElementById('tendTitle').style.color = iWon?'#39ff88':'#ffd54a';
+  document.getElementById('tendSub').innerHTML = iWon?'You lifted the cup! 🥳':(champ?`Better luck next time, ${profile.name}.`:'');
+  const card=(emoji,title,o,suffix)=> o?`<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:10px 14px;margin:6px 0;font-weight:bold">
+      ${emoji} ${title}<br>${o.name} <span style="font-weight:normal">(${o.team})</span> — ${o.val} ${suffix}</div>`:'';
+  let h='';
+  h+=card('🥇','Man of the Tournament', motm, 'runs');
+  h+=card('🧡','Orange Cap (most runs)', orange, 'runs');
+  h+=card('💜','Purple Cap (most wickets)', purple, 'wkts');
+  // final standings
+  h+=`<div style="margin-top:10px;color:#9fb3d8;font-size:13px">Final standings</div>`;
+  standings().forEach((id,i)=>{ const t=byId(id), r=T.table[id];
+    h+=`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 10px;${id===T.myId?'color:#ffd54a':''}">
+      <span>${i+1}. ${t.name}</span><span>${r.w}W ${r.l}L • ${r.pts} pts</span></div>`; });
+  document.getElementById('tendBody').innerHTML=h;
+  T=null;
+}
+
+/* ---- PROFILE screen ---- */
+let profileTab='ipl';
+function showProfile(){ profileTab='ipl'; renderProfile(); show('scr-profile'); }
+function setProfileTab(tab){ profileTab=tab; renderProfile(); }
+function renderProfile(){
+  document.getElementById('profileName').textContent='👤 '+(profile.name||'PLAYER');
+  document.getElementById('tabIpl').className='btn'+(profileTab==='ipl'?'':' alt');
+  document.getElementById('tabOdi').className='btn'+(profileTab==='odi'?'':' alt');
+  const s=profile[profileTab];
+  const avg = s.matches? (s.runs/s.matches).toFixed(1):'0.0';
+  const sr  = s.balls? (s.runs/s.balls*100).toFixed(1):'0.0';
+  const stat=(label,val)=>`<div style="display:flex;justify-content:space-between;background:#16243f;padding:9px 14px;border-radius:8px;margin:4px 0">
+      <span style="color:#9fb3d8">${label}</span><b style="color:#ffd54a">${val}</b></div>`;
+  document.getElementById('profileBody').innerHTML =
+      `<div class="sub" style="margin:2px 0 8px">${profileTab.toUpperCase()} career</div>`
+    + stat('Matches played', s.matches)
+    + stat('Runs scored', s.runs)
+    + stat('Balls faced', s.balls)
+    + stat('Highest score', s.hs)
+    + stat('Batting average', avg)
+    + stat('Strike rate', sr)
+    + stat('🏆 Cups won', s.cups)
+    + stat('🏅 Awards', s.awards);
 }
 
 /* ============================================================
@@ -245,10 +664,10 @@ function startMatch(opp, fmt){
     fielders: makeFielders(),
     over:[],                  // this over's outcomes
     ballTrail:[],
-    catchAnim:null,           // ball-in-air -> fielder catch
+    hitAnim:null,             // struck ball flying to boundary / fielder
     runAnim:null,             // batters crossing for run(s)
     milestone:null,           // {name, kind, score, t}
-    partnership:{runs:0, fifty:false},
+    partnership:{runs:0, fifty:false, hundred:false},
     pendingResult:null,
   };
   commentaryActive=false; clearTimeout(comTimer);
@@ -313,6 +732,7 @@ function pressGo(){
 
 /* -------- input -------- */
 window.addEventListener('keydown',e=>{
+  if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;  // let text fields type
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Enter'].includes(e.key)) e.preventDefault();
   if(!M) return;
   if(e.key==='ArrowLeft') M.aim=-1;
@@ -413,14 +833,37 @@ function noShotPlayed(){
   concludeBall({runs:0, out, txt, col, aerial:false, dir:0, kind});
 }
 
-/* route through animations before committing the ball */
+/* route through animations before committing the ball.
+   if the bat made contact, fly the ball out to the boundary / a fielder first. */
 function concludeBall(res){
   M.pendingResult=res;
-  if(res.out && res.kind==='caught'){
-    startCatch(res); M.state='catching';
-  } else {
-    commitBall(res);
-  }
+  const noContact = res.kind==='bowled' || res.kind==='lbw'
+                 || res.txt==='no shot' || res.txt==='left it / missed';
+  if(noContact){ commitBall(res); }
+  else { startFlight(res); M.state='flight'; }
+}
+
+/* fly the struck ball to the correct side of the ground:
+   leg (←) = left boundary, off (→) = right boundary, straight (↑) = down the ground.
+   sixes clear the rope, fours race to it, catches/fields meet a fielder. */
+function startFlight(res){
+  const cx=W/2, cy=H*0.58, rx=W*0.45, ry=H*0.30;
+  let ang = M.aim<0 ? Math.PI : M.aim>0 ? 0 : -Math.PI/2;   // left / right / straight up
+  ang += rand(-0.35,0.35);
+  const six    = res.runs===6;
+  const four   = res.runs===4;
+  const caught = res.out && res.kind==='caught';
+  const reach  = caught ? rand(0.60,0.82) : six ? 1.12 : four ? 1.0 : rand(0.45,0.7);
+  const x1 = cx + Math.cos(ang)*rx*reach;
+  const y1 = cy + Math.sin(ang)*ry*reach;
+  const x0 = pitchX(-0.05,0.9), y0 = pitchY(0.9)-32;        // off the bat
+  const lift = six ? H*0.34 : four ? H*0.09 : caught ? H*0.22 : H*0.13;
+  M.hitAnim = { x0,y0, x1,y1, mx:(x0+x1)/2, peakY:Math.min(y0,y1)-lift,
+                t:0, dur: six?950 : four?700 : caught?820 : 600,
+                six, four, caught, fielder:(caught || (!six && !four)) };
+  if(caught) speak(pick(['Up in the air! There are men waiting...',
+                         'He has skied it! This could be trouble...',
+                         'Top edge! Up it goes, who will take it?']), false);
 }
 
 /* apply runs/wickets/strike-rotation and queue the between-ball gap */
@@ -435,11 +878,20 @@ function commitBall(res){
 
   if(res.out){
     s.out=true; s.how=res.kind;
-    M.outFocus={ name:s.name, kind:res.kind, runs:s.runs };
+    // who got him out — names from the bowling (opposition) side
+    s.bowlerName = shortName(pick(M.opp.players));
+    if(res.kind==='caught'){
+      const others = M.opp.players.filter(p=>shortName(p)!==s.bowlerName);
+      s.fielderName = shortName(pick(others.length?others:M.opp.players));
+    }
+    const sr = s.balls>0 ? Math.round(s.runs/s.balls*100) : 0;
+    M.outFocus={ name:s.name, kind:res.kind, runs:s.runs, balls:s.balls, sr:sr,
+                 bowler:s.bowlerName, fielder:s.fielderName||'', start:performance.now() };
     M.wkts++;
-    M.partnership={runs:0, fifty:false};
-    const innings = s.runs<30 ? ` ${s.runs} from ${s.balls}. Not his day today, he will be disappointed with that.`
-                              : ` A terrific knock, ${s.runs} off ${s.balls}! He has played his part, take a bow!`;
+    M.partnership={runs:0, fifty:false, hundred:false};
+    const innings = s.runs>=80 ? ` A TERRIFIC knock, ${s.runs} off ${s.balls}! Take a bow, what an innings that was!`
+                  : s.runs>=35 ? ` A good knock that, ${s.runs} from ${s.balls}. He has done a fine job for his side.`
+                              : ` ${s.runs} from ${s.balls}. Not his day today, he will be disappointed with that.`;
     if(res.kind==='caught') comLine=pick([
         'Oh dear, oh dear! And it has been TAKEN! Safe hands in the deep! He has to go!',
         'Up it went, and SNAFFLED! A wonderful catch! That is the end of him!'])+innings;
@@ -460,6 +912,11 @@ function commitBall(res){
     } else if(s.runs>=50 && !s.fifty){
       s.fifty=true; M.milestone={name:s.name,kind:'FIFTY',score:s.runs,start:performance.now()};
       comLine=`And that is his fifty! Take a bow, young man! Just listen to this crowd, what an innings from ${s.name}!`;
+    } else if(M.partnership.runs>=100 && !M.partnership.hundred){
+      M.partnership.hundred=true; M.partnership.fifty=true;
+      const a=striker().name, b=nonStriker().name;
+      M.milestone={kind:'PARTNERSHIP', score:M.partnership.runs, name:`${a} & ${b}`, start:performance.now()};
+      comLine=`A HUNDRED-run partnership! What a stand this has been! These two have put on a clinic, the crowd is up on its feet!`;
     } else if(M.partnership.runs>=50 && !M.partnership.fifty){
       M.partnership.fifty=true;
       const a=striker().name, b=nonStriker().name;
@@ -468,6 +925,7 @@ function commitBall(res){
     } else if(res.runs===6){ comLine=pick(SIX_LINES); }
       else if(res.runs===4 && Math.random()<0.7){ comLine=pick(FOUR_LINES); }
 
+    if(M.milestone) crowdClap();   // applause for any fifty / hundred / partnership
     if(res.runs%2===1) rotateStrike();
   }
   // end of over: change ends
@@ -484,36 +942,52 @@ function commitBall(res){
   M.state='result'; M.timer=res.out?900:850;
 }
 
-/* set up ball-in-the-air -> fielder runs in and takes the catch */
-function startCatch(res){
-  const x0=pitchX(-0.05,0.88), y0=pitchY(0.88)-34;   // off the bat
-  const cand = M.fielders.map(f=>({x:W/2+f.x*W*0.4, y:H*0.62+f.y*H*0.26})).filter(p=>p.y>H*0.30);
-  let best;
-  if(M.aim<0) best=cand[0]||cand[5];          // leg side
-  else if(M.aim>0) best=cand[4]||cand[6];      // off side
-  else best=cand[2]||cand[9];                  // straight
-  M.catchAnim={ x0,y0, x1:best.x, y1:best.y,
-                peakY: Math.min(y0,best.y)-H*0.20, t:0, caught:false, fx:best.x, fy:best.y };
-  speak(pick(['Up in the air! And there are men waiting...','He has skied it! This is up for grabs!','Top edge! Oh, this is a big one up there!']), false);
-}
-
-/* build the opposition's first innings (they set the target) */
+/* build the opposition's first innings (they set the target).
+   total balls faced add up to the format's quota (e.g. 90 for ODI) so the card is realistic. */
 function genOppInnings(total){
   const names=padNames(M.opp.players, M.maxWkts+1);
-  const card=names.map(n=>({name:n, runs:0, balls:0, out:true}));
+  const n=names.length;
+  // how many actually batted; the rest are "did not bat"
+  const batted = clamp(Math.round(M.maxWkts*0.8)+pick([0,1,2]), 5, n);
+  // runs across the batted, summing to total
+  const runs=new Array(n).fill(0);
   let remaining=total;
-  for(let i=0;i<card.length && remaining>0;i++){
-    const last=(i===card.length-1);
-    let r = last ? remaining : Math.min(remaining, Math.round(remaining*(0.12+Math.random()*0.45)));
-    card[i].runs=r; remaining-=r;
-    card[i].balls = Math.max(1, Math.round(r*(0.7+Math.random()*0.7)) + (r===0?pick([1,2,3]):0));
+  for(let i=0;i<batted;i++){
+    const last=(i===batted-1);
+    let r = last ? remaining : Math.min(remaining, Math.round(total*(0.06+Math.random()*0.24)));
+    runs[i]=Math.max(0,r); remaining-=runs[i];
   }
-  // a couple of not-outs at the end look realistic
-  if(card.length>=2){ card[card.length-1].out=false; }
-  return card;
+  if(remaining>0) runs[batted-1]+=remaining;
+  // balls weighted by runs (so strike-rates look real) then normalised to the over quota
+  const w=runs.map((r,i)=> i<batted ? (r+2)*(0.8+Math.random()*0.5) : 0);
+  const wsum=w.reduce((a,b)=>a+b,0)||1;
+  const balls=w.map(x=> x>0?Math.max(1,Math.round(x/wsum*M.ballsTotal)):0);
+  let bsum=balls.reduce((a,b)=>a+b,0);
+  let big=0; balls.forEach((b,i)=>{ if(b>balls[big]) big=i; });
+  balls[big]+=M.ballsTotal-bsum; if(balls[big]<1) balls[big]=1;
+  // dismissals — names come from MY bowling side
+  return names.map((nm,i)=>{
+    const didBat=i<batted, notOut=(i>=batted-1);   // last batter left stranded
+    let st;
+    if(!didBat) st='did not bat';
+    else if(notOut) st='not out';
+    else st=oppDismissal();
+    return {name:nm, runs:runs[i], balls:balls[i], st, out:didBat && !notOut};
+  });
+}
+function oppDismissal(){
+  const bw=shortName(pick(myTeam.players));
+  const r=Math.random();
+  if(r<0.55){ const f=shortName(pick(myTeam.players)); return `c ${f} b ${bw}`; }
+  if(r<0.82) return `b ${bw}`;
+  return `lbw b ${bw}`;
 }
 function myStatus(b,i){
-  if(b.out) return ({caught:'c & b',bowled:'b',lbw:'lbw'}[b.how]||'out');
+  if(b.out){
+    if(b.how==='caught') return `c ${b.fielderName||'fielder'} b ${b.bowlerName||''}`.trim();
+    if(b.how==='lbw')    return `lbw b ${b.bowlerName||''}`.trim();
+    return `b ${b.bowlerName||''}`.trim();
+  }
   if(i===M.strikerIdx || i===M.nonStrikerIdx) return 'not out';
   if(b.balls>0) return 'not out';
   return 'did not bat';
@@ -543,8 +1017,9 @@ function endMatch(won){
   const myRows = M.batters.map((b,i)=>({ name:b.name, runs:b.runs, balls:b.balls, st:myStatus(b,i) }));
   // opposition card (they posted target-1)
   const oppCard = genOppInnings(M.target-1);
-  const oppRows = oppCard.map(b=>({ name:b.name, runs:b.runs, balls:b.balls, st: b.out?'out':'not out' }));
+  const oppRows = oppCard.map(b=>({ name:b.name, runs:b.runs, balls:b.balls, st:b.st }));
   const oppWkts = Math.min(M.maxWkts, oppCard.filter(b=>b.out).length);
+  M._oppCard=oppCard; M._oppWkts=oppWkts;   // kept for tournament stats
 
   // Man of the Match = top scorer FROM THE WINNING TEAM
   const winnerRows = won ? myRows : oppRows;
@@ -567,7 +1042,26 @@ function endMatch(won){
   document.getElementById('scBtn').textContent = 'CONTINUE';
   show('scr-scorecard');
 }
-function afterResult(){ show('scr-title'); }
+function afterResult(){
+  if(T && T.ctx && T.ctx.type==='league'){
+    recordMyMatch();
+    T.pendingSim.forEach(p=>simMatch(p[0],p[1]));
+    T.pendingSim=[]; T.ctx=null; T.roundIdx++;
+    showLeague();
+    return;
+  }
+  if(T && T.ctx && T.ctx.type==='playoff'){
+    recordMyMatch();
+    const step=T.ctx.step; T.ctx=null;
+    const [a,b]=poTeams(step);
+    const aScore=a===myTeam.id?M.score:M.target-1, bScore=b===myTeam.id?M.score:M.target-1;
+    const win=M._won?myTeam.id:M.opp.id, lose=M._won?M.opp.id:myTeam.id;
+    resolvePlayoff(step, win, lose, aScore, bScore);
+    showPlayoffs();
+    return;
+  }
+  show('scr-title');
+}
 
 /* -------- HUD + flash -------- */
 function setHud(){
@@ -721,20 +1215,18 @@ function update(dt){
     if(M.ballTrail.length>12) M.ballTrail.shift();
     if(b.t>=1.0 && !M.shotPlayed){ noShotPlayed(); }
   }
-  else if(M.state==='catching'){
-    const c=M.catchAnim;
-    c.t += dt/900;
-    if(c.t>=1 && !c.caught){ c.caught=true; commitBall(M.pendingResult); }
+  else if(M.state==='flight'){
+    M.hitAnim.t += dt/M.hitAnim.dur;
+    if(M.hitAnim.t>=1){ commitBall(M.pendingResult); }
   }
   else if(M.state==='result'){
     M.timer-=dt;
     if(M.timer<=0){
       const won=M.score>=M.target, allOut=M.wkts>=M.maxWkts, ballsDone=M.balls<=0;
       if(won||allOut||ballsDone){ M.state='ending'; endMatch(won); }
-      // on a wicket, show GO right away so the commentary can be skipped;
-      // otherwise keep the milestone overlay up and GO appears once commentary ends
-      else { M.state='between'; M.catchAnim=null; M.runAnim=null;
-             if(M.outFocus) showGo(true); else maybeShowGo(); }
+      // GO appears right away for every outcome — the player can skip the
+      // commentary by pressing it, or wait and let the line finish.
+      else { M.state='between'; M.hitAnim=null; M.runAnim=null; showGo(true); }
     }
   }
   if(M.runAnim){ M.runAnim.t+=dt/ (450*M.runAnim.runs); if(M.runAnim.t>=1) M.runAnim=null; }
@@ -786,7 +1278,7 @@ function render(){
   drawBowler();
   drawBatsmen();
   if(M.ball && M.state==='delivery') drawBall();
-  if(M.state==='catching') drawCatch();
+  if(M.state==='flight') drawFlight();
   drawTimingBar();
   if(M.state==='between' && !M.outFocus && !M.milestone) drawScorecard();
   if(M.outFocus && M.state!=='runup' && M.state!=='delivery') drawOutFocus();
@@ -878,7 +1370,7 @@ function drawBatsmen(){
 
   // striker
   const sx=pitchX(stN,stT), sy=pitchY(stT);
-  const swing=(M.shotPlayed && M.state==='delivery')?1:(M.state==='result'&&!M.runAnim?0.5:0);
+  const swing=(M.shotPlayed && M.state==='delivery')?1:((M.state==='result'||M.state==='flight')&&!M.runAnim?0.5:0);
   drawPlayer(sx,sy, myTeam.c1,myTeam.c2, 0.7+0.5*stT, running, swing, M.aim);
   drawName(sx, sy+12, striker().name+'*');
 }
@@ -888,18 +1380,28 @@ function drawName(x,y,txt){
   ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x-w/2,y-9,w,13);
   ctx.fillStyle='#fff'; ctx.fillText(txt,x,y+1);
 }
-function drawCatch(){
-  const c=M.catchAnim, t=clamp(c.t,0,1);
-  const mx=(c.x0+c.x1)/2;
-  const x=(1-t)*(1-t)*c.x0 + 2*(1-t)*t*mx + t*t*c.x1;
-  const y=(1-t)*(1-t)*c.y0 + 2*(1-t)*t*c.peakY + t*t*c.y1;
-  drawPlayer(c.fx,c.fy, M.opp.c1,M.opp.c2, 0.95, t<0.85, 0,0,false);
-  // gloves up reaching
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(c.fx,c.fy-34,4,0,7); ctx.fill();
-  // the ball arcing through the air
-  ctx.fillStyle='#e21b1b'; ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.fill();
-  ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,5,0.5,2.2); ctx.stroke();
-  if(t>0.92){ ctx.font='18px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText('🙌', c.fx, c.fy-42); }
+/* the struck ball arcing out to the boundary or to a fielder */
+function drawFlight(){
+  const f=M.hitAnim, t=clamp(f.t,0,1);
+  const bez=(p0,p1,p2,tt)=> (1-tt)*(1-tt)*p0 + 2*(1-tt)*tt*p1 + tt*tt*p2;
+  const x=bez(f.x0,f.mx,f.x1,t), y=bez(f.y0,f.peakY,f.y1,t);
+  // fielder waiting where the ball is headed (for catches / fields)
+  if(f.fielder){
+    drawPlayer(f.x1,f.y1, M.opp.c1,M.opp.c2, 0.92, t<0.8, 0,0,false);
+    if(f.caught){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(f.x1,f.y1-32,4,0,7); ctx.fill(); }
+  }
+  // ball trail
+  for(let i=1;i<=6;i++){ const tt=clamp(t-i*0.05,0,1);
+    ctx.fillStyle=`rgba(220,30,30,${0.32*(1-i/7)})`;
+    ctx.beginPath(); ctx.arc(bez(f.x0,f.mx,f.x1,tt), bez(f.y0,f.peakY,f.y1,tt), 3, 0, 7); ctx.fill(); }
+  // ball
+  ctx.fillStyle='#e21b1b'; ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,6,0.5,2.2); ctx.stroke();
+  // call-outs
+  ctx.textAlign='center';
+  if(f.caught && t>0.9){ ctx.font='20px Trebuchet MS'; ctx.fillText('🙌', f.x1, f.y1-38); }
+  if(f.six && t>0.8){ ctx.fillStyle='#ffd54a'; ctx.font='900 30px Trebuchet MS'; ctx.fillText('SIX!', x, y-14); }
+  if(f.four && t>0.85){ ctx.fillStyle='#39ff88'; ctx.font='900 26px Trebuchet MS'; ctx.fillText('FOUR!', x, y-14); }
 }
 function drawScorecard(){
   const w=Math.min(W*0.84,360), h=150, x=(W-w)/2, y=H*0.42;
@@ -996,20 +1498,32 @@ function drawMilestone(){
 }
 function drawOutFocus(){
   const o=M.outFocus;
-  const howTxt={caught:'c & b — caught!', bowled:'bowled him!', lbw:'lbw — plumb!'}[o.kind]||'OUT';
+  const tEl=performance.now()-(o.start||0);
+  const p=clamp(tEl/2600,0,1);                       // walk-off progress
   ctx.save();
-  ctx.fillStyle='rgba(20,4,8,0.74)'; ctx.fillRect(0,0,W,H);
-  const walk=performance.now()*0.012;
-  drawSad(W/2, H*0.66, 34, myTeam.c1, myTeam.c2, walk);
+  ctx.fillStyle='rgba(20,4,8,0.80)'; ctx.fillRect(0,0,W,H);
+  // the pavilion / dressing room he's trudging back to (left edge)
+  ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(0,H*0.42,W*0.14,H*0.32);
+  ctx.fillStyle='#9fb3d8'; ctx.font='bold 12px Trebuchet MS'; ctx.textAlign='center';
+  ctx.fillText('🚪 PAVILION', W*0.07, H*0.41);
+  // zoom-in then walk away: starts big/close, shrinks as he nears the pavilion
+  const x=lerp(W*0.5, W*0.11, p), y=lerp(H*0.70, H*0.54, p), sc=lerp(46, 24, p);
+  drawSad(x, y, sc, myTeam.c1, myTeam.c2, performance.now()*0.012);
+  // broadcast-style stat strip
   ctx.textAlign='center';
-  ctx.fillStyle='#ff5252'; ctx.font='900 50px Trebuchet MS';
-  ctx.fillText('OUT!', W/2, H*0.30);
-  ctx.fillStyle='#fff'; ctx.font='bold 26px Trebuchet MS';
-  ctx.fillText(`${o.name}  ${o.runs}`, W/2, H*0.30+38);
+  ctx.fillStyle='#ff5252'; ctx.font='900 52px Trebuchet MS';
+  ctx.fillText('OUT!', W/2, H*0.26);
+  ctx.fillStyle='#fff'; ctx.font='bold 27px Trebuchet MS';
+  ctx.fillText(`${o.name}   ${o.runs} (${o.balls})`, W/2, H*0.26+40);
+  const howTxt = o.kind==='caught' ? `c ${o.fielder} b ${o.bowler}`
+               : o.kind==='lbw'    ? `lbw b ${o.bowler}`
+                                    : `b ${o.bowler}`;
   ctx.fillStyle='#ffb3b3'; ctx.font='italic 20px Trebuchet MS';
-  ctx.fillText(howTxt, W/2, H*0.30+70);
+  ctx.fillText(howTxt, W/2, H*0.26+72);
+  ctx.fillStyle='#ffd54a'; ctx.font='bold 22px Trebuchet MS';
+  ctx.fillText(`Strike Rate ${o.sr}`, W/2, H*0.26+104);
   ctx.fillStyle='#9fb3d8'; ctx.font='14px Trebuchet MS';
-  ctx.fillText('press GO for the next batter', W/2, H*0.30+104);
+  ctx.fillText('press GO for the next batter', W/2, H*0.26+132);
   ctx.restore();
 }
 function drawPlayer(x,y,c1,c2,scale,running,swing=0,aim=0,keeper=false){
@@ -1091,6 +1605,20 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 
 /* resume audio on first interaction */
 document.addEventListener('pointerdown',()=>{ const a=audio(); if(a&&a.state==='suspended') a.resume(); }, {once:true});
+
+/* PWA: register the service worker for offline play */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }); }
+
+/* ---- boot: auto-login the last account, else pick/create one ---- */
+(function boot(){
+  const i=document.getElementById('playerNameInput');
+  if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') confirmName(); });
+  const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
+  if(act){ profile=act; show('scr-title'); refreshTitle(); }
+  else if(store.accounts.length){ showAccounts(); }
+  else { document.getElementById('enterBack').style.display='none';
+    if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }
+})();
 </script>
 </body>
 </html>

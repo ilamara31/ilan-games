@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Basket Catch</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Basket Catch" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -620,6 +628,9 @@ if (startBest) {
 bestEl.textContent = '🏆 Best: ' + highScore;
 
 resize();
+
+/* PWA: register the service worker for offline play */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }); }
 </script>
 </body>
 </html>
