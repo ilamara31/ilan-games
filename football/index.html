@@ -124,13 +124,9 @@ function zoneOf(x,y){
   return { col, row: y<G.midY?'high':'low' };
 }
 function sameZone(a,b){ return a&&b&&a.col===b.col&&a.row===b.row; }
-function resolveShot(shot, power, keeperZone){
-  if(shot==='over'||shot==='wide') return 'miss';
-  if(power<0.30) return 'save';
-  if(power>0.94 && shot.row==='high') return 'miss';
-  if(sameZone(shot,keeperZone)) return 'save';
-  return 'goal';
-}
+function inGoal(x,y){ return x>=G.left && x<=G.right && y>=G.topY && y<=G.lineY; }   // strictly between posts & under bar
+function reachR(){ return G.goalW*0.20; }                                            // how far the keeper's hands stretch
+function saved(targetPt, keeperPt){ if(!keeperPt) return false; const dx=targetPt.x-keeperPt.x, dy=(targetPt.y-keeperPt.y)*0.72; return Math.hypot(dx,dy)<reachR(); }
 
 /* ---- state ---- */
 const S={ phase:'menu', youScore:0,oppScore:0, youKicks:0,oppKicks:0, sd:false, youDots:[], oppDots:[], turn:'you' };
@@ -142,10 +138,10 @@ function nextTurn(){ if(!S.sd && S.youKicks>=5 && S.oppKicks>=5 && S.youScore===
 /* ---- anim objects ---- */
 let cross={x:0,y:0,dir:1,vy:1,locked:false}, power=0, powDir=1, holding=false;
 let ball={x:0,y:0,scale:1,rot:0,fly:0,flying:false,target:null,arc:0.3,flySpeed:1,deflecting:false,dt:0,from:null,to:null};
-let keeper={x:0,y:0,t:0,dir:0,high:false,diveZone:null,jump:0};
+let keeper={x:0,y:0,t:0,dir:0,high:false,divePt:null,jump:0};
 let striker={anim:0};
 let shotZone=null, shotPower=0, keeperZone=null, outcome=null;
-let aiTarget=null, youDiveZone=null, aimTimer=0, aimShow=false;
+let aiTarget=null, youClickPt=null, aimTimer=0, aimShow=false;
 let msg='', msgT=0, crowd=0, anim=0;
 let confetti=[];
 
@@ -168,23 +164,24 @@ function startShootout(){
   sfx.whistle(); beginTurn();
 }
 function beginTurn(){
-  outcome=null; keeperZone=null; shotZone=null; youDiveZone=null; aiTarget=null; aimShow=false;
+  outcome=null; shotZone=null; youClickPt=null; aiTarget=null; aimShow=false;
   ball.x=G.spotX; ball.y=G.spotY; ball.scale=1; ball.rot=0; ball.fly=0; ball.flying=false; ball.deflecting=false; ball.target=null;
-  keeper.x=G.cx; keeper.y=G.lineY-G.goalH*0.46; keeper.t=0; keeper.dir=0; keeper.diveZone=null; keeper.jump=0; striker.anim=0;
+  keeper.x=G.cx; keeper.y=G.lineY-G.goalH*0.46; keeper.t=0; keeper.dir=0; keeper.divePt=null; keeper.jump=0; striker.anim=0;
   if(S.turn==='you'){ S.phase='youAim'; cross.x=G.cx; cross.dir=1; cross.y=G.midY; cross.vy=1; power=0; holding=false; }
   else { S.phase='oppAim'; aiTarget={ col:Math.floor(Math.random()*3), row:Math.random()<0.5?'high':'low' }; aimTimer=1.5; aimShow=true; }
 }
 function shoot(){
-  shotZone=zoneOf(cross.x,cross.y); shotPower=power;
-  keeperZone={ col:Math.floor(Math.random()*3), row:Math.random()<0.5?'high':'low' };
-  outcome=resolveShot(shotZone,shotPower,keeperZone);
-  ball.target = (shotZone==='over'||shotZone==='wide') ? {x:cross.x,y:cross.y} : zoneCenter(shotZone);
-  keeper.diveZone=keeperZone; launchBall(1.2); sfx.kick(); S.phase='youKick';
+  shotPower=power; const pt={x:cross.x,y:cross.y}, isIn=inGoal(pt.x,pt.y);
+  const gz={col:Math.floor(Math.random()*3),row:Math.random()<0.5?'high':'low'}, kp=zoneCenter(gz);   // AI keeper guess
+  if(!isIn){ outcome='miss'; keeper.divePt=kp; }                       // over the bar / wide of the posts
+  else if(power<0.26){ outcome='save'; keeper.divePt={x:pt.x,y:pt.y}; } // too soft, keeper smothers it
+  else { keeper.divePt=kp; outcome = saved(pt,kp)?'save':'goal'; }     // in goal: goal unless keeper reaches it
+  ball.target=pt; launchBall(1.2); sfx.kick(); S.phase='youKick';
 }
 function oppShoot(){
-  keeperZone=youDiveZone; keeper.diveZone=youDiveZone;
-  outcome = (youDiveZone && sameZone(youDiveZone,aiTarget)) ? 'save' : 'goal';
-  ball.target=zoneCenter(aiTarget); aimShow=false; launchBall(1.25); sfx.kick(); S.phase='oppKick'; striker.anim=0;
+  const tp=zoneCenter(aiTarget); keeper.divePt = youClickPt || {x:G.cx,y:G.lineY-G.goalH*0.46};
+  outcome = saved(tp, youClickPt) ? 'save' : 'goal';      // your dive must reach the ball
+  ball.target=tp; aimShow=false; launchBall(1.25); sfx.kick(); S.phase='oppKick'; striker.anim=0;
 }
 function launchBall(speed){ ball.flying=true; ball.fly=0; ball.flySpeed=speed; ball.arc=(ball.target.y<G.midY?0.42:0.26); ball.deflecting=false; }
 function resolveTurn(){
@@ -216,7 +213,7 @@ function spawnConfetti(){ confetti=[]; for(let i=0;i<40;i++) confetti.push({x:Ma
 /* ---- input ---- */
 function press(x,y){
   if(S.phase==='youAim'){ holding=true; cross.locked=true; power=0; powDir=1; }
-  else if(S.phase==='oppAim'){ const z=zoneOf(x,y); youDiveZone=(z==='over'||z==='wide')?{col:x<G.cx?0:2,row:y<G.midY?'high':'low'}:z; oppShoot(); }
+  else if(S.phase==='oppAim'){ youClickPt={x:Math.max(G.left,Math.min(G.right,x)),y:Math.max(G.topY,Math.min(G.lineY,y))}; oppShoot(); }
   else if(S.phase==='result' && anim>0.45){ afterResult(); }
 }
 function release(){ if(S.phase==='youAim'&&holding){ holding=false; cross.locked=false; shoot(); } }
@@ -232,16 +229,16 @@ function update(dt){
   if(msgT>0) msgT-=dt*0.9; if(crowd>0) crowd-=dt;
   for(const p of confetti){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=240*dt; p.rot+=dt*5; }
   if(S.phase==='youAim'){
-    if(!holding){ cross.x+=cross.dir*dt*G.goalW*0.95; if(cross.x>G.aimR){cross.x=G.aimR;cross.dir=-1;} if(cross.x<G.aimL){cross.x=G.aimL;cross.dir=1;}
-      cross.y+=cross.vy*dt*G.goalH*0.8; if(cross.y>G.lineY-6){cross.y=G.lineY-6;cross.vy=-1;} if(cross.y<G.aimT){cross.y=G.aimT;cross.vy=1;} }
+    if(!holding){ cross.x+=cross.dir*dt*G.goalW*1.4; if(cross.x>G.aimR){cross.x=G.aimR;cross.dir=-1;} if(cross.x<G.aimL){cross.x=G.aimL;cross.dir=1;}
+      cross.y+=cross.vy*dt*G.goalH*1.1; if(cross.y>G.lineY-6){cross.y=G.lineY-6;cross.vy=-1;} if(cross.y<G.aimT){cross.y=G.aimT;cross.vy=1;} }
     else { power+=powDir*dt*1.6; if(power>=1){power=1;powDir=-1;} if(power<=0){power=0;powDir=1;} }
   } else if(S.phase==='oppAim'){
-    aimTimer-=dt; if(aimTimer<=0){ youDiveZone=null; oppShoot(); }   // too slow -> no dive
+    aimTimer-=dt; if(aimTimer<=0){ youClickPt=null; oppShoot(); }   // too slow -> no dive
   } else if(S.phase==='youKick'||S.phase==='oppKick'){
     if(S.phase==='oppKick') striker.anim=Math.min(1,striker.anim+dt*5);
     // keeper dives FAST (reaches zone by ~40% of flight)
-    if(keeper.diveZone){ const c=zoneCenter(keeper.diveZone); const kt=Math.min(1,ball.fly/0.4); const e=kt*(2-kt);
-      keeper.x=G.cx+(c.x-G.cx)*e; keeper.y=(G.lineY-G.goalH*0.46)+(c.y-(G.lineY-G.goalH*0.46))*e; keeper.t=e; keeper.dir=Math.sign(c.x-G.cx); keeper.high=keeper.diveZone.row==='high'; keeper.jump=Math.sin(kt*Math.PI)*G.goalH*0.18; }
+    if(keeper.divePt){ const c=keeper.divePt, base=G.lineY-G.goalH*0.46; const kt=Math.min(1,ball.fly/0.4), e=kt*(2-kt);
+      keeper.x=G.cx+(c.x-G.cx)*e; keeper.y=base+(c.y-base)*e; keeper.t=e; keeper.dir=Math.sign(c.x-G.cx); keeper.high=c.y<G.midY; keeper.jump=Math.sin(kt*Math.PI)*G.goalH*0.18; }
     if(!ball.deflecting){
       ball.fly+=dt*ball.flySpeed; ball.rot+=dt*12; const t=Math.min(1,ball.fly), tt=t*t*(3-2*t);
       ball.x=G.spotX+(ball.target.x-G.spotX)*tt; ball.y=G.spotY+(ball.target.y-G.spotY)*tt - Math.sin(t*Math.PI)*G.goalH*ball.arc; ball.scale=1-0.6*tt;
@@ -267,7 +264,7 @@ function render(){
     if(S.phase==='youAim') drawAim();
     if(S.phase==='oppAim') drawAimMarker();
     drawConfetti();
-    if(S.phase!=='over') { drawScore(); drawTurnBanner(); }
+    if(S.phase!=='over') { drawTopBoard(); drawScore(); }
     if(msgT>0) drawMsg();
   }
 }
@@ -374,11 +371,18 @@ function drawScore(){
 }
 function drawMarks(arr,x,y,dir){ ctx.font='bold 18px Trebuchet MS'; ctx.textAlign=dir>0?'left':'right'; const n=Math.max(5,arr.length);
   for(let i=0;i<n;i++){ const dx=x+dir*i*20; if(i<arr.length){ ctx.fillStyle=arr[i]?'#39ff88':'#fb7185'; ctx.fillText(arr[i]?'✓':'✗',dx,y); } else { ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fillText('•',dx,y); } } }
-function drawTurnBanner(){
-  const yourTurn=S.turn==='you'; const txt = yourTurn?'⚽ YOUR TURN — SHOOT!':'🧤 OPPONENT KICKS — SAVE IT!';
-  ctx.font='900 '+Math.round(Math.min(W*0.05,22))+'px Trebuchet MS'; ctx.textAlign='center';
-  const w=ctx.measureText(txt).width+34; ctx.fillStyle='rgba(8,14,28,0.62)'; ctx.beginPath(); ctx.roundRect(W/2-w/2,H*0.055,w,34,16); ctx.fill();
-  ctx.fillStyle=yourTurn?'#39ff88':'#fb7185'; ctx.fillText(txt,W/2,H*0.055+23);
+function drawTopBoard(){
+  const bw=Math.min(W*0.88,450), bx=W/2-bw/2, by=H*0.035, bh=54;
+  ctx.fillStyle='rgba(8,14,28,0.84)'; ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,14); ctx.fill();
+  ctx.strokeStyle='rgba(255,213,74,0.55)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#ffd54a'; ctx.font='900 '+Math.round(Math.min(W*0.085,32))+'px Trebuchet MS';
+  ctx.fillText(`${S.youScore}  -  ${S.oppScore}`, W/2, by+21);
+  ctx.fillStyle='#cfe0ff'; ctx.font='bold 12px Trebuchet MS';
+  ctx.fillText(`${myTeam.flag} ${myTeam.name}   vs   ${oppTeam.name} ${oppTeam.flag}`, W/2, by+41);
+  const yt=S.turn==='you'; ctx.font='900 '+Math.round(Math.min(W*0.046,18))+'px Trebuchet MS'; ctx.fillStyle=yt?'#39ff88':'#fb7185';
+  ctx.fillText(yt?'⚽ YOUR TURN — SHOOT!':'🧤 SAVE IT — tap the aim fast!', W/2, by+bh+15);
+  ctx.textBaseline='alphabetic';
 }
 function drawMsg(){
   ctx.save(); ctx.globalAlpha=Math.min(1,msgT*1.6); ctx.textAlign='center'; ctx.font='900 '+Math.round(Math.min(W*0.15,84))+'px Trebuchet MS';
