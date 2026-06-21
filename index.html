@@ -36,6 +36,13 @@
 <body>
   <h1>ILAN'S ARCADE</h1>
   <div class="sub">Games made by Ilan 🎮 — pick one and play!</div>
+  <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
+    border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
+  <div id="iosHint" style="display:none;background:rgba(8,14,28,.6);color:#cdd9f0;padding:12px 18px;border-radius:14px;
+    margin-bottom:22px;max-width:420px;font-size:14px;line-height:1.5">
+    📲 <b>Install on iPhone:</b> tap the <b>Share</b> button below, then <b>Add to Home Screen</b>.
+    It becomes a real app and remembers you forever.</div>
   <div class="cards">
     <a class="card cricket" href="cricket/">
       <span class="emoji">🏏</span>
@@ -51,6 +58,24 @@
   <footer>Made with ❤️ by Ilan • More games coming soon</footer>
   <script>
     if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+
+    /* prominent install flow */
+    const installBtn=document.getElementById('installBtn');
+    const iosHint=document.getElementById('iosHint');
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt', e=>{        // Android / desktop Chrome & Edge
+      e.preventDefault(); deferredPrompt=e; if(!standalone) installBtn.style.display='inline-block';
+    });
+    installBtn.addEventListener('click', async ()=>{
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt(); await deferredPrompt.userChoice;
+      deferredPrompt=null; installBtn.style.display='none';
+    });
+    window.addEventListener('appinstalled', ()=>{ installBtn.style.display='none'; iosHint.style.display='none'; });
+    /* iOS Safari has no install prompt — show the Add-to-Home-Screen hint instead */
+    const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isiOS && !standalone) iosHint.style.display='block';
   </script>
 </body>
 </html>
