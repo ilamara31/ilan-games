@@ -59,9 +59,10 @@
   <!-- TITLE -->
   <div id="scr-title" class="screen">
     <h1>SUPER OVER</h1>
-    <div class="sub">Timing-based IPL cricket • Chase the target • Win the cup</div>
-    <button class="btn" onclick="goTeamSelect()">PLAY TOURNAMENT</button>
-    <button class="btn alt" onclick="quickMatch()">QUICK MATCH</button>
+    <div class="sub">Timing-based cricket • Pick your format • Chase the target</div>
+    <button class="btn" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">5 overs • 30 balls • 5 wkts</span></button>
+    <button class="btn alt" onclick="chooseFormat('ipl')">IPL MATCH<br><span style="font-size:12px;font-weight:normal">10 overs • 60 balls • 7 wkts</span></button>
+    <button class="btn" onclick="chooseFormat('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">15 overs • 90 balls • 10 wkts</span></button>
     <div class="sub" style="margin-top:24px;max-width:480px">
       Press <b>SPACE</b> / tap to play the shot at the right moment.<br>
       Use <b>← ↑ →</b> or swipe to aim leg-side / straight / off-side.
@@ -71,7 +72,7 @@
   <!-- TEAM SELECT -->
   <div id="scr-team" class="screen hidden">
     <h1 style="font-size:34px">CHOOSE YOUR TEAM</h1>
-    <div class="sub">10 teams. Win your way to the final.</div>
+    <div class="sub">10 teams. Pick your side.</div>
     <div id="teamgrid" class="teamgrid"></div>
     <button class="btn" id="teamNext" onclick="goNames()" disabled style="opacity:.4">NEXT</button>
     <button class="btn alt" onclick="show('scr-title')">BACK</button>
@@ -83,25 +84,9 @@
     <div class="sub">Edit names if you like, then start.</div>
     <div id="namelist" class="namelist"></div>
     <div class="row" style="margin-top:14px">
-      <button class="btn" onclick="startTournament()">START</button>
+      <button class="btn" onclick="startSingle()">START</button>
       <button class="btn alt" onclick="goTeamSelect()">BACK</button>
     </div>
-  </div>
-
-  <!-- BRACKET -->
-  <div id="scr-bracket" class="screen hidden">
-    <h1 style="font-size:32px" id="bracketTitle">TOURNAMENT</h1>
-    <div class="sub" id="bracketSub"></div>
-    <div id="bracket" class="bracket"></div>
-    <button class="btn" id="bracketBtn" onclick="playNextFixture()">PLAY MATCH</button>
-  </div>
-
-  <!-- RESULT -->
-  <div id="scr-result" class="screen hidden">
-    <h1 id="resultTitle">RESULT</h1>
-    <div class="sub" id="resultSub"></div>
-    <button class="btn" id="resultBtn" onclick="afterResult()">CONTINUE</button>
-    <button class="btn alt" onclick="show('scr-title')">MAIN MENU</button>
   </div>
 
   <!-- SCORECARD -->
@@ -159,8 +144,24 @@ const TEAMS = [
 
 /* ---------------- GLOBAL STATE ---------------- */
 let myTeam = null;          // chosen team object (with editable players)
-let tour = null;            // tournament state
-const stages = ['LEAGUE MATCH','PRE-QUARTER FINAL','QUARTER-FINAL','SEMI-FINAL','FINAL'];
+let tour = null;            // kept null — single-match modes only
+
+/* ---------------- MATCH FORMATS ---------------- */
+const FORMATS = {
+  quick: { key:'quick', label:'QUICK MATCH',   overs:5,  maxWkts:5,  targetLo:52,  targetHi:67  },
+  ipl:   { key:'ipl',   label:'IPL MATCH',     overs:10, maxWkts:7,  targetLo:155, targetHi:172 },
+  odi:   { key:'odi',   label:'ODI WORLD CUP', overs:15, maxWkts:10, targetLo:240, targetHi:264 },
+};
+let chosenFormat = FORMATS.quick;
+function chooseFormat(key){ chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
+/* pad a 5-name top order out to `count` batters with a generic lower order */
+function padNames(players, count){
+  const names = players.slice();
+  const extras = ['All-rounder','Spinner','Pacer','Keeper','Tail-ender','No. 9','No. 10','No. 11'];
+  let i=0;
+  while(names.length<count){ names.push(extras[i++] || ('Batter '+(names.length+1))); }
+  return names.slice(0, count);
+}
 
 /* ---------------- SCREEN HELPERS ---------------- */
 function show(id){
@@ -202,70 +203,35 @@ function goNames(){
     list.appendChild(row);
   });
 }
-function startTournament(){
+function startSingle(){
   document.querySelectorAll('#namelist input').forEach(inp=>{
     myTeam.players[+inp.dataset.i]= inp.value.trim()||('Batter '+(+inp.dataset.i+1));
   });
-  // build a 5-fixture road to the cup
-  const others = TEAMS.filter(t=>t.id!==myTeam.id);
-  shuffle(others);
-  tour = { stageIdx:0, fixtures: stages.map((s,i)=>({ stage:s, opp:others[i], result:null })), agg:{} };
-  renderBracket();
-}
-function quickMatch(){
-  // pick a random team for the player + random opponent, skip naming
-  const base = TEAMS[Math.floor(Math.random()*TEAMS.length)];
-  myTeam = JSON.parse(JSON.stringify(base));
+  // random opponent from the other nine teams
   const opp = TEAMS.filter(t=>t.id!==myTeam.id)[Math.floor(Math.random()*9)];
   tour = null;
-  startMatch(opp, 0, 'QUICK MATCH');
+  startMatch(opp, chosenFormat);
 }
-
-function renderBracket(){
-  show('scr-bracket');
-  document.getElementById('bracketTitle').textContent = myTeam.name.toUpperCase()+"'S ROAD TO THE CUP";
-  const wins = tour.fixtures.filter(f=>f.result==='W').length;
-  document.getElementById('bracketSub').textContent = `Wins: ${wins}/5  •  Lose and you're knocked out`;
-  const b=document.getElementById('bracket'); b.innerHTML='';
-  tour.fixtures.forEach((f,i)=>{
-    const row=document.createElement('div');
-    row.className='match-row'+(f.result?' done':'')+(i===tour.stageIdx&&!f.result?' current':'');
-    let right = f.result==='W'?'✅ WON':f.result==='L'?'❌ LOST':'<span class="vs">vs</span>';
-    row.innerHTML=`<span><b style="color:#ffd54a">${f.stage}</b><br>${myTeam.name} ${right==='<span class="vs">vs</span>'?'':''} </span>
-                   <span>${right} ${f.opp.name}</span>`;
-    b.appendChild(row);
-  });
-  const btn=document.getElementById('bracketBtn');
-  const cur=tour.fixtures[tour.stageIdx];
-  if(!cur){ btn.textContent='🏆 YOU WON THE CUP!'; btn.onclick=()=>show('scr-title'); }
-  else { btn.textContent='PLAY '+cur.stage; btn.disabled=false; btn.style.opacity=1; }
-}
-function playNextFixture(){
-  const cur=tour.fixtures[tour.stageIdx];
-  if(!cur) return;
-  startMatch(cur.opp, tour.stageIdx, cur.stage);
-}
-
-function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
 
 /* ============================================================
    MATCH ENGINE
    ============================================================ */
 let M = null; // match state
 
-function startMatch(opp, difficulty, label){
-  // short, punchy 5-over chase; gets steeper every round (final ~30 balls, ~90)
-  const overs = 5;
+function startMatch(opp, fmt){
+  fmt = fmt || FORMATS.quick;
+  const overs = fmt.overs;
   const balls = overs*6;
-  // opponent's posted total escalates with the stage
-  const target = 52 + difficulty*9 + Math.floor(Math.random()*8);
-  // batting line-up: 5 named batters + a tail-ender (so 5 wickets = all out)
-  const batters = myTeam.players.concat(['Tail-ender'])
+  // opponent posts a chase target appropriate to the chosen format
+  const target = fmt.targetLo + Math.floor(Math.random()*(fmt.targetHi-fmt.targetLo+1));
+  const maxWkts = fmt.maxWkts;
+  // batting line-up: named top order + lower order, so maxWkts wickets = all out
+  const batters = padNames(myTeam.players, maxWkts+1)
     .map(n=>({ name:n, runs:0, balls:0, out:false, how:'', fifty:false, hundred:false }));
   M = {
-    opp, label, difficulty,
+    opp, label: fmt.label, difficulty:0,
     target, balls, ballsTotal: balls,
-    score:0, wkts:0, maxWkts:5,
+    score:0, wkts:0, maxWkts,
     ballNo:0,
     batters, strikerIdx:0, nonStrikerIdx:1, nextIn:2,
     state:'between',          // between -> (GO) -> runup -> delivery -> animating -> result -> between
@@ -274,7 +240,7 @@ function startMatch(opp, difficulty, label){
     aim:0,                    // -1 leg, 0 straight, 1 off (set by input)
     shotPlayed:false,
     pressT:null,
-    bowlerType: difficulty>=3 ? 'spin' : 'pace',  // final = spin challenge
+    bowlerType: 'pace',
     flash:0, flashTxt:'', flashCol:'#fff',
     fielders: makeFielders(),
     over:[],                  // this over's outcomes
@@ -283,7 +249,6 @@ function startMatch(opp, difficulty, label){
     runAnim:null,             // batters crossing for run(s)
     milestone:null,           // {name, kind, score, t}
     partnership:{runs:0, fifty:false},
-    chant:null,               // crowd chant overlay
     pendingResult:null,
   };
   commentaryActive=false; clearTimeout(comTimer);
@@ -337,6 +302,8 @@ const goBtn=document.getElementById('goBtn');
 function showGo(on){ goBtn.classList.toggle('hidden', !on); }
 function pressGo(){
   if(!M || M.state!=='between') return;
+  // pressing GO also cuts off any commentary still being spoken
+  if(commentaryActive){ try{ speechSynthesis.cancel(); }catch(e){} commentaryActive=false; clearTimeout(comTimer); }
   showGo(false);
   M.outFocus=null; M.milestone=null;   // dismiss the celebration / sad focus
   M.shotPlayed=false; M.pressT=null; M.aim=0; M.ballTrail=[];
@@ -501,7 +468,6 @@ function commitBall(res){
     } else if(res.runs===6){ comLine=pick(SIX_LINES); }
       else if(res.runs===4 && Math.random()<0.7){ comLine=pick(FOUR_LINES); }
 
-    if(res.runs===6) crowdChant(myTeam.name);
     if(res.runs%2===1) rotateStrike();
   }
   // end of over: change ends
@@ -509,11 +475,10 @@ function commitBall(res){
   if(endOfOver && M.balls>0) rotateStrike();
 
   flash(res.txt,res.col);
-  if(res.runs>=4) crowdCheer(res.runs===6?1.2:1.0);
+  if(res.runs>=4){ crowdCheer(res.runs===6?1.3:1.0); crowdClap(); }   // cheer + applause, no chant
   else if(res.out) crowdGroan();
   if(res.runs>0 && res.runs<4 && !res.out) M.runAnim={t:0, runs:res.runs};
   if(comLine) speak(comLine, true);   // gate the GO button until it finishes
-  if(res.runs===6) speakChant();      // crowd erupts with the team name afterwards
   setHud();
 
   M.state='result'; M.timer=res.out?900:850;
@@ -534,7 +499,7 @@ function startCatch(res){
 
 /* build the opposition's first innings (they set the target) */
 function genOppInnings(total){
-  const names=M.opp.players.concat(['Tail-ender']);
+  const names=padNames(M.opp.players, M.maxWkts+1);
   const card=names.map(n=>({name:n, runs:0, balls:0, out:true}));
   let remaining=total;
   for(let i=0;i<card.length && remaining>0;i++){
@@ -569,7 +534,7 @@ function endMatch(won){
   speechSynthesis && speechSynthesis.cancel();
   speak(won ? `${myTeam.name} have DONE IT! What a chase! The crowd is going berserk! Take a bow, boys, take a bow!`
             : `Oh, so close! But ${M.opp.name} have held their nerve! Heartbreak for ${myTeam.name}, my friend.`);
-  if(won){ crowdChant(myTeam.name); speakChant(); }
+  if(won){ crowdCheer(1.4); crowdClap(); }
 
   // accumulate my batters' runs for Man of the Tournament
   if(tour){ M.batters.forEach(b=>{ tour.agg[b.name]=(tour.agg[b.name]||0)+b.runs; }); }
@@ -579,7 +544,7 @@ function endMatch(won){
   // opposition card (they posted target-1)
   const oppCard = genOppInnings(M.target-1);
   const oppRows = oppCard.map(b=>({ name:b.name, runs:b.runs, balls:b.balls, st: b.out?'out':'not out' }));
-  const oppWkts = Math.min(5, oppCard.filter(b=>b.out).length);
+  const oppWkts = Math.min(M.maxWkts, oppCard.filter(b=>b.out).length);
 
   // Man of the Match = top scorer FROM THE WINNING TEAM
   const winnerRows = won ? myRows : oppRows;
@@ -602,38 +567,7 @@ function endMatch(won){
   document.getElementById('scBtn').textContent = 'CONTINUE';
   show('scr-scorecard');
 }
-function afterResult(){
-  if(!tour){ show('scr-title'); return; }
-  const cur=tour.fixtures[tour.stageIdx];
-  cur.result = M._won ? 'W' : 'L';
-  if(M._won){
-    tour.stageIdx++;
-    if(tour.stageIdx>=tour.fixtures.length){
-      // champion — find Man of the Tournament (most aggregate runs in MY team)
-      let motName='', motRuns=-1;
-      for(const n in tour.agg){ if(tour.agg[n]>motRuns){ motRuns=tour.agg[n]; motName=n; } }
-      speak(`${myTeam.name} are the champions! And the man of the tournament is ${motName} with ${motRuns} runs!`);
-      show('scr-result');
-      document.getElementById('resultTitle').textContent='🏆 CHAMPIONS!';
-      document.getElementById('resultTitle').style.color='#ffd54a';
-      document.getElementById('resultSub').innerHTML=
-        `<b>${myTeam.name}</b> have won the Super Over Cup! 🥳<br><br>`+
-        `<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:12px 18px;font-weight:bold">`+
-        `🏆 Man of the Tournament<br>${motName} — ${motRuns} runs across 5 matches</div>`;
-      document.getElementById('resultBtn').textContent='BACK TO MENU';
-      document.getElementById('resultBtn').onclick=()=>{document.getElementById('resultBtn').onclick=afterResult; show('scr-title');};
-      return;
-    }
-    renderBracket();
-  } else {
-    // knocked out
-    show('scr-result');
-    document.getElementById('resultTitle').textContent='KNOCKED OUT';
-    document.getElementById('resultSub').innerHTML=`${myTeam.name} were eliminated in the <b>${cur.stage}</b>.`;
-    document.getElementById('resultBtn').textContent='BACK TO MENU';
-    document.getElementById('resultBtn').onclick=()=>{document.getElementById('resultBtn').onclick=afterResult; show('scr-title');};
-  }
-}
+function afterResult(){ show('scr-title'); }
 
 /* -------- HUD + flash -------- */
 function setHud(){
@@ -682,9 +616,6 @@ function sndHit(){ const a=audio(); if(!a) return; const o=a.createOscillator(),
 /* -------- commentator (Web Speech) -------- */
 let comOn = ('speechSynthesis' in window);
 let chosenVoice=null, crowdVoice=null, commentaryActive=false, comTimer=null;
-// what the crowd actually shouts for each franchise
-const CHANTS={MI:'Mumbai',CSK:'Chennai',RCB:'Aar Cee Bee',KKR:'Kolkata',GT:'Gujarat',
-              SRH:'Hyderabad',RR:'Rajasthan',DC:'Delhi',PBKS:'Punjab',LSG:'Lucknow'};
 function loadVoices(){
   if(!comOn) return;
   const vs=speechSynthesis.getVoices(); if(!vs.length) return;
@@ -701,16 +632,6 @@ function loadVoices(){
   crowdVoice = vs.find(v=>v!==chosenVoice && /^en[-_]/i.test(v.lang)) || chosenVoice;
   const tag=document.getElementById('voiceTag');
   if(tag) tag.textContent = '🎙 '+(chosenVoice ? chosenVoice.name+' ('+chosenVoice.lang+')' : 'no voice');
-}
-/* crowd shouting the team name (queued AFTER the commentary so they don't clash) */
-function speakChant(){
-  if(!comOn) return;
-  const word=CHANTS[(myTeam&&myTeam.id)]||'';
-  if(!word) return;
-  const u=new SpeechSynthesisUtterance((word+'! ').repeat(3));
-  if(crowdVoice) u.voice=crowdVoice;
-  u.rate=1.18; u.pitch=1.4; u.volume=0.55;   // higher, quicker, in the background
-  speechSynthesis.speak(u);
 }
 if(comOn){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
 function maybeShowGo(){ if(M && M.state==='between' && !commentaryActive) showGo(true); }
@@ -757,24 +678,22 @@ const FOUR_LINES=[
   'Glorious cricket shot! The rope had no chance, four beautiful runs!',
   'He has caressed that one to the boundary! Just delightful, four runs!'];
 
-/* low, background crowd chant of the team name on a six */
-function crowdChant(name){
-  M.chant={ text:name.toUpperCase(), start:performance.now() };
+/* warm applause on a boundary — many hands clapping, no team-name chant */
+function crowdClap(){
   const a=audio(); if(!a) return;
-  const cycles=5, cycleDur=0.6;
-  for(let c=0;c<cycles;c++){
-    [0.0,0.3].forEach(off=>{                 // two syllables per chant
-      const t0=a.currentTime + c*cycleDur + off, dur=0.24;
-      const src=a.createBufferSource();
-      const buf=a.createBuffer(1, Math.floor(a.sampleRate*dur), a.sampleRate);
-      const d=buf.getChannelData(0);
-      for(let i=0;i<d.length;i++){ const e=Math.sin(Math.PI*i/d.length); d[i]=(Math.random()*2-1)*e; }
-      src.buffer=buf;
-      const f=a.createBiquadFilter(); f.type='bandpass'; f.frequency.value= off?520:760; f.Q.value=0.7;
-      const g=a.createGain(); g.gain.value=0.13;   // background level — not loud
-      src.connect(f); f.connect(g); g.connect(a.destination); src.start(t0);
-    });
+  const dur=1.7;
+  const buf=a.createBuffer(1, Math.floor(a.sampleRate*dur), a.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){
+    const env=Math.sin(Math.PI*i/d.length);            // swell up then fade away
+    const spike=Math.random()<0.06 ? (Math.random()*2-1)        // scattered sharp claps
+                                    : (Math.random()*2-1)*0.14;  // background hubbub
+    d[i]=spike*env*0.5;
   }
+  const src=a.createBufferSource(); src.buffer=buf;
+  const f=a.createBiquadFilter(); f.type='highpass'; f.frequency.value=1100;
+  const g=a.createGain(); g.gain.value=0.45;
+  src.connect(f); f.connect(g); g.connect(a.destination); src.start();
 }
 
 /* ============================================================
@@ -812,8 +731,10 @@ function update(dt){
     if(M.timer<=0){
       const won=M.score>=M.target, allOut=M.wkts>=M.maxWkts, ballsDone=M.balls<=0;
       if(won||allOut||ballsDone){ M.state='ending'; endMatch(won); }
-      // keep the OUT / milestone overlay up; GO appears once commentary ends
-      else { M.state='between'; M.catchAnim=null; M.runAnim=null; maybeShowGo(); }
+      // on a wicket, show GO right away so the commentary can be skipped;
+      // otherwise keep the milestone overlay up and GO appears once commentary ends
+      else { M.state='between'; M.catchAnim=null; M.runAnim=null;
+             if(M.outFocus) showGo(true); else maybeShowGo(); }
     }
   }
   if(M.runAnim){ M.runAnim.t+=dt/ (450*M.runAnim.runs); if(M.runAnim.t>=1) M.runAnim=null; }
@@ -867,22 +788,9 @@ function render(){
   if(M.ball && M.state==='delivery') drawBall();
   if(M.state==='catching') drawCatch();
   drawTimingBar();
-  if(M.chant) drawChant();
   if(M.state==='between' && !M.outFocus && !M.milestone) drawScorecard();
   if(M.outFocus && M.state!=='runup' && M.state!=='delivery') drawOutFocus();
   if(M.milestone) drawMilestone();
-}
-function drawChant(){
-  const el=performance.now()-M.chant.start;
-  if(el>3200){ M.chant=null; return; }
-  const beat=Math.abs(Math.sin(el*0.0105));         // two-syllable pulse
-  const alpha=clamp(1-el/3200,0,1);
-  ctx.save(); ctx.globalAlpha=alpha; ctx.textAlign='center';
-  ctx.font=`900 ${24+beat*10}px Trebuchet MS`;
-  const txt=`${M.chant.text}!   ${M.chant.text}!`;
-  ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.strokeText(txt, W/2, H*0.20);
-  ctx.fillStyle=myTeam.c2==='#000000'?'#ffd54a':myTeam.c2; ctx.fillText(txt, W/2, H*0.20);
-  ctx.restore();
 }
 function lerp(a,b,t){ return a+(b-a)*t; }
 
