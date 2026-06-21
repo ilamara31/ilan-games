@@ -34,8 +34,16 @@
     font-weight:bold; border-radius:30px; cursor:pointer; margin:6px; box-shadow:0 6px 18px rgba(255,160,50,.35); text-decoration:none; display:inline-block; }
   .btn.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
-  #count { position:absolute; inset:0; z-index:8; display:flex; align-items:center; justify-content:center;
-    font-size:clamp(80px,26vw,200px); font-weight:900; color:#fff; text-shadow:0 6px 30px rgba(0,0,0,.7); pointer-events:none; }
+  #lights { position:absolute; top:16%; left:50%; transform:translateX(-50%); z-index:8; display:none;
+    flex-direction:column; align-items:center; gap:12px; pointer-events:none; }
+  #lights .lamps { display:flex; gap:16px; background:#0c0c0c; padding:16px 20px; border-radius:16px;
+    box-shadow:0 10px 34px rgba(0,0,0,.6); border:2px solid #222; }
+  #lights .lamp { width:clamp(34px,9vw,52px); height:clamp(34px,9vw,52px); border-radius:50%; background:#2a2a2a; opacity:.4; transition:opacity .1s; }
+  #lights .lamp.on { opacity:1; }
+  #lampR.on { background:#ff2b2b; box-shadow:0 0 26px #ff2b2b; }
+  #lampY.on { background:#ffd21f; box-shadow:0 0 26px #ffd21f; }
+  #lampG.on { background:#27e36a; box-shadow:0 0 26px #27e36a; }
+  #lightsTxt { font-size:clamp(22px,6vw,34px); font-weight:900; text-shadow:0 3px 14px rgba(0,0,0,.6); }
   #homeBtn { position:absolute; bottom:14px; left:14px; z-index:6; font-size:22px; width:46px; height:46px; border-radius:50%;
     background:rgba(255,255,255,.75); color:#111; display:flex; align-items:center; justify-content:center; text-decoration:none;
     box-shadow:0 2px 6px rgba(0,0,0,.3); }
@@ -56,7 +64,10 @@
     <div class="box" id="hud-left"></div>
     <div class="box" id="speedo"></div>
   </div>
-  <div id="count" class="hidden"></div>
+  <div id="lights">
+    <div class="lamps"><div class="lamp" id="lampR"></div><div class="lamp" id="lampY"></div><div class="lamp" id="lampG"></div></div>
+    <div id="lightsTxt"></div>
+  </div>
   <div class="steerhint hidden" id="steerhint">Hold LEFT / RIGHT side to steer • brake = ↓ / bottom</div>
   <a id="homeBtn" href="../" title="Back to games">🏠</a>
 
@@ -120,7 +131,7 @@ const POINTS=[25,18,15,12,10,8,6,4,2,1];
 const LAPS_TOTAL=3;
 
 /* ---- pseudo-3D constants ---- */
-const segmentLength=200, rumbleLength=3, roadWidth=2000;
+const segmentLength=200, rumbleLength=3, roadWidth=2800;
 const cameraHeight=1500, fov=100, drawDistance=180, centrifugal=0.3;
 const cameraDepth=1/Math.tan((fov/2)*Math.PI/180);
 const playerZ=cameraHeight*cameraDepth;
@@ -169,20 +180,20 @@ function buildTrack(){
 /* ---- race state ---- */
 let cars=[], position=0, playerX=0, speed=0, lap=1, raceTime=0, lapStart=0, fastestLap=0;
 let state='menu';   // menu | countdown | race | finish
-let countT=0, frame=0;
+let frame=0;
 let leftHeld=false, rightHeld=false, brakeHeld=false;
 
 function resetRace(){
   buildTrack();
   position=0; playerX=0; speed=0; lap=1; raceTime=0; lapStart=0; fastestLap=0; frame=0;
   cars=[];
-  const N=DRIVERS.length;
+  const N=DRIVERS.length, gap=segmentLength*1.1;
   for(let i=0;i<N;i++){
     cars.push({
       driver:DRIVERS[i],
-      offset:(i%2? 0.45 : -0.45) * (0.5+Math.random()*0.6),
-      z: Math.floor((i+1) * (trackLength/(N+3))),   // grid spread ahead of player
-      speed: maxSpeed*(0.74 + Math.random()*0.18),  // 74%–92% of top speed
+      offset:(i%2===0? -0.45 : 0.45),       // two grid columns
+      z: (N - i) * gap,                     // P1 at the front, last car just ahead of you
+      speed: maxSpeed*(0.74 + Math.random()*0.18),
       lap:1
     });
   }
@@ -210,16 +221,17 @@ function poly(x1,y1,x2,y2,x3,y3,x4,y4,col){
   ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.lineTo(x4,y4);
   ctx.closePath(); ctx.fill();
 }
-function renderSegment(x1,y1,w1,x2,y2,w2,c){
+function renderSegment(x1,y1,w1,x2,y2,w2,c,fog){
   ctx.fillStyle=c.grass; ctx.fillRect(0,y2,W,y1-y2);
   const r1=w1/4, r2=w2/4;
   poly(x1-w1-r1,y1, x1-w1,y1, x2-w2,y2, x2-w2-r2,y2, c.rumble);
   poly(x1+w1+r1,y1, x1+w1,y1, x2+w2,y2, x2+w2+r2,y2, c.rumble);
   poly(x1-w1,y1, x1+w1,y1, x2+w2,y2, x2-w2,y2, c.road);
   if(c.lane){
-    const l1=w1/24, l2=w2/24, lx1=x1, lx2=x2;
-    poly(lx1-l1,y1, lx1+l1,y1, lx2+l2,y2, lx2-l2,y2, c.lane);
+    const l1=w1/24, l2=w2/24;
+    poly(x1-l1,y1, x1+l1,y1, x2+l2,y2, x2-l2,y2, c.lane);
   }
+  if(fog<1){ ctx.fillStyle='rgba(196,224,255,'+(1-fog).toFixed(3)+')'; ctx.fillRect(0,y2,W,y1-y2); }
 }
 
 /* ---- car drawing (behind view) ---- */
@@ -242,7 +254,6 @@ function drawCar(cx, bottomY, w, color, isPlayer){
 let last=0, running=false;
 function loop(ts){
   const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts;
-  if(state==='countdown'){ countT-=dt; if(countT<=0){ state='race'; raceTime=0; lapStart=0; } }
   if(state==='race') update(dt);
   render();
   if(running) requestAnimationFrame(loop);
@@ -283,10 +294,19 @@ function onLap(){
 }
 
 function render(){
-  // sky + distant stands
-  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#9ec6ff'); g.addColorStop(1,'#dcecff');
+  // sky
+  const g=ctx.createLinearGradient(0,0,0,H*0.62); g.addColorStop(0,'#2f6fb8'); g.addColorStop(1,'#cfe6ff');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#2a3550'; ctx.fillRect(0,H*0.40,W,H*0.10);            // grandstand band
+  // sun glow
+  ctx.fillStyle='rgba(255,245,210,0.9)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.06,0,7); ctx.fill();
+  ctx.fillStyle='rgba(255,250,225,0.35)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.11,0,7); ctx.fill();
+  // distant hills
+  ctx.fillStyle='#5aa05a'; ctx.beginPath(); ctx.moveTo(0,H*0.52);
+  for(let i=0;i<=10;i++) ctx.lineTo(W*i/10, H*(0.47-0.035*Math.sin(i*1.6+1)));
+  ctx.lineTo(W,H*0.52); ctx.closePath(); ctx.fill();
+  // grandstand band near the horizon
+  ctx.fillStyle='#2c3a57'; ctx.fillRect(0,H*0.475,W,H*0.045);
+  ctx.fillStyle='rgba(255,255,255,0.06)'; for(let i=0;i<W;i+=8) ctx.fillRect(i,H*0.475,4,H*0.045);
 
   frame++;
   const base=findSegment(position), basePct=(position%segmentLength)/segmentLength;
@@ -300,11 +320,12 @@ function render(){
     x+=dxx; dxx+=seg.curve;
     seg.frame=frame;
     if(seg.p1.camera.z<=cameraDepth || seg.p2.screen.y>=maxy) continue;
+    const fog=1/Math.pow(Math.E,(n/drawDistance)*(n/drawDistance)*4);   // distance haze
     renderSegment(seg.p1.screen.x,seg.p1.screen.y,seg.p1.screen.w,
-                  seg.p2.screen.x,seg.p2.screen.y,seg.p2.screen.w, seg.color);
+                  seg.p2.screen.x,seg.p2.screen.y,seg.p2.screen.w, seg.color, fog);
     maxy=seg.p2.screen.y;
   }
-  // opponent cars (far to near)
+  // opponent cars (far to near) with name tags
   const ordered=cars.slice().sort((a,b)=>b.z-a.z);
   for(const c of ordered){
     const seg=findSegment(c.z);
@@ -315,6 +336,12 @@ function render(){
     const cw=Math.max(8, sc.w*0.62);
     if(sc.y<H*0.30 || sc.y>H+50) continue;
     drawCar(cx, sc.y, cw, c.driver.c, false);
+    if(cw>24){                                              // name above the car
+      const fs=Math.max(9,Math.round(cw*0.22)), ty=sc.y-cw*0.66;
+      ctx.font='bold '+fs+'px Trebuchet MS'; ctx.textAlign='center';
+      ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.strokeText(c.driver.name, cx, ty);
+      ctx.fillStyle=c.driver.c; ctx.fillText(c.driver.name, cx, ty);
+    }
   }
   // player car
   if(state!=='menu'){
@@ -336,28 +363,32 @@ function updateHud(){
 }
 
 /* ---- flow ---- */
+function setLights(c){
+  document.getElementById('lights').style.display='flex';
+  document.getElementById('lampR').classList.toggle('on', c==='red');
+  document.getElementById('lampY').classList.toggle('on', c==='yellow');
+  document.getElementById('lampG').classList.toggle('on', c==='green');
+  const t=document.getElementById('lightsTxt');
+  t.textContent = c==='red'?'On your marks…' : c==='yellow'?'Get ready…' : 'GO! GO! GO!';
+  t.style.color = c==='green'?'#27e36a':'#fff';
+}
 function startRace(){
   resetRace();
   document.getElementById('scr-start').classList.add('hidden');
   document.getElementById('scr-finish').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
-  state='countdown'; countT=3.999;
+  state='countdown';
   if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
-  tickCount();
-}
-function tickCount(){
-  const el=document.getElementById('count');
-  if(state!=='countdown'){ el.classList.add('hidden'); return; }
-  el.classList.remove('hidden');
-  const n=Math.ceil(countT-1);
-  el.textContent = n>0? n : 'GO!';
-  if(state==='countdown') setTimeout(tickCount,150);
-  else el.classList.add('hidden');
+  // F1 start lights: red, then yellow, then green = GO
+  setLights('red');
+  setTimeout(()=>{ if(state==='countdown') setLights('yellow'); }, 1100);
+  setTimeout(()=>{ if(state==='countdown'){ setLights('green'); state='race'; raceTime=0; lapStart=0; } }, 2200);
+  setTimeout(()=>{ document.getElementById('lights').style.display='none'; }, 2900);
 }
 function finishRace(){
   state='finish';
-  document.getElementById('count').classList.add('hidden');
+  document.getElementById('lights').style.display='none';
   document.getElementById('steerhint').classList.add('hidden');
   // final standings
   const board=[{name:playerName, dist:playerDist(), me:true, color:PLAYER_COLOR}];
