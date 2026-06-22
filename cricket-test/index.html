@@ -94,6 +94,7 @@
     <h1>SUPER OVER</h1>
     <div class="sub" id="titleSub">Timing-based cricket • Pick your mode</div>
     <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
+    <button class="btn" onclick="managerEnter()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🧑‍💼 MANAGER MODE<br><span style="font-size:12px;font-weight:normal">buy a squad • auto-play • win the cup</span></button>
     <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
     <button class="btn alt" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
     <button class="btn alt" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
@@ -156,6 +157,49 @@
     <div class="sub" id="shopSub" style="margin-bottom:8px"></div>
     <div id="shopBody" style="max-width:460px;width:100%"></div>
     <button class="btn alt" onclick="showCareerHub()" style="margin-top:10px">⬅ BACK</button>
+  </div>
+
+  <!-- MANAGER: CHOOSE TEAM -->
+  <div id="scr-mgr-team" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 style="font-size:28px">🧑‍💼 MANAGER MODE</h1>
+    <div class="sub">Pick a team to manage. You won't bat — you build the squad and watch them play.</div>
+    <div id="mgrTeamGrid" class="teamgrid"></div>
+    <button class="btn alt" onclick="show('scr-title')">BACK</button>
+  </div>
+
+  <!-- MANAGER: AUCTION -->
+  <div id="scr-mgr-auction" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="mgrAucTitle" style="font-size:24px">🔨 SQUAD AUCTION</h1>
+    <div class="sub" id="mgrAucSub" style="margin-bottom:6px"></div>
+    <div id="mgrSquadBar" style="max-width:520px;width:100%;margin-bottom:6px"></div>
+    <button class="btn" id="mgrPlayBtn" onclick="mgrPlaySeason()" style="margin:4px 0">▶ PLAY SEASON</button>
+    <div id="mgrPool" style="max-width:520px;width:100%"></div>
+    <button class="btn alt" onclick="exitManager()" style="margin-top:8px">QUIT TO MENU</button>
+  </div>
+
+  <!-- MANAGER: NEGOTIATE -->
+  <div id="scr-mgr-neg" class="screen hidden">
+    <h1 style="font-size:26px">💬 NEGOTIATE</h1>
+    <div id="mgrNegBody" style="max-width:420px;width:100%"></div>
+  </div>
+
+  <!-- MANAGER: AUTO-PLAY -->
+  <div id="scr-mgr-play" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 style="font-size:24px" id="mgrPlayTitle">⚡ SEASON — AUTO PLAY</h1>
+    <div class="sub" id="mgrPlaySub" style="margin-bottom:6px"></div>
+    <div id="mgrPlayBody" style="max-width:520px;width:100%"></div>
+    <button class="btn hidden" id="mgrPlayNext" onclick="mgrSeasonEnd()" style="margin-top:8px">SEE RESULTS</button>
+  </div>
+
+  <!-- MANAGER: SEASON END -->
+  <div id="scr-mgr-end" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="mgrEndTitle" style="font-size:28px">SEASON OVER</h1>
+    <div class="sub" id="mgrEndSub" style="margin-bottom:6px"></div>
+    <div id="mgrEndBody" style="max-width:520px;width:100%"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" onclick="mgrNextSeason()">➡ NEXT SEASON</button>
+      <button class="btn alt" onclick="exitManager()">MENU</button>
+    </div>
   </div>
 
   <!-- LEAGUE TABLE -->
@@ -831,6 +875,112 @@ function startSeason(){ const c=profile.career;
   beginTournament();
 }
 function topN(map,n){ return Object.keys(map).map(k=>({name:k,val:map[k],team:T.stats.team[k]})).sort((a,b)=>b.val-a.val).slice(0,n); }
+
+/* ============================================================
+   MANAGER MODE  (Option A — build a squad, auto-play, don't bat)
+   Fully separate from your personal profile stats.
+   ============================================================ */
+let MGR=null, POOL=null;
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; }
+function buildPool(){ if(POOL) return POOL; POOL=[];
+  TEAMS.forEach(t=>t.players.forEach((nm,i)=>{ let r=62+(hashStr(nm)%30); if(i<3) r+=6; r=Math.max(60,Math.min(96,r));
+    const ask=Math.max(1.5,Math.min(18,+(((r-58)/38)*16+1.5).toFixed(1)));
+    POOL.push({name:nm,from:t.id,fromName:t.name,r,ask}); }));
+  return POOL; }
+function teamBaseStrength(id){ const ps=buildPool().filter(p=>p.from===id); return ps.reduce((a,p)=>a+p.r,0)/ps.length; }
+function squadStrength(){ return MGR.squad.length? MGR.squad.reduce((a,p)=>a+p.r,0)/MGR.squad.length : 60; }
+function teamName(id){ const t=TEAMS.find(x=>x.id===id); return t?t.name:id; }
+
+function managerEnter(){ if(!profile){ showAccounts(); return; } buildPool(); renderMgrTeams(); show('scr-mgr-team'); }
+function renderMgrTeams(){ const g=document.getElementById('mgrTeamGrid'); g.innerHTML='';
+  TEAMS.forEach(t=>{ const d=document.createElement('div'); d.className='teamcard'; d.style.background=`linear-gradient(135deg,${t.c1},${t.c2})`;
+    d.textContent=t.name; d.onclick=()=>managerStart(t.id); g.appendChild(d); }); }
+function managerStart(id){ MGR={teamId:id,money:85,squad:[],taken:{},season:1,history:[]}; openAuction(); }
+
+function mgrSquadHtml(){ const m=MGR;
+  let h=`<div style="background:#0c1426;border:1px solid #2a3c63;border-radius:10px;padding:8px 12px"><b>Your squad ${m.squad.length}/11</b> • strength ${m.squad.length?Math.round(squadStrength()):'-'}`;
+  if(m.squad.length) h+='<br><span style="color:#9fb3d8;font-size:12px">'+m.squad.map(p=>p.name+' ('+p.r+')').join(', ')+'</span>';
+  return h+'</div>'; }
+function openAuction(){ const m=MGR, t=TEAMS.find(x=>x.id===m.teamId), need=11-m.squad.length;
+  document.getElementById('mgrAucTitle').innerHTML=`🔨 ${t.name} — Season ${m.season}`;
+  document.getElementById('mgrAucSub').innerHTML=`💰 Budget <b style="color:#ffd54a">${fmtCr(m.money)}</b> • sign <b>11</b> players (10 bat • 15 overs)`;
+  document.getElementById('mgrSquadBar').innerHTML=mgrSquadHtml();
+  document.getElementById('mgrPlayBtn').classList.toggle('hidden', need>0);
+  const free=buildPool().filter(p=>!m.taken[p.name]).sort((a,b)=>b.r-a.r);
+  let h=`<div style="color:#9fb3d8;font-size:13px;margin:4px 0">${need>0?('Sign '+need+' more — tap BID to negotiate'):'Squad full! Press PLAY SEASON.'}</div>`;
+  free.slice(0,40).forEach(p=>{ h+=`<div style="display:flex;align-items:center;gap:8px;background:#16243f;border-radius:10px;padding:8px 12px;margin:4px 0">
+      <b style="width:30px;color:${p.r>=85?'#39ff88':p.r>=75?'#ffd54a':'#cdd9f0'}">${p.r}</b>
+      <span style="flex:1;font-size:14px">${p.name} <span style="color:#7e90b5;font-size:12px">(${p.fromName})</span></span>
+      <span style="color:#9fb3d8;font-size:12px">${fmtCr(p.ask)}</span>
+      <button class="btn" style="margin:0;padding:6px 12px;font-size:13px" onclick="openNeg('${p.name.replace(/'/g,"\\'")}')">BID</button></div>`; });
+  document.getElementById('mgrPool').innerHTML=h;
+  show('scr-mgr-auction');
+}
+let negName=null, negOffer=0;
+function negChance(offer,ask){ if(offer>=ask) return 1; const r=offer/ask; return Math.max(0.03,Math.min(0.95,(r-0.55)/0.4)); }
+function openNeg(name){ negName=name; const p=buildPool().find(x=>x.name===name); negOffer=Math.max(0.5,+(p.ask*0.7).toFixed(1)); renderNeg(); show('scr-mgr-neg'); }
+function renderNeg(){ const p=buildPool().find(x=>x.name===negName), m=MGR, ch=Math.round(negChance(negOffer,p.ask)*100);
+  document.getElementById('mgrNegBody').innerHTML=
+    `<div style="background:#16243f;border-radius:12px;padding:14px 16px">
+       <b style="font-size:18px">${p.name}</b> <span style="color:#7e90b5">(${p.fromName})</span><br>
+       <span style="color:#9fb3d8">Rating <b style="color:#ffd54a">${p.r}</b> • Asking <b>${fmtCr(p.ask)}</b></span>
+       <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:16px 0">
+         <button class="btn alt" style="margin:0;width:48px" onclick="negAdj(-0.5)">−</button>
+         <div style="font-size:24px;font-weight:bold;min-width:120px">${fmtCr(negOffer)}</div>
+         <button class="btn alt" style="margin:0;width:48px" onclick="negAdj(0.5)">＋</button></div>
+       <div style="text-align:center;color:${ch>=66?'#39ff88':ch>=33?'#ffd54a':'#ff8c3d'};font-weight:bold">Accept chance: ${ch}%</div>
+       <div style="color:#9fb3d8;font-size:12px;text-align:center;margin-top:4px">Budget: ${fmtCr(m.money)}</div></div>
+     <div class="row" style="margin-top:12px">
+       <button class="btn" onclick="makeOffer()">MAKE OFFER</button>
+       <button class="btn alt" onclick="openAuction()">CANCEL</button></div>`;
+}
+function negAdj(d){ negOffer=Math.max(0.5,Math.min(MGR.money,+(negOffer+d).toFixed(1))); renderNeg(); }
+function makeOffer(){ const p=buildPool().find(x=>x.name===negName), m=MGR;
+  if(negOffer>m.money){ alert('Not enough budget!'); return; }
+  if(Math.random()<negChance(negOffer,p.ask)){ m.squad.push(p); m.taken[p.name]=m.teamId; m.money=+(m.money-negOffer).toFixed(1); openAuction(); }
+  else { let msg=p.name+' rejected your offer.';
+    if(Math.random()<0.4){ const opps=TEAMS.filter(t=>t.id!==m.teamId), o=opps[Math.floor(Math.random()*opps.length)]; m.taken[p.name]=o.id; msg+=' '+o.name+' signed him!'; }
+    alert(msg); openAuction(); }
+}
+function mgrPlaySeason(){ const m=MGR; if(m.squad.length<11){ alert('Sign 11 players first.'); return; }
+  const you=squadStrength();
+  const opps=TEAMS.filter(t=>t.id!==m.teamId).map(t=>({id:t.id,name:t.name,str:teamBaseStrength(t.id)}));
+  const table={}; TEAMS.forEach(t=>table[t.id]={name:t.name,w:0,l:0,pts:0});
+  const allT=[{id:m.teamId,str:you},...opps];
+  for(let i=0;i<allT.length;i++) for(let j=i+1;j<allT.length;j++){ const A=allT[i],B=allT[j], pa=A.str/(A.str+B.str), aWin=Math.random()<(0.15+0.7*pa);
+    if(aWin){ table[A.id].w++; table[A.id].pts+=2; table[B.id].l++; } else { table[B.id].w++; table[B.id].pts+=2; table[A.id].l++; } }
+  const yourMatches=opps.map(o=>{ const pa=you/(you+o.str), win=Math.random()<(0.15+0.7*pa), ys=120+Math.floor(Math.random()*90), os=120+Math.floor(Math.random()*90);
+    return {opp:o,win,chance:Math.round((0.15+0.7*pa)*100),ys:win?Math.max(ys,os+5):Math.min(ys,os-6),os:win?Math.min(os,ys-5):Math.max(os,ys+6)}; });
+  m._table=table; m._yourMatches=yourMatches;
+  document.getElementById('mgrPlayTitle').textContent=`⚡ ${teamName(m.teamId)} — Season ${m.season}`;
+  document.getElementById('mgrPlaySub').innerHTML=`Squad strength <b>${Math.round(you)}</b> • auto-playing your 9 matches…`;
+  document.getElementById('mgrPlayBody').innerHTML=''; document.getElementById('mgrPlayNext').classList.add('hidden');
+  show('scr-mgr-play'); mgrReveal(0);
+}
+let mgrRevealToken=0;
+function mgrReveal(i){ const token=++mgrRevealToken, ms=MGR._yourMatches, body=document.getElementById('mgrPlayBody');
+  if(i>=ms.length){ document.getElementById('mgrPlayNext').classList.remove('hidden'); return; }
+  const mt=ms[i], com=mt.win?pick(['Smashed it! ','Clinical! ','What a chase! ','Bossed it! ']):pick(['Heartbreak. ','So close. ','Off day. ','Edged out. ']);
+  const line=document.createElement('div');
+  line.style.cssText='display:flex;justify-content:space-between;background:#16243f;border-radius:8px;padding:8px 12px;margin:3px 0;font-size:14px';
+  line.innerHTML=`<span>${com}vs <b>${mt.opp.name}</b> <span style="color:#7e90b5">(${mt.chance}%)</span></span><b style="color:${mt.win?'#39ff88':'#ff6b6b'}">${mt.win?'WON':'LOST'} ${mt.ys}-${mt.os}</b>`;
+  body.appendChild(line);
+  setTimeout(()=>{ if(token===mgrRevealToken) mgrReveal(i+1); }, 650);
+}
+function mgrSeasonEnd(){ const m=MGR, table=m._table, ms=m._yourMatches;
+  const wins=ms.filter(x=>x.win).length, losses=ms.length-wins;
+  const order=Object.keys(table).sort((a,b)=>table[b].pts-table[a].pts||table[b].w-table[a].w);
+  const pos=order.indexOf(m.teamId)+1, champ=pos===1, earn=+(wins*3+(champ?15:0)).toFixed(1);
+  m.money=+(m.money+earn).toFixed(1); m.history.push({season:m.season,wins,losses,pos,champ,earn});
+  document.getElementById('mgrEndTitle').textContent=champ?`🏆 ${teamName(m.teamId)} — CHAMPIONS!`:`Season ${m.season}: finished P${pos}`;
+  document.getElementById('mgrEndTitle').style.color=champ?'#39ff88':'#ffd54a';
+  document.getElementById('mgrEndSub').innerHTML=`${wins}W ${losses}L • <b>${pos}/10</b> • earned 💰 <b>${fmtCr(earn)}</b> → now ${fmtCr(m.money)}`;
+  let h=`<div style="color:#9fb3d8;font-size:13px;margin-bottom:4px">Final table</div>`;
+  order.forEach((id,i)=>{ const r=table[id]; h+=`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 10px;${id===m.teamId?'color:#ffd54a;font-weight:bold':''}"><span>${i+1}. ${r.name}</span><span>${r.w}W ${r.l}L • ${r.pts} pts</span></div>`; });
+  document.getElementById('mgrEndBody').innerHTML=h; show('scr-mgr-end');
+}
+function mgrNextSeason(){ MGR.season++; MGR.squad=[]; MGR.taken={}; openAuction(); }
+function exitManager(){ MGR=null; show('scr-title'); refreshTitle(); }
 
 /* ============================================================
    MATCH ENGINE

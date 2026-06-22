@@ -92,14 +92,69 @@
   <div id="scr-title" class="screen hidden">
     <h1>SUPER OVER</h1>
     <div class="sub" id="titleSub">Timing-based cricket • Pick your mode</div>
+    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
     <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
-    <button class="btn" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
-    <button class="btn" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
-    <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
+    <button class="btn alt" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
+    <button class="btn alt" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
+    <div class="row">
+      <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
+      <button class="btn alt" onclick="show('scr-howto')">📖 HOW TO PLAY</button>
+    </div>
     <a href="../" class="btn alt" style="display:inline-block;text-decoration:none">🏠 ALL GAMES</a>
-    <div class="sub" style="margin-top:18px;max-width:480px;font-size:12px">
+    <div class="sub" style="margin-top:14px;max-width:480px;font-size:12px">
       <b>SPACE</b>/tap = shot • <b>← ↑ →</b>/swipe = aim leg / straight / off
     </div>
+  </div>
+
+  <!-- HOW TO PLAY -->
+  <div id="scr-howto" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
+    <h1 style="font-size:30px">📖 HOW TO PLAY</h1>
+    <div style="max-width:500px;width:100%;text-align:left;font-size:14px;line-height:1.6;color:#cdd9f0">
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
+        <b style="color:#ffd54a">⏱️ Timing is everything</b><br>
+        As the ball arrives, <b>tap / press SPACE</b> to play your shot. Time it in the
+        <b style="color:#39ff88">green</b> middle for a <b>SIX or FOUR</b> 🔥. A bit off = singles; way off = <b style="color:#ff6b6b">OUT</b>.
+      </div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
+        <b style="color:#ffd54a">🎯 Aim your shot</b><br>
+        Swipe or press <b>←</b> leg side, <b>↑</b> straight, <b>→</b> off side just before you hit.
+      </div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
+        <b style="color:#ffd54a">🏆 IPL Career</b><br>
+        Play <b>5 IPL matches</b> to unlock it. Teams <b>bid for you</b> at the auction — pick one for the
+        money or for loyalty. Play the season, <b>earn ₹ crores</b>, and buy a better
+        <b>bat / gloves / pads</b> in the shop to widen your green zone. Play well → bigger offers next season!
+      </div>
+    </div>
+    <button class="btn" onclick="show('scr-title')" style="margin-top:10px">GOT IT</button>
+  </div>
+
+  <!-- AUCTION -->
+  <div id="scr-auction" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 style="font-size:30px">🔨 THE AUCTION</h1>
+    <div class="sub" id="auctionSub" style="margin-bottom:8px"></div>
+    <div id="auctionBody" style="max-width:480px;width:100%"></div>
+    <button class="btn alt" onclick="exitCareer()" style="margin-top:8px">BACK TO MENU</button>
+  </div>
+
+  <!-- CAREER HUB -->
+  <div id="scr-hub" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 id="hubTitle" style="font-size:28px">MY CAREER</h1>
+    <div class="sub" id="hubSub" style="margin-bottom:8px"></div>
+    <div id="hubBody" style="max-width:460px;width:100%"></div>
+    <button class="btn" onclick="startSeason()" style="margin-top:10px">▶ PLAY THE SEASON</button>
+    <div class="row" style="margin-top:6px">
+      <button class="btn alt" onclick="showShop()">🛒 SHOP</button>
+      <button class="btn alt" onclick="exitCareer()">MENU</button>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="scr-shop" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 style="font-size:30px">🛒 GEAR SHOP</h1>
+    <div class="sub" id="shopSub" style="margin-bottom:8px"></div>
+    <div id="shopBody" style="max-width:460px;width:100%"></div>
+    <button class="btn alt" onclick="showCareerHub()" style="margin-top:10px">⬅ BACK</button>
   </div>
 
   <!-- LEAGUE TABLE -->
@@ -123,7 +178,7 @@
     <h1 id="tendTitle" style="font-size:30px">TOURNAMENT OVER</h1>
     <div class="sub" id="tendSub" style="margin-bottom:6px"></div>
     <div id="tendBody" style="max-width:520px;width:100%"></div>
-    <button class="btn" onclick="show('scr-title')" style="margin-top:8px">BACK TO MENU</button>
+    <button class="btn" id="tendBtn" onclick="show('scr-title')" style="margin-top:8px">BACK TO MENU</button>
   </div>
 
   <!-- PROFILE -->
@@ -132,6 +187,7 @@
     <div class="row" style="margin:6px 0">
       <button class="btn" id="tabIpl" onclick="setProfileTab('ipl')">IPL</button>
       <button class="btn alt" id="tabOdi" onclick="setProfileTab('odi')">ODI</button>
+      <button class="btn alt" id="tabCareer" onclick="setProfileTab('career')">🏆 CAREER</button>
     </div>
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
@@ -243,7 +299,7 @@ const FORMATS = {
   odi:   { key:'odi',   label:'ODI WORLD CUP', overs:15, maxWkts:10, targetLo:235, targetHi:305, simLo:210, simHi:330, tournament:true },
 };
 let chosenFormat = FORMATS.quick;
-function chooseFormat(key){ chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
+function chooseFormat(key){ careerMode=false; chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
 /* pad a 5-name top order out to `count` batters with a generic lower order */
 function padNames(players, count){
   const names = players.slice();
@@ -349,20 +405,25 @@ function loadStore(){
 }
 function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 function saveProfile(){ saveStore(); }   // active account lives inside the store
-function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return; store.activeId=id; profile=a; saveStore(); }
+function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return; store.activeId=id; profile=a; ensureCareer(a); saveStore(); }
 
 /* name entry creates a NEW account, then logs in to it */
 function confirmName(){
   const inp=document.getElementById('playerNameInput');
   const v=inp.value.trim();
   if(!v){ inp.focus(); return; }
-  const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() };
+  const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() }; ensureCareer(a);
   store.accounts.push(a); setActive(a.id);
   show('scr-title'); refreshTitle();
 }
 function refreshTitle(){
   document.getElementById('titleSub').innerHTML =
     `Welcome, <b style="color:#ffd54a">${profile?profile.name:'Skipper'}</b> • Pick your mode`;
+  const lbl=document.getElementById('careerSubLbl');
+  if(lbl){ if(profile) ensureCareer(profile);
+    lbl.textContent = (profile&&careerUnlocked())
+      ? (profile.career.teamId? 'continue your season' : 'auction time — be a player!')
+      : `play ${profile?Math.max(0,5-(profile.ipl?profile.ipl.matches:0)):5} IPL matches to unlock`; }
 }
 
 /* ---- account picker (switch / add / remove accounts on this device) ---- */
@@ -405,6 +466,7 @@ function recordProfile(fmtKey){
   if(me.runs>st.hs) st.hs=me.runs;
   if(me.runs>=100) st.hundreds=(st.hundreds||0)+1;
   else if(me.runs>=50) st.fifties=(st.fifties||0)+1;
+  if(careerMode && CS){ CS.matches++; CS.runs+=me.runs; CS.balls+=me.balls; }
   saveProfile();
 }
 
@@ -412,7 +474,7 @@ function recordProfile(fmtKey){
    TOURNAMENT  (round-robin league -> playoffs)
    ============================================================ */
 let T=null;   // tournament state
-function startTournamentFlow(key){ chosenFormat=FORMATS[key]; goTeamSelect(); }
+function startTournamentFlow(key){ careerMode=false; chosenFormat=FORMATS[key]; goTeamSelect(); }
 
 function beginTournament(){
   const base=teamPool().find(t=>t.id===selectedTeamId);
@@ -602,10 +664,33 @@ function showTournamentEnd(){
   document.getElementById('tendSub').innerHTML = iWon?'You lifted the cup! 🥳':(champ?`Better luck next time, ${profile.name}.`:'');
   const card=(emoji,title,o,suffix)=> o?`<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:10px 14px;margin:6px 0;font-weight:bold">
       ${emoji} ${title}<br>${o.name} <span style="font-weight:normal">(${o.team})</span> — ${o.val} ${suffix}</div>`:'';
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const top5=(title,emoji,map,suffix)=>{ const list=topN(map,5); if(!list.length) return '';
+    let s=`<div style="background:#16243f;border-radius:12px;padding:10px 14px;margin:6px 0"><b>${emoji} ${title}</b>`;
+    list.forEach((o,i)=>{ s+=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:3px;${o.name===profile.name?'color:#ffd54a;font-weight:bold':''}">
+      <span>${medals[i]} ${o.name} <span style="color:#7e90b5">(${o.team})</span></span><span>${o.val} ${suffix}</span></div>`; });
+    return s+'</div>'; };
   let h='';
   h+=card('🥇','Man of the Tournament', motm, 'runs');
-  h+=card('🧡','Orange Cap (most runs)', orange, 'runs');
-  h+=card('💜','Purple Cap (most wickets)', purple, 'wkts');
+  h+=top5('Orange Cap — most runs','🧡',T.stats.runs,'runs');
+  h+=top5('Purple Cap — most wickets','💜',T.stats.wkts,'wkts');
+  // ---- career season wrap-up ----
+  const tbtn=document.getElementById('tendBtn');
+  if(careerMode && CS){
+    CS.cup=iWon;
+    if(motm && motm.name===profile.name) CS.awards++;
+    if(orange && motm!==orange && orange.name===profile.name) CS.awards++;
+    const avg=CS.matches?CS.runs/CS.matches:0;
+    const earn=+(1+CS.runs*0.015+CS.awards*0.5+(iWon?5:0)).toFixed(1);
+    const form=Math.max(5,Math.min(100,Math.round(avg*1.6+CS.sixes*2+CS.awards*8+(iWon?15:0))));
+    const c=profile.career;
+    c.seasons.push({n:CS.season,team:CS.teamId,runs:CS.runs,matches:CS.matches,avg:+avg.toFixed(1),sixes:CS.sixes,awards:CS.awards,cup:iWon,earn});
+    c.money=+(c.money+earn).toFixed(1); c.form=form; c.season++; c.teamId=null; saveProfile();
+    h+=`<div style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border-radius:12px;padding:12px 14px;margin:10px 0;font-weight:bold">
+        📊 Your season: <b>${CS.runs}</b> runs in ${CS.matches} (avg ${avg.toFixed(1)}) • ${CS.sixes} sixes${CS.awards?` • ${CS.awards} award(s)`:''}${iWon?' • 🏆 CHAMPION':''}<br>
+        💰 Earned <b>${fmtCr(earn)}</b> • New form <b>${form}/100</b></div>`;
+    tbtn.textContent='➡ NEXT SEASON'; tbtn.onclick=careerContinue;
+  } else { tbtn.textContent='BACK TO MENU'; tbtn.onclick=function(){ show('scr-title'); }; }
   // final standings
   h+=`<div style="margin-top:10px;color:#9fb3d8;font-size:13px">Final standings</div>`;
   standings().forEach((id,i)=>{ const t=byId(id), r=T.table[id];
@@ -623,6 +708,8 @@ function renderProfile(){
   document.getElementById('profileName').textContent='👤 '+(profile.name||'PLAYER');
   document.getElementById('tabIpl').className='btn'+(profileTab==='ipl'?'':' alt');
   document.getElementById('tabOdi').className='btn'+(profileTab==='odi'?'':' alt');
+  const tc=document.getElementById('tabCareer'); if(tc) tc.className='btn'+(profileTab==='career'?'':' alt');
+  if(profileTab==='career'){ renderCareerProfile(); return; }
   const s=profile[profileTab];
   const avg = s.matches? (s.runs/s.matches).toFixed(1):'0.0';
   const sr  = s.balls? (s.runs/s.balls*100).toFixed(1):'0.0';
@@ -641,6 +728,108 @@ function renderProfile(){
     + stat('🏆 Cups won', s.cups)
     + stat('🏅 Awards', s.awards);
 }
+
+function renderCareerProfile(){
+  ensureCareer(profile); const c=profile.career;
+  const stat=(label,val)=>`<div style="display:flex;justify-content:space-between;background:#16243f;padding:9px 14px;border-radius:8px;margin:4px 0"><span style="color:#9fb3d8">${label}</span><b style="color:#ffd54a">${val}</b></div>`;
+  let h=`<div class="sub" style="margin:2px 0 8px">IPL CAREER</div>`;
+  if(!careerUnlocked()) h+=`<div style="background:#16243f;border-radius:10px;padding:12px 14px;color:#9fb3d8;margin-bottom:4px">🔒 Play ${5-(profile.ipl?profile.ipl.matches:0)} more IPL match(es) to unlock career mode.</div>`;
+  h+=stat('💰 Money', fmtCr(c.money)) + stat('📈 Form', c.form+'/100') + stat('📅 Seasons played', c.seasons.length);
+  const cups=c.seasons.filter(s=>s.cup).length, awards=c.seasons.reduce((a,s)=>a+s.awards,0), sixes=c.seasons.reduce((a,s)=>a+s.sixes,0);
+  h+=stat('🏆 Cups', cups)+stat('🏅 Awards', awards)+stat('💥 Sixes (career)', sixes);
+  h+=`<div style="background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><div style="color:#9fb3d8;margin-bottom:4px">🎽 Gear</div>`;
+  GEAR.forEach(g=> h+=`<div style="display:flex;justify-content:space-between;font-size:14px"><span>${g.emoji} ${g.name}</span><b>Lv ${c.gear[g.key]}/3</b></div>`);
+  h+='</div>';
+  if(c.seasons.length){ h+=`<div class="sub" style="margin:10px 0 4px">Season history</div>`;
+    c.seasons.slice().reverse().forEach(s=>{ const t=teamObjById(s.team);
+      h+=`<div style="background:#16243f;border-radius:10px;padding:9px 12px;margin:4px 0;font-size:13px">
+        <b>Season ${s.n} — ${t.name} (${t.id})</b>${s.cup?' 🏆':''}<br>
+        <span style="color:#9fb3d8">${s.runs} runs • avg ${s.avg} • ${s.sixes} sixes${s.awards?` • ${s.awards} award(s)`:''} • 💰 ${fmtCr(s.earn)}</span></div>`; });
+  }
+  document.getElementById('profileBody').innerHTML=h;
+}
+
+/* ============================================================
+   IPL CAREER  (Option B — you are the player)
+   ============================================================ */
+let careerMode=false;
+let CS=null;                       // current-season accumulator
+const GEAR=[
+  {key:'bat',   emoji:'🏏', name:'Power Bat',  desc:'Wider six zone — middle it more often', prices:[2,3.5,5]},
+  {key:'gloves',emoji:'🧤', name:'Pro Gloves', desc:'Better timing on fours & twos',          prices:[1.5,2.5,4]},
+  {key:'pads',  emoji:'🦵', name:'Guard Pads', desc:'Survive more mistimed balls',            prices:[1,2,3]},
+];
+function fmtCr(v){ return '₹'+(Math.round(v*10)/10)+' cr'; }
+function teamObjById(id){ return TEAMS.find(t=>t.id===id)||TEAMS[0]; }
+function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[]};
+  if(a && a.career && !a.career.gear) a.career.gear={bat:0,gloves:0,pads:0};
+  return a && a.career; }
+function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>=5; }
+
+function careerEnter(){
+  if(!profile){ showAccounts(); return; }
+  ensureCareer(profile);
+  if(!careerUnlocked()){
+    const left=5-(profile.ipl?profile.ipl.matches:0);
+    alert('🔒 Career locked! Play '+left+' more IPL match'+(left!==1?'es':'')+' (IPL Tournament) to unlock the auction.');
+    return;
+  }
+  careerMode=true;
+  if(profile.career.teamId) showCareerHub(); else showAuction();
+}
+function exitCareer(){ careerMode=false; show('scr-title'); refreshTitle(); }
+function careerContinue(){ if(profile.career.teamId) showCareerHub(); else showAuction(); }
+
+function showAuction(){
+  const c=profile.career, form=c.form;
+  document.getElementById('auctionSub').innerHTML=`Season ${c.season} • Your form: <b style="color:${form>=60?'#39ff88':form>=40?'#ffd54a':'#ff8c3d'}">${form>=70?'🔥 Hot':form>=50?'Good':form>=35?'Average':'Cold'}</b> (${form}/100)`;
+  const offers=TEAMS.map(t=>{ const base=3+Math.random()*5; return {t, off:+(base*(0.5+form/90)).toFixed(1)}; });
+  offers.sort((a,b)=>b.off-a.off);
+  const best=offers[0].off;
+  let h='<div style="color:#9fb3d8;font-size:13px;margin-bottom:6px">Teams are bidding for you — sign for one. The fee is yours to spend!</div>';
+  offers.forEach(o=>{ h+=`<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,${o.t.c1},${o.t.c2});border-radius:12px;padding:9px 12px;margin:6px 0">
+      <b style="flex:1;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.5)">${o.t.id} · ${o.t.name}</b>
+      <span style="font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,.5)">${fmtCr(o.off)}${o.off===best?' ⭐':''}</span>
+      <button class="btn" style="margin:0;padding:7px 14px;font-size:14px" onclick="acceptOffer('${o.t.id}',${o.off})">SIGN</button></div>`; });
+  document.getElementById('auctionBody').innerHTML=h;
+  show('scr-auction');
+}
+function acceptOffer(id,off){ const c=profile.career; c.teamId=id; c.money=+(c.money+off).toFixed(1); saveProfile(); showCareerHub(); }
+
+function showCareerHub(){
+  const c=profile.career, t=teamObjById(c.teamId);
+  document.getElementById('hubTitle').innerHTML=`${t.id} — Season ${c.season}`;
+  document.getElementById('hubTitle').style.color='#ffd54a';
+  document.getElementById('hubSub').innerHTML=`Playing for <b>${t.name}</b> • Form ${c.form}/100`;
+  let h=`<div style="display:flex;justify-content:space-between;background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><span style="color:#9fb3d8">💰 Money</span><b style="color:#ffd54a">${fmtCr(c.money)}</b></div>`;
+  h+=`<div style="background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><div style="color:#9fb3d8;margin-bottom:4px">🎽 Your gear</div>`;
+  GEAR.forEach(g=> h+=`<div style="display:flex;justify-content:space-between;font-size:14px"><span>${g.emoji} ${g.name}</span><b>Lv ${c.gear[g.key]}/3</b></div>`);
+  h+='</div><div style="color:#9fb3d8;font-size:12px;margin-top:4px">Buy gear in the shop, then play the season for your team!</div>';
+  document.getElementById('hubBody').innerHTML=h;
+  show('scr-hub');
+}
+function showShop(){
+  const c=profile.career;
+  document.getElementById('shopSub').innerHTML=`💰 ${fmtCr(c.money)} — better gear = bigger green timing zone`;
+  let h='';
+  GEAR.forEach(g=>{ const lv=c.gear[g.key], maxed=lv>=3, price=maxed?0:g.prices[lv], afford=c.money>=price;
+    h+=`<div style="background:#16243f;border-radius:12px;padding:11px 14px;margin:6px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b style="font-size:15px">${g.emoji} ${g.name} <span style="color:#9fb3d8;font-weight:normal">Lv ${lv}/3</span></b>
+        ${maxed?'<span style="color:#39ff88;font-weight:bold">MAX</span>':`<button class="btn ${afford?'':'alt'}" ${afford?'':'disabled'} style="margin:0;padding:8px 14px;font-size:14px" onclick="buyGear('${g.key}')">${fmtCr(price)}</button>`}
+      </div><div style="color:#9fb3d8;font-size:12px;margin-top:3px">${g.desc}</div></div>`; });
+  document.getElementById('shopBody').innerHTML=h;
+  show('scr-shop');
+}
+function buyGear(key){ const c=profile.career, g=GEAR.find(x=>x.key===key), lv=c.gear[key];
+  if(lv>=3) return; const price=g.prices[lv]; if(c.money<price) return;
+  c.money=+(c.money-price).toFixed(1); c.gear[key]++; saveProfile(); showShop(); }
+function startSeason(){ const c=profile.career;
+  careerMode=true; chosenFormat=FORMATS.ipl; selectedTeamId=c.teamId;
+  CS={season:c.season, teamId:c.teamId, matches:0, runs:0, balls:0, sixes:0, awards:0, cup:false};
+  beginTournament();
+}
+function topN(map,n){ return Object.keys(map).map(k=>({name:k,val:map[k],team:T.stats.team[k]})).sort((a,b)=>b.val-a.val).slice(0,n); }
 
 /* ============================================================
    MATCH ENGINE
@@ -780,11 +969,13 @@ function playShot(){
    Kept constant — later rounds get harder via slower cursor + bigger target,
    not via an even tinier window (that felt unfair). */
 function getWindows(){
+  // gear widens the timing windows during career season play
+  const g=(careerMode && profile && profile.career && profile.career.gear) ? profile.career.gear : {bat:0,gloves:0,pads:0};
   return {
-    perfect: 0.028,   // 4s & 6s
-    good:    0.058,   // 2s/3s/boundaries
-    ok:      0.100,   // 1s and dots
-    edge:    0.165,   // "just outside" — survives, no run; beyond = wicket
+    perfect: 0.028*(1+(g.bat||0)*0.20),    // 4s & 6s (bat widens the green zone)
+    good:    0.058*(1+(g.bat||0)*0.08+(g.gloves||0)*0.14),
+    ok:      0.100*(1+(g.pads||0)*0.12),
+    edge:    0.165*(1+(g.pads||0)*0.06),    // pads help you survive mistimes
   };
 }
 
@@ -846,6 +1037,7 @@ function noShotPlayed(){
 /* route through animations before committing the ball.
    if the bat made contact, fly the ball out to the boundary / a fielder first. */
 function concludeBall(res){
+  if(careerMode && CS && res && res.runs===6 && striker().name===profile.name) CS.sixes++;
   M.pendingResult=res;
   const noContact = res.kind==='bowled' || res.kind==='lbw'
                  || res.txt==='no shot' || res.txt==='left it / missed';
