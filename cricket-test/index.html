@@ -2046,7 +2046,8 @@ if('serviceWorker' in navigator){
   const i=document.getElementById('playerNameInput');
   if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') confirmName(); });
   const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
-  if(act){ profile=act; show('scr-title'); refreshTitle(); }
+  if(act){ profile=act; ensureCareer(act); refreshTitle();
+    if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer
   else if(store.accounts.length){ showAccounts(); }
   else { document.getElementById('enterBack').style.display='none';
     if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }
