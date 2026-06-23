@@ -190,6 +190,9 @@ const LOCS=[
     theme:{sky:['#9fc0e8','#eef6ff'], gA:'#3aa53b', gB:'#2f9230', hill:'#6ab06a'}},
   {id:'monaco',    name:'Monaco',    flag:'🇲🇨', fee:1500, win:4000, opp:460, grid:22, track:'monaco',
     theme:{sky:['#3a6fb0','#cfe6ff'], gA:'#2f7d8a', gB:'#256b76', hill:'#4f7a8a'}},
+  // FREE practice race — always available, no entry fee, guaranteed ₹50 so a broke racer can earn back
+  {id:'afghan',    name:'Afghanistan', flag:'🇦🇫', fee:0, win:50, opp:290, grid:6, track:'india', free:true,
+    theme:{sky:['#caa46a','#f0e2c2'], gA:'#c2a15a', gB:'#b08f48', hill:'#caa45e'}},
 ];
 LOCS.forEach((L,i)=>L.idx=i);
 
@@ -413,16 +416,20 @@ function renderMenu(){
   document.getElementById('menuWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Guest (set a name on the home screen)';
   document.getElementById('wallet').innerHTML=`💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${car.name}</b> (${car.top} km/h)`;
   const list=document.getElementById('locList'); list.innerHTML='';
-  LOCS.forEach(L=>{
-    const unlocked=L.idx<f.unlocked, afford=f.money>=L.fee;
+  // free practice races always show first
+  const ordered=LOCS.slice().sort((a,b)=>(b.free?1:0)-(a.free?1:0));
+  ordered.forEach(L=>{
+    const unlocked=L.free || L.idx<f.unlocked, afford=f.money>=L.fee;
     const d=document.createElement('div'); d.className='item'+(unlocked?'':' locked');
     let act;
     if(!unlocked) act=`<span class="pill lock">🔒</span>`;
     else if(afford) act=`<button class="btn green" style="padding:9px 18px;font-size:14px;margin:0">RACE</button>`;
     else act=`<button class="btn alt" disabled style="padding:9px 14px;font-size:13px;margin:0">Need ₹${L.fee}</button>`;
-    const sub = unlocked
-      ? `Entry ₹${L.fee} • Win ₹${L.win} • rivals ~${L.opp} km/h • ${L.grid} cars • 3 laps`
-      : `🔒 Finish ${LOCS[L.idx-1].name} to unlock`;
+    const sub = !unlocked
+      ? `🔒 Finish ${LOCS[L.idx-1].name} to unlock`
+      : L.free
+        ? `FREE practice • Entry ₹0 • Earn ₹${L.win} every race • rivals ~${L.opp} km/h • ${L.grid} cars`
+        : `Entry ₹${L.fee} • Win ₹${L.win} • rivals ~${L.opp} km/h • ${L.grid} cars • 3 laps`;
     d.innerHTML=`<div class="ic">${L.flag}</div>
       <div class="info"><div class="t">${L.name} Grand Prix</div><div class="d">${sub}</div></div>
       <div class="act">${act}</div>`;
@@ -467,8 +474,8 @@ function setLights(c){
 }
 function enterRace(L){
   const f=career();
-  if(L.idx>=f.unlocked || f.money<L.fee) return;
-  f.money-=L.fee; saveF1();                 // pay the entry fee
+  if((!L.free && L.idx>=f.unlocked) || f.money<L.fee) return;
+  f.money-=L.fee; saveF1();                 // pay the entry fee (₹0 for the free race)
   curLoc=L; theme=L.theme;
   applyCarPhysics();                        // top speed from the car you bought
   resetRace();
@@ -495,7 +502,8 @@ function finishRace(){
   cars.forEach(c=>board.push({name:c.driver.name, dist:carDist(c), color:c.driver.c}));
   board.sort((a,b)=>b.dist-a.dist);
   const total=board.length, pos=board.findIndex(b=>b.me)+1;
-  const pts=POINTS[pos-1]||0, prize=prizeFor(pos,total,curLoc), net=prize-curLoc.fee;
+  // free practice race: guaranteed flat reward regardless of finishing position
+  const pts=POINTS[pos-1]||0, prize=curLoc.free?curLoc.win:prizeFor(pos,total,curLoc), net=prize-curLoc.fee;
   // update career
   f.races++; f.points+=pts; f.money+=prize;
   if(pos===1) f.wins++; if(pos<=3) f.podiums++;
@@ -522,9 +530,10 @@ function finishRace(){
   // leaderboard (top 10 shown)
   let h='';
   board.slice(0,10).forEach((b,i)=>{
+    const rowPrize = curLoc.free ? curLoc.win : prizeFor(i+1,total,curLoc);
     h+=`<div class="brow${b.me?' me':''}"><span class="pos">${i+1}</span>
       <span class="nm"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${b.color};margin-right:8px"></span>${b.name}${b.me?' (you)':''}</span>
-      <span style="color:#9fb3d8">₹${prizeFor(i+1,total,curLoc)}</span></div>`;
+      <span style="color:#9fb3d8">₹${rowPrize}</span></div>`;
   });
   if(!board.slice(0,10).some(b=>b.me)){
     h+=`<div class="brow me"><span class="pos">${pos}</span><span class="nm">${playerName} (you)</span><span style="color:#9fb3d8">₹${prize}</span></div>`;

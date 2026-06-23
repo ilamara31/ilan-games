@@ -407,7 +407,7 @@ function endBombShower() {
 
 function spawnGolden() {
   nextGolden *= 2;                    // doubles: 100 -> 200 -> 400 -> 800 …
-  spawn({ golden: true, vy: baseSpeed * 1.25 });  // a little faster than the rest
+  spawn({ golden: true, vy: baseSpeed * 1.6 });  // a little faster than the rest (not full speed)
   Audio.sfxGolden();
 }
 function spawnLife() {
@@ -421,7 +421,8 @@ function spawn(opts = {}) {
   const isBomb = (golden || life) ? false
                : (opts.bomb !== undefined ? opts.bomb : Math.random() < 0.16);  // ~16%
   const emoji = life ? '❤️' : golden ? '🍎' : (isBomb ? BOMB : GOOD[(Math.random() * GOOD.length) | 0]);
-  const size = (golden || life) ? 52 : 40;
+  // golden apple stays a touch bigger so it reads as special; the life ❤️ is normal fruit size
+  const size = golden ? 52 : 40;
   const vy = opts.vy !== undefined ? opts.vy : baseSpeed * (0.9 + Math.random() * 0.3);
   items.push({
     x: size + Math.random() * (W - size * 2),
@@ -563,38 +564,82 @@ function loop(now) {
     }
 
     if (it.golden) {
-      // glowing golden halo + "+50" label so it reads as special & valuable
+      // a SHINING GOLDEN apple (drawn, not the red emoji) + "+40" label
       const r = it.size;
-      const g = ctx.createRadialGradient(it.x, it.y, 4, it.x, it.y, r);
-      g.addColorStop(0, 'rgba(255,235,120,0.95)');
-      g.addColorStop(0.6, 'rgba(255,205,40,0.55)');
-      g.addColorStop(1, 'rgba(255,200,0,0)');
-      ctx.fillStyle = g;
+      const pulse = 0.7 + 0.3 * Math.sin(now / 130);     // shimmering glow
+
+      // outer golden glow halo
+      const halo = ctx.createRadialGradient(it.x, it.y, 4, it.x, it.y, r * 1.15);
+      halo.addColorStop(0, 'rgba(255,240,150,' + (0.95 * pulse).toFixed(2) + ')');
+      halo.addColorStop(0.55, 'rgba(255,205,40,0.5)');
+      halo.addColorStop(1, 'rgba(255,190,0,0)');
+      ctx.fillStyle = halo;
       ctx.beginPath();
-      ctx.arc(it.x, it.y, r, 0, Math.PI * 2);
+      ctx.arc(it.x, it.y, r * 1.15, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#a9700a';
+
+      // golden apple body
+      const bw = r * 0.74, bh = r * 0.8;
+      const body = ctx.createRadialGradient(it.x - bw * 0.3, it.y - bh * 0.35, 2, it.x, it.y, bw);
+      body.addColorStop(0, '#fff6c0');
+      body.addColorStop(0.45, '#ffd633');
+      body.addColorStop(1, '#e0a000');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(it.x, it.y - bh * 0.55);
+      ctx.bezierCurveTo(it.x - bw, it.y - bh * 0.9, it.x - bw, it.y + bh * 0.8, it.x, it.y + bh * 0.7);
+      ctx.bezierCurveTo(it.x + bw, it.y + bh * 0.8, it.x + bw, it.y - bh * 0.9, it.x, it.y - bh * 0.55);
+      ctx.fill();
+
+      // stem + leaf
+      ctx.strokeStyle = '#7a5200'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(it.x, it.y - bh * 0.5); ctx.lineTo(it.x, it.y - bh * 0.82); ctx.stroke();
+      ctx.fillStyle = '#5fbf3f';
+      ctx.beginPath();
+      ctx.ellipse(it.x + bw * 0.28, it.y - bh * 0.72, bw * 0.3, bh * 0.16, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // glossy shine highlight
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.85 * pulse).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.ellipse(it.x - bw * 0.32, it.y - bh * 0.18, bw * 0.18, bh * 0.28, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // twinkling sparkle
+      const sp = (Math.sin(now / 85) + 1) / 2;
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.9 * sp).toFixed(2) + ')';
+      const sx = it.x + bw * 0.5, sy = it.y - bh * 0.45, ss = 3 + 3 * sp;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - ss); ctx.lineTo(sx + ss * 0.3, sy - ss * 0.3); ctx.lineTo(sx + ss, sy);
+      ctx.lineTo(sx + ss * 0.3, sy + ss * 0.3); ctx.lineTo(sx, sy + ss); ctx.lineTo(sx - ss * 0.3, sy + ss * 0.3);
+      ctx.lineTo(sx - ss, sy); ctx.lineTo(sx - ss * 0.3, sy - ss * 0.3); ctx.closePath();
+      ctx.fill();
+
+      // "+40" label
+      ctx.fillStyle = '#8a5a00';
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('+40', it.x, it.y + r * 0.85);
+      ctx.fillText('+40', it.x, it.y + r * 1.0);
+      continue;   // golden apple is fully custom-drawn — don't draw the red 🍎 emoji
     }
 
     if (it.life) {
-      const r = it.size;
-      const g = ctx.createRadialGradient(it.x, it.y, 4, it.x, it.y, r);
-      g.addColorStop(0, 'rgba(255,120,160,0.95)');
-      g.addColorStop(0.6, 'rgba(255,60,110,0.5)');
-      g.addColorStop(1, 'rgba(255,40,90,0)');
+      // smaller, softer glow (normal fruit size, not a big highlight)
+      const r = it.size * 0.7;
+      const g = ctx.createRadialGradient(it.x, it.y, 2, it.x, it.y, r);
+      g.addColorStop(0, 'rgba(255,120,160,0.55)');
+      g.addColorStop(0.7, 'rgba(255,80,120,0.22)');
+      g.addColorStop(1, 'rgba(255,60,110,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(it.x, it.y, r, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#b3003a';
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('+1 LIFE', it.x, it.y + r * 0.9);
+      ctx.fillText('+1 LIFE', it.x, it.y + it.size * 0.85);
     }
 
     ctx.font = it.size + 'px serif';
