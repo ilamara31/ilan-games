@@ -92,41 +92,27 @@
   <div id="scr-title" class="screen hidden">
     <h1>SUPER OVER</h1>
     <div class="sub" id="titleSub">Timing-based cricket • Pick your mode</div>
+    <button class="btn" onclick="openTutorial()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🎓 HOW TO PLAY — TUTORIAL<br><span style="font-size:12px;font-weight:normal">new here? start here</span></button>
     <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
     <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
     <button class="btn alt" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
     <button class="btn alt" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
-    <div class="row">
-      <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
-      <button class="btn alt" onclick="show('scr-howto')">📖 HOW TO PLAY</button>
-    </div>
+    <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
     <a href="../" class="btn alt" style="display:inline-block;text-decoration:none">🏠 ALL GAMES</a>
     <div class="sub" style="margin-top:14px;max-width:480px;font-size:12px">
       <b>SPACE</b>/tap = shot • <b>← ↑ →</b>/swipe = aim leg / straight / off
     </div>
   </div>
 
-  <!-- HOW TO PLAY -->
-  <div id="scr-howto" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
-    <h1 style="font-size:30px">📖 HOW TO PLAY</h1>
-    <div style="max-width:500px;width:100%;text-align:left;font-size:14px;line-height:1.6;color:#cdd9f0">
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
-        <b style="color:#ffd54a">⏱️ Timing is everything</b><br>
-        As the ball arrives, <b>tap / press SPACE</b> to play your shot. Time it in the
-        <b style="color:#39ff88">green</b> middle for a <b>SIX or FOUR</b> 🔥. A bit off = singles; way off = <b style="color:#ff6b6b">OUT</b>.
-      </div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
-        <b style="color:#ffd54a">🎯 Aim your shot</b><br>
-        Swipe or press <b>←</b> leg side, <b>↑</b> straight, <b>→</b> off side just before you hit.
-      </div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:8px 0">
-        <b style="color:#ffd54a">🏆 IPL Career</b><br>
-        Play <b>5 IPL matches</b> to unlock it. Teams <b>bid for you</b> at the auction — pick one for the
-        money or for loyalty. Play the season, <b>earn ₹ crores</b>, and buy a better
-        <b>bat / gloves / pads</b> in the shop to widen your green zone. Play well → bigger offers next season!
-      </div>
+  <!-- TUTORIAL (step by step) -->
+  <div id="scr-howto" class="screen hidden" style="justify-content:center;text-align:center">
+    <h1 style="font-size:26px">🎓 HOW TO PLAY</h1>
+    <div id="tutBody" style="margin:10px 0;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center"></div>
+    <div class="row" style="margin-top:4px">
+      <button class="btn alt" id="tutBack" onclick="tutBack()">← BACK</button>
+      <button class="btn" id="tutNext" onclick="tutNext()">NEXT →</button>
     </div>
-    <button class="btn" onclick="show('scr-title')" style="margin-top:10px">GOT IT</button>
+    <button class="btn alt" onclick="show('scr-title')" style="margin-top:6px;font-size:13px;padding:8px 18px">SKIP</button>
   </div>
 
   <!-- AUCTION -->
@@ -765,6 +751,31 @@ function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:n
   if(a && a.career && !a.career.gear) a.career.gear={bat:0,gloves:0,pads:0};
   return a && a.career; }
 function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>=5; }
+
+/* ---- step-by-step tutorial for newcomers ---- */
+const TUT=[
+  {e:'🏏', t:'Welcome, batter!', b:'Your team is <b>chasing a target</b>. Score the runs you need before you run out of <b>overs</b> or <b>wickets</b>.'},
+  {e:'🟢', t:'Press GO', b:'When you are ready, tap the big green <b>GO</b> button to face the next ball.'},
+  {e:'⏱️', t:'Time your shot', b:'As the ball comes, <b>tap the screen</b> (or press <b>SPACE</b>) to swing the bat. It is all about timing!'},
+  {e:'🔥', t:'Green = big runs', b:'Time it in the <b style="color:#39ff88">GREEN</b> middle for a <b>SIX</b> or <b>FOUR</b>. A little off = 1–2 runs. Way off and you are <b style="color:#ff6b6b">OUT!</b>'},
+  {e:'🎯', t:'Aim your shot', b:'Just before you hit, <b>swipe</b> (or press <b>←</b> leg side, <b>↑</b> straight, <b>→</b> off side) to place the ball.'},
+  {e:'❤️', t:"Don't get out", b:'You have limited wickets. Survive, keep scoring, and <b>chase down the target to win!</b>'},
+  {e:'🏆', t:'Modes & Career', b:'Try <b>Quick Match</b>, <b>IPL Tournament</b> or <b>ODI World Cup</b>. Play <b>5 IPL matches</b> to unlock <b>IPL Career</b> — get auctioned, earn money & buy gear!'},
+];
+let tutI=0;
+function openTutorial(){ tutI=0; renderTut(); show('scr-howto'); }
+function renderTut(){
+  const s=TUT[tutI];
+  document.getElementById('tutBody').innerHTML =
+    `<div style="font-size:62px;line-height:1">${s.e}</div>
+     <div style="font-size:22px;font-weight:bold;color:#ffd54a;margin:8px 0 4px">Step ${tutI+1}: ${s.t}</div>
+     <div style="font-size:15px;line-height:1.6;color:#cdd9f0;max-width:440px">${s.b}</div>
+     <div style="margin-top:16px">${TUT.map((_,i)=>`<span style="display:inline-block;width:${i===tutI?22:8}px;height:8px;border-radius:5px;margin:0 3px;background:${i===tutI?'#39ff88':'#2f5142'}"></span>`).join('')}</div>`;
+  document.getElementById('tutBack').style.visibility = tutI>0?'visible':'hidden';
+  document.getElementById('tutNext').textContent = tutI<TUT.length-1 ? 'NEXT →' : 'START PLAYING ▶';
+}
+function tutNext(){ if(tutI<TUT.length-1){ tutI++; renderTut(); } else { show('scr-title'); } }
+function tutBack(){ if(tutI>0){ tutI--; renderTut(); } }
 
 function careerEnter(){
   if(!profile){ showAccounts(); return; }
