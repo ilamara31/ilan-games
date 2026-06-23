@@ -63,6 +63,20 @@
   .namerow span { width:22px; color:#ffd54a; font-weight:bold; }
   .namerow input { flex:1; background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:8px 10px; border-radius:8px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
+  /* tutorial cartoon coach (bottom-left) — big & readable */
+  #tutCoach { position:absolute; left:12px; bottom:14px; z-index:9; display:flex; flex-direction:column;
+    align-items:flex-start; gap:6px; max-width:88%; pointer-events:none; transition:transform .3s ease, opacity .3s ease; }
+  #tutGuy { width:140px; height:170px; filter:drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
+  #tutBubble { background:#fff; color:#0a2030; border-radius:16px; padding:15px 19px; font-size:20px; font-weight:bold;
+    line-height:1.4; box-shadow:0 6px 18px rgba(0,0,0,.5); position:relative; max-width:380px; transition:opacity .2s, transform .2s; }
+  #tutBubble:after { content:''; position:absolute; left:36px; bottom:-9px; width:0; height:0;
+    border:9px solid transparent; border-top-color:#fff; border-bottom:0; }
+  #tutBubble.hi { background:#fffbe6; outline:4px solid #ffd54a;
+    box-shadow:0 0 30px rgba(255,213,74,.95), 0 6px 18px rgba(0,0,0,.5); animation:tutpulse 1s ease-in-out infinite; }
+  #tutBubble.hi:after { border-top-color:#fffbe6; }
+  @keyframes tutpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.05) } }
+  #tutCoach.ducked #tutBubble { opacity:0; transform:translateY(8px); animation:none; }
+  #tutCoach.ducked { transform:translateY(48px); opacity:.6; }
 </style>
 </head>
 <body>
@@ -91,28 +105,50 @@
   <!-- TITLE -->
   <div id="scr-title" class="screen hidden">
     <h1>SUPER OVER</h1>
-    <div class="sub" id="titleSub">Timing-based cricket • Pick your mode</div>
-    <button class="btn" onclick="openTutorial()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🎓 HOW TO PLAY — TUTORIAL<br><span style="font-size:12px;font-weight:normal">new here? start here</span></button>
-    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
-    <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
-    <button class="btn alt" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
-    <button class="btn alt" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
+    <div class="sub" id="titleSub">Timing-based cricket</div>
+    <button class="btn" onclick="show('scr-play')">🏏 PLAY<br><span style="font-size:12px;font-weight:normal">quick match • IPL • ODI</span></button>
+    <button class="btn" onclick="show('scr-modes')" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 CAREER &amp; MANAGER<br><span style="font-size:12px;font-weight:normal">be a player or a manager</span></button>
+    <button class="btn alt" onclick="startTutorial()">🎓 HOW TO PLAY</button>
     <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
     <a href="../" class="btn alt" style="display:inline-block;text-decoration:none">🏠 ALL GAMES</a>
-    <div class="sub" style="margin-top:14px;max-width:480px;font-size:12px">
-      <b>SPACE</b>/tap = shot • <b>← ↑ →</b>/swipe = aim leg / straight / off
-    </div>
   </div>
 
-  <!-- TUTORIAL (step by step) -->
-  <div id="scr-howto" class="screen hidden" style="justify-content:center;text-align:center">
-    <h1 style="font-size:26px">🎓 HOW TO PLAY</h1>
-    <div id="tutBody" style="margin:10px 0;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center"></div>
-    <div class="row" style="margin-top:4px">
-      <button class="btn alt" id="tutBack" onclick="tutBack()">← BACK</button>
-      <button class="btn" id="tutNext" onclick="tutNext()">NEXT →</button>
+  <!-- WELCOME (first launch) -->
+  <div id="scr-welcome" class="screen hidden">
+    <h1 style="font-size:34px">👋 WELCOME!</h1>
+    <div class="sub" style="max-width:420px">New to cricket? Learn by playing — it only takes a minute. We'll bowl you a few balls and coach you through it.</div>
+    <button class="btn" onclick="startTutorial()" style="font-size:20px;padding:16px 40px">🎓 TUTORIAL</button>
+    <button class="btn alt" onclick="skipWelcome()">No thanks</button>
+  </div>
+
+  <!-- PLAY submenu -->
+  <div id="scr-play" class="screen hidden">
+    <h1 style="font-size:34px">🏏 PLAY</h1>
+    <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
+    <button class="btn" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
+    <button class="btn" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
+    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+  </div>
+
+  <!-- CAREER & MANAGER submenu -->
+  <div id="scr-modes" class="screen hidden">
+    <h1 style="font-size:28px">🏆 CAREER &amp; MANAGER</h1>
+    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
+    <button class="btn" onclick="managerEnter()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🧑‍💼 MANAGER MODE<br><span style="font-size:12px;font-weight:normal">buy a squad • auto-play • win the cup</span></button>
+    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+  </div>
+
+  <!-- TUTORIAL DONE / EXPLAINER -->
+  <div id="scr-tutdone" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
+    <h1 style="font-size:28px">🎉 GREAT BATTING!</h1>
+    <div class="sub">You've got the timing. Here's everything else:</div>
+    <div style="max-width:500px;width:100%;text-align:left;font-size:14px;line-height:1.6;color:#cdd9f0">
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🎯 Aim</b><br>Swipe or press <b>←</b> leg, <b>↑</b> straight, <b>→</b> off side just before you hit, to place the ball.</div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏏 Play</b><br>Quick Match, IPL Tournament or ODI World Cup — chase the target before you lose your wickets.</div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏆 Career</b><br>Play 5 IPL matches to unlock IPL Career — get auctioned, earn ₹ crores, buy gear.</div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🧑‍💼 Manager</b><br>Don't want to bat? Manage a team — sign players and auto-play to the title.</div>
     </div>
-    <button class="btn alt" onclick="show('scr-title')" style="margin-top:6px;font-size:13px;padding:8px 18px">SKIP</button>
+    <button class="btn" onclick="finishTutorial()" style="margin-top:10px">START PLAYING ▶</button>
   </div>
 
   <!-- AUCTION -->
@@ -143,8 +179,55 @@
     <button class="btn alt" onclick="showCareerHub()" style="margin-top:10px">⬅ BACK</button>
   </div>
 
+  <!-- MANAGER: CHOOSE TEAM -->
+  <div id="scr-mgr-team" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 style="font-size:28px">🧑‍💼 MANAGER MODE</h1>
+    <div class="sub">Pick a team to manage. You won't bat — you build the squad and watch them play.</div>
+    <div id="mgrTeamGrid" class="teamgrid"></div>
+    <button class="btn alt" onclick="show('scr-title')">BACK</button>
+  </div>
+
+  <!-- MANAGER: AUCTION -->
+  <div id="scr-mgr-auction" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="mgrAucTitle" style="font-size:24px">🔨 SQUAD AUCTION</h1>
+    <div class="sub" id="mgrAucSub" style="margin-bottom:6px"></div>
+    <div id="mgrSquadBar" style="max-width:520px;width:100%;margin-bottom:6px"></div>
+    <div id="mgrPlayChoice" class="hidden" style="margin:4px 0">
+      <button class="btn" onclick="mgrPlaySeason()">⚡ AUTO-PLAY (watch)</button>
+      <button class="btn" onclick="mgrPlayManual()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🎮 PLAY MANUALLY</button>
+    </div>
+    <div id="mgrPool" style="max-width:520px;width:100%"></div>
+    <button class="btn alt" onclick="exitManager()" style="margin-top:8px">QUIT TO MENU</button>
+  </div>
+
+  <!-- MANAGER: NEGOTIATE -->
+  <div id="scr-mgr-neg" class="screen hidden">
+    <h1 style="font-size:26px">💬 NEGOTIATE</h1>
+    <div id="mgrNegBody" style="max-width:420px;width:100%"></div>
+  </div>
+
+  <!-- MANAGER: AUTO-PLAY -->
+  <div id="scr-mgr-play" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 style="font-size:24px" id="mgrPlayTitle">⚡ SEASON — AUTO PLAY</h1>
+    <div class="sub" id="mgrPlaySub" style="margin-bottom:6px"></div>
+    <div id="mgrPlayBody" style="max-width:520px;width:100%"></div>
+    <button class="btn hidden" id="mgrPlayNext" onclick="mgrSeasonEnd()" style="margin-top:8px">SEE RESULTS</button>
+  </div>
+
+  <!-- MANAGER: SEASON END -->
+  <div id="scr-mgr-end" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <h1 id="mgrEndTitle" style="font-size:28px">SEASON OVER</h1>
+    <div class="sub" id="mgrEndSub" style="margin-bottom:6px"></div>
+    <div id="mgrEndBody" style="max-width:520px;width:100%"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" onclick="mgrNextSeason()">➡ NEXT SEASON</button>
+      <button class="btn alt" onclick="exitManager()">MENU</button>
+    </div>
+  </div>
+
   <!-- LEAGUE TABLE -->
   <div id="scr-league" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">✕ EXIT</button>
     <h1 id="leagueTitle" style="font-size:28px">POINTS TABLE</h1>
     <div class="sub" id="leagueSub" style="margin-bottom:6px"></div>
     <div id="leagueTable" style="max-width:520px;width:100%"></div>
@@ -153,6 +236,7 @@
 
   <!-- PLAYOFFS -->
   <div id="scr-playoffs" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
+    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">✕ EXIT</button>
     <h1 style="font-size:28px">🏆 PLAYOFFS</h1>
     <div class="sub" id="playoffSub" style="margin-bottom:6px"></div>
     <div id="playoffBracket" style="max-width:480px;width:100%"></div>
@@ -217,6 +301,21 @@
     <div class="hud-box" id="hud-right" style="text-align:right"></div>
   </div>
   <div id="msg"></div>
+  <div id="tutCoach" class="hidden">
+    <div id="tutBubble"></div>
+    <svg id="tutGuy" viewBox="0 0 90 112" width="82" height="100" aria-hidden="true">
+      <ellipse cx="36" cy="107" rx="9" ry="4" fill="#0b1220"/><ellipse cx="54" cy="107" rx="9" ry="4" fill="#0b1220"/>
+      <rect x="34" y="80" width="9" height="25" rx="4" fill="#26354f"/><rect x="47" y="80" width="9" height="25" rx="4" fill="#26354f"/>
+      <rect x="27" y="46" width="36" height="40" rx="13" fill="#1ea85a"/>
+      <rect x="22" y="50" width="9" height="26" rx="5" fill="#1ea85a"/>
+      <g transform="rotate(30 60 38)"><rect x="55" y="14" width="10" height="36" rx="5" fill="#1ea85a"/></g>
+      <circle cx="71" cy="15" r="6" fill="#f1c08a"/>
+      <circle cx="45" cy="32" r="16" fill="#f1c08a"/>
+      <path d="M28 30 a17 16 0 0 1 34 0 z" fill="#e10600"/><rect x="45" y="27" width="22" height="5" rx="2" fill="#e10600"/>
+      <circle cx="40" cy="33" r="2" fill="#222"/><circle cx="50" cy="33" r="2" fill="#222"/>
+      <path d="M39 39 q6 5 12 0" stroke="#a86b3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
   <div id="help" class="hidden">GO = bowl • SPACE/Tap = shot • ← ↑ → / swipe = aim</div>
   <button id="goBtn" class="hidden" onclick="pressGo()">▶ GO</button>
   <div id="voiceTag" style="position:absolute;left:10px;bottom:10px;z-index:8;color:#9fb3d8;font-size:11px;
@@ -285,7 +384,7 @@ const FORMATS = {
   odi:   { key:'odi',   label:'ODI WORLD CUP', overs:15, maxWkts:10, targetLo:235, targetHi:305, simLo:210, simHi:330, tournament:true },
 };
 let chosenFormat = FORMATS.quick;
-function chooseFormat(key){ careerMode=false; chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
+function chooseFormat(key){ careerMode=false; managerManual=false; chosenFormat = FORMATS[key] || FORMATS.quick; goTeamSelect(); }
 /* pad a 5-name top order out to `count` batters with a generic lower order */
 function padNames(players, count){
   const names = players.slice();
@@ -309,6 +408,7 @@ function show(id){
   document.getElementById('hud').classList.add('hidden');
   document.getElementById('help').classList.add('hidden');
   const gb=document.getElementById('goBtn'); if(gb) gb.classList.add('hidden');
+  const tc=document.getElementById('tutCoach'); if(tc) tc.classList.add('hidden');
 }
 function showGame(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
@@ -400,7 +500,7 @@ function confirmName(){
   if(!v){ inp.focus(); return; }
   const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() }; ensureCareer(a);
   store.accounts.push(a); setActive(a.id);
-  show('scr-title'); refreshTitle();
+  refreshTitle(); show('scr-welcome');     // newcomers: tutorial or skip
 }
 function refreshTitle(){
   document.getElementById('titleSub').innerHTML =
@@ -444,7 +544,7 @@ function newAccountScreen(){ const i=document.getElementById('playerNameInput');
   show('scr-enter'); }
 /* add a finished interactive match into the player's profile */
 function recordProfile(fmtKey){
-  if(!profile) return;
+  if(!profile || tutorialMode) return;     // tutorial never counts toward stats
   const me=M.batters.find(b=>b.name===profile.name);
   if(!me) return;
   const st=profile[fmtKey]; if(!st) return;
@@ -460,11 +560,11 @@ function recordProfile(fmtKey){
    TOURNAMENT  (round-robin league -> playoffs)
    ============================================================ */
 let T=null;   // tournament state
-function startTournamentFlow(key){ careerMode=false; chosenFormat=FORMATS[key]; goTeamSelect(); }
+function startTournamentFlow(key){ careerMode=false; managerManual=false; chosenFormat=FORMATS[key]; goTeamSelect(); }
 
 function beginTournament(){
   const base=teamPool().find(t=>t.id===selectedTeamId);
-  myTeam=buildMyTeam(base);
+  myTeam = managerManual ? {id:base.id,name:base.name,c1:base.c1,c2:base.c2,players:MGR.squad.map(p=>p.name)} : buildMyTeam(base);
   const teams=teamPool().map(t=> t.id===myTeam.id ? myTeam : t);
   const ids=teams.map(t=>t.id);
   T={ fmt:chosenFormat, teams, myId:myTeam.id,
@@ -644,7 +744,7 @@ function showTournamentEnd(){
   const iWon = T.champion===T.myId;
   // profile rewards
   const st=profile[chosenFormat.key];
-  if(st){ st.tours++; if(iWon) st.cups++; if(motm && motm.name===profile.name) st.awards++; if(orange && orange.name===profile.name) st.awards++; saveProfile(); }
+  if(st && !managerManual){ st.tours++; if(iWon) st.cups++; if(motm && motm.name===profile.name) st.awards++; if(orange && orange.name===profile.name) st.awards++; saveProfile(); }
   document.getElementById('tendTitle').innerHTML = champ?`🏆 ${champ.name} are CHAMPIONS!`:'TOURNAMENT OVER';
   document.getElementById('tendTitle').style.color = iWon?'#39ff88':'#ffd54a';
   document.getElementById('tendSub').innerHTML = iWon?'You lifted the cup! 🥳':(champ?`Better luck next time, ${profile.name}.`:'');
@@ -662,7 +762,14 @@ function showTournamentEnd(){
   h+=top5('Purple Cap — most wickets','💜',T.stats.wkts,'wkts');
   // ---- career season wrap-up ----
   const tbtn=document.getElementById('tendBtn');
-  if(careerMode && CS){
+  if(managerManual){
+    const order=standings(), pos=order.indexOf(T.myId)+1, w=T.table[T.myId].w;
+    const earn=+(w*10 + (11-pos)*6 + (iWon?40:0)).toFixed(1);
+    MGR.money=+(MGR.money+earn).toFixed(1); MGR.history.push({season:MGR.season,pos,champ:iWon,earn,wins:w});
+    h+=`<div style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border-radius:12px;padding:12px 14px;margin:10px 0;font-weight:bold">
+        🧑‍💼 Manager: finished <b>P${pos}/10</b> (${w} wins) • earned 💰 <b>${fmtCr(earn)}</b> → now ${fmtCr(MGR.money)}</div>`;
+    tbtn.textContent='➡ BACK TO MANAGER'; tbtn.onclick=function(){ managerManual=false; mgrNextSeason(); };
+  } else if(careerMode && CS){
     CS.cup=iWon;
     if(motm && motm.name===profile.name) CS.awards++;
     if(orange && motm!==orange && orange.name===profile.name) CS.awards++;
@@ -752,30 +859,37 @@ function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:n
   return a && a.career; }
 function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>=5; }
 
-/* ---- step-by-step tutorial for newcomers ---- */
-const TUT=[
-  {e:'🏏', t:'Welcome, batter!', b:'Your team is <b>chasing a target</b>. Score the runs you need before you run out of <b>overs</b> or <b>wickets</b>.'},
-  {e:'🟢', t:'Press GO', b:'When you are ready, tap the big green <b>GO</b> button to face the next ball.'},
-  {e:'⏱️', t:'Time your shot', b:'As the ball comes, <b>tap the screen</b> (or press <b>SPACE</b>) to swing the bat. It is all about timing!'},
-  {e:'🔥', t:'Green = big runs', b:'Time it in the <b style="color:#39ff88">GREEN</b> middle for a <b>SIX</b> or <b>FOUR</b>. A little off = 1–2 runs. Way off and you are <b style="color:#ff6b6b">OUT!</b>'},
-  {e:'🎯', t:'Aim your shot', b:'Just before you hit, <b>swipe</b> (or press <b>←</b> leg side, <b>↑</b> straight, <b>→</b> off side) to place the ball.'},
-  {e:'❤️', t:"Don't get out", b:'You have limited wickets. Survive, keep scoring, and <b>chase down the target to win!</b>'},
-  {e:'🏆', t:'Modes & Career', b:'Try <b>Quick Match</b>, <b>IPL Tournament</b> or <b>ODI World Cup</b>. Play <b>5 IPL matches</b> to unlock <b>IPL Career</b> — get auctioned, earn money & buy gear!'},
-];
-let tutI=0;
-function openTutorial(){ tutI=0; renderTut(); show('scr-howto'); }
-function renderTut(){
-  const s=TUT[tutI];
-  document.getElementById('tutBody').innerHTML =
-    `<div style="font-size:62px;line-height:1">${s.e}</div>
-     <div style="font-size:22px;font-weight:bold;color:#ffd54a;margin:8px 0 4px">Step ${tutI+1}: ${s.t}</div>
-     <div style="font-size:15px;line-height:1.6;color:#cdd9f0;max-width:440px">${s.b}</div>
-     <div style="margin-top:16px">${TUT.map((_,i)=>`<span style="display:inline-block;width:${i===tutI?22:8}px;height:8px;border-radius:5px;margin:0 3px;background:${i===tutI?'#39ff88':'#2f5142'}"></span>`).join('')}</div>`;
-  document.getElementById('tutBack').style.visibility = tutI>0?'visible':'hidden';
-  document.getElementById('tutNext').textContent = tutI<TUT.length-1 ? 'NEXT →' : 'START PLAYING ▶';
+/* ============================================================
+   INTERACTIVE TUTORIAL + WELCOME + EXIT
+   ============================================================ */
+let tutorialMode=false, tutHits=0, tutHiT=null;
+function skipWelcome(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
+function startTutorial(){
+  if(!profile){ showAccounts(); return; }
+  tutorialMode=true; tutHits=0; tour=null; careerMode=false; managerManual=false;
+  chosenFormat=FORMATS.quick; selectedTeamId=TEAMS[0].id;
+  myTeam=buildMyTeam(teamPool().find(t=>t.id===TEAMS[0].id));
+  startMatch(TEAMS[1], FORMATS.quick);
+  const c=document.getElementById('tutCoach'); c.classList.remove('hidden','ducked');
+  tutCoachSet(`🏏 <b>How to bat:</b> watch the timing cursor and <b>tap the screen</b>—<br>`+
+    `🟢 <b style="color:#0a7d3a">GREEN</b> = SIX / FOUR &nbsp; 🟡 <b style="color:#b58a00">YELLOW</b> = 1–2 runs &nbsp; 🔴 too early/late = <b style="color:#c0392b">OUT</b><br>`+
+    `Now tap <b>▶ GO</b>, then TAP when the cursor reaches GREEN!`);
 }
-function tutNext(){ if(tutI<TUT.length-1){ tutI++; renderTut(); } else { show('scr-title'); } }
-function tutBack(){ if(tutI>0){ tutI--; renderTut(); } }
+function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(!b) return;
+  b.innerHTML=html; b.classList.add('hi');                     // bright highlight so it grabs attention…
+  clearTimeout(tutHiT); tutHiT=setTimeout(()=>b.classList.remove('hi'), 4500);   // …calms down after ~4.5s
+}
+function tutDuck(on){ const c=document.getElementById('tutCoach'); if(c) c.classList.toggle('ducked', !!on); }
+function tutorialDone(){
+  if(!tutorialMode) return; tutorialMode=false;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  document.getElementById('goBtn').classList.add('hidden');
+  document.getElementById('tutCoach').classList.add('hidden');
+  if(profile){ profile.seenWelcome=true; saveProfile(); }
+  show('scr-tutdone');
+}
+function finishTutorial(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
+function exitTournament(){ if(confirm('Exit the tournament? Your stats so far are saved.')){ T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
 
 function careerEnter(){
   if(!profile){ showAccounts(); return; }
@@ -836,11 +950,138 @@ function buyGear(key){ const c=profile.career, g=GEAR.find(x=>x.key===key), lv=c
   if(lv>=3) return; const price=g.prices[lv]; if(c.money<price) return;
   c.money=+(c.money-price).toFixed(1); c.gear[key]++; saveProfile(); showShop(); }
 function startSeason(){ const c=profile.career;
-  careerMode=true; chosenFormat=FORMATS.ipl; selectedTeamId=c.teamId;
+  careerMode=true; managerManual=false; chosenFormat=FORMATS.ipl; selectedTeamId=c.teamId;
   CS={season:c.season, teamId:c.teamId, matches:0, runs:0, balls:0, sixes:0, awards:0, cup:false};
   beginTournament();
 }
 function topN(map,n){ return Object.keys(map).map(k=>({name:k,val:map[k],team:T.stats.team[k]})).sort((a,b)=>b.val-a.val).slice(0,n); }
+
+/* ============================================================
+   MANAGER MODE  (Option A — build a squad, auto-play, don't bat)
+   Fully separate from your personal profile stats.
+   ============================================================ */
+let MGR=null, POOL=null, managerManual=false;
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; }
+const LEGENDS={'Kohli':1,'Dhoni':1,'Jadeja':1,'Russell':1,'Buttler':1,'Maxwell':1,'Gill':1,'Head':1,'Klaasen':1,'Pant':1,'Rahul':1,'Narine':1,'Starc':1,'Cummins':1,'Rashid':1,'Jaiswal':1,'Warner':1,'Du Plessis':1,'Samson':1,'Pooran':1,'Q. de Kock':1,'Ashwin':1,'Livingstone':1,'Markram':1,'Stoinis':1};
+function buildPool(){ if(POOL) return POOL; POOL=[];
+  TEAMS.forEach(t=>t.players.forEach((nm,i)=>{
+    let r; if(LEGENDS[nm]) r=90+(hashStr(nm)%8);            // legends 90–97
+    else { r=68+(hashStr(nm)%14); if(i<3) r+=3; }            // others 68–84
+    r=Math.max(62,Math.min(97,r));
+    const ask=Math.max(1.5,Math.min(24,+(Math.pow((r-62)/35,1.7)*23+1.8).toFixed(1)));  // legends ~18–24 cr
+    POOL.push({name:nm,from:t.id,fromName:t.name,r,ask}); }));
+  return POOL; }
+function teamBaseStrength(id){ const ps=buildPool().filter(p=>p.from===id); return ps.reduce((a,p)=>a+p.r,0)/ps.length; }
+function squadStrength(){ return MGR.squad.length? MGR.squad.reduce((a,p)=>a+p.r,0)/MGR.squad.length : 60; }
+function teamName(id){ const t=TEAMS.find(x=>x.id===id); return t?t.name:id; }
+
+function managerEnter(){ if(!profile){ showAccounts(); return; } buildPool(); renderMgrTeams(); show('scr-mgr-team'); }
+function renderMgrTeams(){ const g=document.getElementById('mgrTeamGrid'); g.innerHTML='';
+  TEAMS.forEach(t=>{ const d=document.createElement('div'); d.className='teamcard'; d.style.background=`linear-gradient(135deg,${t.c1},${t.c2})`;
+    d.textContent=t.name; d.onclick=()=>managerStart(t.id); g.appendChild(d); }); }
+function managerStart(id){ MGR={teamId:id,money:120,squad:[],taken:{},season:1,history:[]}; openAuction(); }
+
+function mgrSquadHtml(){ const m=MGR;
+  let h=`<div style="background:#0c1426;border:1px solid #2a3c63;border-radius:10px;padding:8px 12px"><b>Your squad ${m.squad.length}/11</b> • strength ${m.squad.length?Math.round(squadStrength()):'-'}`;
+  if(m.squad.length) h+='<br><span style="color:#9fb3d8;font-size:12px">'+m.squad.map(p=>p.name+' ('+p.r+')').join(', ')+'</span>';
+  return h+'</div>'; }
+function openAuction(){ const m=MGR, t=TEAMS.find(x=>x.id===m.teamId), need=11-m.squad.length;
+  document.getElementById('mgrAucTitle').innerHTML=`🔨 ${t.name} — Season ${m.season}`;
+  document.getElementById('mgrAucSub').innerHTML=`💰 Budget <b style="color:#ffd54a">${fmtCr(m.money)}</b> • sign <b>11</b> players (10 bat • 15 overs)`;
+  document.getElementById('mgrSquadBar').innerHTML=mgrSquadHtml();
+  document.getElementById('mgrPlayChoice').classList.toggle('hidden', need>0);
+  const free=buildPool().filter(p=>!m.taken[p.name]).sort((a,b)=>b.r-a.r);
+  let h=`<div style="color:#9fb3d8;font-size:13px;margin:4px 0">${need>0?('Sign '+need+' more — tap BID to negotiate'):'Squad full! Press PLAY SEASON.'}</div>`;
+  free.slice(0,40).forEach(p=>{ h+=`<div style="display:flex;align-items:center;gap:8px;background:#16243f;border-radius:10px;padding:8px 12px;margin:4px 0">
+      <b style="width:30px;color:${p.r>=85?'#39ff88':p.r>=75?'#ffd54a':'#cdd9f0'}">${p.r}</b>
+      <span style="flex:1;font-size:14px">${p.name} <span style="color:#7e90b5;font-size:12px">(${p.fromName})</span></span>
+      <span style="color:#9fb3d8;font-size:12px">${fmtCr(p.ask)}</span>
+      <button class="btn" style="margin:0;padding:6px 12px;font-size:13px" onclick="openNeg('${p.name.replace(/'/g,"\\'")}')">BID</button></div>`; });
+  document.getElementById('mgrPool').innerHTML=h;
+  show('scr-mgr-auction');
+}
+let negName=null, negOffer=0;
+function negChance(offer,ask){ if(offer>=ask) return 1; const r=offer/ask; return Math.max(0.03,Math.min(0.95,(r-0.55)/0.4)); }
+function openNeg(name){ negName=name; const p=buildPool().find(x=>x.name===name); negOffer=Math.max(0.5,+(p.ask*0.7).toFixed(1)); renderNeg(); show('scr-mgr-neg'); }
+function renderNeg(){ const p=buildPool().find(x=>x.name===negName), m=MGR, ch=Math.round(negChance(negOffer,p.ask)*100);
+  document.getElementById('mgrNegBody').innerHTML=
+    `<div style="background:#16243f;border-radius:12px;padding:14px 16px">
+       <b style="font-size:18px">${p.name}</b> <span style="color:#7e90b5">(${p.fromName})</span><br>
+       <span style="color:#9fb3d8">Rating <b style="color:#ffd54a">${p.r}</b> • Asking <b>${fmtCr(p.ask)}</b></span>
+       <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:16px 0">
+         <button class="btn alt" style="margin:0;width:48px" onclick="negAdj(-0.5)">−</button>
+         <div style="font-size:24px;font-weight:bold;min-width:120px">${fmtCr(negOffer)}</div>
+         <button class="btn alt" style="margin:0;width:48px" onclick="negAdj(0.5)">＋</button></div>
+       <div style="text-align:center;color:${ch>=66?'#39ff88':ch>=33?'#ffd54a':'#ff8c3d'};font-weight:bold">Accept chance: ${ch}%</div>
+       <div style="color:#9fb3d8;font-size:12px;text-align:center;margin-top:4px">Budget: ${fmtCr(m.money)}</div></div>
+     <div class="row" style="margin-top:12px">
+       <button class="btn" onclick="makeOffer()">MAKE OFFER</button>
+       <button class="btn alt" onclick="openAuction()">CANCEL</button></div>`;
+}
+function negAdj(d){ negOffer=Math.max(0.5,Math.min(MGR.money,+(negOffer+d).toFixed(1))); renderNeg(); }
+function makeOffer(){ const p=buildPool().find(x=>x.name===negName), m=MGR;
+  if(negOffer>m.money){ alert('Not enough budget!'); return; }
+  if(Math.random()<negChance(negOffer,p.ask)){ m.squad.push(p); m.taken[p.name]=m.teamId; m.money=+(m.money-negOffer).toFixed(1); openAuction(); }
+  else { let msg=p.name+' rejected your offer.';
+    if(Math.random()<0.4){ const opps=TEAMS.filter(t=>t.id!==m.teamId), o=opps[Math.floor(Math.random()*opps.length)]; m.taken[p.name]=o.id; msg+=' '+o.name+' signed him!'; }
+    alert(msg); openAuction(); }
+}
+function mgrPlayManual(){ const m=MGR; if(m.squad.length<11){ alert('Sign 11 players first.'); return; }
+  managerManual=true; careerMode=false; chosenFormat=FORMATS.ipl; selectedTeamId=m.teamId; beginTournament();
+}
+function mgrPlaySeason(){ const m=MGR; if(m.squad.length<11){ alert('Sign 11 players first.'); return; }
+  managerManual=false;
+  const you=squadStrength();
+  const opps=TEAMS.filter(t=>t.id!==m.teamId).map(t=>({id:t.id,name:t.name,str:teamBaseStrength(t.id)}));
+  const table={}; TEAMS.forEach(t=>table[t.id]={name:t.name,w:0,l:0,pts:0});
+  const allT=[{id:m.teamId,str:you},...opps];
+  for(let i=0;i<allT.length;i++) for(let j=i+1;j<allT.length;j++){ const A=allT[i],B=allT[j], pa=A.str/(A.str+B.str), aWin=Math.random()<(0.15+0.7*pa);
+    if(aWin){ table[A.id].w++; table[A.id].pts+=2; table[B.id].l++; } else { table[B.id].w++; table[B.id].pts+=2; table[A.id].l++; } }
+  const tally={}, myStars=m.squad.slice().sort((a,b)=>b.r-a.r);
+  const yourMatches=opps.map(o=>{ const pa=you/(you+o.str), win=Math.random()<(0.15+0.7*pa);
+    const a=130+Math.floor(Math.random()*80), b=130+Math.floor(Math.random()*80), hi=Math.max(a,b), lo=Math.min(a,b)-1, chase=Math.random()<0.5;
+    const manner = chase ? ((win?'won':'lost')+' by '+(1+Math.floor(Math.random()*7))+' wkts') : ((win?'won':'lost')+' by '+(hi-lo)+' runs');
+    const mom = win ? pick(myStars.slice(0,5)).name : pick(TEAMS.find(t=>t.id===o.id).players.slice(0,5));
+    const momRuns=38+Math.floor(Math.random()*58); tally[mom]=(tally[mom]||0)+momRuns;
+    return {opp:o,win,chance:Math.round((0.15+0.7*pa)*100),ys:win?hi:lo,os:win?lo:hi,manner,mom,momRuns}; });
+  // champion's best player gets MoTM weight too
+  const champId=Object.keys(table).sort((x,y)=>table[y].pts-table[x].pts)[0];
+  const champStar=(champId===m.teamId?myStars[0].name:TEAMS.find(t=>t.id===champId).players[0]); tally[champStar]=(tally[champStar]||0)+90;
+  m._table=table; m._yourMatches=yourMatches; m._tally=tally;
+  document.getElementById('mgrPlayTitle').textContent=`⚡ ${teamName(m.teamId)} — Season ${m.season}`;
+  document.getElementById('mgrPlaySub').innerHTML=`Squad strength <b>${Math.round(you)}</b> • auto-playing your 9 matches…`;
+  document.getElementById('mgrPlayBody').innerHTML=''; document.getElementById('mgrPlayNext').classList.add('hidden');
+  show('scr-mgr-play'); mgrReveal(0);
+}
+let mgrRevealToken=0;
+function mgrReveal(i){ const token=++mgrRevealToken, ms=MGR._yourMatches, body=document.getElementById('mgrPlayBody'), me=teamName(MGR.teamId);
+  if(i>=ms.length){ document.getElementById('mgrPlayNext').classList.remove('hidden'); return; }
+  const mt=ms[i];
+  const line=document.createElement('div');
+  line.style.cssText='background:#16243f;border-radius:8px;padding:8px 12px;margin:3px 0;font-size:13px';
+  line.innerHTML=`<div style="display:flex;justify-content:space-between"><span><b style="color:#ffd54a">${me}</b> v ${mt.opp.name} <span style="color:#7e90b5">(${mt.chance}%)</span></span>
+      <b style="color:${mt.win?'#39ff88':'#ff6b6b'}">${mt.win?'WON':'LOST'}</b></div>
+    <div style="color:#9fb3d8;font-size:12px">${mt.ys}-${mt.os} • ${mt.manner} • 🏅 ${mt.mom} ${mt.momRuns}</div>`;
+  body.appendChild(line);
+  setTimeout(()=>{ if(token===mgrRevealToken) mgrReveal(i+1); }, 600);
+}
+function mgrSeasonEnd(){ const m=MGR, table=m._table, ms=m._yourMatches;
+  const wins=ms.filter(x=>x.win).length, losses=ms.length-wins;
+  const order=Object.keys(table).sort((a,b)=>table[b].pts-table[a].pts||table[b].w-table[a].w);
+  const pos=order.indexOf(m.teamId)+1, champ=pos===1;
+  const earn=+(wins*10 + (11-pos)*6 + (champ?40:0)).toFixed(1);
+  m.money=+(m.money+earn).toFixed(1); m.history.push({season:m.season,wins,losses,pos,champ,earn});
+  let motm=null,bv=-1; for(const k in m._tally){ if(m._tally[k]>bv){ bv=m._tally[k]; motm=k; } }
+  document.getElementById('mgrEndTitle').textContent=champ?`🏆 ${teamName(m.teamId)} — CHAMPIONS!`:`Season ${m.season}: finished P${pos}`;
+  document.getElementById('mgrEndTitle').style.color=champ?'#39ff88':'#ffd54a';
+  document.getElementById('mgrEndSub').innerHTML=`${wins}W ${losses}L • <b>${pos}/10</b> • earned 💰 <b>${fmtCr(earn)}</b> → now ${fmtCr(m.money)}`;
+  let h=`<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:10px 14px;margin:4px 0;font-weight:bold">🏆 Champions: ${teamName(order[0])}<br>🥇 Man of the Tournament — ${motm} (~${bv} runs)</div>`;
+  h+=`<div style="color:#9fb3d8;font-size:13px;margin:6px 0 4px">Final table</div>`;
+  order.forEach((id,i)=>{ const r=table[id]; h+=`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 10px;border-radius:6px;${id===m.teamId?'background:rgba(255,213,74,.18);color:#ffd54a;font-weight:bold':''}"><span>${i+1}. ${r.name}${id===m.teamId?' (you)':''}</span><span>${r.w}W ${r.l}L • ${r.pts} pts</span></div>`; });
+  document.getElementById('mgrEndBody').innerHTML=h; show('scr-mgr-end');
+}
+function mgrNextSeason(){ MGR.season++; MGR.squad=[]; MGR.taken={}; openAuction(); }
+function exitManager(){ MGR=null; managerManual=false; show('scr-title'); refreshTitle(); }
 
 /* ============================================================
    MATCH ENGINE
@@ -931,6 +1172,7 @@ const goBtn=document.getElementById('goBtn');
 function showGo(on){ goBtn.classList.toggle('hidden', !on); }
 function pressGo(){
   if(!M || M.state!=='between') return;
+  if(tutorialMode) tutCoachSet(`👀 Here it comes — <b>TAP</b> the screen the moment the cursor is on <b style="color:#0a7d3a">GREEN</b>!`);
   // pressing GO also cuts off any commentary still being spoken
   if(commentaryActive){ try{ speechSynthesis.cancel(); }catch(e){} commentaryActive=false; clearTimeout(comTimer); }
   showGo(false);
@@ -1048,6 +1290,21 @@ function noShotPlayed(){
 /* route through animations before committing the ball.
    if the bat made contact, fly the ball out to the boundary / a fielder first. */
 function concludeBall(res){
+  if(tutorialMode && res){
+    const wasOut = res.out;
+    if(res.out){ res.out=false; res.kind='runs'; res.runs=0; res.txt='Try again!'; res.col='#ffd54a'; }  // no wickets in the tutorial
+    tutDuck(false);
+    if(res.runs>=4){ tutHits++;
+      if(tutHits>=2){ tutCoachSet(`🔥 BOUNDARY! That's <b>${tutHits}/2</b> — you've got it! Great batting! 🎉`); setTimeout(tutorialDone,1700); }
+      else tutCoachSet(`🔥 BOUNDARY! That's perfect GREEN timing. One more to go (<b>${tutHits}/2</b>).<br>Tap <b>▶ GO</b>.`);
+    } else if(wasOut){
+      tutCoachSet(`🔴 Too early/late — that would be <b style="color:#c0392b">OUT!</b> Wait for the <b style="color:#0a7d3a">GREEN</b> and tap.<br>Don't worry, tap <b>▶ GO</b> to try again. (${tutHits}/2)`);
+    } else if(res.runs>=1){
+      tutCoachSet(`🟡 Yellow timing — just <b>${res.runs} run${res.runs>1?'s':''}</b>. Aim for <b style="color:#0a7d3a">GREEN</b> for a boundary!<br>Tap <b>▶ GO</b>. (${tutHits}/2)`);
+    } else {
+      tutCoachSet(`So close — tap right on the <b style="color:#0a7d3a">GREEN</b>! Tap <b>▶ GO</b> to try again. (${tutHits}/2)`);
+    }
+  }
   if(careerMode && CS && res && res.runs===6 && striker().name===profile.name) CS.sixes++;
   M.pendingResult=res;
   const noContact = res.kind==='bowled' || res.kind==='lbw'
@@ -1217,6 +1474,7 @@ function cardTable(title, color, rows, total, wkts){
 
 function endMatch(won){
   if(!M) return;
+  if(tutorialMode){ tutorialDone(); return; }   // tutorial wraps up its own way
   M._won = won;
   speechSynthesis && speechSynthesis.cancel();
   speak(won ? `${myTeam.name} have DONE IT! What a chase! The crowd is going berserk! Take a bow, boys, take a bow!`
@@ -1831,7 +2089,8 @@ if('serviceWorker' in navigator){
   const i=document.getElementById('playerNameInput');
   if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') confirmName(); });
   const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
-  if(act){ profile=act; show('scr-title'); refreshTitle(); }
+  if(act){ profile=act; ensureCareer(act); refreshTitle();
+    if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer
   else if(store.accounts.length){ showAccounts(); }
   else { document.getElementById('enterBack').style.display='none';
     if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }

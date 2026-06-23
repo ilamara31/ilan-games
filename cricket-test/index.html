@@ -872,7 +872,9 @@ function startTutorial(){
   myTeam=buildMyTeam(teamPool().find(t=>t.id===TEAMS[0].id));
   startMatch(TEAMS[1], FORMATS.quick);
   const c=document.getElementById('tutCoach'); c.classList.remove('hidden','ducked');
-  tutCoachSet(`Hi, I'm your coach! 👋<br>Tap <b>▶ GO</b> to face the ball.`);
+  tutCoachSet(`🏏 <b>How to bat:</b> watch the timing cursor and <b>tap the screen</b>—<br>`+
+    `🟢 <b style="color:#0a7d3a">GREEN</b> = SIX / FOUR &nbsp; 🟡 <b style="color:#b58a00">YELLOW</b> = 1–2 runs &nbsp; 🔴 too early/late = <b style="color:#c0392b">OUT</b><br>`+
+    `Now tap <b>▶ GO</b>, then TAP when the cursor reaches GREEN!`);
 }
 function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(!b) return;
   b.innerHTML=html; b.classList.add('hi');                     // bright highlight so it grabs attention…
@@ -1171,7 +1173,7 @@ const goBtn=document.getElementById('goBtn');
 function showGo(on){ goBtn.classList.toggle('hidden', !on); }
 function pressGo(){
   if(!M || M.state!=='between') return;
-  if(tutorialMode) tutDuck(true);   // coach steps aside so the GREEN timing is clear
+  if(tutorialMode) tutCoachSet(`👀 Here it comes — <b>TAP</b> the screen the moment the cursor is on <b style="color:#0a7d3a">GREEN</b>!`);
   // pressing GO also cuts off any commentary still being spoken
   if(commentaryActive){ try{ speechSynthesis.cancel(); }catch(e){} commentaryActive=false; clearTimeout(comTimer); }
   showGo(false);
@@ -1290,13 +1292,18 @@ function noShotPlayed(){
    if the bat made contact, fly the ball out to the boundary / a fielder first. */
 function concludeBall(res){
   if(tutorialMode && res){
-    if(res.out){ res.out=false; res.kind='runs'; res.runs=0; res.txt='So close — try again!'; res.col='#ffd54a'; }  // no wickets in the tutorial
-    tutDuck(false);   // coach pops back with feedback
+    const wasOut = res.out;
+    if(res.out){ res.out=false; res.kind='runs'; res.runs=0; res.txt='Try again!'; res.col='#ffd54a'; }  // no wickets in the tutorial
+    tutDuck(false);
     if(res.runs>=4){ tutHits++;
-      if(tutHits>=2){ tutCoachSet(`🔥 BRILLIANT! That's ${tutHits}/2 — you've got it! 🎉`); setTimeout(tutorialDone,1600); }
-      else tutCoachSet(`🔥 GREAT SHOT! One more boundary to go (<b>${tutHits}/2</b>).<br>Tap <b>▶ GO</b>.`);
+      if(tutHits>=2){ tutCoachSet(`🔥 BOUNDARY! That's <b>${tutHits}/2</b> — you've got it! Great batting! 🎉`); setTimeout(tutorialDone,1700); }
+      else tutCoachSet(`🔥 BOUNDARY! That's perfect GREEN timing. One more to go (<b>${tutHits}/2</b>).<br>Tap <b>▶ GO</b>.`);
+    } else if(wasOut){
+      tutCoachSet(`🔴 Too early/late — that would be <b style="color:#c0392b">OUT!</b> Wait for the <b style="color:#0a7d3a">GREEN</b> and tap.<br>Don't worry, tap <b>▶ GO</b> to try again. (${tutHits}/2)`);
+    } else if(res.runs>=1){
+      tutCoachSet(`🟡 Yellow timing — just <b>${res.runs} run${res.runs>1?'s':''}</b>. Aim for <b style="color:#0a7d3a">GREEN</b> for a boundary!<br>Tap <b>▶ GO</b>. (${tutHits}/2)`);
     } else {
-      tutCoachSet(`Tap right when the timing is <b style="color:#0a7d3a">GREEN</b> 🟢! (boundaries <b>${tutHits}/2</b>)<br>Tap <b>▶ GO</b> to try again.`);
+      tutCoachSet(`So close — tap right on the <b style="color:#0a7d3a">GREEN</b>! Tap <b>▶ GO</b> to try again. (${tutHits}/2)`);
     }
   }
   if(careerMode && CS && res && res.runs===6 && striker().name===profile.name) CS.sixes++;
