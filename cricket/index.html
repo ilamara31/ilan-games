@@ -133,7 +133,7 @@
   <!-- CAREER & MANAGER submenu -->
   <div id="scr-modes" class="screen hidden">
     <h1 style="font-size:28px">🏆 CAREER &amp; MANAGER</h1>
-    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • shop</span></button>
+    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • seasons</span></button>
     <button class="btn" onclick="managerEnter()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🧑‍💼 MANAGER MODE<br><span style="font-size:12px;font-weight:normal">buy a squad • auto-play • win the cup</span></button>
     <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
   </div>
@@ -145,7 +145,7 @@
     <div style="max-width:500px;width:100%;text-align:left;font-size:14px;line-height:1.6;color:#cdd9f0">
       <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🎯 Aim</b><br>Swipe or press <b>←</b> leg, <b>↑</b> straight, <b>→</b> off side just before you hit, to place the ball.</div>
       <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏏 Play</b><br>Quick Match, IPL Tournament or ODI World Cup — chase the target before you lose your wickets.</div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏆 Career</b><br>Play 5 IPL matches to unlock IPL Career — get auctioned, earn ₹ crores, buy gear.</div>
+      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏆 Career</b><br>Play 5 IPL matches to unlock IPL Career — get auctioned, play full seasons, earn ₹ crores.</div>
       <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🧑‍💼 Manager</b><br>Don't want to bat? Manage a team — sign players and auto-play to the title.</div>
     </div>
     <button class="btn" onclick="finishTutorial()" style="margin-top:10px">START PLAYING ▶</button>
@@ -166,17 +166,8 @@
     <div id="hubBody" style="max-width:460px;width:100%"></div>
     <button class="btn" onclick="startSeason()" style="margin-top:10px">▶ PLAY THE SEASON</button>
     <div class="row" style="margin-top:6px">
-      <button class="btn alt" onclick="showShop()">🛒 SHOP</button>
       <button class="btn alt" onclick="exitCareer()">MENU</button>
     </div>
-  </div>
-
-  <!-- SHOP -->
-  <div id="scr-shop" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 style="font-size:30px">🛒 GEAR SHOP</h1>
-    <div class="sub" id="shopSub" style="margin-bottom:8px"></div>
-    <div id="shopBody" style="max-width:460px;width:100%"></div>
-    <button class="btn alt" onclick="showCareerHub()" style="margin-top:10px">⬅ BACK</button>
   </div>
 
   <!-- MANAGER: CHOOSE TEAM -->
@@ -631,6 +622,7 @@ function standings(){
 }
 function showLeague(){
   show('scr-league');
+  if(careerMode && CS) saveSeason();   // remember progress so the season resumes after closing
   document.getElementById('leagueTitle').textContent = T.fmt.label.replace('TOURNAMENT','').trim()+' — POINTS TABLE';
   const done=T.roundIdx, total=T.schedule.length;
   document.getElementById('leagueSub').innerHTML =
@@ -692,6 +684,7 @@ function poTeams(step){
 }
 function showPlayoffs(){
   show('scr-playoffs');
+  if(careerMode && CS) saveSeason();   // remember progress so the season resumes after closing
   const P=T.playoff, qualified=P.seeds.includes(T.myId);
   document.getElementById('playoffSub').innerHTML = qualified
     ? `You qualified! Win it all to lift the cup.`
@@ -778,7 +771,7 @@ function showTournamentEnd(){
     const form=Math.max(5,Math.min(100,Math.round(avg*1.6+CS.sixes*2+CS.awards*8+(iWon?15:0))));
     const c=profile.career;
     c.seasons.push({n:CS.season,team:CS.teamId,runs:CS.runs,matches:CS.matches,avg:+avg.toFixed(1),sixes:CS.sixes,awards:CS.awards,cup:iWon,earn});
-    c.money=+(c.money+earn).toFixed(1); c.form=form; c.season++; c.teamId=null; saveProfile();
+    c.money=+(c.money+earn).toFixed(1); c.form=form; c.season++; c.teamId=null; c.live=null; saveProfile();
     h+=`<div style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border-radius:12px;padding:12px 14px;margin:10px 0;font-weight:bold">
         📊 Your season: <b>${CS.runs}</b> runs in ${CS.matches} (avg ${avg.toFixed(1)}) • ${CS.sixes} sixes${CS.awards?` • ${CS.awards} award(s)`:''}${iWon?' • 🏆 CHAMPION':''}<br>
         💰 Earned <b>${fmtCr(earn)}</b> • New form <b>${form}/100</b></div>`;
@@ -830,9 +823,6 @@ function renderCareerProfile(){
   h+=stat('💰 Money', fmtCr(c.money)) + stat('📈 Form', c.form+'/100') + stat('📅 Seasons played', c.seasons.length);
   const cups=c.seasons.filter(s=>s.cup).length, awards=c.seasons.reduce((a,s)=>a+s.awards,0), sixes=c.seasons.reduce((a,s)=>a+s.sixes,0);
   h+=stat('🏆 Cups', cups)+stat('🏅 Awards', awards)+stat('💥 Sixes (career)', sixes);
-  h+=`<div style="background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><div style="color:#9fb3d8;margin-bottom:4px">🎽 Gear</div>`;
-  GEAR.forEach(g=> h+=`<div style="display:flex;justify-content:space-between;font-size:14px"><span>${g.emoji} ${g.name}</span><b>Lv ${c.gear[g.key]}/3</b></div>`);
-  h+='</div>';
   if(c.seasons.length){ h+=`<div class="sub" style="margin:10px 0 4px">Season history</div>`;
     c.seasons.slice().reverse().forEach(s=>{ const t=teamObjById(s.team);
       h+=`<div style="background:#16243f;border-radius:10px;padding:9px 12px;margin:4px 0;font-size:13px">
@@ -854,10 +844,29 @@ const GEAR=[
 ];
 function fmtCr(v){ return '₹'+(Math.round(v*10)/10)+' cr'; }
 function teamObjById(id){ return TEAMS.find(t=>t.id===id)||TEAMS[0]; }
-function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[]};
+function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[],live:null};
   if(a && a.career && !a.career.gear) a.career.gear={bat:0,gloves:0,pads:0};
+  if(a && a.career && a.career.live===undefined) a.career.live=null;   // in-progress season (resume after closing the app)
   return a && a.career; }
 function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>=5; }
+
+/* ---- save / resume an in-progress IPL Career season so closing the app keeps your place ---- */
+function saveSeason(){
+  if(careerMode && CS && T && profile && profile.career){
+    profile.career.live = { T:T, CS:CS };   // T & CS are plain data -> JSON-safe
+    saveProfile();
+  }
+}
+function clearSeason(){ if(profile && profile.career){ profile.career.live=null; saveProfile(); } }
+function resumeSeason(){
+  const c=profile.career, L=c.live;
+  careerMode=true; managerManual=false;
+  chosenFormat=L.T.fmt||FORMATS.ipl;
+  T=L.T; CS=L.CS;
+  selectedTeamId=c.teamId;
+  myTeam=T.teams.find(t=>t.id===T.myId);
+  if(T.stage==='playoffs' && T.playoff) showPlayoffs(); else showLeague();
+}
 
 /* ============================================================
    INTERACTIVE TUTORIAL + WELCOME + EXIT
@@ -889,7 +898,7 @@ function tutorialDone(){
   show('scr-tutdone');
 }
 function finishTutorial(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
-function exitTournament(){ if(confirm('Exit the tournament? Your stats so far are saved.')){ T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
+function exitTournament(){ if(confirm('Exit the tournament? Your stats so far are saved.')){ if(careerMode) clearSeason(); T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
 
 function careerEnter(){
   if(!profile){ showAccounts(); return; }
@@ -900,7 +909,9 @@ function careerEnter(){
     return;
   }
   careerMode=true;
-  if(profile.career.teamId) showCareerHub(); else showAuction();
+  if(profile.career.live && profile.career.live.T) resumeSeason();   // pick up an unfinished season
+  else if(profile.career.teamId) showCareerHub();
+  else showAuction();
 }
 function exitCareer(){ careerMode=false; show('scr-title'); refreshTitle(); }
 function careerContinue(){ if(profile.career.teamId) showCareerHub(); else showAuction(); }
@@ -911,7 +922,7 @@ function showAuction(){
   const offers=TEAMS.map(t=>{ const base=3+Math.random()*5; return {t, off:+(base*(0.5+form/90)).toFixed(1)}; });
   offers.sort((a,b)=>b.off-a.off);
   const best=offers[0].off;
-  let h='<div style="color:#9fb3d8;font-size:13px;margin-bottom:6px">Teams are bidding for you — sign for one. The fee is yours to spend!</div>';
+  let h='<div style="color:#9fb3d8;font-size:13px;margin-bottom:6px">Teams are bidding for you — sign for one. The signing fee is yours to keep!</div>';
   offers.forEach(o=>{ h+=`<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,${o.t.c1},${o.t.c2});border-radius:12px;padding:9px 12px;margin:6px 0">
       <b style="flex:1;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.5)">${o.t.id} · ${o.t.name}</b>
       <span style="font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,.5)">${fmtCr(o.off)}${o.off===best?' ⭐':''}</span>
@@ -927,28 +938,13 @@ function showCareerHub(){
   document.getElementById('hubTitle').style.color='#ffd54a';
   document.getElementById('hubSub').innerHTML=`Playing for <b>${t.name}</b> • Form ${c.form}/100`;
   let h=`<div style="display:flex;justify-content:space-between;background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><span style="color:#9fb3d8">💰 Money</span><b style="color:#ffd54a">${fmtCr(c.money)}</b></div>`;
-  h+=`<div style="background:#16243f;padding:10px 14px;border-radius:10px;margin:4px 0"><div style="color:#9fb3d8;margin-bottom:4px">🎽 Your gear</div>`;
-  GEAR.forEach(g=> h+=`<div style="display:flex;justify-content:space-between;font-size:14px"><span>${g.emoji} ${g.name}</span><b>Lv ${c.gear[g.key]}/3</b></div>`);
-  h+='</div><div style="color:#9fb3d8;font-size:12px;margin-top:4px">Buy gear in the shop, then play the season for your team!</div>';
+  h+='<div style="color:#9fb3d8;font-size:12px;margin-top:4px">Play the season for your team — chase the cup and earn money!</div>';
   document.getElementById('hubBody').innerHTML=h;
   show('scr-hub');
 }
-function showShop(){
-  const c=profile.career;
-  document.getElementById('shopSub').innerHTML=`💰 ${fmtCr(c.money)} — better gear = bigger green timing zone`;
-  let h='';
-  GEAR.forEach(g=>{ const lv=c.gear[g.key], maxed=lv>=3, price=maxed?0:g.prices[lv], afford=c.money>=price;
-    h+=`<div style="background:#16243f;border-radius:12px;padding:11px 14px;margin:6px 0">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <b style="font-size:15px">${g.emoji} ${g.name} <span style="color:#9fb3d8;font-weight:normal">Lv ${lv}/3</span></b>
-        ${maxed?'<span style="color:#39ff88;font-weight:bold">MAX</span>':`<button class="btn ${afford?'':'alt'}" ${afford?'':'disabled'} style="margin:0;padding:8px 14px;font-size:14px" onclick="buyGear('${g.key}')">${fmtCr(price)}</button>`}
-      </div><div style="color:#9fb3d8;font-size:12px;margin-top:3px">${g.desc}</div></div>`; });
-  document.getElementById('shopBody').innerHTML=h;
-  show('scr-shop');
-}
-function buyGear(key){ const c=profile.career, g=GEAR.find(x=>x.key===key), lv=c.gear[key];
-  if(lv>=3) return; const price=g.prices[lv]; if(c.money<price) return;
-  c.money=+(c.money-price).toFixed(1); c.gear[key]++; saveProfile(); showShop(); }
+/* shop & gear removed — kept as no-ops so any stray reference can't error */
+function showShop(){ showCareerHub(); }
+function buyGear(){}
 function startSeason(){ const c=profile.career;
   careerMode=true; managerManual=false; chosenFormat=FORMATS.ipl; selectedTeamId=c.teamId;
   CS={season:c.season, teamId:c.teamId, matches:0, runs:0, balls:0, sixes:0, awards:0, cup:false};
@@ -1222,13 +1218,12 @@ function playShot(){
    Kept constant — later rounds get harder via slower cursor + bigger target,
    not via an even tinier window (that felt unfair). */
 function getWindows(){
-  // gear widens the timing windows during career season play
-  const g=(careerMode && profile && profile.career && profile.career.gear) ? profile.career.gear : {bat:0,gloves:0,pads:0};
+  // fixed "normal" timing windows for everyone — no gear, no upgrades
   return {
-    perfect: 0.028*(1+(g.bat||0)*0.20),    // 4s & 6s (bat widens the green zone)
-    good:    0.058*(1+(g.bat||0)*0.08+(g.gloves||0)*0.14),
-    ok:      0.100*(1+(g.pads||0)*0.12),
-    edge:    0.165*(1+(g.pads||0)*0.06),    // pads help you survive mistimes
+    perfect: 0.028,    // 4s & 6s
+    good:    0.058,
+    ok:      0.100,
+    edge:    0.165,
   };
 }
 
