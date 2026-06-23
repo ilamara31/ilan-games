@@ -63,6 +63,15 @@
   .namerow span { width:22px; color:#ffd54a; font-weight:bold; }
   .namerow input { flex:1; background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:8px 10px; border-radius:8px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
+  /* tutorial cartoon coach (bottom-left) */
+  #tutCoach { position:absolute; left:10px; bottom:12px; z-index:9; display:flex; flex-direction:column;
+    align-items:flex-start; gap:4px; max-width:74%; pointer-events:none; transition:transform .3s ease, opacity .3s ease; }
+  #tutBubble { background:#fff; color:#0a2030; border-radius:14px; padding:9px 13px; font-size:14px; font-weight:bold;
+    line-height:1.35; box-shadow:0 4px 14px rgba(0,0,0,.45); position:relative; max-width:300px; transition:opacity .2s, transform .2s; }
+  #tutBubble:after { content:''; position:absolute; left:26px; bottom:-7px; width:0; height:0;
+    border:7px solid transparent; border-top-color:#fff; border-bottom:0; }
+  #tutCoach.ducked #tutBubble { opacity:0; transform:translateY(6px); }
+  #tutCoach.ducked { transform:translateY(56px); opacity:.6; }
 </style>
 </head>
 <body>
@@ -288,9 +297,21 @@
     <div class="hud-box" id="hud-right" style="text-align:right"></div>
   </div>
   <div id="msg"></div>
-  <div id="tutCoach" class="hidden" style="position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:7;
-    max-width:90%;text-align:center;background:rgba(58,155,220,.95);color:#06243a;font-weight:bold;font-size:15px;
-    padding:10px 18px;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.4);pointer-events:none"></div>
+  <div id="tutCoach" class="hidden">
+    <div id="tutBubble"></div>
+    <svg id="tutGuy" viewBox="0 0 90 112" width="82" height="100" aria-hidden="true">
+      <ellipse cx="36" cy="107" rx="9" ry="4" fill="#0b1220"/><ellipse cx="54" cy="107" rx="9" ry="4" fill="#0b1220"/>
+      <rect x="34" y="80" width="9" height="25" rx="4" fill="#26354f"/><rect x="47" y="80" width="9" height="25" rx="4" fill="#26354f"/>
+      <rect x="27" y="46" width="36" height="40" rx="13" fill="#1ea85a"/>
+      <rect x="22" y="50" width="9" height="26" rx="5" fill="#1ea85a"/>
+      <g transform="rotate(30 60 38)"><rect x="55" y="14" width="10" height="36" rx="5" fill="#1ea85a"/></g>
+      <circle cx="71" cy="15" r="6" fill="#f1c08a"/>
+      <circle cx="45" cy="32" r="16" fill="#f1c08a"/>
+      <path d="M28 30 a17 16 0 0 1 34 0 z" fill="#e10600"/><rect x="45" y="27" width="22" height="5" rx="2" fill="#e10600"/>
+      <circle cx="40" cy="33" r="2" fill="#222"/><circle cx="50" cy="33" r="2" fill="#222"/>
+      <path d="M39 39 q6 5 12 0" stroke="#a86b3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
   <div id="help" class="hidden">GO = bowl • SPACE/Tap = shot • ← ↑ → / swipe = aim</div>
   <button id="goBtn" class="hidden" onclick="pressGo()">▶ GO</button>
   <div id="voiceTag" style="position:absolute;left:10px;bottom:10px;z-index:8;color:#9fb3d8;font-size:11px;
@@ -845,10 +866,11 @@ function startTutorial(){
   chosenFormat=FORMATS.quick; selectedTeamId=TEAMS[0].id;
   myTeam=buildMyTeam(teamPool().find(t=>t.id===TEAMS[0].id));
   startMatch(TEAMS[1], FORMATS.quick);
-  const c=document.getElementById('tutCoach'); c.classList.remove('hidden'); tutCoachUpdate();
+  const c=document.getElementById('tutCoach'); c.classList.remove('hidden','ducked');
+  tutCoachSet(`Hi, I'm your coach! 👋<br>Tap <b>▶ GO</b> to face the ball.`);
 }
-function tutCoachUpdate(){ const c=document.getElementById('tutCoach'); if(!c) return;
-  c.innerHTML = `🎓 Press <b>▶ GO</b>, then <b>TAP</b> the moment the timing hits the <b style="color:#064">GREEN</b> middle to smash a boundary!<br>Boundaries: <b>${tutHits}/2</b>`; }
+function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(b) b.innerHTML=html; }
+function tutDuck(on){ const c=document.getElementById('tutCoach'); if(c) c.classList.toggle('ducked', !!on); }
 function tutorialDone(){
   if(!tutorialMode) return; tutorialMode=false;
   try{ speechSynthesis.cancel(); }catch(e){}
@@ -1141,6 +1163,7 @@ const goBtn=document.getElementById('goBtn');
 function showGo(on){ goBtn.classList.toggle('hidden', !on); }
 function pressGo(){
   if(!M || M.state!=='between') return;
+  if(tutorialMode) tutDuck(true);   // coach steps aside so the GREEN timing is clear
   // pressing GO also cuts off any commentary still being spoken
   if(commentaryActive){ try{ speechSynthesis.cancel(); }catch(e){} commentaryActive=false; clearTimeout(comTimer); }
   showGo(false);
@@ -1260,7 +1283,13 @@ function noShotPlayed(){
 function concludeBall(res){
   if(tutorialMode && res){
     if(res.out){ res.out=false; res.kind='runs'; res.runs=0; res.txt='So close — try again!'; res.col='#ffd54a'; }  // no wickets in the tutorial
-    if(res.runs>=4){ tutHits++; setTimeout(tutCoachUpdate,50); if(tutHits>=2) setTimeout(tutorialDone,1400); }
+    tutDuck(false);   // coach pops back with feedback
+    if(res.runs>=4){ tutHits++;
+      if(tutHits>=2){ tutCoachSet(`🔥 BRILLIANT! That's ${tutHits}/2 — you've got it! 🎉`); setTimeout(tutorialDone,1600); }
+      else tutCoachSet(`🔥 GREAT SHOT! One more boundary to go (<b>${tutHits}/2</b>).<br>Tap <b>▶ GO</b>.`);
+    } else {
+      tutCoachSet(`Tap right when the timing is <b style="color:#0a7d3a">GREEN</b> 🟢! (boundaries <b>${tutHits}/2</b>)<br>Tap <b>▶ GO</b> to try again.`);
+    }
   }
   if(careerMode && CS && res && res.runs===6 && striker().name===profile.name) CS.sixes++;
   M.pendingResult=res;
