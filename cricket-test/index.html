@@ -63,15 +63,20 @@
   .namerow span { width:22px; color:#ffd54a; font-weight:bold; }
   .namerow input { flex:1; background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:8px 10px; border-radius:8px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
-  /* tutorial cartoon coach (bottom-left) */
-  #tutCoach { position:absolute; left:10px; bottom:12px; z-index:9; display:flex; flex-direction:column;
-    align-items:flex-start; gap:4px; max-width:74%; pointer-events:none; transition:transform .3s ease, opacity .3s ease; }
-  #tutBubble { background:#fff; color:#0a2030; border-radius:14px; padding:9px 13px; font-size:14px; font-weight:bold;
-    line-height:1.35; box-shadow:0 4px 14px rgba(0,0,0,.45); position:relative; max-width:300px; transition:opacity .2s, transform .2s; }
-  #tutBubble:after { content:''; position:absolute; left:26px; bottom:-7px; width:0; height:0;
-    border:7px solid transparent; border-top-color:#fff; border-bottom:0; }
-  #tutCoach.ducked #tutBubble { opacity:0; transform:translateY(6px); }
-  #tutCoach.ducked { transform:translateY(56px); opacity:.6; }
+  /* tutorial cartoon coach (bottom-left) — big & readable */
+  #tutCoach { position:absolute; left:12px; bottom:14px; z-index:9; display:flex; flex-direction:column;
+    align-items:flex-start; gap:6px; max-width:88%; pointer-events:none; transition:transform .3s ease, opacity .3s ease; }
+  #tutGuy { width:140px; height:170px; filter:drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
+  #tutBubble { background:#fff; color:#0a2030; border-radius:16px; padding:15px 19px; font-size:20px; font-weight:bold;
+    line-height:1.4; box-shadow:0 6px 18px rgba(0,0,0,.5); position:relative; max-width:380px; transition:opacity .2s, transform .2s; }
+  #tutBubble:after { content:''; position:absolute; left:36px; bottom:-9px; width:0; height:0;
+    border:9px solid transparent; border-top-color:#fff; border-bottom:0; }
+  #tutBubble.hi { background:#fffbe6; outline:4px solid #ffd54a;
+    box-shadow:0 0 30px rgba(255,213,74,.95), 0 6px 18px rgba(0,0,0,.5); animation:tutpulse 1s ease-in-out infinite; }
+  #tutBubble.hi:after { border-top-color:#fffbe6; }
+  @keyframes tutpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.05) } }
+  #tutCoach.ducked #tutBubble { opacity:0; transform:translateY(8px); animation:none; }
+  #tutCoach.ducked { transform:translateY(48px); opacity:.6; }
 </style>
 </head>
 <body>
@@ -858,7 +863,7 @@ function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>
 /* ============================================================
    INTERACTIVE TUTORIAL + WELCOME + EXIT
    ============================================================ */
-let tutorialMode=false, tutHits=0;
+let tutorialMode=false, tutHits=0, tutHiT=null;
 function skipWelcome(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
 function startTutorial(){
   if(!profile){ showAccounts(); return; }
@@ -869,7 +874,10 @@ function startTutorial(){
   const c=document.getElementById('tutCoach'); c.classList.remove('hidden','ducked');
   tutCoachSet(`Hi, I'm your coach! 👋<br>Tap <b>▶ GO</b> to face the ball.`);
 }
-function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(b) b.innerHTML=html; }
+function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(!b) return;
+  b.innerHTML=html; b.classList.add('hi');                     // bright highlight so it grabs attention…
+  clearTimeout(tutHiT); tutHiT=setTimeout(()=>b.classList.remove('hi'), 4500);   // …calms down after ~4.5s
+}
 function tutDuck(on){ const c=document.getElementById('tutCoach'); if(c) c.classList.toggle('ducked', !!on); }
 function tutorialDone(){
   if(!tutorialMode) return; tutorialMode=false;
