@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Ilan Obby</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Ilan Obby" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<link rel="stylesheet" href="./css/style.css" />
+<script type="importmap">
+{ "imports": { "three": "./libs/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-pill" id="coinPill">🪙 <b id="coinCount">0</b></div>
+    <div class="hud-pill" id="stagePill">🏁 Stage <b id="stageName">1/50</b></div>
+    <div class="hud-pill" id="pctPill">📊 <b id="cpVal">0</b>%</div>
+    <div class="hud-pill" id="timePill">⏱ <b id="timeVal">0.0</b>s</div>
+    <div class="hud-pill" id="bestPill">🏆 <b id="bestVal">--</b></div>
+    <div class="hud-pill theme" id="themePill">🌍 <b id="themeName">Meadow</b></div>
+  </div>
+
+  <div id="roster" class="hidden"></div>
+  <div id="flash"></div>
+  <div id="toast"></div>
+  <div id="eventBanner" class="hidden"></div>
+
+  <!-- ===== touch controls ===== -->
+  <div id="touchUI" class="hidden">
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div id="btnCol">
+      <button id="sprintBtn" class="actbtn">⚡<span>SPRINT</span></button>
+      <button id="jumpBtn" class="actbtn big">⤒<span>JUMP</span></button>
+    </div>
+  </div>
+  <button id="musicBtn" class="iconbtn hidden" title="Music">🔊</button>
+  <button id="shopBtn" class="iconbtn hidden" title="Shop" style="right:64px">🛍️</button>
+  <button id="exitBtn" class="iconbtn hidden" title="Exit to menu (progress saved)" style="right:114px">🚪</button>
+
+  <!-- ===== WELCOME (first time only) ===== -->
+  <div id="welcome" class="screen hidden">
+    <div class="card pop">
+      <h1>👋 Welcome to Ilan Obby!</h1>
+      <ul class="welcome-list">
+        <li>🕹️ Move using joystick, WASD, or arrow keys</li>
+        <li>⬆️ Jump across obstacles</li>
+        <li>💰 Collect coins while playing</li>
+        <li>🚩 Reach checkpoints to save progress</li>
+        <li>🏁 Complete stages to unlock rewards</li>
+      </ul>
+      <button id="welcomePlay" class="big-btn">PLAY ▶</button>
+    </div>
+  </div>
+
+  <!-- ===== START MENU ===== -->
+  <div id="overlay" class="screen">
+    <div class="card">
+      <h1>🌈 ILAN OBBY</h1>
+      <p class="sub">50 stages across 5 worlds. Jump, collect coins, beat your best time!</p>
+      <input id="nameInput" maxlength="14" placeholder="Your username" />
+      <div id="menuStats" class="menu-stats"></div>
+      <div class="btn-row">
+        <button id="continueBtn" class="big-btn hidden">CONTINUE ▶</button>
+        <button id="playBtn" class="big-btn">PLAY ▶</button>
+      </div>
+      <button id="menuShopBtn" class="ghost-btn hidden">🛍️ Shop</button>
+    </div>
+  </div>
+
+  <!-- ===== GENERIC ANNOUNCE POPUP (unlocks, daily) ===== -->
+  <div id="popup" class="screen hidden">
+    <div class="card pop">
+      <h1 id="popTitle"></h1>
+      <div id="popBody" class="sub"></div>
+      <button id="popBtn" class="big-btn">AWESOME!</button>
+    </div>
+  </div>
+
+  <!-- ===== SHOP ===== -->
+  <div id="shop" class="screen hidden">
+    <div class="card shop-card">
+      <h1>🛍️ Shop</h1>
+      <div class="shop-bal">Balance: 🪙 <b id="shopBal">0</b></div>
+      <div class="shop-tabs">
+        <button id="tabSkins" class="tab active">Skins</button>
+        <button id="tabTrails" class="tab">Trails</button>
+        <button id="tabAuras" class="tab">Auras</button>
+        <button id="tabPower" class="tab">Power</button>
+      </div>
+      <div id="shopGrid" class="shop-grid"></div>
+      <button id="shopClose" class="ghost-btn">Close</button>
+    </div>
+  </div>
+
+  <!-- ===== WIN ===== -->
+  <div id="winScreen" class="screen hidden">
+    <div class="card pop">
+      <h1 id="winTitle">🏆 YOU WIN!</h1>
+      <div id="winStats" class="sub"></div>
+      <div class="btn-row">
+        <button id="rebirthBtn" class="big-btn hidden" style="background:linear-gradient(135deg,#b18cff,#6a3bd0);color:#fff">⭐ REBIRTH</button>
+        <button id="againBtn" class="big-btn">PLAY AGAIN ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="screen"><div class="card"><h1>Loading…</h1></div></div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

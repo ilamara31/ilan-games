@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v18';
+const CACHE = 'ilan-arcade-v19';
 const ASSETS = [
   './',
   './index.html',
@@ -14,7 +14,27 @@ const ASSETS = [
   './f1/',
   './f1/index.html',
   './football/',
-  './football/index.html'
+  './football/index.html',
+  './obby/',
+  './obby/index.html',
+  './obby/css/style.css',
+  './obby/libs/three.module.js',
+  './obby/js/main.js',
+  './obby/js/World.js',
+  './obby/js/Player.js',
+  './obby/js/Bot.js',
+  './obby/js/Net.js',
+  './obby/js/Controls.js',
+  './obby/js/CameraRig.js',
+  './obby/js/Physics.js',
+  './obby/js/Particles.js',
+  './obby/js/HUD.js',
+  './obby/js/Music.js',
+  './obby/js/Save.js',
+  './obby/js/Cosmetics.js',
+  './obby/js/Character.js',
+  './obby/js/Trail.js',
+  './obby/js/Aura.js'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
