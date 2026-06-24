@@ -165,6 +165,7 @@ const CARS=[
   {id:'speed', name:'Speedster',    top:390, price:900,  color:'#39ff88'},
   {id:'hyper', name:'Hyper X',      top:430, price:1800, color:'#ffd21f'},
   {id:'apex',  name:'Apex Pro',     top:470, price:3500, color:'#b14bff'},
+  {id:'rocket',name:'Rocket V12',   top:520, price:6000, color:'#ff4fd8'},   // beats the fastest rivals at Monaco/Australia
 ];
 function getCar(id){ return CARS.find(c=>c.id===id)||CARS[0]; }
 
@@ -176,7 +177,7 @@ const LOCS=[
     theme:{sky:['#ffb35c','#ffe6c2'], gA:'#d9b36b', gB:'#c79e57', hill:'#caa45e'}},
   {id:'england',   name:'England',   flag:'🇬🇧', fee:300,  win:650,  opp:345, grid:12, track:'england',
     theme:{sky:['#5b6b80','#c3ccd6'], gA:'#2e7d4f', gB:'#256b42', hill:'#4f7a5a'}},
-  {id:'japan',     name:'Japan',     flag:'🇯🇵', fee:400,  win:900,  opp:360, grid:13, track:'japan',
+  {id:'japan',     name:'Japan',     flag:'🇯🇵', fee:400,  win:900,  opp:360, grid:13, track:'japan', laps:4,
     theme:{sky:['#6a8fc0','#dde9ff'], gA:'#1f9a4a', gB:'#178040', hill:'#5a9a6a'}},
   {id:'italy',     name:'Italy',     flag:'🇮🇹', fee:550,  win:1200, opp:375, grid:14, track:'italy',
     theme:{sky:['#3a7fce','#dbeeff'], gA:'#3a9d3a', gB:'#2f8a2f', hill:'#6aa05a'}},
@@ -184,7 +185,7 @@ const LOCS=[
     theme:{sky:['#2f9b8f','#d8f5ef'], gA:'#16a52b', gB:'#0c9325', hill:'#3aa07a'}},
   {id:'usa',       name:'USA',       flag:'🇺🇸', fee:900,  win:2000, opp:405, grid:17, track:'usa',
     theme:{sky:['#3a4f9b','#cdd6ff'], gA:'#1f8a3b', gB:'#188031', hill:'#4f8a5a'}},
-  {id:'singapore', name:'Singapore', flag:'🇸🇬', fee:1100, win:2500, opp:425, grid:18, track:'singapore',
+  {id:'singapore', name:'Singapore', flag:'🇸🇬', fee:1100, win:2500, opp:425, grid:18, track:'singapore', laps:4,
     theme:{sky:['#0c1430','#23314f'], gA:'#1a2236', gB:'#141b2c', hill:'#22304a'}},
   {id:'australia', name:'Australia', flag:'🇦🇺', fee:1300, win:3200, opp:445, grid:20, track:'australia',
     theme:{sky:['#9fc0e8','#eef6ff'], gA:'#3aa53b', gB:'#2f9230', hill:'#6ab06a'}},
@@ -358,7 +359,8 @@ function update(dt){
   position+=speed*dt;
   while(position>=trackLength){ position-=trackLength; onLap(); }
 }
-function onLap(){ const t=raceTime-lapStart; lapStart=raceTime; if(t>0&&(fastestLap===0||t<fastestLap)) fastestLap=t; lap++; if(lap>LAPS_TOTAL) finishRace(); }
+function lapsFor(){ return curLoc.laps||LAPS_TOTAL; }   // short tracks (Japan/Singapore) run an extra lap
+function onLap(){ const t=raceTime-lapStart; lapStart=raceTime; if(t>0&&(fastestLap===0||t<fastestLap)) fastestLap=t; lap++; if(lap>lapsFor()) finishRace(); }
 
 function render(){
   const sky=ctx.createLinearGradient(0,0,0,H*0.62); sky.addColorStop(0,theme.sky[0]); sky.addColorStop(1,theme.sky[1]);
@@ -402,7 +404,7 @@ function render(){
 function fmt(s){ if(!s) return '--'; const m=Math.floor(s/60), r=s-m*60; return (m>0?m+':':'')+r.toFixed(2).padStart(m>0?5:4,'0'); }
 function updateHud(){
   const car=getCar(career().car);
-  document.getElementById('hud-left').innerHTML=`${curLoc.flag} P <b>${myPosition()}</b>/${cars.length+1}<br>Lap <b>${Math.min(lap,LAPS_TOTAL)}</b>/${LAPS_TOTAL}<br><span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
+  document.getElementById('hud-left').innerHTML=`${curLoc.flag} P <b>${myPosition()}</b>/${cars.length+1}<br>Lap <b>${Math.min(lap,lapsFor())}</b>/${lapsFor()}<br><span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
   document.getElementById('speedo').innerHTML=`<span class="kmh">${Math.round(speed/maxSpeed*car.top)}</span> km/h<br><span style="color:#9fb3d8">best lap ${fastestLap?fmt(fastestLap):'--'}</span>`;
 }
 
