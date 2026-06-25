@@ -124,7 +124,14 @@ const pname = acct?acct.name:'Guest';
 
 /* ======================= GAME DATA ======================= */
 const W5=['apple','brave','crane','dance','eagle','flame','grape','house','image','juice','lemon','mango','night','ocean','piano','queen','river','stone','table','water','yacht','zebra','bread','chair','dream','earth','ghost','heart','knife','light','money','noble','olive','pearl','quiet','robot','sugar','tiger','unity','voice','wheat','young','beach','cloud','drink','eight','fruit','glass','happy','input','lucky','music','novel','orbit','party','quick','round','smile','tooth','value','witch','plant','spark','train','whale','blaze','candy','depth','frost','grain','honey','jolly','vivid'];
-const SCRAMBLE=['cat','dog','fish','bird','tree','book','game','star','moon','rain','fire','gold','king','lion','cake','milk','ship','song','jump','play','blue','green','happy','tiger','apple','water','music','smile','house','plant','cloud','dream','beach','candy','robot','ocean','pizza','dance','sugar','river'];
+const SCRAMBLE={  // bucketed by length — used for progressive difficulty
+  3:['cat','dog','sun','car','hat','bee','owl','fox','cup','pen','key','bug','jam','map','net','pig','run','top','web','ant','bus','egg','cow','box'],
+  4:['tree','book','game','star','moon','rain','fire','gold','king','lion','cake','milk','ship','song','jump','blue','frog','kite','leaf','nest','ring','sand','wolf','bear','duck','gift','lamp','road','snow','fish','bird','play','door','ball'],
+  5:['apple','water','music','smile','house','plant','cloud','dream','beach','candy','robot','ocean','pizza','dance','tiger','grape','lemon','river','stone','train','eagle','brave','light','money','queen','sugar','happy','green','honey','chair','bread','clock','horse','mango'],
+  6:['garden','rocket','planet','monkey','orange','silver','dragon','castle','forest','basket','button','flower','bridge','jungle','pencil','summer','winter','yellow','purple','guitar','bottle','camera','island','turtle'],
+  7:['rainbow','diamond','journey','dolphin','blanket','kitchen','library','octopus','popcorn','volcano','weather','holiday','cheetah','penguin','balloon','crystal'],
+  8:['elephant','mountain','computer','dinosaur','hospital','baseball','birthday','sunshine','treasure','umbrella','sandwich','airplane','football','notebook'],
+};
 const WS_WORDS=['CAT','DOG','LION','BEAR','FROG','FISH','WOLF','DEER'];
 const CONN=[
   {groups:[['Colours','RED','BLUE','GREEN','PINK'],['Fruits','APPLE','MANGO','GRAPE','LEMON'],['Animals','TIGER','ZEBRA','HORSE','KOALA'],['Sports','TENNIS','HOCKEY','BOXING','RUGBY']]},
@@ -311,23 +318,33 @@ GAMEFN.search=function(root,G){
 
 /* ======================= WORD SCRAMBLE ======================= */
 GAMEFN.scramble=function(root,G){
-  let score=0, timeLeft=60, word='', picks=[], timer=null;
+  let score=0, timeLeft=60, word='', picks=[], timer=null, letters=[], last='';
   const wrap=el('div','panel');
   const hud=el('div','row spread'); hud.innerHTML=`<div class="sub2">Score <b id="ssc">0</b></div><div class="sub2">⏱ <b id="stm">60</b>s</div>`; wrap.appendChild(hud);
+  const hint=el('div','sub2','Tap the letters or just type on your keyboard. Words get longer as you score!'); wrap.appendChild(hint);
   const ansEl=el('div','answer'); wrap.appendChild(ansEl);
   const tilesEl=el('div','tiles'); wrap.appendChild(tilesEl);
   const ctrls=el('div','row'); ctrls.style.justifyContent='center';
   const bksp=el('button','btn alt','⌫'); const clr=el('button','btn alt','Clear'); const ok=el('button','btn grn','✓ Check');
   ctrls.append(bksp,clr,ok); wrap.appendChild(ctrls); root.appendChild(wrap);
-  function newWord(){ word=SCRAMBLE[Math.floor(Math.random()*SCRAMBLE.length)]; let s=shuffle(word.split('')); if(s.join('')===word) s=shuffle(s); picks=[]; renderTiles(s); ansEl.textContent=''; }
-  let letters=[];
-  function renderTiles(s){ letters=s.map((ch,i)=>({ch,used:false,i})); tilesEl.innerHTML=''; letters.forEach(L=>{ const b=el('button','tile',L.ch); b.onclick=()=>{ if(L.used)return; L.used=true; picks.push(L); b.classList.add('used'); draw(); }; L.btn=b; tilesEl.appendChild(b); }); }
+  function pickWord(){ let len=Math.min(8, 3+Math.floor(score/2)), pool=SCRAMBLE[len];   // longer words as score rises
+    while((!pool||!pool.length)&&len>3){ len--; pool=SCRAMBLE[len]; } if(!pool||!pool.length) pool=SCRAMBLE[3];
+    let w; do{ w=pool[Math.floor(Math.random()*pool.length)]; } while(pool.length>1 && w===last); last=w; return w; }
+  function newWord(){ word=pickWord(); let s=shuffle(word.split('')); if(s.join('')===word) s=shuffle(s); picks=[]; renderTiles(s); draw(); }
+  function renderTiles(s){ letters=s.map(ch=>({ch,used:false})); tilesEl.innerHTML=''; letters.forEach(L=>{ const b=el('button','tile',L.ch); b.onclick=()=>useTile(L); L.btn=b; tilesEl.appendChild(b); }); }
+  function useTile(L){ if(L.used)return; L.used=true; L.btn.classList.add('used'); picks.push(L); draw(); }
+  function typeLetter(ch){ const L=letters.find(x=>!x.used && x.ch===ch); if(L) useTile(L); }   // keyboard support
+  function undo(){ const p=picks.pop(); if(p){ p.used=false; p.btn.classList.remove('used'); draw(); } }
   function draw(){ ansEl.textContent=picks.map(p=>p.ch).join(''); }
-  bksp.onclick=()=>{ const p=picks.pop(); if(p){ p.used=false; p.btn.classList.remove('used'); draw(); } };
+  function checkWord(){ if(picks.length && picks.map(p=>p.ch).join('')===word){ score++; $('ssc').textContent=score; toast('✅ '+word.toUpperCase()); newWord(); } else toast('Not quite — try again'); }
+  bksp.onclick=undo;
   clr.onclick=()=>{ picks.forEach(p=>{p.used=false;p.btn.classList.remove('used');}); picks=[]; draw(); };
-  ok.onclick=()=>{ if(picks.map(p=>p.ch).join('')===word){ score++; $('ssc').textContent=score; toast('✅ '+word.toUpperCase()); newWord(); } else { toast('Not quite — try again'); } };
-  timer=setInterval(()=>{ timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); setBest('scrambleBest',score); wrap.innerHTML='<div class="big">⏱ Time up!</div><div class="sub2">You unscrambled <b>'+score+'</b> words</div>'; const r=el('button','btn','Play again'); r.onclick=()=>{score=0;timeLeft=60;root.innerHTML='';GAMEFN.scramble(root,G);}; wrap.appendChild(r); } },1000);
-  window._cleanup=()=>clearInterval(timer);
+  ok.onclick=checkWord;
+  const keyh=e=>{ const k=(e.key||'').toLowerCase(); if(/^[a-z]$/.test(k)){ typeLetter(k); e.preventDefault(); } else if(e.key==='Backspace'){ undo(); e.preventDefault(); } else if(e.key==='Enter'){ checkWord(); e.preventDefault(); } };
+  window.addEventListener('keydown',keyh);
+  timer=setInterval(()=>{ timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); window.removeEventListener('keydown',keyh); setBest('scrambleBest',score);
+    wrap.innerHTML='<div class="big">⏱ Time up!</div><div class="sub2">You unscrambled <b>'+score+'</b> words</div>'; const r=el('button','btn','Play again'); r.style.marginTop='10px'; r.onclick=()=>{ root.innerHTML=''; GAMEFN.scramble(root,G); }; wrap.appendChild(r); } },1000);
+  window._cleanup=()=>{ clearInterval(timer); window.removeEventListener('keydown',keyh); };
   newWord();
 };
 
