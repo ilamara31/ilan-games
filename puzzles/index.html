@@ -131,6 +131,14 @@ const CONN=[
   {groups:[['Planets','EARTH','MARS','VENUS','SATURN'],['Metals','GOLD','IRON','COPPER','SILVER'],['Trees','OAK','PINE','MAPLE','BIRCH'],['Drinks','WATER','JUICE','COFFEE','SODA']]},
   {groups:[['Birds','EAGLE','ROBIN','CROW','SWAN'],['Body','HEART','BRAIN','LUNG','LIVER'],['Weather','RAIN','SNOW','WIND','STORM'],['Music','PIANO','DRUM','GUITAR','FLUTE']]},
   {groups:[['Shapes','CIRCLE','SQUARE','OVAL','STAR'],['Months','MARCH','APRIL','JUNE','MAY'],['Veg','ONION','POTATO','CARROT','PEA'],['Jobs','DOCTOR','PILOT','CHEF','TEACHER']]},
+  {groups:[['Countries','INDIA','BRAZIL','CHINA','JAPAN'],['Oceans','PACIFIC','ATLANTIC','INDIAN','ARCTIC'],['Days','MONDAY','FRIDAY','SUNDAY','TUESDAY'],['Pets','CAT','DOG','FISH','RABBIT']]},
+  {groups:[['Vehicles','CAR','BUS','TRAIN','PLANE'],['Insects','ANT','BEE','WASP','MOTH'],['Tools','HAMMER','DRILL','SAW','WRENCH'],['Clothes','SHIRT','SHOES','HAT','COAT']]},
+  {groups:[['Fast food','PIZZA','BURGER','FRIES','TACO'],['Board games','CHESS','LUDO','MONOPOLY','CARROM'],['Languages','HINDI','ENGLISH','FRENCH','TAMIL'],['Furniture','CHAIR','TABLE','BED','SOFA']]},
+  {groups:[['Sea life','SHARK','WHALE','CRAB','OCTOPUS'],['Flowers','ROSE','LILY','TULIP','DAISY'],['Continents','ASIA','EUROPE','AFRICA','AMERICA'],['Desserts','CAKE','PIE','DONUT','JELLY']]},
+  {groups:[['Heroes','BATMAN','SUPERMAN','THOR','HULK'],['Card suits','HEARTS','SPADES','CLUBS','DIAMONDS'],['Spices','PEPPER','SALT','CHILLI','GINGER'],['Subjects','MATHS','SCIENCE','HISTORY','ART']]},
+  {groups:[['Body parts','ARM','LEG','NOSE','EAR'],['Cutlery','PLATE','SPOON','FORK','BOWL'],['Sky','SUNNY','CLOUDY','RAINY','WINDY'],['Big cats','LION','LEOPARD','JAGUAR','CHEETAH']]},
+  {groups:[['Genres','ROCK','POP','JAZZ','RAP'],['Berries','PEACH','PLUM','CHERRY','BERRY'],['Shades','BLACK','WHITE','BROWN','GREY'],['Numbers','ONE','TWO','THREE','FOUR']]},
+  {groups:[['Space','STAR','MOON','COMET','GALAXY'],['Hot drinks','TEA','MILK','COLA','LASSI'],['Creatives','ACTOR','SINGER','ARTIST','WRITER'],['3D shapes','CUBE','CONE','SPHERE','PRISM']]},
 ];
 const EMOJI=[
   ['🦁👑','Lion King',['Lion King','Jungle Book','Tarzan','Zootopia']],
@@ -227,7 +235,7 @@ GAMEFN.wordle=function(root,G){
 
 /* ======================= CONNECTIONS ======================= */
 GAMEFN.conn=function(root,G){
-  const puz=CONN[todayIdx()%CONN.length];
+  const puz=CONN[Math.floor(Math.random()*CONN.length)];   // random each time
   const all=[]; puz.groups.forEach((g,gi)=>{ for(let i=1;i<5;i++) all.push({w:g[i],gi}); });
   let words=shuffle(all); let sel=[]; let mistakes=0; const solved=[];
   const cols=['#f59e0b','#3b82f6','#22c55e','#a855f7'];
@@ -251,13 +259,16 @@ GAMEFN.conn=function(root,G){
       const g=puz.groups[gi]; const bar=el('div','csolved'); bar.style.background=cols[solved.length]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar);
       solved.push(gi); words=words.filter(o=>o.gi!==gi); sel=[]; render();
       if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; sub.disabled=true; setBest('connWins',best('connWins')+1);
-        const sb=el('button','btn grn','📋 Share'); sb.style.marginTop='8px'; sb.onclick=()=>copy('🧩 Puzzle Pad Connections #'+todayIdx()+' — solved with '+mistakes+' mistakes!'); wrap.appendChild(sb); }
+        const sb=el('button','btn grn','📋 Share'); sb.onclick=()=>copy('🧩 Puzzle Pad Connections — solved with '+mistakes+' mistakes!');
+        const np=el('button','btn','🔁 New puzzle'); np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); };
+        const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr); }
     } else {
       mistakes++; sel=[]; render();
       if(mistakes>=4){ info.innerHTML='Out of guesses! Groups revealed.'; revealAll(); } else { toast('Not a group — try again'); }
     }
   }
-  function revealAll(){ solvedBox.innerHTML=''; puz.groups.forEach((g,i)=>{ const bar=el('div','csolved'); bar.style.background=cols[i]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar); }); gridEl.innerHTML=''; sub.disabled=true; }
+  function revealAll(){ solvedBox.innerHTML=''; puz.groups.forEach((g,i)=>{ const bar=el('div','csolved'); bar.style.background=cols[i]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar); }); gridEl.innerHTML=''; sub.disabled=true;
+    const np=el('button','btn','🔁 New puzzle'); np.style.marginTop='10px'; np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); }; wrap.appendChild(np); }
   render();
   GAMEFN.conn._check=(arr)=>arr.every(o=>o.gi===arr[0].gi);
 };
