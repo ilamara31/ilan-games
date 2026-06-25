@@ -237,19 +237,28 @@ GAMEFN.conn=function(root,G){
   const info=el('div','sub2','Find four groups of 4. Mistakes: 0/4'); wrap.appendChild(info);
   const sub=el('button','btn','Submit'); sub.style.marginTop='6px'; wrap.appendChild(sub);
   sub.onclick=trySubmit; root.appendChild(wrap);
-  function redraw(){ gridEl.innerHTML='';
-    words.forEach(o=>{ const b=el('button','cw'+(sel.includes(o)?' sel':''),o.w); b.onclick=()=>{ if(sel.includes(o))sel=sel.filter(x=>x!==o); else if(sel.length<4)sel.push(o); redraw(); }; gridEl.appendChild(b); });
+  function render(){ gridEl.innerHTML='';
+    words.forEach(o=>{ const b=el('button','cw',o.w); if(sel.includes(o)) b.classList.add('sel');
+      b.onclick=()=>{ if(sel.includes(o)){ sel=sel.filter(x=>x!==o); b.classList.remove('sel'); }
+        else if(sel.length<4){ sel.push(o); b.classList.add('sel'); } updInfo(); };
+      gridEl.appendChild(b); });
+    updInfo();
   }
-  function trySubmit(){ if(sel.length!==4){ toast('Pick 4 words'); return; }
-    const gi=sel[0].gi; if(sel.every(o=>o.gi===gi)){ // correct group
+  function updInfo(){ if(solved.length<4) info.innerHTML=`Selected <b>${sel.length}/4</b> &nbsp;•&nbsp; Mistakes ${mistakes}/4`; }
+  function trySubmit(){ if(sel.length!==4){ toast('Tap 4 words first'); return; }
+    const gi=sel[0].gi;
+    if(sel.every(o=>o.gi===gi)){
       const g=puz.groups[gi]; const bar=el('div','csolved'); bar.style.background=cols[solved.length]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar);
-      solved.push(gi); words=words.filter(o=>o.gi!==gi); sel=[]; redraw();
-      if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; setBest('connWins',best('connWins')+1); const sb=el('button','btn grn','📋 Share'); sb.style.marginTop='8px'; sb.onclick=()=>copy('🧩 Puzzle Pad Connections #'+todayIdx()+' — solved with '+mistakes+' mistakes!'); wrap.appendChild(sb); }
-    } else { mistakes++; info.innerHTML='Not a group! Mistakes: '+mistakes+'/4'; sel=[]; redraw();
-      if(mistakes>=4){ info.innerHTML='Out of guesses! The groups were revealed.'; revealAll(); } }
+      solved.push(gi); words=words.filter(o=>o.gi!==gi); sel=[]; render();
+      if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; sub.disabled=true; setBest('connWins',best('connWins')+1);
+        const sb=el('button','btn grn','📋 Share'); sb.style.marginTop='8px'; sb.onclick=()=>copy('🧩 Puzzle Pad Connections #'+todayIdx()+' — solved with '+mistakes+' mistakes!'); wrap.appendChild(sb); }
+    } else {
+      mistakes++; sel=[]; render();
+      if(mistakes>=4){ info.innerHTML='Out of guesses! Groups revealed.'; revealAll(); } else { toast('Not a group — try again'); }
+    }
   }
   function revealAll(){ solvedBox.innerHTML=''; puz.groups.forEach((g,i)=>{ const bar=el('div','csolved'); bar.style.background=cols[i]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar); }); gridEl.innerHTML=''; sub.disabled=true; }
-  redraw();
+  render();
   GAMEFN.conn._check=(arr)=>arr.every(o=>o.gi===arr[0].gi);
 };
 
@@ -299,7 +308,7 @@ GAMEFN.scramble=function(root,G){
   ctrls.append(bksp,clr,ok); wrap.appendChild(ctrls); root.appendChild(wrap);
   function newWord(){ word=SCRAMBLE[Math.floor(Math.random()*SCRAMBLE.length)]; let s=shuffle(word.split('')); if(s.join('')===word) s=shuffle(s); picks=[]; renderTiles(s); ansEl.textContent=''; }
   let letters=[];
-  function renderTiles(s){ letters=s.map((ch,i)=>({ch,used:false,i})); tilesEl.innerHTML=''; letters.forEach(L=>{ const b=el('button','tile',L.ch); b.onclick=()=>{ if(L.used)return; L.used=true; picks.push(L); b.classList.add('used'); draw(); }; L.btn=b; }); }
+  function renderTiles(s){ letters=s.map((ch,i)=>({ch,used:false,i})); tilesEl.innerHTML=''; letters.forEach(L=>{ const b=el('button','tile',L.ch); b.onclick=()=>{ if(L.used)return; L.used=true; picks.push(L); b.classList.add('used'); draw(); }; L.btn=b; tilesEl.appendChild(b); }); }
   function draw(){ ansEl.textContent=picks.map(p=>p.ch).join(''); }
   bksp.onclick=()=>{ const p=picks.pop(); if(p){ p.used=false; p.btn.classList.remove('used'); draw(); } };
   clr.onclick=()=>{ picks.forEach(p=>{p.used=false;p.btn.classList.remove('used');}); picks=[]; draw(); };
