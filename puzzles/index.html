@@ -192,7 +192,7 @@ const GAMEFN={};
 
 /* ======================= WORDLE ======================= */
 GAMEFN.wordle=function(root,G){
-  const answer = W5[todayIdx()%W5.length];           // daily word (everyone same)
+  const answer = W5[Math.floor(Math.random()*W5.length)];   // random word each game
   let row=0, cur='', done=false; const guesses=[];
   const wrap=el('div','panel');
   const gridEl=el('div','wgrid');
@@ -225,8 +225,10 @@ GAMEFN.wordle=function(root,G){
     const prev=best('wordleStreak'); setBest('wordleStreak', win?prev+1:0, true);
     if(!win && acct){ acct.puz.wordleStreak=0; save(); }
     const sq={g:'🟩',y:'🟨',x:'⬛'};
-    const share='🧩 Puzzle Pad Word Guess #'+todayIdx()+' '+(win?tries+'/6':'X/6')+'\n'+guesses.map(r=>r.map(x=>sq[x]).join('')).join('\n');
-    const sb=el('button','btn grn','📋 Share result'); sb.style.marginTop='10px'; sb.onclick=()=>copy(share); wrap.appendChild(sb);
+    const share='🧩 Puzzle Pad Word Guess '+(win?tries+'/6':'X/6')+'\n'+guesses.map(r=>r.map(x=>sq[x]).join('')).join('\n');
+    const sb=el('button','btn grn','📋 Share result'); sb.onclick=()=>copy(share);
+    const np=el('button','btn','🔁 New word'); np.onclick=()=>{ if(window._cleanup){window._cleanup();window._cleanup=null;} root.innerHTML=''; GAMEFN.wordle(root,G); };
+    const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr);
   }
   const keyh=e=>{ if(done)return; if(e.key==='Enter')press('⏎'); else if(e.key==='Backspace')press('⌫'); else if(/^[a-zA-Z]$/.test(e.key))press(e.key.toLowerCase()); };
   window.addEventListener('keydown',keyh); window._cleanup=()=>window.removeEventListener('keydown',keyh);
