@@ -277,7 +277,10 @@ function buildLevel(n){
    =================================================================== */
 let L = null;            // current level layout
 let state = 'home';      // home | play | dead | win
-let player, cam, parts, shake, flawless, started, deathT, winT, bannerT;
+// parts/shake/bannerT are touched by the animation loop on the home screen too,
+// so they must be initialised before the first frame (not only in startLevel).
+let parts = [], shake = 0, bannerT = 0, cam = 0;
+let player, flawless, started, deathT, winT;
 
 function startLevel(n){
   L = buildLevel(n);
