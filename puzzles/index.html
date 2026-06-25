@@ -418,7 +418,9 @@ GAMEFN.sudoku=function(root,G){
 
 /* ---- boot ---- */
 renderHub();
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));
+if('serviceWorker' in navigator){ let _r=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_r)return; _r=true; location.reload(); });
+  window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{})); }
 </script>
 </body>
 </html>
