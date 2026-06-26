@@ -336,9 +336,44 @@ function drawCar(cx,bottomY,w,color,isPlayer){
   ctx.fillStyle=color; rr(cx-w*0.03,top+h*0.36,w*0.06,w*0.05,1);
 }
 
+/* ---- engine sound (Web Audio) — pitch & volume rise with speed ---- */
+const Engine=(()=>{
+  let ac,master,osc1,osc2,sub,filt,ready=false;
+  function init(){
+    if(ready) return;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    ac=new AC();
+    master=ac.createGain(); master.gain.value=0; master.connect(ac.destination);
+    filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=900; filt.Q.value=7; filt.connect(master);
+    osc1=ac.createOscillator(); osc1.type='sawtooth'; osc1.frequency.value=70;            // main engine tone
+    osc2=ac.createOscillator(); osc2.type='square';  osc2.frequency.value=70; osc2.detune.value=11; // gritty harmonic
+    sub =ac.createOscillator(); sub.type ='sine';    sub.frequency.value=35;               // low rumble
+    const g2=ac.createGain(); g2.gain.value=0.35; osc2.connect(g2); g2.connect(filt);
+    const gs=ac.createGain(); gs.gain.value=0.6;  sub.connect(gs);  gs.connect(filt);
+    osc1.connect(filt);
+    osc1.start(); osc2.start(); sub.start();
+    ready=true;
+  }
+  function resume(){ init(); if(ac&&ac.state==='suspended') ac.resume(); }
+  function set(sp,active){                 // sp = 0..1 speed fraction
+    if(!ready) return;
+    const t=ac.currentTime, s=Math.max(0,Math.min(1,sp));
+    const f=62 + 360*Math.pow(s,0.8);      // idle ~62Hz -> ~420Hz flat out
+    osc1.frequency.setTargetAtTime(f,        t,0.04);
+    osc2.frequency.setTargetAtTime(f,        t,0.04);
+    sub.frequency .setTargetAtTime(f*0.5,    t,0.04);
+    filt.frequency.setTargetAtTime(450+s*4200,t,0.04);
+    const vol=active ? (0.03 + 0.17*s) : 0; // quiet idle, louder the faster you go; silent off-track
+    master.gain.setTargetAtTime(vol,t,0.08);
+  }
+  return {resume,set};
+})();
+
 /* ---- main loop ---- */
 let last=0, running=false;
-function loop(ts){ const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts; if(state==='race') update(dt); render(); if(running) requestAnimationFrame(loop); }
+function loop(ts){ const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts; if(state==='race') update(dt); render();
+  Engine.set(maxSpeed?speed/maxSpeed:0, state==='race'||state==='countdown');
+  if(running) requestAnimationFrame(loop); }
 function update(dt){
   raceTime+=dt;
   const seg=findSegment(position+playerZ), sp=speed/maxSpeed, dx=dt*2*sp;
@@ -485,6 +520,7 @@ function enterRace(L){
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
   state='countdown';
+  Engine.resume();                          // unlock audio on this tap/click
   if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
   setLights('red');
   setTimeout(()=>{ if(state==='countdown') setLights('yellow'); },1100);
@@ -547,6 +583,7 @@ function finishRace(){
 
 /* ---- input ---- */
 window.addEventListener('keydown',e=>{
+  Engine.resume();
   if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key)) e.preventDefault();
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=true;
   if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=true;
@@ -560,7 +597,7 @@ window.addEventListener('keyup',e=>{
 function touchAt(clientX,clientY){ const r=cv.getBoundingClientRect(); const x=clientX-r.left, y=clientY-r.top;
   brakeHeld=y>H*0.78; if(brakeHeld){ leftHeld=rightHeld=false; return; } leftHeld=x<W/2; rightHeld=x>=W/2; }
 function clearTouch(){ leftHeld=rightHeld=brakeHeld=false; }
-cv.addEventListener('touchstart',e=>{ const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
+cv.addEventListener('touchstart',e=>{ Engine.resume(); const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 cv.addEventListener('touchmove', e=>{ const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 cv.addEventListener('touchend', e=>{ if(e.touches.length===0) clearTouch(); },{passive:false});
 cv.addEventListener('mousedown',e=>touchAt(e.clientX,e.clientY));
