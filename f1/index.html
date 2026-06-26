@@ -344,12 +344,12 @@ const Engine=(()=>{
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
     ac=new AC();
     master=ac.createGain(); master.gain.value=0; master.connect(ac.destination);
-    filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=900; filt.Q.value=7; filt.connect(master);
+    filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=700; filt.Q.value=2.5; filt.connect(master); // gentle, no resonant whistle
     osc1=ac.createOscillator(); osc1.type='sawtooth'; osc1.frequency.value=70;            // main engine tone
-    osc2=ac.createOscillator(); osc2.type='square';  osc2.frequency.value=70; osc2.detune.value=11; // gritty harmonic
+    osc2=ac.createOscillator(); osc2.type='square';  osc2.frequency.value=70; osc2.detune.value=8;  // a touch of grit
     sub =ac.createOscillator(); sub.type ='sine';    sub.frequency.value=35;               // low rumble
-    const g2=ac.createGain(); g2.gain.value=0.35; osc2.connect(g2); g2.connect(filt);
-    const gs=ac.createGain(); gs.gain.value=0.6;  sub.connect(gs);  gs.connect(filt);
+    const g2=ac.createGain(); g2.gain.value=0.10; osc2.connect(g2); g2.connect(filt);      // grit kept subtle
+    const gs=ac.createGain(); gs.gain.value=0.45; sub.connect(gs);  gs.connect(filt);
     osc1.connect(filt);
     osc1.start(); osc2.start(); sub.start();
     ready=true;
@@ -358,13 +358,13 @@ const Engine=(()=>{
   function set(sp,active){                 // sp = 0..1 speed fraction
     if(!ready) return;
     const t=ac.currentTime, s=Math.max(0,Math.min(1,sp));
-    const f=62 + 360*Math.pow(s,0.8);      // idle ~62Hz -> ~420Hz flat out
-    osc1.frequency.setTargetAtTime(f,        t,0.04);
-    osc2.frequency.setTargetAtTime(f,        t,0.04);
-    sub.frequency .setTargetAtTime(f*0.5,    t,0.04);
-    filt.frequency.setTargetAtTime(450+s*4200,t,0.04);
-    const vol=active ? (0.03 + 0.17*s) : 0; // quiet idle, louder the faster you go; silent off-track
-    master.gain.setTargetAtTime(vol,t,0.08);
+    const f=60 + 300*Math.pow(s,0.85);     // idle ~60Hz -> ~360Hz flat out
+    osc1.frequency.setTargetAtTime(f,        t,0.05);
+    osc2.frequency.setTargetAtTime(f,        t,0.05);
+    sub.frequency .setTargetAtTime(f*0.5,    t,0.05);
+    filt.frequency.setTargetAtTime(320+s*1900,t,0.05); // stays mellow even flat out
+    const vol=active ? (0.012 + 0.058*s) : 0; // mild: ~0.012 idle -> ~0.07 peak; silent off-track
+    master.gain.setTargetAtTime(vol,t,0.1);
   }
   return {resume,set};
 })();
