@@ -38,7 +38,9 @@ const ASSETS = [
   './obby/js/Trail.js',
   './obby/js/Aura.js',
   './puzzles/',
-  './puzzles/index.html'
+  './puzzles/index.html',
+  './escape-tower/',
+  './escape-tower/index.html'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
