@@ -363,10 +363,21 @@ const Engine=(()=>{
     osc2.frequency.setTargetAtTime(f,        t,0.05);
     sub.frequency .setTargetAtTime(f*0.5,    t,0.05);
     filt.frequency.setTargetAtTime(320+s*1900,t,0.05); // stays mellow even flat out
-    const vol=active ? (0.012 + 0.058*s) : 0; // mild: ~0.012 idle -> ~0.07 peak; silent off-track
+    const vol=active ? (0.007 + 0.034*s) : 0; // very mild: ~0.007 idle -> ~0.04 peak; silent off-track
     master.gain.setTargetAtTime(vol,t,0.1);
   }
-  return {resume,set};
+  function beep(freq,dur,vol){              // short countdown tone (3..2..1..GO)
+    init(); if(!ac) return;
+    const t=ac.currentTime;
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=freq;
+    const g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.03);
+  }
+  return {resume,set,beep};
 })();
 
 /* ---- main loop ---- */
@@ -500,13 +511,13 @@ function openShop(){
 }
 
 /* ---- race flow ---- */
-function setLights(c){
+function setLights(c,txt){
   document.getElementById('lights').style.display='flex';
   document.getElementById('lampR').classList.toggle('on', c==='red');
   document.getElementById('lampY').classList.toggle('on', c==='yellow');
   document.getElementById('lampG').classList.toggle('on', c==='green');
   const t=document.getElementById('lightsTxt');
-  t.textContent = c==='red'?'On your marks…' : c==='yellow'?'Get ready…' : 'GO! GO! GO!';
+  t.textContent = txt!=null ? txt : (c==='red'?'On your marks…' : c==='yellow'?'Get ready…' : 'GO! GO! GO!');
   t.style.color = c==='green'?'#27e36a':'#fff';
 }
 function enterRace(L){
@@ -522,10 +533,12 @@ function enterRace(L){
   state='countdown';
   Engine.resume();                          // unlock audio on this tap/click
   if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
-  setLights('red');
-  setTimeout(()=>{ if(state==='countdown') setLights('yellow'); },1100);
-  setTimeout(()=>{ if(state==='countdown'){ setLights('green'); state='race'; raceTime=0; lapStart=0; } },2200);
-  setTimeout(()=>{ document.getElementById('lights').style.display='none'; },2900);
+  // 3 .. 2 .. 1 .. GO! — each number gets a beep, GO gets a higher longer tone
+  setLights('red','3');                                       Engine.beep(660,0.16,0.11);
+  setTimeout(()=>{ if(state==='countdown'){ setLights('red','2');    Engine.beep(660,0.16,0.11); } },900);
+  setTimeout(()=>{ if(state==='countdown'){ setLights('yellow','1'); Engine.beep(660,0.16,0.11); } },1800);
+  setTimeout(()=>{ if(state==='countdown'){ setLights('green','GO!'); Engine.beep(1050,0.45,0.13); state='race'; raceTime=0; lapStart=0; } },2700);
+  setTimeout(()=>{ document.getElementById('lights').style.display='none'; },3500);
 }
 function prizeFor(pos,total,L){
   const floor=Math.round(L.fee*0.5);
