@@ -39,7 +39,8 @@ const ASSETS = [
   './obby/js/Aura.js',
   './puzzles/',
   './puzzles/index.html',
-  ,'./tower-panic/','./tower-panic/index.html'
+  './tower-panic/',
+  './tower-panic/index.html'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
