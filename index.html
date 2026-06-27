@@ -37,6 +37,18 @@
   .tryg    { background:linear-gradient(135deg,#ff4d8d,#b8005a); }
   .anime   { background:linear-gradient(135deg,#ff7ad9,#3b1d6e); }
   .tennis  { background:linear-gradient(135deg,#9bff8e,#1e7a3a); }
+  /* new / recently-updated badges */
+  a.card { position:relative; overflow:visible; }
+  .badge { position:absolute; top:-9px; right:-7px; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
+    box-shadow:0 3px 10px rgba(0,0,0,.45); letter-spacing:.5px; z-index:3; }
+  .badge.new { background:linear-gradient(135deg,#ff4d6d,#ff9b3d); color:#3a0010; animation:badgepulse 1.6s infinite; }
+  .badge.upd { background:linear-gradient(135deg,#7ee0ff,#3aa0e8); color:#04203a; }
+  @keyframes badgepulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
+  #newBanner { margin-top:26px; display:none; }
+  #newBanner a { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:#06280f; font-weight:bold; font-size:16px;
+    background:linear-gradient(135deg,#ffe14a,#ff9b3d); padding:13px 24px; border-radius:30px; box-shadow:0 8px 22px rgba(255,170,60,.4); animation:bannerpulse 2s infinite; }
+  #newBanner a:active { transform:scale(.97); }
+  @keyframes bannerpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.035) } }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
   /* account bar + modal */
   #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
@@ -118,6 +130,7 @@
       <p>Arcade tennis — time your smash, climb from school to the World Championship!</p>
     </a>
   </div>
+  <div id="newBanner"></div>
   <footer>Made with ❤️ by Ilan • More games coming soon</footer>
 
   <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
@@ -212,6 +225,35 @@
     /* iOS Safari has no install prompt — show the Add-to-Home-Screen hint instead */
     const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if(isiOS && !standalone) iosHint.style.display='block';
+
+    /* ===== "NEW" / "RECENTLY UPDATED" badges (24h window) — no notifications =====
+       To flag a game, add its card href below with an `added` (newly added) or
+       `updated` (changed an existing game) timestamp. Badge auto-disappears after 24h. */
+    const GAMES = {
+      'tennis/':       { added:   '2026-06-27T12:05:00' },   // newest -> also the bottom banner
+      'anime-tycoon/': { added:   '2026-06-27T12:00:00' },
+      'catch/':        { updated: '2026-06-27T12:00:00' },
+      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 24h.
+    };
+    (function(){
+      const DAY=24*60*60*1000, now=Date.now();
+      const fresh = ts => ts && (now - new Date(ts).getTime()) < DAY;
+      let newest=null, newestT=-1;
+      document.querySelectorAll('a.card').forEach(card=>{
+        const g = GAMES[card.getAttribute('href')]; if(!g) return;
+        if(fresh(g.added)){
+          const b=document.createElement('span'); b.className='badge new'; b.textContent='NEW'; card.appendChild(b);
+          const t=new Date(g.added).getTime(); if(t>newestT){ newestT=t; newest=card; }
+        } else if(fresh(g.updated)){
+          const b=document.createElement('span'); b.className='badge upd'; b.textContent='UPDATED'; card.appendChild(b);
+        }
+      });
+      const banner=document.getElementById('newBanner');
+      if(newest){ const name=newest.querySelector('h2').textContent;
+        banner.innerHTML='<a href="'+newest.getAttribute('href')+'">🎮 Try the new game — '+name+'! ▶</a>';
+        banner.style.display='block';
+      }
+    })();
   </script>
 <script src="analytics.js" defer></script>
 <script src="announce.js" defer></script>
