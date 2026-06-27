@@ -240,7 +240,8 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 24h. */
     const GAMES = {
-      'tennis/':       { added:   '2026-06-27T12:05:00' },   // newest -> also the bottom banner
+      'pptour/':       { added:   '2026-06-27T18:00:00' },   // newest -> also the bottom banner
+      'tennis/':       { added:   '2026-06-27T12:05:00' },
       'anime-tycoon/': { added:   '2026-06-27T12:00:00' },
       'catch/':        { updated: '2026-06-27T12:00:00' },
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 24h.
@@ -268,7 +269,7 @@
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
       'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'obby/':'both',
-      'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both',
+      'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both', 'pptour/':'both',
     };
     (function(){
       const LABEL = {

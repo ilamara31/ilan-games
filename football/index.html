@@ -55,6 +55,7 @@
     <div class="teamgrid" id="teamGrid"></div>
     <div class="sub" id="vsLine" style="min-height:20px"></div>
     <button class="btn" id="playBtn" disabled>SELECT A TEAM</button>
+    <button class="btn alt" id="howBtn" type="button">❓ How to Play</button>
     <a class="btn alt" href="../">🏠 ALL GAMES</a>
     <div class="sub" style="margin-top:12px;font-size:12px">
       <b>Shoot:</b> the crosshair moves — hold to aim &amp; power, release to shoot.<br>
@@ -457,6 +458,45 @@ render();
 
 if('serviceWorker' in navigator){ let r=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(r)return; r=true; location.reload(); });
   window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{})); }
+</script>
+<!-- ===== Coach tutorial ===== -->
+<style>
+  .tutov{ position:fixed; inset:0; z-index:300; background:rgba(4,8,18,.85); display:flex; align-items:center; justify-content:center; padding:18px; }
+  .tutov.hidden{ display:none; }
+  .tutbox{ width:min(420px,92vw); background:linear-gradient(160deg,#13315c,#0c1f3c); border:2px solid #2f5f9e; border-radius:20px; padding:20px; text-align:center; color:#fff; font-family:'Trebuchet MS',system-ui,sans-serif; }
+  .tutcoach{ font-size:54px; margin-bottom:6px; animation:tbob 1.6s ease-in-out infinite; } @keyframes tbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .tuttext{ font-size:17px; line-height:1.5; min-height:96px; display:flex; align-items:center; justify-content:center; }
+  .tutbtns{ display:flex; gap:10px; justify-content:center; margin-top:8px; }
+  .tutbtn{ padding:11px 22px; border:none; border-radius:14px; font-size:16px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg,#ffe14a,#ff9b3d); color:#2a1a00; }
+  .tutbtn.alt{ background:#26466e; color:#cfe0ff; }
+  .tutdots{ margin-top:12px; } .tutdots i{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#3a5a86; margin:0 3px; } .tutdots i.on{ background:#ffe14a; }
+</style>
+<div id="tutOv" class="tutov hidden"><div class="tutbox">
+  <div class="tutcoach">🧑‍🏫</div><div class="tuttext" id="tutText"></div>
+  <div class="tutbtns"><button id="tutSkip" class="tutbtn alt" type="button">Skip</button><button id="tutNext" class="tutbtn" type="button">Next ▶</button></div>
+  <div class="tutdots" id="tutDots"></div>
+</div></div>
+<script>
+(function(){
+  const STEPS=[
+    "Hi! I'm your Coach. Welcome to <b>Penalty Kings</b>! ⚽",
+    "When you <b>SHOOT</b>, a crosshair keeps sliding across the goal. Watch it move.",
+    "Hold to aim &amp; build power, then <b>release exactly when the crosshair is on the spot</b> you want — good timing scores a goal! 🥅",
+    "When you're the <b>GOALKEEPER</b>, the striker's aim flashes with a red ✕ for a split second.",
+    "<b>Tap that red ✕ fast</b> to dive there and make the save! 🧤",
+    "Score more than your rival to win the match and lift the cup. Good luck! 🏆"
+  ];
+  const KEY='tut_football_seen';
+  const ov=document.getElementById('tutOv'), txt=document.getElementById('tutText'), dots=document.getElementById('tutDots'), next=document.getElementById('tutNext');
+  let i=0;
+  function render(){ txt.innerHTML=STEPS[i]; dots.innerHTML=STEPS.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join(''); next.textContent=i===STEPS.length-1?'Got it! ✓':'Next ▶'; }
+  function open(){ i=0; render(); ov.classList.remove('hidden'); }
+  function close(){ ov.classList.add('hidden'); try{localStorage.setItem(KEY,'1');}catch(e){} }
+  next.onclick=()=>{ if(i<STEPS.length-1){ i++; render(); } else close(); };
+  document.getElementById('tutSkip').onclick=close;
+  const how=document.getElementById('howBtn'); if(how) how.onclick=open;
+  try{ if(!localStorage.getItem(KEY)) setTimeout(open,500); }catch(e){ setTimeout(open,500); }
+})();
 </script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>

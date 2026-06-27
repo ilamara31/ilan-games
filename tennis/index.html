@@ -110,6 +110,7 @@
   <button class="btn" data-mode="tournament">🏆 Tournament</button>
   <button class="btn gold" data-mode="career">🎓 Career Mode</button>
   <div class="row" style="margin-top:6px">
+    <button class="btn alt" id="howBtn" type="button">❓ How to Play</button>
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
     <button class="btn alt" id="setBtn">⚙️ Settings</button>
   </div>
@@ -652,6 +653,45 @@ requestAnimationFrame(tick);
 
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
 } // end !TESTMODE
+</script>
+<!-- ===== Coach tutorial ===== -->
+<style>
+  .tutov{ position:fixed; inset:0; z-index:300; background:rgba(4,10,22,.85); display:flex; align-items:center; justify-content:center; padding:18px; }
+  .tutov.hidden{ display:none; }
+  .tutbox{ width:min(420px,92vw); background:linear-gradient(160deg,#10243f,#0a1830); border:2px solid #2f7a3a; border-radius:20px; padding:20px; text-align:center; color:#fff; font-family:'Trebuchet MS',system-ui,sans-serif; }
+  .tutcoach{ font-size:54px; margin-bottom:6px; animation:tbob 1.6s ease-in-out infinite; } @keyframes tbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .tuttext{ font-size:17px; line-height:1.5; min-height:96px; display:flex; align-items:center; justify-content:center; }
+  .tutbtns{ display:flex; gap:10px; justify-content:center; margin-top:8px; }
+  .tutbtn{ padding:11px 22px; border:none; border-radius:14px; font-size:16px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg,#9bff8e,#2fbf6a); color:#06280f; }
+  .tutbtn.alt{ background:#1e3658; color:#cfe0ff; }
+  .tutdots{ margin-top:12px; } .tutdots i{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#2f5f9e; margin:0 3px; } .tutdots i.on{ background:#9bff8e; }
+</style>
+<div id="tutOv" class="tutov hidden"><div class="tutbox">
+  <div class="tutcoach">🧑‍🏫</div><div class="tuttext" id="tutText"></div>
+  <div class="tutbtns"><button id="tutSkip" class="tutbtn alt" type="button">Skip</button><button id="tutNext" class="tutbtn" type="button">Next ▶</button></div>
+  <div class="tutdots" id="tutDots"></div>
+</div></div>
+<script>
+(function(){
+  const STEPS=[
+    "Hi! I'm your Coach. Welcome to <b>Tennis Tour</b>! 🎾",
+    "Move with <b>◀ ▶</b> (or the joystick) to line your player up under the ball.",
+    "Press <b>Space</b> (or <b>HIT</b>) right as the ball reaches you — perfect timing gives a strong, fast shot!",
+    "Swing <b>early</b> for a high lob, <b>late</b> for a weak shot. Watch the timing bar at the bottom. 🎯",
+    "Press <b>X</b> (or <b>SMASH</b>) for a powerful smash — it has a short cooldown, so save it for the right moment! 💥",
+    "First to <b>5 points</b> wins. Climb from School to the World Championship. Good luck! 🏆"
+  ];
+  const KEY='tut_tennis_seen';
+  const ov=document.getElementById('tutOv'), txt=document.getElementById('tutText'), dots=document.getElementById('tutDots'), next=document.getElementById('tutNext');
+  let i=0;
+  function render(){ txt.innerHTML=STEPS[i]; dots.innerHTML=STEPS.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join(''); next.textContent=i===STEPS.length-1?'Got it! ✓':'Next ▶'; }
+  function open(){ i=0; render(); ov.classList.remove('hidden'); }
+  function close(){ ov.classList.add('hidden'); try{localStorage.setItem(KEY,'1');}catch(e){} }
+  next.onclick=()=>{ if(i<STEPS.length-1){ i++; render(); } else close(); };
+  document.getElementById('tutSkip').onclick=close;
+  const how=document.getElementById('howBtn'); if(how) how.onclick=open;
+  try{ if(!localStorage.getItem(KEY)) setTimeout(open,500); }catch(e){ setTimeout(open,500); }
+})();
 </script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
