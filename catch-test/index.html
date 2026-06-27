@@ -336,18 +336,19 @@ let bombShower, bombShowerEnd, nextBomb;
 let nextGolden, nextLife;
 let shieldUntil, shieldReadyAt;
 let grav, fallCap;
+let lastT = 0;          // for frame-rate-independent physics (same speed on 60Hz & 120Hz)
 
 function newBasket(){
   const b = getBasket(data.sel);
-  return { x:(W||400)/2, y:(H||600)-96, w:b.w, depth:b.depth, speed:b.speed, def:b };
+  return { x:(W||400)/2, y:(H||600)-96, w:b.w, depth:b.depth, speed:b.speed, def:b, sx:1, sy:1 };
 }
 
 function reset(){
   basket = newBasket();
   items = []; caught = []; particles = []; floats = [];
   score = 0; lives = 3; level = 1;
-  grav = 0.12; fallCap = 6.0;            // gravity-based falling (accelerates like real fruit)
-  spawnGap = 1050; lastSpawn = 0;
+  grav = 0.05; fallCap = 3.0;            // gentle gravity fall (px per 60fps-frame)
+  spawnGap = 1050; lastSpawn = 0; lastT = 0;
   leftHeld = rightHeld = false; dragX = null;
   shower = false; showerEnd = 0; showerStep = 25; nextShower = 25; clearing = false;
   bombShower = false; bombShowerEnd = 0; nextBomb = 100;
@@ -357,10 +358,10 @@ function reset(){
 }
 
 function levelUp(){
-  // difficulty ramps with level: stronger gravity, higher terminal speed, tighter spawns
-  grav    = 0.12 + level * 0.012;
-  fallCap = 6.0  + level * 0.55;
-  spawnGap = Math.max(430, 1050 - level * 42);
+  // difficulty ramps gently with level (terminal speed stays reasonable)
+  grav    = 0.05 + level * 0.005;
+  fallCap = 3.0  + level * 0.30;
+  spawnGap = Math.max(460, 1050 - level * 40);
 }
 
 /* ---------- spawning ---------- */
@@ -372,13 +373,13 @@ function spawnFruit(opts={}){
   const x = opts.x !== undefined ? opts.x : size + Math.random()*(W - size*2);
   items.push({
     x, y:-size, size, bomb:isBomb, golden, life, emoji,
-    vy: opts.vy !== undefined ? opts.vy : (0.6 + Math.random()*0.8),  // small initial speed; gravity does the rest
-    vx: opts.vx !== undefined ? opts.vx : (Math.random()*0.6 - 0.3),  // gentle sway
+    vy: opts.vy !== undefined ? opts.vy : (0.35 + Math.random()*0.4),  // gentle start; gravity adds a little
+    vx: opts.vx !== undefined ? opts.vx : (Math.random()*0.5 - 0.25),  // gentle sway
     warn: !!opts.warn,
   });
 }
-function spawnGolden(){ nextGolden *= 2; spawnFruit({golden:true, vy:1.8}); Sound.goldenSfx(); }
-function spawnLife(){ nextLife += 150; spawnFruit({life:true, vy:1.2}); }
+function spawnGolden(){ nextGolden *= 2; spawnFruit({golden:true, vy:1.0}); Sound.goldenSfx(); }
+function spawnLife(){ nextLife += 150; spawnFruit({life:true, vy:0.8}); }
 
 /* ---------- showers ---------- */
 function startShower(now){ shower=true; showerEnd=now+SHOWER_MS; showerStep+=25; nextShower+=showerStep; Sound.showerSfx(); showBanner('🌧️ FRUIT SHOWER! 🍎<br><span id="bt"></span>s — no bombs!','fruit'); }
@@ -386,8 +387,8 @@ function endShower(){ shower=false; hideBanner(); clearing=true; }
 function startBombShower(now){ bombShower=true; bombShowerEnd=now+BOMB_SHOWER_MS; nextBomb+=100; Sound.bombSfx(); showBanner('💣 BOMB SHOWER! 💣<br>Dodge or 🛡️ for <span id="bt"></span>s!','bomb'); }
 function endBombShower(){ bombShower=false; hideBanner(); clearing=true; nextShower=Math.max(nextShower, score+25); }
 
-/* bomb fall speed now scales with level (issue: was always the same speed) */
-function bombFall(){ return 2.6 + level * 0.42; }
+/* bomb fall speed scales with level (issue: was always the same speed) */
+function bombFall(){ return 2.2 + level * 0.28; }
 
 /* ---------- shield (bomb escape #2) ---------- */
 function tryShield(){
@@ -426,14 +427,22 @@ function loop(now){
   if (!running) return;
   raf = requestAnimationFrame(loop);
 
+  // frame-rate-independent step: 1.0 at 60fps, 0.5 at 120fps, etc. (clamped after a stall)
+  if (!lastT) lastT = now;
+  const step = Math.max(0.2, Math.min(2.5, (now - lastT) / 16.667));
+  lastT = now;
+
   // basket movement: keys, or drag toward finger
-  if (leftHeld)  basket.x -= basket.speed;
-  if (rightHeld) basket.x += basket.speed;
+  if (leftHeld)  basket.x -= basket.speed * step;
+  if (rightHeld) basket.x += basket.speed * step;
   if (dragX !== null){
     const dx = dragX - basket.x;
-    basket.x += Math.max(-basket.speed*2.2, Math.min(basket.speed*2.2, dx*0.5));
+    basket.x += Math.max(-basket.speed*2.4, Math.min(basket.speed*2.4, dx*0.4)) * step;
   }
   basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
+  // basket "gulp" squash easing back to normal
+  basket.sx += (1 - basket.sx) * Math.min(1, 0.18*step);
+  basket.sy += (1 - basket.sy) * Math.min(1, 0.18*step);
 
   // shower timers
   if (shower){ if (now>showerEnd) endShower(); else if (bannerTimeEl) bannerTimeEl.textContent = Math.ceil((showerEnd-now)/1000); }
@@ -465,17 +474,17 @@ function loop(now){
   for (let i=items.length-1; i>=0; i--){
     const it = items[i];
     const prevY = it.y;
-    // physics: gravity accelerates the fall (realistic)
-    it.vy = Math.min(fallCap + (it.bomb?bombFall()-3:0), it.vy + grav);
-    if (it.fixedVy) it.vy = it.fixedVy;
-    it.y += it.vy;
-    it.x += it.vx;
+    // physics: gravity accelerates the fall a little (frame-rate independent)
+    const cap = it.fixedVy ? it.fixedVy : fallCap;
+    it.vy = Math.min(cap, it.vy + grav*step);
+    it.y += it.vy * step;
+    it.x += it.vx * step;
     if (it.x < it.size/2 || it.x > W-it.size/2) it.vx *= -1;   // bounce off walls gently
 
     // magnet basket: pull good fruit toward the basket
     if (basket.def.perk==='magnet' && !it.bomb){
       const d = basket.x - it.x;
-      if (Math.abs(d) < 110) it.x += Math.sign(d)*Math.min(1.4, Math.abs(d)*0.04);
+      if (Math.abs(d) < 110) it.x += Math.sign(d)*Math.min(1.4, Math.abs(d)*0.04)*step;
     }
 
     // catch test — fruit must cross the rim line while inside the mouth, moving down
@@ -517,10 +526,10 @@ function loop(now){
     drawItem(it, now);
   }
 
-  drawCaught(now);      // fruit nestled in the basket (realism)
+  drawCaught(step);     // fruit piled inside the basket (realism)
   drawBasket(now, sActive);
-  drawParticles();
-  drawFloats();
+  drawParticles(step);
+  drawFloats(step);
 
   updateHud();
 }
@@ -534,12 +543,18 @@ function spawnBombSafe(){
 }
 
 function catchItem(it, rimY){
-  if (it.life){ lives = Math.min(5, lives+1); Sound.lifeSfx ? Sound.goldenSfx() : null; Sound.goldenSfx(); floatText(it.x, rimY, '+1 LIFE', '#ff5a78'); }
+  if (it.life){ lives = Math.min(5, lives+1); Sound.goldenSfx(); floatText(it.x, rimY, '+1 LIFE', '#ff5a78'); }
   else if (it.golden){ score += 40; Sound.goldenSfx(); floatText(it.x, rimY, '+40', '#ffd34d'); }
   else { score += 1; Sound.catchSfx(); }
-  // a caught fruit visibly drops INTO the basket and settles with a bounce
-  if (!it.life) caught.push({ emoji: it.golden?'🍎':it.emoji, ox:(it.x - basket.x), y:0, vy:2.4, t:0, size:it.size*0.8 });
-  burst(it.x, rimY, '#9be15d', 7);
+  // the caught fruit drops INTO the basket from where it was and settles to the bottom,
+  // joining a small pile that rides along with the basket (reads like a real catch).
+  if (!it.life){
+    const startY = (it.y - (basket.y - basket.depth/2));   // how far below the rim it already is
+    caught.push({ emoji: it.golden?'🍎':it.emoji, ox:(it.x - basket.x), y:Math.max(0,startY), vy:Math.max(it.vy,1.2), size:it.size*0.82, rest:false });
+    if (caught.length > 7) caught.shift();
+  }
+  basket.sx = 1.12; basket.sy = 0.82;     // little "gulp" squash
+  burst(it.x, rimY, '#9be15d', 6);
 
   if (!shower && !bombShower && !clearing){
     const newLevel = Math.floor(score/8)+1;
@@ -587,27 +602,34 @@ function drawGolden(it, now){
   ctx.fillStyle='#8a5a00'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+40', it.x, it.y+r*1.0);
 }
 
-function drawCaught(now){
-  // fruits resting inside the basket, settling with a little bounce, then fading
-  const restY = basket.y + basket.depth*0.18;
-  for (let i=caught.length-1; i>=0; i--){
-    const c = caught[i];
-    c.t += 1/60;
-    c.vy += 0.5; c.y += c.vy;
-    const floor = basket.depth*0.5 - 6;
-    if (c.y > floor){ c.y = floor; c.vy *= -0.4; }   // bounce on basket floor
-    const alpha = c.t < 0.5 ? 1 : Math.max(0, 1 - (c.t-0.5)/0.4);
-    if (alpha <= 0){ caught.splice(i,1); continue; }
-    ctx.save(); ctx.globalAlpha = alpha;
+function drawCaught(step){
+  // fruits drop into the basket, settle on the bottom and ride along inside it.
+  const rim = basket.y - basket.depth/2;
+  const floor = basket.depth * 0.74;                 // resting depth (measured from rim)
+  // clip to the basket interior so fruit is only seen *inside* the basket
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(basket.x - basket.w/2 + 4, rim, basket.w - 8, basket.depth + 6);
+  ctx.clip();
+  for (const c of caught){
+    if (!c.rest){
+      c.vy += 0.6 * step; c.y += c.vy * step;
+      if (c.y >= floor){ c.y = floor; c.vy *= -0.32; if (Math.abs(c.vy) < 0.8){ c.rest = true; c.y = floor; } }
+    }
+    const maxOx = Math.max(0, basket.w/2 - c.size*0.6);
+    const ox = Math.max(-maxOx, Math.min(maxOx, c.ox));
     ctx.font = c.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(c.emoji, basket.x + c.ox*0.5, restY + c.y);
-    ctx.restore();
+    ctx.fillText(c.emoji, basket.x + ox, rim + c.y);
   }
+  ctx.restore();
 }
 
 function drawBasket(now, sActive){
   const x=basket.x, y=basket.y, w=basket.w, h=basket.depth, d=basket.def;
   const left=x-w/2, top=y-h/2;
+  ctx.save();
+  // "gulp" squash, anchored at the basket base
+  ctx.translate(x, y+h/2); ctx.scale(basket.sx, basket.sy); ctx.translate(-x, -(y+h/2));
   // body (tapered)
   ctx.fillStyle=d.color; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left+w,top); ctx.lineTo(left+w-14,top+h); ctx.lineTo(left+14,top+h); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -616,6 +638,7 @@ function drawBasket(now, sActive){
   // weave
   ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=2;
   for (let gx=14; gx<w-10; gx+=16){ ctx.beginPath(); ctx.moveTo(left+gx, top+2); ctx.lineTo(left+gx-3, top+h-2); ctx.stroke(); }
+  ctx.restore();
 
   // shield dome
   if (sActive){
@@ -630,14 +653,14 @@ function drawBasket(now, sActive){
   }
 }
 
-function drawParticles(){
-  for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.life-=0.035;
+function drawParticles(step){
+  for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx*step; p.y+=p.vy*step; p.vy+=0.18*step; p.life-=0.035*step;
     if (p.life<=0){ particles.splice(i,1); continue; }
     ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,6.28); ctx.fill(); }
   ctx.globalAlpha=1;
 }
-function drawFloats(){
-  for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.y-=0.8; f.life-=0.02;
+function drawFloats(step){
+  for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.y-=0.8*step; f.life-=0.02*step;
     if (f.life<=0){ floats.splice(i,1); continue; }
     ctx.globalAlpha=Math.max(0,f.life); ctx.fillStyle=f.color; ctx.font='bold 18px sans-serif'; ctx.textAlign='center';
     ctx.fillText(f.txt, f.x, f.y); }
@@ -669,6 +692,7 @@ function start(){
   running = true;
   Sound.ready(); Sound.startMusic();
   lastSpawn = performance.now() - spawnGap;
+  lastT = performance.now();
   refreshShieldBtn();
   raf = requestAnimationFrame(loop);
 }
@@ -782,5 +806,7 @@ function boot(){
 }
 boot();
 </script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
 </body>
 </html>
