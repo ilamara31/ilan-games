@@ -10,6 +10,7 @@ Games made by Ilan!
 - 🏎️ **Indian Grand Prix** — `f1/` — pseudo-3D F1 racer, beat the grid over 3 laps for the podium.
 - ⚽ **Penalty Kings** — `football/` — penalty shootout knockout tournament.
 - 🌈 **Rainbow Obby** — `obby/` — 3D obstacle course (Three.js): 50 stages across 5 worlds, coins, checkpoints, and a shop of skins, trails, auras &amp; power coils.
+- 🏓 **Ping Pong Tour** — `pptour/` — first-person table tennis: tutorial, tournament ladder (Quarter-Final → World Championship), coins, and a shop of racket designs.
 
 ## How to play locally
 Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.
