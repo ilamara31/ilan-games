@@ -328,11 +328,14 @@ const SHOP_TABS=[['skins','Skins'],['auras','Auras'],['trails','Trails'],['victo
 const ALLSHOP={}; for(const k in SHOP) SHOP[k].forEach(i=>ALLSHOP[i.id]=Object.assign({cat:k},i));
 
 /* ---- save ---- */
-function freshSave(){ return {name:'',path:'gojo',coins:0,gems:0,xp:0,lifetime:0,bought:[],
+const STARTCOINS=100; // enough to buy your first money dropper, then income flows
+function freshSave(){ return {name:'',path:'gojo',coins:STARTCOINS,gems:0,xp:0,lifetime:0,bought:[],
   owned:['sk0','au0','tr0','vc0'], equip:{skins:'sk0',auras:'au0',trails:'tr0',victory:'vc0'},
   round:1, music:true, sfx:true, lock:false }; }
 let S=freshSave();
-function load(){ try{ const r=JSON.parse(localStorage.getItem(SK)); if(r&&typeof r==='object') S=Object.assign(freshSave(),r); }catch(e){} }
+function load(){ try{ const r=JSON.parse(localStorage.getItem(SK)); if(r&&typeof r==='object') S=Object.assign(freshSave(),r); }catch(e){}
+  // unstick any save with no dropper yet and not enough cash for the first one
+  if(!S.bought.some(id=>id.startsWith('drop')) && S.coins<STARTCOINS) S.coins=STARTCOINS; }
 function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
 
 function shopBuy(id){ const it=ALLSHOP[id]; if(!it) return 'no'; if(S.owned.includes(id)) return 'own';
