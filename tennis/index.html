@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Tennis Tour</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:#0a1626; color:#fff;
+    font-family:'Trebuchet MS',system-ui,Segoe UI,Roboto,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; }
+  canvas{ display:block; }
+  #game{ position:fixed; inset:0; }
+  .hidden{ display:none !important; }
+  .scr{ position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:18px; text-align:center; overflow:auto;
+    background:radial-gradient(900px 500px at 50% -8%,#1d5fae 0%,transparent 60%),linear-gradient(160deg,#0c2748,#08152a 60%,#06101f); }
+  h1{ font-size:clamp(34px,9vw,76px); margin:.1em 0; letter-spacing:1px;
+    background:linear-gradient(90deg,#ffe14a,#7ee0ff,#9bff8e,#ffe14a); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
+  .sub{ color:#bcd4ee; opacity:.85; margin-bottom:18px; font-size:clamp(13px,3.4vw,17px); }
+  .btn{ display:block; width:min(330px,86vw); margin:8px auto; padding:15px; border:none; border-radius:16px; font-size:19px; font-weight:bold; cursor:pointer; color:#06203a;
+    background:linear-gradient(135deg,#7ee0ff,#3aa0e8); box-shadow:0 8px 22px rgba(40,140,220,.35); }
+  .btn.green{ background:linear-gradient(135deg,#9bff8e,#2fbf6a); }
+  .btn.gold{ background:linear-gradient(135deg,#ffe14a,#ff9b3d); }
+  .btn.alt{ background:linear-gradient(135deg,#b9c6da,#7e90b5); color:#10203a; }
+  .btn:active{ transform:scale(.97); }
+  #nameIn{ width:min(330px,86vw); padding:12px 16px; border-radius:14px; border:2px solid #2f5f9e; background:#0e2240; color:#fff; font-size:17px; text-align:center; outline:none; margin-bottom:12px; }
+  #nameIn:focus{ border-color:#7ee0ff; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:min(560px,94vw); }
+  .row .btn{ width:auto; flex:1 1 150px; }
+  .foot{ margin-top:16px; font-size:12px; opacity:.55; max-width:520px; line-height:1.5; }
+
+  /* cards */
+  .vs{ display:flex; align-items:center; gap:14px; justify-content:center; flex-wrap:wrap; margin:6px 0 14px; }
+  .pcard{ width:170px; background:linear-gradient(160deg,#13315c,#0c1f3c); border:2px solid #2f5f9e; border-radius:18px; padding:14px; }
+  .pcard .av{ width:84px; height:84px; border-radius:50%; margin:0 auto 8px; border:3px solid #fff; }
+  .pcard b{ font-size:18px; } .pcard .lv{ font-size:12px; opacity:.8; margin-top:3px; }
+  .pcard .st{ font-size:12px; opacity:.75; margin-top:6px; }
+  .vsbadge{ font-size:30px; font-weight:bold; color:#ffe14a; }
+  .tourlogo{ font-size:18px; font-weight:bold; color:#ffe14a; margin-bottom:6px; }
+
+  /* HUD */
+  #hud{ position:fixed; inset:0; z-index:20; pointer-events:none; }
+  #score{ position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(6,16,30,.78); border:1.5px solid rgba(255,255,255,.14);
+    border-radius:14px; padding:7px 14px; display:flex; gap:14px; align-items:center; backdrop-filter:blur(6px); font-size:15px; }
+  #score .nm{ font-weight:bold; } #score .pts{ color:#ffe14a; font-weight:bold; font-size:17px; min-width:30px; text-align:center; }
+  #score .gm{ color:#7ee0ff; font-size:13px; }
+  #score .sep{ opacity:.4; }
+  #topL{ position:absolute; top:10px; left:10px; background:rgba(6,16,30,.7); border-radius:12px; padding:6px 11px; font-size:14px; font-weight:bold; }
+  #feed{ position:absolute; top:52px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:5px; align-items:center; }
+  .fmsg{ background:rgba(8,16,30,.85); border-radius:11px; padding:6px 14px; font-weight:bold; font-size:16px; animation:pp .25s ease; }
+  @keyframes pp{ from{transform:scale(.6);opacity:0} to{transform:scale(1);opacity:1} }
+  #timing{ position:absolute; left:50%; bottom:120px; transform:translateX(-50%); width:min(260px,70vw); height:14px; border-radius:8px; overflow:hidden;
+    background:linear-gradient(90deg,#3a72c4 0 28%,#2fbf6a 28% 58%,#ffe14a 58% 82%,#e0556a 82% 100%); border:1.5px solid rgba(255,255,255,.3); display:none; }
+  #timing .mk{ position:absolute; top:-3px; width:4px; height:20px; background:#fff; box-shadow:0 0 6px #fff; }
+  #timing .lbls{}
+  #tlbl{ position:absolute; left:50%; bottom:140px; transform:translateX(-50%); font-size:11px; opacity:.7; display:none; }
+
+  /* controls */
+  #ctl{ position:absolute; inset:0; pointer-events:none; }
+  .hitBtn{ position:absolute; right:128px; bottom:50px; width:90px; height:90px; border-radius:50%; pointer-events:auto;
+    border:3px solid rgba(255,255,255,.3); background:radial-gradient(circle at 40% 35%,#ffe14a,#ff8b2d); color:#3a2400; font-size:18px; font-weight:bold;
+    display:none; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .hitBtn.smash{ right:18px; bottom:22px; width:96px; height:96px; background:radial-gradient(circle at 40% 35%,#ff7a7a,#d11f3a); color:#fff; font-size:16px; display:flex; }
+  .hitBtn.smash.cool{ filter:grayscale(.6); opacity:.55; }
+  .hitBtn.smash .cd{ position:absolute; font-size:26px; }
+  .hitBtn:active{ transform:scale(.92); }
+  #stick{ position:absolute; left:18px; bottom:22px; width:120px; height:120px; border-radius:50%; pointer-events:auto; display:none;
+    background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.14); }
+  #stick .nub{ position:absolute; left:50%; top:50%; width:50px; height:50px; margin:-25px 0 0 -25px; border-radius:50%; background:rgba(255,255,255,.3); border:2px solid rgba(255,255,255,.5); }
+  #hintbar{ position:absolute; left:50%; bottom:90px; transform:translateX(-50%); font-size:12px; opacity:.6; text-align:center; width:92%; }
+
+  /* modal */
+  .modal{ position:fixed; inset:0; z-index:60; background:rgba(4,10,22,.78); display:flex; align-items:center; justify-content:center; padding:14px; }
+  .mbox{ width:min(580px,94vw); max-height:88vh; overflow:auto; background:linear-gradient(160deg,#10243f,#0a1830); border:2px solid #2f5f9e; border-radius:20px; padding:18px; }
+  .mbox h2{ margin:.1em 0 .5em; }
+  .closeX{ float:right; font-size:24px; cursor:pointer; opacity:.7; line-height:1; }
+  .tabs{ display:flex; gap:7px; margin-bottom:12px; flex-wrap:wrap; }
+  .tab{ padding:7px 13px; border-radius:11px; border:1.5px solid #2f5f9e; background:#0e2240; cursor:pointer; font-size:13px; }
+  .tab.on{ background:#ffe14a; color:#10203a; border-color:#ffe14a; font-weight:bold; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+  .it{ border:1.5px solid #2f5f9e; border-radius:14px; padding:11px; background:#0e2240; text-align:center; }
+  .it .sw{ width:100%; height:48px; border-radius:10px; margin-bottom:7px; }
+  .it b{ font-size:14px; } .it button{ width:100%; padding:8px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:6px; }
+  .b-buy{ background:linear-gradient(135deg,#ffe14a,#ff9b3d); color:#2a1a00; } .b-eq{ background:#2a6df0; color:#fff; } .b-on{ background:#1f7a3a; color:#fff; } .b-no{ background:#444; color:#aaa; }
+  .setrow{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid #1e3658; }
+  .switch{ width:52px; height:30px; border-radius:16px; background:#284067; position:relative; cursor:pointer; }
+  .switch.on{ background:#2a6df0; } .switch .k{ position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s; } .switch.on .k{ left:25px; }
+  .dngr{ background:#7a1f2b; color:#fff; border:none; padding:10px 14px; border-radius:11px; cursor:pointer; margin-top:10px; }
+  .stage{ display:flex; align-items:center; gap:12px; background:#0e2240; border:1.5px solid #2f5f9e; border-radius:14px; padding:12px; margin:8px auto; width:min(440px,94vw); text-align:left; }
+  .stage .ic{ font-size:30px; } .stage .info{ flex:1; } .stage .info b{ font-size:16px; } .stage .info small{ display:block; opacity:.7; }
+  .stage.locked{ opacity:.45; } .stage .go{ background:linear-gradient(135deg,#9bff8e,#2fbf6a); color:#06280f; border:none; padding:9px 14px; border-radius:12px; font-weight:bold; cursor:pointer; }
+  .stage .done{ color:#ffe14a; font-weight:bold; }
+  .res-big{ font-size:40px; font-weight:bold; margin:6px 0; }
+  .res-line{ font-size:17px; margin:5px 0; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- MENU -->
+<div id="menu" class="scr">
+  <h1>TENNIS TOUR</h1>
+  <div class="sub">Arcade tennis — time your swing, smash, and win the cup! 🎾</div>
+  <div style="display:flex;gap:8px;justify-content:center;width:min(330px,86vw);margin:0 auto">
+    <input id="nameIn" maxlength="12" placeholder="Your name" autocomplete="off" style="flex:1">
+    <input id="numIn" maxlength="2" placeholder="#" inputmode="numeric" autocomplete="off" style="width:64px;text-align:center;padding:12px 8px;border-radius:14px;border:2px solid #2f5f9e;background:#0e2240;color:#fff;font-size:17px;outline:none">
+  </div>
+  <div class="sub" style="margin:6px 0 12px;font-size:12px">↑ your name &amp; jersey number (shown on your shirt)</div>
+  <button class="btn green" data-mode="quick">⚡ Quick Match</button>
+  <button class="btn" data-mode="tournament">🏆 Tournament</button>
+  <button class="btn gold" data-mode="career">🎓 Career Mode</button>
+  <div class="row" style="margin-top:6px">
+    <button class="btn alt" id="shopBtn">🛒 Shop</button>
+    <button class="btn alt" id="setBtn">⚙️ Settings</button>
+  </div>
+  <div class="foot">Desktop: ◀ ▶ move • <b>Space</b> shot • <b>X</b> smash. Mobile: joystick + HIT.<br>Timing: early = lob • perfect = smash • late = weak. First to <b>5 points</b> wins!</div>
+</div>
+
+<!-- CAREER -->
+<div id="career" class="scr hidden">
+  <h1 style="font-size:clamp(28px,7vw,52px)">🎓 Career</h1>
+  <div class="sub">Climb from school courts to the World Championship.</div>
+  <div id="stageList"></div>
+  <button class="btn alt" data-back="career" style="margin-top:12px">← Back</button>
+</div>
+
+<!-- CARDS -->
+<div id="cards" class="scr hidden">
+  <div class="tourlogo" id="tourName">Tournament</div>
+  <div class="vs">
+    <div class="pcard"><div class="av" id="pAv"></div><b id="pName">You</b><div class="lv" id="pLv">Lv 1</div><div class="st" id="pSt"></div></div>
+    <div class="vsbadge">VS</div>
+    <div class="pcard"><div class="av" id="oAv"></div><b id="oName">Rival</b><div class="lv" id="oLv">Lv 1</div><div class="st" id="oSt"></div></div>
+  </div>
+  <button class="btn green" id="startBtn">▶ Start Match</button>
+  <button class="btn alt" data-back="menu">← Back</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="topL">🪙 <span id="coins">0</span></div>
+  <div id="score">
+    <span class="nm" id="sNmA">You</span><span class="gm" id="sGmA">0</span><span class="pts" id="sPtA">0</span>
+    <span class="sep">|</span>
+    <span class="pts" id="sPtB">0</span><span class="gm" id="sGmB">0</span><span class="nm" id="sNmB">Rival</span>
+  </div>
+  <div id="feed"></div>
+  <div id="tlbl">TIMING</div>
+  <div id="timing"><div class="mk" id="tmark"></div></div>
+  <div id="hintbar"></div>
+  <div id="ctl">
+    <div id="stick"><div class="nub" id="nub"></div></div>
+    <div class="hitBtn smash" id="smashBtn"><span id="smTxt">SMASH<br>X</span><span class="cd" id="smCd" style="display:none"></span></div>
+    <div class="hitBtn" id="hitBtn">HIT</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="scr hidden">
+  <div class="res-big" id="resTitle">You Win!</div>
+  <div class="res-line" id="resScore"></div>
+  <div class="res-line">🪙 Coins earned: <b id="resCoins">0</b></div>
+  <div class="res-line">⭐ XP earned: <b id="resXp">0</b></div>
+  <div class="res-line" id="resStats" style="opacity:.8;font-size:14px"></div>
+  <button class="btn green" id="resNext">Continue</button>
+</div>
+
+<!-- SHOP -->
+<div id="shopModal" class="modal hidden"><div class="mbox">
+  <span class="closeX" data-close="shopModal">×</span><h2>🛒 Shop</h2>
+  <div class="tabs" id="shopTabs"></div><div class="grid" id="shopGrid"></div>
+</div></div>
+
+<!-- SETTINGS -->
+<div id="setModal" class="modal hidden"><div class="mbox">
+  <span class="closeX" data-close="setModal">×</span><h2>⚙️ Settings</h2>
+  <div class="setrow"><span>🎵 Music</span><div class="switch on" id="swMusic"><div class="k"></div></div></div>
+  <div class="setrow"><span>🔊 Sound effects</span><div class="switch on" id="swSfx"><div class="k"></div></div></div>
+  <button class="dngr" id="resetBtn">Reset all progress</button>
+</div></div>
+
+<script type="module">
+import * as THREE from '../obby/libs/three.module.js';
+
+/* ============================================================ DATA / PURE LOGIC ============================================================ */
+const SK='tennisTour_v1';
+
+const CAREER=[
+  {id:'school', name:'School Tournament',      ic:'🏫', diff:0.30, games:2, coins:120, xp:60},
+  {id:'city',   name:'City Tournament',        ic:'🏙️', diff:0.45, games:2, coins:200, xp:90},
+  {id:'state',  name:'State Tournament',       ic:'🗺️', diff:0.58, games:3, coins:320, xp:130},
+  {id:'nation', name:'National Tournament',    ic:'🏛️', diff:0.70, games:3, coins:500, xp:190},
+  {id:'inter',  name:'International Tournament',ic:'🌍', diff:0.82, games:3, coins:780, xp:260},
+  {id:'world',  name:'World Championship',      ic:'🏆', diff:0.95, games:4, coins:1200,xp:380},
+];
+const OPP_NAMES=['Rex','Mika','Leo','Suki','Carl','Nina','Diego','Yuki','Omar','Vera','Tom','Aria','Bolt','Kai','Zane','Lola'];
+const TOUR_ROUNDS=[{lbl:'Quarter-Final',diff:0.45},{lbl:'Semi-Final',diff:0.70},{lbl:'Final',diff:0.95}];
+
+// timing -> shot type (d = how far in front of the player the ball is when you swing).
+// SMASH is a narrow, hard-to-hit window; everything else is forgiving.
+function shotQuality(ballZ, playerZ){ const d=playerZ-ballZ;
+  if(d>5.5) return 'lob'; if(d>2.0) return 'normal'; if(d>1.0) return 'smash'; return 'weak'; }
+
+// simple scoring: 1 point per rally won, first to 5 wins the match
+const POINTS_TO_WIN=5;
+function matchWon(score){ return score.a>=POINTS_TO_WIN || score.b>=POINTS_TO_WIN; }
+
+function levelFromXP(xp){ let l=1,rem=xp; while(l<50){ const need=80*l; if(rem<need) break; rem-=need; l++; } return l; }
+function coinsForMatch(mode,diff,win){ const base=Math.round(60+diff*140); return win?base:Math.round(base*0.3); }
+
+const SHOP={
+  rackets:[ {id:'rk0',name:'Starter',price:0,col:0x3aa0e8}, {id:'rk1',name:'Power',price:300,col:0xff5a3c},
+    {id:'rk2',name:'Pro',price:600,col:0x2fbf6a}, {id:'rk3',name:'Gold',price:1500,col:0xffd54a} ],
+  // jerseys: a real look (base colour + accent stripe). Your name & number show on the back.
+  jerseys:[ {id:'js0',name:'Classic',price:0,col:0x2a6df0,stripe:0xffffff}, {id:'js1',name:'Striker',price:250,col:0xd23b2e,stripe:0x141414},
+    {id:'js2',name:'Forest',price:250,col:0x2fbf6a,stripe:0xffffff}, {id:'js3',name:'Royal',price:500,col:0x8a4bff,stripe:0xffd54a},
+    {id:'js4',name:'Champion Gold',price:1500,col:0xffd54a,stripe:0x141414} ],
+  shoes:[ {id:'sh0',name:'White',price:0,col:0xffffff}, {id:'sh1',name:'Neon',price:200,col:0x9bff3a},
+    {id:'sh2',name:'Crimson',price:200,col:0xd23b2e}, {id:'sh3',name:'Cyan',price:400,col:0x6ad0ff} ],
+};
+const SHOP_TABS=[['rackets','Rackets'],['jerseys','Jerseys'],['shoes','Shoes']];
+const ALLSHOP={}; for(const k in SHOP) SHOP[k].forEach(i=>ALLSHOP[i.id]=Object.assign({cat:k},i));
+
+function freshSave(){ return { name:'', jerseyNum:'10', coins:0, xp:0, careerStage:0, trophies:0,
+  owned:['rk0','js0','sh0'], equip:{rackets:'rk0',jerseys:'js0',shoes:'sh0'},
+  music:true, sfx:true }; }
+let S=freshSave();
+function load(){ try{ const r=JSON.parse(localStorage.getItem(SK)); if(r&&typeof r==='object') S=Object.assign(freshSave(),r); }catch(e){}
+  // migrate old saves (had hair/outfits) to jerseys
+  if(!S.equip.jerseys){ S.equip.jerseys='js0'; } if(!S.owned.includes('js0')) S.owned.push('js0');
+  if(!S.equip.rackets) S.equip.rackets='rk0'; if(!S.equip.shoes) S.equip.shoes='sh0';
+  if(S.jerseyNum==null) S.jerseyNum='10'; }
+function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
+function shopBuy(id){ const it=ALLSHOP[id]; if(!it) return 'no'; if(S.owned.includes(id)) return 'own'; if(S.coins<it.price) return 'poor';
+  S.coins-=it.price; S.owned.push(id); save(); return 'ok'; }
+
+window.__TT={CAREER,SHOP,shotQuality,POINTS_TO_WIN,matchWon,levelFromXP,coinsForMatch,shopBuy,freshSave,get S(){return S;},set S(v){S=v;}};
+
+/* ============================================================ THREE SETUP ============================================================ */
+const TESTMODE=(typeof window!=='undefined' && window.__TT_TEST__);
+if(!TESTMODE){
+load();
+
+const cvs=document.getElementById('game');
+const renderer=new THREE.WebGLRenderer({canvas:cvs,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x8fd0ff); scene.fog=new THREE.Fog(0x8fd0ff,55,110);
+const camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,0.1,400);
+function onResize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); }
+addEventListener('resize',onResize); onResize();
+
+const hemi=new THREE.HemisphereLight(0xeaf6ff,0x4a6a3a,1.05); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff4e0,1.6); sun.position.set(14,34,26); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=120;
+sun.shadow.camera.left=-28; sun.shadow.camera.right=28; sun.shadow.camera.top=34; sun.shadow.camera.bottom=-34; sun.shadow.bias=-0.0004; scene.add(sun);
+scene.add(new THREE.AmbientLight(0xbfe0ff,0.4));
+const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c},o));
+
+/* ---------- court ---------- */
+const HW=5, HL=11, NETH=1.0;     // half width, half length (baseline at ±HL), net height
+const PZ=HL-0.6, OZ=-(HL-0.6);   // player & opponent baseline z
+// surrounding ground
+const surround=new THREE.Mesh(new THREE.CircleGeometry(120,48), mat(0x2b6f3a,{roughness:1})); surround.rotation.x=-Math.PI/2; surround.position.y=-0.02; surround.receiveShadow=true; scene.add(surround);
+// court slab
+const court=new THREE.Mesh(new THREE.BoxGeometry(HW*2+3, 0.3, HL*2+3), mat(0x2f7fd0,{roughness:.9})); court.position.y=-0.15; court.receiveShadow=true; scene.add(court);
+const inField=new THREE.Mesh(new THREE.PlaneGeometry(HW*2, HL*2), mat(0x3f93e0,{roughness:.9})); inField.rotation.x=-Math.PI/2; inField.position.y=0.001; inField.receiveShadow=true; scene.add(inField);
+// court lines
+const lineMat=new THREE.MeshBasicMaterial({color:0xffffff});
+function line(w,l,x,z){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,l),lineMat); m.rotation.x=-Math.PI/2; m.position.set(x,0.01,z); scene.add(m); }
+line(HW*2+0.3,0.16,0,HL); line(HW*2+0.3,0.16,0,-HL);                 // baselines
+line(0.16,HL*2,-HW,0); line(0.16,HL*2,HW,0);                          // singles sidelines
+line(HW*2,0.12,0,0);                                                  // center (under net)
+line(HW*1.4,0.14,0,HL*0.46); line(HW*1.4,0.14,0,-HL*0.46);            // service lines
+line(0.14,HL*0.92,0,HL*0.23); line(0.14,HL*0.92,0,-HL*0.23);          // center service line
+// net
+const net=new THREE.Mesh(new THREE.BoxGeometry(HW*2+1.4,NETH,0.12), new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.5})); net.position.set(0,NETH/2,0); scene.add(net);
+const netTop=new THREE.Mesh(new THREE.BoxGeometry(HW*2+1.5,0.12,0.16), mat(0xffffff)); netTop.position.set(0,NETH,0); scene.add(netTop);
+for(const sx of [-1,1]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,NETH+0.3,8),mat(0x223)); post.position.set(sx*(HW+0.7),(NETH+0.3)/2,0); scene.add(post); }
+// stands + crowd dots
+const cols=[0xff6b6b,0xffd54a,0x6ad0ff,0x9bff8e,0xff9bd0,0xffffff,0xff8b2d,0x8a4bff];
+const bodyGeo=new THREE.BoxGeometry(0.46,0.62,0.4), headGeo=new THREE.SphereGeometry(0.24,8,8), skinM=mat(0xf0c79a,{roughness:.7});
+function spectator(x,y,z,col,faceIn){ const g=new THREE.Group();
+  const body=new THREE.Mesh(bodyGeo, mat(col,{roughness:.8})); body.position.y=0.3; g.add(body);
+  const head=new THREE.Mesh(headGeo, skinM); head.position.y=0.76; g.add(head);
+  g.position.set(x,y,z); if(faceIn) g.rotation.y=Math.PI; g.userData.baseY=y; return g; }
+function stand(z, faceIn){ // tiered stand with rows of seated spectators
+  const s=new THREE.Mesh(new THREE.BoxGeometry(HW*2+12,0.4,5.5), mat(0x9aa6b6,{roughness:1})); s.position.set(0,1.2,z); s.receiveShadow=true; scene.add(s);
+  for(let r=0;r<3;r++){ const step=new THREE.Mesh(new THREE.BoxGeometry(HW*2+12,1.0,1.7), mat(0x808d9e,{roughness:1})); step.position.set(0,1.0+r*0.7, z + (faceIn? -1 : 1)*(r*1.6-1.4)); step.receiveShadow=true; scene.add(step); }
+  const people=[];
+  for(let r=0;r<3;r++){ const rz=z + (faceIn? -1 : 1)*(r*1.6-1.0); const ry=1.9+r*0.7;
+    for(let x=-HW-5; x<=HW+5; x+=1.15){ const p=spectator(x+(Math.random()-.5)*0.3, ry, rz, cols[(Math.random()*cols.length)|0], faceIn); scene.add(p); people.push(p); } }
+  return people; }
+const crowdA=stand(HL+5,false), crowdB=stand(-HL-5,true);
+function bobCrowd(t){ const cy=Math.abs(Math.sin(t*16)); for(const p of crowdA){ p.position.y=p.userData.baseY+cy*0.35; } for(const p of crowdB){ p.position.y=p.userData.baseY+cy*0.3; } }
+
+/* ---------- big-head cartoon player ---------- */
+function buildPlayer(opt){ // {skin,hair,outfit,shoe,racket,flip}
+  const g=new THREE.Group();
+  const jersey=opt.jersey||{col:0x2a6df0,stripe:0xffffff};
+  const skM=mat(opt.skin||0xf3c79a,{roughness:.7}), bodyM=mat(jersey.col,{roughness:.6}), hairM=mat(0x5a3a1a,{roughness:.6}), shoeM=mat(opt.shoe,{roughness:.6});
+  // small body
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.34,0.5,5,10),bodyM); torso.position.y=1.25; torso.castShadow=true; g.add(torso);
+  const skirt=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.5,0.3,12),bodyM); skirt.position.y=0.95; g.add(skirt);
+  // jersey accent stripe
+  const stripe=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.16,14),mat(jersey.stripe,{roughness:.5})); stripe.position.y=1.34; g.add(stripe);
+  // jersey back panel: NAME + NUMBER (the camera sees the player's back)
+  const jc=document.createElement('canvas'); jc.width=128; jc.height=160; const jtex=new THREE.CanvasTexture(jc); jtex.colorSpace=THREE.SRGBColorSpace;
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.74), new THREE.MeshBasicMaterial({map:jtex,transparent:true})); panel.position.set(0,1.42,0.355); g.add(panel);
+  // BIG head
+  const head=new THREE.Group(); head.position.y=2.15; g.add(head);
+  const face=new THREE.Mesh(new THREE.SphereGeometry(0.66,20,18),skM); face.castShadow=true; head.add(face);
+  for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.1,10,10),new THREE.MeshBasicMaterial({color:0x16203a})); e.scale.set(1,1.25,.6); e.position.set(0.2*s,0.05,0.6); head.add(e); }
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.04,0.04),new THREE.MeshBasicMaterial({color:0x7a3b34})); mouth.position.set(0,-0.18,0.62); head.add(mouth);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(0.7,18,16,0,Math.PI*2,0,Math.PI*0.58),hairM); cap.position.y=0.06; head.add(cap);
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; const sp=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.3,5),hairM); sp.position.set(Math.cos(a)*0.4,0.34,Math.sin(a)*0.4-0.05); sp.rotation.set(Math.cos(a)*.4,a,-Math.sin(a)*.4); head.add(sp); }
+  // legs
+  function leg(s){ const p=new THREE.Group(); p.position.set(0.16*s,0.95,0);
+    const up=new THREE.Mesh(new THREE.CapsuleGeometry(0.14,0.5,4,8),skM); up.position.y=-0.35; up.castShadow=true; p.add(up);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.16,0.4),shoeM); foot.position.set(0,-0.66,0.07); p.add(foot); g.add(p); return p; }
+  const lleg=leg(1), rleg=leg(-1);
+  // left arm (free)
+  const larm=new THREE.Group(); larm.position.set(0.42,1.5,0); const la=new THREE.Mesh(new THREE.CapsuleGeometry(0.12,0.45,4,8),skM); la.position.y=-0.32; larm.add(la); g.add(larm); larm.rotation.z=0.3;
+  // right arm holds racket
+  const rarm=new THREE.Group(); rarm.position.set(-0.42,1.5,0);
+  const ra=new THREE.Mesh(new THREE.CapsuleGeometry(0.12,0.45,4,8),skM); ra.position.y=-0.32; rarm.add(ra);
+  const racket=new THREE.Group(); racket.position.set(0,-0.62,0);
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,8),mat(0x222)); handle.position.y=-0.15; racket.add(handle);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.05,8,20),mat(opt.racket,{metalness:.3,roughness:.4})); rim.position.y=0.28; racket.add(rim);
+  const strings=new THREE.Mesh(new THREE.CircleGeometry(0.3,16),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.25,side:THREE.DoubleSide})); strings.position.y=0.28; strings.rotation.x=Math.PI/2; racket.add(strings);
+  rarm.add(racket); g.add(rarm); rarm.rotation.z=-0.4; rarm.rotation.x=0.3;
+  g.userData={head,lleg,rleg,larm,rarm,racket,parts:{torso,skirt,cap,face},swing:0, jersey:{canvas:jc,tex:jtex,col:jersey.col}};
+  setJerseyText(g, opt.name||'', opt.num||'');
+  if(opt.flip) g.rotation.y=Math.PI;
+  return g;
+}
+function setJerseyText(g,name,num){ const j=g.userData.jersey; if(!j) return; const c=j.canvas, x=c.getContext('2d');
+  x.clearRect(0,0,128,160); x.fillStyle='#'+j.col.toString(16).padStart(6,'0'); x.fillRect(0,0,128,160);
+  x.strokeStyle='rgba(255,255,255,.5)'; x.lineWidth=4; x.strokeRect(3,3,122,154);
+  x.fillStyle='#ffffff'; x.textAlign='center';
+  x.font='bold 22px Trebuchet MS, sans-serif'; x.fillText((name||'').toUpperCase().slice(0,9),64,30);
+  x.font='bold 86px Trebuchet MS, sans-serif'; x.fillText(String(num||'').slice(0,2),64,116);
+  j.tex.needsUpdate=true; }
+function animatePlayer(g,moving,t,dt){ const u=g.userData;
+  const sw=Math.sin(t*12)*(moving?0.7:0.12); u.lleg.rotation.x=sw; u.rleg.rotation.x=-sw; u.head.rotation.z=Math.sin(t*2)*0.04;
+  if(u.swing>0){ u.swing=Math.max(0,u.swing-dt*4); const k=u.swing; // 1->0 swing arc
+    u.rarm.rotation.x=0.3 - Math.sin((1-k)*Math.PI)*2.4; u.rarm.rotation.z=-0.4 + (1-k)*0.6; }
+  else { u.rarm.rotation.x=0.3; u.rarm.rotation.z=-0.4; } }
+
+/* ---------- ball ---------- */
+const ball=new THREE.Mesh(new THREE.SphereGeometry(0.34,16,14), new THREE.MeshStandardMaterial({color:0xd6ff3a,emissive:0x6a8a00,emissiveIntensity:.25,roughness:.5}));
+ball.castShadow=true; scene.add(ball);
+const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(0.34,16), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.25})); ballShadow.rotation.x=-Math.PI/2; scene.add(ballShadow);
+const BV=new THREE.Vector3();
+// trail
+const trail=[]; for(let i=0;i<10;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8), new THREE.MeshBasicMaterial({color:0xeaff8a,transparent:true,opacity:.4})); m.visible=false; scene.add(m); trail.push(m); }
+let trailI=0;
+
+/* ---------- particles ---------- */
+const parts=[];
+function burst(pos,color,n=14,spd=5,life=0.5){ for(let i=0;i<n;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.12,6,6),new THREE.MeshBasicMaterial({color,transparent:true}));
+  m.position.copy(pos); const a=Math.random()*Math.PI*2,e=Math.random()*Math.PI; m.userData.v=new THREE.Vector3(Math.sin(e)*Math.cos(a),Math.abs(Math.cos(e)),Math.sin(e)*Math.sin(a)).multiplyScalar(spd*(0.4+Math.random())); m.userData.life=life; m.userData.max=life; scene.add(m); parts.push(m); } }
+function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const m=parts[i]; m.userData.life-=dt; if(m.userData.life<=0){ scene.remove(m); parts.splice(i,1); continue; } m.userData.v.y-=12*dt; m.position.addScaledVector(m.userData.v,dt); m.material.opacity=m.userData.life/m.userData.max; } }
+
+/* ---------- entities ---------- */
+let player=null, opp=null;
+function makePlayers(oppCol, oppName){
+  if(player) scene.remove(player); if(opp) scene.remove(opp);
+  const js=ALLSHOP[S.equip.jerseys]||ALLSHOP['js0'];
+  player=buildPlayer({skin:0xf3c79a, jersey:js, shoe:(ALLSHOP[S.equip.shoes]||ALLSHOP['sh0']).col, racket:(ALLSHOP[S.equip.rackets]||ALLSHOP['rk0']).col, name:S.name||'You', num:S.jerseyNum||'10'});
+  player.position.set(0,0,PZ); scene.add(player);
+  const oppNum=((oppName||'R').charCodeAt(0)%20)+1;
+  opp=buildPlayer({skin:0xe8b48a, jersey:{col:oppCol,stripe:0x141414}, shoe:0xffffff, racket:0x222, flip:true, name:oppName||'', num:oppNum});
+  opp.position.set(0,0,OZ); scene.add(opp);
+}
+
+/* ============================================================ MATCH STATE ============================================================ */
+const M={ active:false, ctx:null, score:{a:0,b:0}, server:'a', state:'idle',
+  lastHitter:null, bounce:0, prevZ:0, hitCool:0, serveT:0, smashCD:0, stats:{rallies:0,smashes:0,aces:0}, rallyHits:0,
+  oppArmed:false };
+let px=0, oppx=0, ovx=0;
+
+function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0;
+  M.stats={rallies:0,smashes:0,aces:0}; makePlayers(ctx.oppColor, ctx.oppName); px=0; oppx=0;
+  show('hud'); document.getElementById('sNmA').textContent=S.name||'You'; document.getElementById('sNmB').textContent=ctx.oppName;
+  document.getElementById('smashBtn').style.display='flex'; updateSmashUI();   // smash/cooldown badge always visible
+  if('ontouchstart' in window){ document.getElementById('stick').style.display='block'; document.getElementById('hitBtn').style.display='flex'; }
+  syncScore(); initAudio(); newPoint(); feed('Match start! 🎾','#9bff8e'); }
+function newPoint(){ M.state='serve'; M.lastHitter=null; M.bounce=0; M.rallyHits=0; M.serveT=0.9; M.oppArmed=false;
+  const srv=M.server; const sz= srv==='a'?PZ:OZ; const sx=(srv==='a'?px:oppx)*0.4;
+  ball.position.set(sx,2.0,sz - (srv==='a'?0.5:-0.5)); BV.set(0,0,0); M.prevZ=ball.position.z; }
+function serveBall(){ const srv=M.server; M.lastHitter=srv; M.bounce=0;
+  const tz=(srv==='a'?-1:1)*HL*0.45; const tx=(Math.random()-0.5)*HW*0.8; flightTo(tx,tz,1.0, srv==='a'?9:9); M.state='play'; sfx('hit'); swing(srv==='a'?player:opp); }
+function flightTo(tx,tz,T,vyBoost){ const g=18; const b=ball.position;
+  BV.x=(tx-b.x)/T; BV.z=(tz-b.z)/T; BV.y=(0 - b.y + 0.5*g*T*T)/T; if(vyBoost) BV.y=Math.max(BV.y, vyBoost*0.0+ (0.5*g*T - b.y/T)); }
+
+function swing(p){ if(p) p.userData.swing=1; }
+
+function shotFor(kind, hitter){ // kind: lob/normal/smash/weak  hitter:'a'|'b'
+  const toOpp = hitter==='a'? -1 : 1;            // direction along z
+  const opObj = hitter==='a'? opp : player;
+  // aim away from the receiver
+  let tx = -(opObj.position.x)*0.6 + (Math.random()-0.5)*HW*0.7; tx=Math.max(-HW+0.5,Math.min(HW-0.5,tx));
+  let tz, T;
+  if(kind==='lob'){ tz=toOpp*HL*0.8; T=1.7; }
+  else if(kind==='smash'){ tz=toOpp*HL*(0.55+Math.random()*0.3); T=0.6; M.stats.smashes++; }
+  else if(kind==='power'){ tz=toOpp*HL*(0.62+Math.random()*0.25); T=0.82; }   // Space perfect: good fast shot
+  else if(kind==='weak'){ tz=toOpp*HL*0.32; T=1.25; }
+  else { tz=toOpp*HL*(0.6+Math.random()*0.25); T=1.0; }
+  const g=18, b=ball.position;
+  BV.x=(tx-b.x)/T; BV.z=(tz-b.z)/T; BV.y=(0.5*g*T - b.y/T);
+  // ensure it clears the net for non-smash shots
+  if(kind!=='smash') BV.y=Math.max(BV.y, 4.5);
+  if(kind==='lob') BV.y=Math.max(BV.y,9);
+}
+
+// useSmash = X / SMASH button. Space (useSmash=false) can NEVER smash — its best is a fast 'power' shot.
+function playerHit(useSmash){ if(M.state!=='play'||M.hitCool>0) return;
+  if(ball.position.z<=1.0) return; // ball not on player side
+  if(Math.abs(ball.position.x-px)>2.7 || ball.position.y>3.8){ return; } // out of reach (no whiff penalty)
+  const q=shotQuality(ball.position.z, PZ);
+  let kind;
+  if(useSmash && M.smashCD<=0){ kind=(q==='smash')?'smash':q; if(kind==='smash') M.smashCD=5; }  // X smashes only on perfect timing, then 5s cooldown
+  else { kind=(q==='smash')?'power':q; }                                                          // Space, or X on cooldown -> no smash
+  M.lastHitter='a'; M.bounce=0; M.hitCool=0.35; M.rallyHits++;
+  shotFor(kind,'a'); swing(player); sfx(kind==='smash'?'smash':'hit');
+  const col = kind==='smash'?0xff5a3c : kind==='power'?0x9bff8e : 0xeaff8a;
+  burst(ball.position.clone(), col, kind==='smash'?22:10, kind==='smash'?7:4);
+  feed(kind==='lob'?'LOB 🎾':kind==='smash'?'SMASH! 💥':kind==='power'?'POWER SHOT! ⚡':kind==='weak'?'late… weak':'nice shot', kind==='smash'?'#ffe14a':kind==='power'?'#9bff8e':'#cfe9ff');
+  if(kind==='smash') shake=0.4; }
+function updateSmashUI(){ const b=$('smashBtn'); if(!b) return; const cd=$('smCd'), tx=$('smTxt');
+  if(M.smashCD>0){ b.classList.add('cool'); cd.style.display='block'; cd.textContent=Math.ceil(M.smashCD); tx.style.display='none'; }
+  else { b.classList.remove('cool'); cd.style.display='none'; tx.style.display='block'; } }
+
+/* ---------- timing meter (visual) ---------- */
+function updateTiming(){ const tm=document.getElementById('timing'), tl=document.getElementById('tlbl'), mk=document.getElementById('tmark');
+  const showIt = M.state==='play' && M.lastHitter==='b' && ball.position.z>0; // ball coming to player
+  tm.style.display=showIt?'block':'none'; tl.style.display=showIt?'block':'none';
+  if(showIt){ const frac=Math.max(0,Math.min(1,(ball.position.z)/(PZ))); mk.style.left=(frac*100)+'%'; } }
+
+/* ---------- AI (harder at higher difficulty; smashes your weak/short balls) ---------- */
+function updateAI(dt){ const d=M.ctx.diff;
+  let targetX=0;
+  if(ball.position.z<0 && M.state==='play'){ targetX=ball.position.x; }
+  const sp=(4.5+d*7);                                   // faster at high difficulty
+  const move=Math.max(-sp*dt,Math.min(sp*dt, (targetX-oppx)));
+  oppx+=move; oppx=Math.max(-HW+0.3,Math.min(HW-0.3,oppx));
+  if(M.state==='play' && M.lastHitter==='a' && !M.oppArmed){
+    if(ball.position.z < OZ+5 && ball.position.z > OZ-2){
+      if(Math.abs(ball.position.x-oppx)<2.4+d*0.9){
+        if(Math.random() < 0.5+d*0.46){ M.oppArmed=true;   // higher diff = rarely misses
+          let q='normal'; const r=Math.random();
+          const easy = ball.position.y>1.6 || ball.position.z > OZ+4.2;   // high or short = punishable
+          if(easy && r<0.45+d*0.45) q='smash';            // he smashes weak/short balls
+          else if(r>0.9-d*0.15) q='lob'; else if(r<0.05) q='weak';
+          M.lastHitter='b'; M.bounce=0; M.rallyHits++; shotFor(q,'b'); swing(opp); sfx(q==='smash'?'smash':'hit');
+          burst(ball.position.clone(), q==='smash'?0xff5a3c:0xeaff8a, q==='smash'?18:8, q==='smash'?7:4);
+          if(q==='smash') feed(M.ctx.oppName+' smashes! 💥','#ff9a9a');
+        }
+        // else: AI fails to reach -> double-bounce -> player wins the point
+      }
+    }
+  }
+}
+
+/* ---------- point resolution: 1 point per rally, first to 5 ---------- */
+function endPoint(winner){ // 'a'=you, 'b'=opponent
+  if(M.state==='dead') return;
+  M.state='dead'; M.stats.rallies++;
+  if(M.rallyHits<=1 && winner===M.server) M.stats.aces++;
+  M.score[winner]++;
+  feed(winner==='a' ? '✅ You scored!  '+M.score.a+'–'+M.score.b : '❌ '+M.ctx.oppName+' scored  '+M.score.a+'–'+M.score.b, winner==='a'?'#9bff8e':'#ff9a9a');
+  if(winner==='a') crowdCheer();
+  syncScore();
+  if(matchWon(M.score)){ setTimeout(()=>endMatch(M.score.a>M.score.b),950); return; }
+  M.server = M.server==='a'?'b':'a';            // alternate serve each point
+  setTimeout(()=>{ if(M.active) newPoint(); },1100);
+}
+
+/* ---------- physics step ---------- */
+function stepBall(dt){ if(M.state==='serve'){ M.serveT-=dt; if(M.serveT<=0) serveBall(); return; }
+  if(M.state!=='play') return;
+  const g=18; BV.y-=g*dt; ball.position.addScaledVector(BV,dt);
+  if(M.hitCool>0) M.hitCool-=dt;
+  // trail
+  const tm=trail[trailI=(trailI+1)%trail.length]; tm.visible=true; tm.position.copy(ball.position); tm.material.opacity=0.4;
+  trail.forEach(m=>{ if(m.visible) m.material.opacity*=0.86; });
+  // net crossing
+  if((M.prevZ<0)!==(ball.position.z<0)){ if(ball.position.y<NETH+0.05){ // hit the net
+      burst(ball.position.clone(),0xffffff,10,3); endPoint(M.lastHitter==='a'?'b':'a'); M.prevZ=ball.position.z; return; } }
+  M.prevZ=ball.position.z;
+  // bounce
+  if(ball.position.y<=0.34 && BV.y<0){ ball.position.y=0.34;
+    const receiver = M.lastHitter==='a'?'b':'a';
+    if(M.bounce===0){ // this is the shot's FIRST landing -> judge in/out here only
+      const inside = Math.abs(ball.position.x)<=HW+0.25 && Math.abs(ball.position.z)<=HL+0.25;
+      const side = ball.position.z<0?'b':'a';
+      if(!inside){ burst(ball.position.clone(),0xff5a3c,10,3); endPoint(receiver); return; }       // hit OUT -> hitter loses
+      if(M.lastHitter && side===M.lastHitter){ endPoint(receiver); return; }                         // didn't cross net -> hitter loses
+      M.bounce=1; BV.y=-BV.y*0.62; BV.x*=0.86; BV.z*=0.92; burst(ball.position.clone(),0xffffff,5,2); // valid landing
+    } else { // already bounced in once -> receiver failed to return it -> HITTER wins
+      endPoint(M.lastHitter); return;
+    }
+  }
+  // safety: ball lost
+  if(ball.position.y<-3 || Math.abs(ball.position.z)>HL+14){ endPoint(M.bounce>=1?M.lastHitter:(M.lastHitter==='a'?'b':'a')); }
+}
+
+/* ============================================================ INPUT ============================================================ */
+const keys={};
+addEventListener('keydown',e=>{ keys[e.code]=true;
+  if(['ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if(M.active){ if(e.code==='Space') playerHit(false); if(e.code==='KeyX') playerHit(true); } });
+addEventListener('keyup',e=>{ keys[e.code]=false; });
+// touch
+let stickX=0, stickId=-1, stOrig=0;
+const stickEl=document.getElementById('stick'), nub=document.getElementById('nub');
+stickEl.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.changedTouches[0]; stickId=t.identifier; const r=stickEl.getBoundingClientRect(); stOrig=r.left+r.width/2; moveStick(t.clientX); },{passive:false});
+addEventListener('touchmove',e=>{ for(const t of e.changedTouches) if(t.identifier===stickId) moveStick(t.clientX); },{passive:false});
+addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===stickId){ stickId=-1; stickX=0; nub.style.left='50%'; } });
+function moveStick(cx){ const dx=Math.max(-50,Math.min(50,cx-stOrig)); stickX=dx/50; nub.style.left=(50+stickX*40)+'%'; }
+document.getElementById('hitBtn').addEventListener('touchstart',e=>{e.preventDefault(); playerHit(false);},{passive:false});
+document.getElementById('smashBtn').addEventListener('touchstart',e=>{e.preventDefault(); playerHit(true);},{passive:false});
+document.getElementById('hitBtn').addEventListener('click',()=>playerHit(false));
+document.getElementById('smashBtn').addEventListener('click',()=>playerHit(true));
+
+/* ============================================================ AUDIO ============================================================ */
+let actx=null,musicGain=null,musicTimer=null;
+function initAudio(){ if(actx) return; try{ actx=new (window.AudioContext||window.webkitAudioContext)(); musicGain=actx.createGain(); musicGain.gain.value=S.music?0.1:0; musicGain.connect(actx.destination); startMusic(); }catch(e){} }
+function sfx(type){ if(!actx||!S.sfx) return; const o=actx.createOscillator(),gn=actx.createGain(); o.connect(gn); gn.connect(actx.destination); const now=actx.currentTime; let dur=0.1;
+  if(type==='hit'){ o.type='square'; o.frequency.setValueAtTime(520,now); o.frequency.exponentialRampToValueAtTime(180,now+0.08); dur=0.09; }
+  else if(type==='smash'){ o.type='sawtooth'; o.frequency.setValueAtTime(700,now); o.frequency.exponentialRampToValueAtTime(120,now+0.16); dur=0.18; }
+  else if(type==='win'){ o.type='triangle'; o.frequency.setValueAtTime(520,now); o.frequency.setValueAtTime(660,now+0.12); o.frequency.setValueAtTime(880,now+0.24); dur=0.45; }
+  else if(type==='cheer'){ o.type='triangle'; o.frequency.setValueAtTime(300,now); o.frequency.linearRampToValueAtTime(520,now+0.3); dur=0.3; }
+  gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.25,now+0.01); gn.gain.exponentialRampToValueAtTime(0.0001,now+dur); o.start(now); o.stop(now+dur+0.02); }
+const SC=[0,4,7,9,12]; let mstep=0;
+function startMusic(){ if(musicTimer) clearInterval(musicTimer); musicTimer=setInterval(()=>{ if(!actx||!S.music) return; const f=196*Math.pow(2,SC[mstep%SC.length]/12);
+  const o=actx.createOscillator(),gn=actx.createGain(); o.type='triangle'; o.frequency.value=f; o.connect(gn); gn.connect(musicGain); const now=actx.currentTime;
+  gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.5,now+0.04); gn.gain.exponentialRampToValueAtTime(0.0001,now+0.4); o.start(now); o.stop(now+0.45); mstep++; },360); }
+let cheerT=0; function crowdCheer(){ sfx('cheer'); cheerT=0.6; }
+
+/* ============================================================ UI ============================================================ */
+const $=id=>document.getElementById(id);
+function show(id){ ['menu','career','cards','result'].forEach(s=>$(s).classList.add('hidden')); $('hud').classList.add('hidden');
+  if(id==='hud') $('hud').classList.remove('hidden'); else if(id) $(id).classList.remove('hidden'); }
+function feed(msg,col='#fff'){ const d=document.createElement('div'); d.className='fmsg'; d.textContent=msg; d.style.color=col; $('feed').appendChild(d);
+  setTimeout(()=>{ d.style.transition='opacity .4s'; d.style.opacity='0'; setTimeout(()=>d.remove(),400); },1400); }
+function syncScore(){ $('sPtA').textContent=M.score.a; $('sPtB').textContent=M.score.b;
+  $('sGmA').textContent=''; $('sGmB').textContent=''; $('coins').textContent=S.coins; }
+
+/* ---------- avatars for cards ---------- */
+function avatarDataURL(col,hair){ const c=document.createElement('canvas'); c.width=c.height=84; const g=c.getContext('2d');
+  g.fillStyle='#'+(col>>>0).toString(16).padStart(6,'0').slice(-6); g.fillRect(0,0,84,84);
+  g.fillStyle='#f3c79a'; g.beginPath(); g.arc(42,46,24,0,7); g.fill();
+  g.fillStyle='#'+(hair>>>0).toString(16).padStart(6,'0').slice(-6); g.beginPath(); g.arc(42,34,24,Math.PI,0); g.fill();
+  g.fillStyle='#16203a'; g.beginPath(); g.arc(34,46,3,0,7); g.arc(50,46,3,0,7); g.fill();
+  return c.toDataURL(); }
+
+/* ---------- match flow ---------- */
+let pendingCtx=null;
+function toCards(ctx){ pendingCtx=ctx; show('cards');
+  $('tourName').textContent=ctx.tourName||'Exhibition Match';
+  $('pAv').style.backgroundImage=`url(${avatarDataURL((ALLSHOP[S.equip.jerseys]||ALLSHOP['js0']).col,0x5a3a1a)})`; $('pAv').style.backgroundSize='cover';
+  $('pName').textContent=S.name||'You'; $('pLv').textContent='Lv '+levelFromXP(S.xp); $('pSt').textContent='🏆 '+S.trophies+' trophies';
+  $('oAv').style.backgroundImage=`url(${avatarDataURL(ctx.oppColor,0x222222)})`; $('oAv').style.backgroundSize='cover';
+  $('oName').textContent=ctx.oppName; $('oLv').textContent='Lv '+Math.max(1,Math.round(ctx.diff*40)); $('oSt').textContent=ctx.roundLabel||''; }
+$('startBtn').onclick=()=>startMatch(pendingCtx);
+
+function endMatch(win){ M.active=false; M.state='idle'; show('result');
+  const coins=coinsForMatch(M.ctx.mode,M.ctx.diff,win); const xp=Math.round((win?1:0.4)*(40+M.ctx.diff*120));
+  S.coins+=coins; S.xp+=xp; if(win) S.trophies++;
+  // career progression
+  if(M.ctx.mode==='career' && win && M.ctx.stageIndex===S.careerStage && S.careerStage<CAREER.length-1) S.careerStage++;
+  save(); sfx(win?'win':'hit');
+  $('resTitle').textContent=win?'🏆 You Win!':'😞 You Lost'; $('resTitle').style.color=win?'#ffe14a':'#ff9a9a';
+  $('resScore').textContent='Final: '+M.score.a+' – '+M.score.b;
+  $('resCoins').textContent=coins; $('resXp').textContent=xp;
+  $('resStats').textContent=`Rallies: ${M.stats.rallies} • Smashes: ${M.stats.smashes} • Aces: ${M.stats.aces}`;
+  // next-step context
+  resultNext = ()=>{
+    if(M.ctx.mode==='tournament' && win){ const nr=(M.ctx.round||0)+1; if(nr<TOUR_ROUNDS.length){ toCards(makeTournCtx(nr)); return; } else { /* champion */ } }
+    if(M.ctx.mode==='career'){ openCareer(); return; }
+    show('menu'); refreshMenu();
+  };
+}
+let resultNext=()=>show('menu');
+$('resNext').onclick=()=>resultNext();
+
+function makeTournCtx(round){ const r=TOUR_ROUNDS[round]; return { mode:'tournament', round, diff:r.diff, games:r.games,
+  oppName:OPP_NAMES[(round*3+2)%OPP_NAMES.length], oppColor:[0xd23b2e,0x8a4bff,0x2fbf6a][round%3], tourName:'City Open • '+r.lbl, roundLabel:r.lbl }; }
+function makeCareerCtx(idx){ const c=CAREER[idx]; return { mode:'career', stageIndex:idx, diff:c.diff, games:c.games,
+  oppName:OPP_NAMES[(idx*2+1)%OPP_NAMES.length], oppColor:[0x2a6df0,0xd23b2e,0x8a4bff,0x2fbf6a,0xff7ad9,0xffd54a][idx%6], tourName:c.name, roundLabel:c.name }; }
+function makeQuickCtx(){ const d=0.35+Math.random()*0.25; return { mode:'quick', diff:d, games:2, oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], oppColor:[0xd23b2e,0x2fbf6a,0x8a4bff,0xff7ad9][(Math.random()*4)|0], tourName:'Quick Match', roundLabel:'Exhibition' }; }
+
+/* ---------- career screen ---------- */
+function openCareer(){ show('career'); const list=$('stageList'); list.innerHTML='';
+  CAREER.forEach((c,i)=>{ const unlocked=i<=S.careerStage; const done=i<S.careerStage; const d=document.createElement('div'); d.className='stage'+(unlocked?'':' locked');
+    d.innerHTML=`<div class="ic">${c.ic}</div><div class="info"><b>${c.name}</b><small>Reward: 🪙${c.coins} • ⭐${c.xp} • First to 5 points</small></div>`;
+    const btn=document.createElement(unlocked?'button':'span'); if(unlocked){ btn.className='go'; btn.textContent=done?'Replay':'Play'; btn.onclick=()=>toCards(makeCareerCtx(i)); } else { btn.textContent='🔒'; }
+    if(done){ const dn=document.createElement('span'); dn.className='done'; dn.textContent='✓'; d.appendChild(dn); }
+    d.appendChild(btn); list.appendChild(d); }); }
+
+/* ---------- shop ---------- */
+let shopTab='rackets';
+function openShop(){ $('shopModal').classList.remove('hidden'); renderTabs(); renderShop(); }
+function renderTabs(){ const t=$('shopTabs'); t.innerHTML=''; SHOP_TABS.forEach(([k,l])=>{ const b=document.createElement('div'); b.className='tab'+(k===shopTab?' on':''); b.textContent=l; b.onclick=()=>{shopTab=k; renderTabs(); renderShop();}; t.appendChild(b); }); }
+function renderShop(){ const g=$('shopGrid'); g.innerHTML=''; SHOP[shopTab].forEach(it=>{ const owned=S.owned.includes(it.id), eq=S.equip[shopTab]===it.id; const col='#'+it.col.toString(16).padStart(6,'0');
+  const d=document.createElement('div'); d.className='it'; let btn; if(eq) btn='<button class="b-on">Equipped</button>'; else if(owned) btn='<button class="b-eq">Equip</button>'; else { const can=S.coins>=it.price; btn=`<button class="${can?'b-buy':'b-no'}">${it.price===0?'Free':('🪙 '+it.price)}</button>`; }
+  d.innerHTML=`<div class="sw" style="background:linear-gradient(135deg,${col},#0a1830)"></div><b>${it.name}</b>${btn}`;
+  d.querySelector('button').onclick=()=>{ if(eq) return; if(owned){ S.equip[shopTab]=it.id; save(); renderShop(); } else { const r=shopBuy(it.id); if(r==='ok'){ S.equip[shopTab]=it.id; save(); renderShop(); $('coins').textContent=S.coins; } else if(r==='poor') feedShop(); } };
+  g.appendChild(d); }); $('coins').textContent=S.coins; }
+function feedShop(){ alert('Not enough coins!'); }
+
+/* ---------- menu wiring ---------- */
+function refreshMenu(){ $('nameIn').value=S.name||''; $('numIn').value=S.jerseyNum||''; }
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('nameIn').value.trim()||'You'); S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||'10')).slice(0,2); save();
+  const m=b.dataset.mode; if(m==='quick') toCards(makeQuickCtx()); else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
+document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
+$('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden');
+$('swMusic').onclick=function(){ S.music=!S.music; this.classList.toggle('on',S.music); if(musicGain) musicGain.gain.value=S.music?0.1:0; save(); };
+$('swSfx').onclick=function(){ S.sfx=!S.sfx; this.classList.toggle('on',S.sfx); save(); };
+$('resetBtn').onclick=()=>{ if(confirm('Reset all progress?')){ localStorage.removeItem(SK); location.reload(); } };
+refreshMenu();
+['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
+
+/* ============================================================ LOOP ============================================================ */
+let last=performance.now(), shake=0;
+function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-last)/1000); last=now; const t=now/1000;
+  updateParts(dt);
+  if(M.active){
+    // player move
+    let mv=0; if(keys['ArrowLeft']) mv-=1; if(keys['ArrowRight']) mv+=1; if(stickX) mv=stickX;
+    px+=mv*9*dt; px=Math.max(-HW+0.3,Math.min(HW-0.3,px)); player.position.x=px;
+    player.position.z=PZ; opp.position.x=oppx;
+    updateAI(dt); stepBall(dt);
+    animatePlayer(player, Math.abs(mv)>0.1, t, dt); animatePlayer(opp, Math.abs(ovx)>0.1, t+1, dt);
+    // ball + shadow
+    ballShadow.position.set(ball.position.x,0.02,ball.position.z); const sc=Math.max(0.3,1-ball.position.y*0.08); ballShadow.scale.set(sc,sc,sc);
+    updateTiming();
+    if(M.smashCD>0) M.smashCD-=dt; updateSmashUI();
+    $('hintbar').textContent = M.state==='serve' ? 'Serving…' : (M.lastHitter==='b' ? '◀ ▶ line up • Space = shot • X = smash' : '');
+    if(cheerT>0){ cheerT-=dt; bobCrowd(t); }
+  }
+  // camera: behind player, whole court visible
+  const camX=(M.active?px:0)*0.25;
+  camera.position.set(camX, 9.5, PZ+8.5); camera.lookAt(camX*0.4,1.2,-2);
+  if(shake>0){ camera.position.x+=(Math.random()-.5)*shake; camera.position.y+=(Math.random()-.5)*shake; shake=Math.max(0,shake-dt*1.5); }
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(tick);
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
+} // end !TESTMODE
+</script>
+</body>
+</html>
