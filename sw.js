@@ -17,6 +17,8 @@ const ASSETS = [
   './f1/index.html',
   './football/',
   './football/index.html',
+  './football/2d.html',
+  './football/3d.html',
   './pptour/',
   './pptour/index.html',
   './try/',
