@@ -423,5 +423,7 @@ function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,
 let last=0; function loop(t){ const dt=Math.min(.05,(t-last)/1000||0); last=t; update(dt); render(); requestAnimationFrame(loop); }
 showHome(); requestAnimationFrame(loop);
 </script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
 </body>
 </html>
