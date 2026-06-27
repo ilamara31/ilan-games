@@ -10,16 +10,19 @@
 
   var CLARITY_PROJECT_ID = 'xde3a1kje3'; // Microsoft Clarity project id
 
-  // Known game folders. Used to detect which game a page belongs to and to
-  // target announcements at players of specific games.
-  var GAMES = ['cricket', 'catch', 'f1', 'football', 'try', 'obby',
-               'puzzles', 'anime-tycoon', 'cricket-test', 'catch-test'];
-
-  // ---- which game is this page? -------------------------------------------
+  // ---- home vs game detection (no allow-list, so new games just work) ------
+  // The arcade home page carries <body data-arcade-home> and renders the game
+  // cards (a.card). Anything else is treated as a game, identified by its
+  // folder name — so a brand-new game folder is picked up automatically.
+  function isHome() {
+    if (document.body && document.body.hasAttribute('data-arcade-home')) return true;
+    if (document.querySelector('a.card')) return true;
+    return false;
+  }
   function detectGame() {
+    if (isHome()) return 'home';
     var segs = location.pathname.replace(/\/index\.html$/i, '').split('/').filter(Boolean);
-    var last = segs[segs.length - 1] || '';
-    return GAMES.indexOf(last) !== -1 ? last : 'home';
+    return segs.length ? segs[segs.length - 1] : 'home';
   }
   var GAME_ID = detectGame();
 
@@ -48,7 +51,6 @@
   // ---- expose shared state for announce.js & game code ---------------------
   window.IG = {
     gameId: GAME_ID,
-    games: GAMES,
     player: activePlayer(),
     played: (function () { try { return JSON.parse(localStorage.getItem('ig_played') || '[]'); } catch (e) { return []; } })()
   };
@@ -95,4 +97,32 @@
     // funnel: a game page actually opened
     window.track('game_open', { game: GAME_ID });
   }
+
+  // ---- safety net: guarantee a way back to the arcade ----------------------
+  // Every game page should let players return home. If a game already has its
+  // own home/exit (an #homeBtn, a link to "../", or an onclick that navigates
+  // to "../"), we leave it alone. Otherwise we inject a floating 🏠 button.
+  // This means any NEW game gets a Home button automatically — no extra work.
+  function hasArcadeExit() {
+    if (document.getElementById('homeBtn')) return true;
+    var roots = ['../', '../index.html', '../#', '..'];
+    var as = document.querySelectorAll('a[href]');
+    for (var i = 0; i < as.length; i++) { if (roots.indexOf(as[i].getAttribute('href')) !== -1) return true; }
+    var cl = document.querySelectorAll('[onclick]');
+    for (var j = 0; j < cl.length; j++) { if (/location[\s\S]*=\s*['"]\.\.\//.test(cl[j].getAttribute('onclick') || '')) return true; }
+    return false;
+  }
+  function ensureArcadeExit() {
+    if (GAME_ID === 'home' || hasArcadeExit()) return;
+    var a = document.createElement('a');
+    a.id = 'homeBtn'; a.href = '../'; a.title = 'All games'; a.textContent = '🏠';
+    a.style.cssText = 'position:fixed;top:12px;left:12px;z-index:100000;width:44px;height:44px;border-radius:12px;'
+      + 'display:flex;align-items:center;justify-content:center;background:rgba(8,16,30,.72);'
+      + 'border:2px solid rgba(255,255,255,.2);font-size:22px;line-height:1;text-decoration:none;color:#fff;'
+      + '-webkit-tap-highlight-color:transparent;';
+    document.body.appendChild(a);
+  }
+  // run after the page's own UI has had a chance to render its own exit button
+  if (document.readyState === 'complete') ensureArcadeExit();
+  else addEventListener('load', ensureArcadeExit);
 })();

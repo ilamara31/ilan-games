@@ -17,8 +17,28 @@ Open `index.html` in any web browser. No installation needed — they're plain H
 ## Live website
 Published with GitHub Pages: **https://ilamara31.github.io/ilan-games/**
 
+## Adding a new game
+Put the game in its own folder (e.g. `tennis/index.html`) and add these two
+lines just before `</body>`:
+
+```html
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+```
+
+That single include gives the new game, for free:
+- a **🏠 Home button** (auto-injected only if the game doesn't already have its
+  own home/exit — a `#homeBtn`, a link to `../`, or an onclick going to `../`),
+- analytics (Clarity recordings + `game_open` events), and
+- in-app announcements.
+
+Then add a card for it on the home page (`index.html`) and, if you want it to
+work offline, list its files in `sw.js` and bump the cache version.
+
 ## Analytics & player messages (Phase 1)
 Two shared scripts load on every page: `analytics.js` and `announce.js`.
+The home page is marked with `<body data-arcade-home>`; every other page is
+treated as a game automatically (no hard-coded game list to maintain).
 
 **See who plays what (Microsoft Clarity):**
 1. Create a free project at https://clarity.microsoft.com
