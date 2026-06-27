@@ -88,6 +88,11 @@
   #jumpBtn{ position:absolute; right:18px; bottom:96px; width:78px; height:78px; border-radius:50%; pointer-events:auto;
     border:2px solid rgba(255,255,255,.25); background:rgba(126,224,255,.22); color:#fff; font-size:14px; font-weight:bold;
     display:none; align-items:center; justify-content:center; }
+  #sprintBtn{ position:absolute; right:104px; bottom:100px; width:70px; height:70px; border-radius:50%; pointer-events:auto;
+    border:2px solid rgba(255,255,255,.25); background:rgba(255,176,58,.22); color:#fff; font-size:12px; font-weight:bold;
+    display:none; align-items:center; justify-content:center; text-align:center; user-select:none; -webkit-user-select:none; touch-action:none; }
+  #sprintBtn.active{ background:rgba(255,176,58,.6); transform:scale(.94); }
+  #sprintBtn.off{ opacity:.35; }
   /* joystick */
   #stick{ position:absolute; left:18px; bottom:18px; width:130px; height:130px; border-radius:50%; pointer-events:auto;
     background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.14); display:none; }
@@ -132,7 +137,7 @@
   <input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="off">
   <div class="pathgrid" id="pathGrid"></div>
   <button id="playBtn">▶ PLAY</button>
-  <div class="startfoot">Move: WASD / Arrow keys • Jump: Space • Powers: 1–6 • Shift-Lock: press <b>Shift</b> (toggle) • drag mouse to look. On phone use the joystick &amp; drag to look. Tap a 🟢 green pad to buy. Build a 2-storey mansion! Single-player tycoon with AI rivals (no live server).</div>
+  <div class="startfoot">Move: WASD / Arrow keys • Jump: Space • Sprint: hold <b>R</b> (or the SPRINT button) • Powers: 1–6 • Shift-Lock: press <b>Shift</b> (toggle) • drag mouse to look. On phone use the joystick &amp; drag to look. Tap a 🟢 green pad to buy. Build a 2-storey mansion! Single-player tycoon with AI rivals (no live server).</div>
 </div>
 
 <!-- HUD -->
@@ -171,6 +176,7 @@
     <div class="rbtn" id="lockBtn">🔓</div>
   </div>
   <div id="jumpBtn">JUMP</div>
+  <div id="sprintBtn">SPRINT</div>
   <div id="stick"><div class="nub" id="nub"></div></div>
 </div>
 
@@ -893,6 +899,18 @@ cvs.addEventListener('touchend',touchEnd); cvs.addEventListener('touchcancel',to
 
 document.getElementById('jumpBtn').addEventListener('touchstart',e=>{e.preventDefault(); jump();},{passive:false});
 document.getElementById('jumpBtn').addEventListener('click',jump);
+// hold-to-sprint button (run while held; releases instantly on let-go)
+let sprintHeld=false;
+const sprintBtnEl=document.getElementById('sprintBtn');
+(function(){ const sb=sprintBtnEl;
+  const on=e=>{ if(e&&e.cancelable) e.preventDefault(); sprintHeld=true; sb.classList.add('active'); };
+  const off=()=>{ sprintHeld=false; sb.classList.remove('active'); };
+  sb.addEventListener('pointerdown',on);
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>sb.addEventListener(ev,off));
+  sb.addEventListener('touchstart',on,{passive:false});
+  ['touchend','touchcancel'].forEach(ev=>sb.addEventListener(ev,off,{passive:false}));
+  addEventListener('blur',off); // safety: never get stuck sprinting
+})();
 function jump(){ if(P.onGround){ P.vy=9; P.onGround=false; } }
 
 /* ============================================================ AUDIO ============================================================ */
@@ -968,7 +986,7 @@ $('playBtn').onclick=()=>{ const nm=$('nameIn').value.trim()||'Player';
   dressInto(player,{path:S.path}); buildHeroStatue();
   plotEdge.material.color.setHex(PATHS[S.path].accent); plotEdge.material.emissive.setHex(PATHS[S.path].accent);
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
-  if('ontouchstart' in window){ $('stick').style.display='block'; $('jumpBtn').style.display='flex'; }
+  if('ontouchstart' in window){ $('stick').style.display='block'; $('jumpBtn').style.display='flex'; $('sprintBtn').style.display='flex'; }
   rebuildBase(); buildPads(); refreshPowers(); applyCosmetics();
   shiftLock=false; if(S.lock) toggleLock();
   initAudio(); syncHUD(); toast('🏗️ Tap the green pads to build your mansion! 💰 Money auto-collects.','#ffd54a'); };
@@ -989,10 +1007,15 @@ function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-las
   if(keys['KeyD']||keys['ArrowRight']) right+=1; if(keys['KeyA']||keys['ArrowLeft']) right-=1;
   if(stickActive){ fwd=-stickVec.y; right=stickVec.x; }
   let speed=0; const buffSpd=P.buff?P.buff.spd:1;
+  // sprint: hold the SPRINT button (or R key) to run; never in the Battle Arena
+  const sprintBlocked = inArena(player.position);
+  const sprinting = !sprintBlocked && (sprintHeld || keys['KeyR']);
+  const sprintMul = sprinting ? 1.85 : 1;
+  sprintBtnEl.classList.toggle('off', sprintBlocked);
   if(fwd||right){ let len=Math.hypot(fwd,right); if(len>1){ fwd/=len; right/=len; }
     const sn=Math.sin(camYaw), cs=Math.cos(camYaw);
     const wx=sn*fwd - cs*right, wz=cs*fwd + sn*right; // F=(sin,cos), R=(-cos,sin) (camera right = world -x)
-    const sp=9*buffSpd; player.position.x+=wx*sp*dt; player.position.z+=wz*sp*dt; speed=1;
+    const sp=9*buffSpd*sprintMul; player.position.x+=wx*sp*dt; player.position.z+=wz*sp*dt; speed=sprinting?1.6:1;
     P.yaw=shiftLock?camYaw:Math.atan2(wx,wz); player.rotation.y=lerpAngle(player.rotation.y,P.yaw,0.28);
   } else if(shiftLock){ P.yaw=camYaw; player.rotation.y=lerpAngle(player.rotation.y,camYaw,0.25); }
   if(keys['Space']) jump();

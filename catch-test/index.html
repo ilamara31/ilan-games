@@ -379,8 +379,9 @@ function endShower(){ shower=false; hideBanner(); clearing=true; }
 function startBombShower(now){ bombShower=true; bombShowerEnd=now+BOMB_SHOWER_MS; nextBomb+=100; Sound.bombSfx(); showBanner('💣 BOMB SHOWER! 💣<br>Move away or tap 🛡️ for <span id="bt"></span>s!','bomb'); }
 function endBombShower(){ bombShower=false; hideBanner(); clearing=true; nextShower=Math.max(nextShower, score+25); }
 
-/* bombs fall at a constant, gentle, escapable speed (no level scaling) */
-function bombFall(){ return 2.4; }
+/* bomb-shower bombs fall at the SAME speed as the fruit at the current level —
+   so they keep pace as the game speeds up, but never fall faster than the fruit. */
+function bombFall(){ return baseSpeed; }
 
 /* ---------- shield (bomb escape #2) ---------- */
 function tryShield(){
