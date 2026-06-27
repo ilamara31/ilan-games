@@ -145,7 +145,7 @@
   <div id="overlay" class="screen">
     <h1>🧺 Basket Catch</h1>
     <p>Drag (or <b>← →</b>) to move the basket. Catch falling fruit — it drops <i>into</i> the basket!<br>
-       Miss a fruit, lose a life. A 💣 is game over — but you can <b>dodge</b> the telegraphed bombs or tap <b>🛡️ Shield</b>.</p>
+       Miss a fruit, lose a life. A 💣 is game over — move away from bombs or tap <b>🛡️ Shield</b>.</p>
     <p class="small">Your score becomes <b>coins</b> 🪙 — spend them on better baskets in the shop.</p>
     <div class="coinbig">🪙 <span id="ovCoins">0</span> coins</div>
     <p class="small" id="ovBest"></p>
@@ -160,7 +160,7 @@
   <div id="shop" class="screen hidden">
     <h1>🧺 Basket Shop</h1>
     <div class="coinbig">🪙 <span id="shopCoins">0</span> coins</div>
-    <p class="small">Better baskets have hidden perks — buy &amp; try to find the best one for you!</p>
+    <p class="small">Better baskets move faster (+ handy perks) — never wider, so you can always dodge!</p>
     <div id="shopList"></div>
     <button class="pill sm" id="shopBack" style="margin-top:6px">← Back</button>
   </div>
@@ -185,15 +185,15 @@ function resize() {
 window.addEventListener('resize', resize);
 
 /* ---------- baskets catalog ---------- */
-/* width = catch mouth; depth = how deep (more forgiving + nothing bounces);
-   speed = how fast it slides. "Perks" are intentionally hidden until owned. */
+/* Better baskets are FASTER to move (and add perks) — NOT wider. A wide basket
+   is a disadvantage on a small phone (harder to dodge bombs), so every basket
+   keeps a similar, modest width and the upgrade is move-speed + perks. */
 const BASKETS = [
-  {id:'starter', name:'Classic Basket', ico:'🧺', price:0,    w:96,  depth:56, speed:9,  color:'#a9651f', rim:'#c98235', tease:'The trusty original.'},
-  {id:'wide',    name:'Wide Tray',      ico:'🥡', price:300,  w:142, depth:42, speed:8,  color:'#d98c2b', rim:'#f0a948', tease:'Huge mouth — but shallow.'},
-  {id:'speed',   name:'Speed Scoop',    ico:'🥄', price:700,  w:82,  depth:54, speed:14, color:'#6fa8dc', rim:'#9cc6f5', tease:'Small, but lightning fast.'},
-  {id:'deep',    name:'Deep Bucket',    ico:'🪣', price:1200, w:106, depth:80, speed:9,  color:'#5b8c5a', rim:'#7fb37e', tease:'So deep, nothing escapes it.'},
-  {id:'golden',  name:'Golden Basket',  ico:'🏆', price:2600, w:126, depth:64, speed:12, color:'#e0a000', rim:'#ffd84d', tease:'Wide, deep, fast… and lucky.', perk:'coin', perkV:1.2, perkTxt:'+20% coins'},
-  {id:'magnet',  name:'Magnet Basket',  ico:'🧲', price:4200, w:100, depth:60, speed:11, color:'#b13a3a', rim:'#e06a6a', tease:'Pulls fruit gently toward you.', perk:'magnet', perkTxt:'Fruit magnet'},
+  {id:'starter', name:'Classic Basket', ico:'🧺', price:0,    w:94, depth:50, speed:9,  color:'#a9651f', rim:'#c98235', tease:'The trusty original.'},
+  {id:'quick',   name:'Quick Catch',    ico:'🥄', price:300,  w:90, depth:50, speed:13, color:'#6fa8dc', rim:'#9cc6f5', tease:'Lighter & quicker — dodge bombs more easily.'},
+  {id:'magnet',  name:'Magnet Basket',  ico:'🧲', price:800,  w:94, depth:50, speed:11, color:'#b13a3a', rim:'#e06a6a', tease:'Gently pulls fruit toward you.', perk:'magnet', perkTxt:'🧲 Fruit magnet'},
+  {id:'lucky',   name:'Lucky Basket',   ico:'🍀', price:1500, w:94, depth:50, speed:12, color:'#3a9d5d', rim:'#62c585', tease:'Earns extra coins every game.', perk:'coin', perkV:1.25, perkTxt:'💰 +25% coins'},
+  {id:'pro',     name:'Pro Scoop',      ico:'🥇', price:2800, w:92, depth:50, speed:17, color:'#e0a000', rim:'#ffd84d', tease:'Pro move speed — catch & dodge like a champ.'},
 ];
 function getBasket(id){ return BASKETS.find(b=>b.id===id) || BASKETS[0]; }
 
@@ -335,7 +335,7 @@ let shower, showerEnd, nextShower, showerStep, clearing;
 let bombShower, bombShowerEnd, nextBomb;
 let nextGolden, nextLife;
 let shieldUntil, shieldReadyAt;
-let grav, fallCap;
+let baseSpeed;          // constant fall speed (px per 60fps-frame)
 let lastT = 0;          // for frame-rate-independent physics (same speed on 60Hz & 120Hz)
 
 function newBasket(){
@@ -347,8 +347,8 @@ function reset(){
   basket = newBasket();
   items = []; caught = []; particles = []; floats = [];
   score = 0; lives = 3; level = 1;
-  grav = 0.05; fallCap = 3.0;            // gentle gravity fall (px per 60fps-frame)
-  spawnGap = 1050; lastSpawn = 0; lastT = 0;
+  baseSpeed = 2.0;                       // constant, gentle fall speed (px per 60fps-frame)
+  spawnGap = 1150; lastSpawn = 0; lastT = 0;
   leftHeld = rightHeld = false; dragX = null;
   shower = false; showerEnd = 0; showerStep = 25; nextShower = 25; clearing = false;
   bombShower = false; bombShowerEnd = 0; nextBomb = 100;
@@ -358,10 +358,9 @@ function reset(){
 }
 
 function levelUp(){
-  // difficulty ramps gently with level (terminal speed stays reasonable)
-  grav    = 0.05 + level * 0.005;
-  fallCap = 3.0  + level * 0.30;
-  spawnGap = Math.max(460, 1050 - level * 40);
+  // gentle difficulty ramp — fruit stays slow and catchable
+  baseSpeed = Math.min(3.4, 2.0 + level * 0.11);
+  spawnGap  = Math.max(640, 1150 - level * 34);
 }
 
 /* ---------- spawning ---------- */
@@ -373,22 +372,20 @@ function spawnFruit(opts={}){
   const x = opts.x !== undefined ? opts.x : size + Math.random()*(W - size*2);
   items.push({
     x, y:-size, size, bomb:isBomb, golden, life, emoji,
-    vy: opts.vy !== undefined ? opts.vy : (0.35 + Math.random()*0.4),  // gentle start; gravity adds a little
-    vx: opts.vx !== undefined ? opts.vx : (Math.random()*0.5 - 0.25),  // gentle sway
-    warn: !!opts.warn,
+    vy: opts.vy !== undefined ? opts.vy : baseSpeed * (0.92 + Math.random()*0.16),  // constant fall, straight down
   });
 }
-function spawnGolden(){ nextGolden *= 2; spawnFruit({golden:true, vy:1.0}); Sound.goldenSfx(); }
-function spawnLife(){ nextLife += 150; spawnFruit({life:true, vy:0.8}); }
+function spawnGolden(){ nextGolden *= 2; spawnFruit({golden:true, vy:baseSpeed*1.2}); Sound.goldenSfx(); }
+function spawnLife(){ nextLife += 150; spawnFruit({life:true, vy:baseSpeed*1.0}); }
 
 /* ---------- showers ---------- */
 function startShower(now){ shower=true; showerEnd=now+SHOWER_MS; showerStep+=25; nextShower+=showerStep; Sound.showerSfx(); showBanner('🌧️ FRUIT SHOWER! 🍎<br><span id="bt"></span>s — no bombs!','fruit'); }
 function endShower(){ shower=false; hideBanner(); clearing=true; }
-function startBombShower(now){ bombShower=true; bombShowerEnd=now+BOMB_SHOWER_MS; nextBomb+=100; Sound.bombSfx(); showBanner('💣 BOMB SHOWER! 💣<br>Dodge or 🛡️ for <span id="bt"></span>s!','bomb'); }
+function startBombShower(now){ bombShower=true; bombShowerEnd=now+BOMB_SHOWER_MS; nextBomb+=100; Sound.bombSfx(); showBanner('💣 BOMB SHOWER! 💣<br>Move away or tap 🛡️ for <span id="bt"></span>s!','bomb'); }
 function endBombShower(){ bombShower=false; hideBanner(); clearing=true; nextShower=Math.max(nextShower, score+25); }
 
-/* bomb fall speed scales with level (issue: was always the same speed) */
-function bombFall(){ return 2.2 + level * 0.28; }
+/* bombs fall at a constant, gentle, escapable speed (no level scaling) */
+function bombFall(){ return 2.4; }
 
 /* ---------- shield (bomb escape #2) ---------- */
 function tryShield(){
@@ -440,9 +437,6 @@ function loop(now){
     basket.x += Math.max(-basket.speed*2.4, Math.min(basket.speed*2.4, dx*0.4)) * step;
   }
   basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
-  // basket "gulp" squash easing back to normal
-  basket.sx += (1 - basket.sx) * Math.min(1, 0.18*step);
-  basket.sy += (1 - basket.sy) * Math.min(1, 0.18*step);
 
   // shower timers
   if (shower){ if (now>showerEnd) endShower(); else if (bannerTimeEl) bannerTimeEl.textContent = Math.ceil((showerEnd-now)/1000); }
@@ -452,10 +446,9 @@ function loop(now){
   if (clearing){
     if (items.length === 0){ clearing=false; lastSpawn=now; }
   } else if (bombShower){
-    // bombs spaced so a lane is always open; one catchable fruit too
-    const gap = Math.max(360, 620 - level*18);
-    if (now-lastSpawn > gap){ spawnBombSafe(); lastSpawn=now; }
-    if (!items.some(it=>!it.bomb)) spawnFruit({bomb:false, vy:1.4});
+    // bombs spaced out, always leaving an open lane to move to; plus one fruit
+    if (now-lastSpawn > 560){ spawnBombSafe(); lastSpawn=now; }
+    if (!items.some(it=>!it.bomb)) spawnFruit({bomb:false, vy:baseSpeed});
   } else if (shower){
     if (now-lastSpawn > 150){ spawnFruit({bomb:false}); lastSpawn=now; }
   } else {
@@ -466,33 +459,26 @@ function loop(now){
 
   ctx.clearRect(0,0,W,H);
 
-  const rimY = basket.y - basket.depth/2;     // catch line = top of basket mouth
-  const inset = Math.max(4, 12 - basket.depth/12);   // deeper basket = more forgiving mouth
+  const rimY = basket.y - basket.depth/2;     // top of the basket mouth
   const sActive = shieldActive(now);
 
   // update + draw falling items
   for (let i=items.length-1; i>=0; i--){
     const it = items[i];
-    const prevY = it.y;
-    // physics: gravity accelerates the fall a little (frame-rate independent)
-    const cap = it.fixedVy ? it.fixedVy : fallCap;
-    it.vy = Math.min(cap, it.vy + grav*step);
+    // constant fall, straight down (frame-rate independent)
     it.y += it.vy * step;
-    it.x += it.vx * step;
-    if (it.x < it.size/2 || it.x > W-it.size/2) it.vx *= -1;   // bounce off walls gently
 
-    // magnet basket: pull good fruit toward the basket
+    // magnet basket: gently pull good fruit toward the basket
     if (basket.def.perk==='magnet' && !it.bomb){
       const d = basket.x - it.x;
       if (Math.abs(d) < 110) it.x += Math.sign(d)*Math.min(1.4, Math.abs(d)*0.04)*step;
     }
 
-    // catch test — fruit must cross the rim line while inside the mouth, moving down
-    const inX = it.x > basket.x - basket.w/2 + inset && it.x < basket.x + basket.w/2 - inset;
-    const crossed = prevY + it.size/2 <= rimY + 6 && it.y + it.size/2 >= rimY && it.vy > 0;
-    const insideMouth = it.y + it.size/2 >= rimY && it.y - it.size/2 < basket.y + basket.depth/2;
+    // simple catch: fruit overlaps the basket mouth
+    const inX = it.x > basket.x - basket.w/2 && it.x < basket.x + basket.w/2;
+    const inY = it.y + it.size/2 > rimY && it.y - it.size/2 < basket.y + basket.depth/2;
 
-    if (inX && (crossed || insideMouth)){
+    if (inX && inY){
       if (it.bomb){
         if (sActive){ items.splice(i,1); Sound.clinkSfx(); burst(it.x, rimY, '#9fd0ff', 10); floatText(it.x, rimY-10, 'blocked!', '#2b7fd0'); continue; }
         Sound.bombSfx(); burst(it.x, it.y, '#ff7043', 26); gameOver(true); return;
@@ -510,23 +496,9 @@ function loop(now){
       continue;
     }
 
-    // bomb danger telegraph during bomb shower (escape #1: read & dodge)
-    if (it.bomb && (bombShower || it.warn)){
-      const prog = Math.max(0, Math.min(1, (it.y) / rimY));
-      ctx.save();
-      ctx.globalAlpha = 0.18 + 0.32*prog;
-      ctx.fillStyle = '#d11';
-      ctx.beginPath(); ctx.ellipse(it.x, rimY+2, basket.w*0.42*(0.5+0.5*prog), 7, 0, 0, 6.28); ctx.fill();
-      ctx.globalAlpha = 0.5 + 0.5*prog;
-      ctx.font = '16px serif'; ctx.textAlign='center';
-      ctx.fillText('⚠️', it.x, it.y - it.size*0.8);
-      ctx.restore();
-    }
-
     drawItem(it, now);
   }
 
-  drawCaught(step);     // fruit piled inside the basket (realism)
   drawBasket(now, sActive);
   drawParticles(step);
   drawFloats(step);
@@ -535,25 +507,17 @@ function loop(now){
 }
 
 function spawnBombSafe(){
-  // leave at least one clear lane the player can run to
+  // leave at least one clear lane the player can move to
   const lanes = 4, lane = (Math.random()*lanes)|0;
   const laneW = W/lanes;
   const x = laneW*lane + laneW*0.5;
-  spawnFruit({bomb:true, x, vy:bombFall(), fixedVy:bombFall()});
+  spawnFruit({bomb:true, x, vy:bombFall()});
 }
 
 function catchItem(it, rimY){
   if (it.life){ lives = Math.min(5, lives+1); Sound.goldenSfx(); floatText(it.x, rimY, '+1 LIFE', '#ff5a78'); }
   else if (it.golden){ score += 40; Sound.goldenSfx(); floatText(it.x, rimY, '+40', '#ffd34d'); }
   else { score += 1; Sound.catchSfx(); }
-  // the caught fruit drops INTO the basket from where it was and settles to the bottom,
-  // joining a small pile that rides along with the basket (reads like a real catch).
-  if (!it.life){
-    const startY = (it.y - (basket.y - basket.depth/2));   // how far below the rim it already is
-    caught.push({ emoji: it.golden?'🍎':it.emoji, ox:(it.x - basket.x), y:Math.max(0,startY), vy:Math.max(it.vy,1.2), size:it.size*0.82, rest:false });
-    if (caught.length > 7) caught.shift();
-  }
-  basket.sx = 1.12; basket.sy = 0.82;     // little "gulp" squash
   burst(it.x, rimY, '#9be15d', 6);
 
   if (!shower && !bombShower && !clearing){
@@ -602,34 +566,10 @@ function drawGolden(it, now){
   ctx.fillStyle='#8a5a00'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+40', it.x, it.y+r*1.0);
 }
 
-function drawCaught(step){
-  // fruits drop into the basket, settle on the bottom and ride along inside it.
-  const rim = basket.y - basket.depth/2;
-  const floor = basket.depth * 0.74;                 // resting depth (measured from rim)
-  // clip to the basket interior so fruit is only seen *inside* the basket
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(basket.x - basket.w/2 + 4, rim, basket.w - 8, basket.depth + 6);
-  ctx.clip();
-  for (const c of caught){
-    if (!c.rest){
-      c.vy += 0.6 * step; c.y += c.vy * step;
-      if (c.y >= floor){ c.y = floor; c.vy *= -0.32; if (Math.abs(c.vy) < 0.8){ c.rest = true; c.y = floor; } }
-    }
-    const maxOx = Math.max(0, basket.w/2 - c.size*0.6);
-    const ox = Math.max(-maxOx, Math.min(maxOx, c.ox));
-    ctx.font = c.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(c.emoji, basket.x + ox, rim + c.y);
-  }
-  ctx.restore();
-}
-
 function drawBasket(now, sActive){
   const x=basket.x, y=basket.y, w=basket.w, h=basket.depth, d=basket.def;
   const left=x-w/2, top=y-h/2;
   ctx.save();
-  // "gulp" squash, anchored at the basket base
-  ctx.translate(x, y+h/2); ctx.scale(basket.sx, basket.sy); ctx.translate(-x, -(y+h/2));
   // body (tapered)
   ctx.fillStyle=d.color; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left+w,top); ctx.lineTo(left+w-14,top+h); ctx.lineTo(left+14,top+h); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -738,16 +678,15 @@ function renderShop(){
   BASKETS.forEach(b => {
     const owned = data.owned.includes(b.id);
     const selected = data.sel === b.id;
-    const wBar = '▮'.repeat(Math.round(b.w/30));
-    const sBar = '▮'.repeat(Math.round(b.speed/3));
+    const sBar = '▮'.repeat(Math.max(1, Math.round((b.speed-7)/2)));
     const card = document.createElement('div');
     card.className = 'bcard' + (selected?' sel':'');
     card.innerHTML = `
       <div class="ico">${b.ico}</div>
       <div class="info">
         <b>${b.name}</b> ${selected?'<span style="color:#ffd34d">• equipped</span>':''}
-        <div class="d">${b.tease}${owned && b.perk ? ' <b style="color:#9be15d">('+b.perkTxt+')</b>' : (b.perk?' <span style="opacity:.7">• hidden perk 🔒</span>':'')}</div>
-        <div class="bars">Mouth ${wBar} &nbsp; Speed ${sBar}</div>
+        <div class="d">${b.tease}${b.perk ? ' <b style="color:#9be15d">('+b.perkTxt+')</b>' : ''}</div>
+        <div class="bars">Move speed ${sBar}</div>
       </div>
       <div class="act">
         ${owned
