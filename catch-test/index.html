@@ -347,8 +347,8 @@ function reset(){
   basket = newBasket();
   items = []; caught = []; particles = []; floats = [];
   score = 0; lives = 3; level = 1;
-  baseSpeed = 2.0;                       // constant, gentle fall speed (px per 60fps-frame)
-  spawnGap = 1150; lastSpawn = 0; lastT = 0;
+  baseSpeed = 1.7;                       // starts slow; speeds up a little with every catch
+  spawnGap = 1200; lastSpawn = 0; lastT = 0;
   leftHeld = rightHeld = false; dragX = null;
   shower = false; showerEnd = 0; showerStep = 25; nextShower = 25; clearing = false;
   bombShower = false; bombShowerEnd = 0; nextBomb = 100;
@@ -357,11 +357,6 @@ function reset(){
   updateHud();
 }
 
-function levelUp(){
-  // gentle difficulty ramp — fruit stays slow and catchable
-  baseSpeed = Math.min(3.4, 2.0 + level * 0.11);
-  spawnGap  = Math.max(640, 1150 - level * 34);
-}
 
 /* ---------- spawning ---------- */
 function spawnFruit(opts={}){
@@ -520,10 +515,12 @@ function catchItem(it, rimY){
   else { score += 1; Sound.catchSfx(); }
   burst(it.x, rimY, '#9be15d', 6);
 
+  // slow -> fast: every catch nudges the fall speed up a touch and tightens spawns
   if (!shower && !bombShower && !clearing){
-    const newLevel = Math.floor(score/8)+1;
-    if (newLevel !== level){ level = newLevel; levelUp(); }
+    baseSpeed = Math.min(6, baseSpeed * 1.012);
+    spawnGap  = Math.max(480, spawnGap * 0.992);
   }
+  level = Math.floor(score/8) + 1;       // for the HUD
   if (score >= nextGolden) spawnGolden();
   if (score >= nextLife)   spawnLife();
   if (!shower && !bombShower && !clearing){

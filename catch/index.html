@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Basket Catch</title>
 <link rel="manifest" href="../manifest.webmanifest" />
 <meta name="theme-color" content="#0a0e1a" />
@@ -13,729 +13,735 @@
 <link rel="apple-touch-icon" href="../icon-180.png" />
 <link rel="icon" href="../icon-192.png" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
   html, body {
-    height: 100%;
-    background: linear-gradient(#87ceeb, #c9f0ff 60%, #a8e6a3);
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
+    height:100%; width:100%;
+    background:linear-gradient(#87ceeb, #c9f0ff 60%, #a8e6a3);
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    overflow:hidden; overscroll-behavior:none;
   }
-  #wrap {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  canvas {
-    background: transparent;
-    display: block;
-    touch-action: none;
-  }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  canvas { background:transparent; display:block; touch-action:none; }
+
+  /* ---- HUD ---- */
   #hud {
-    position: absolute;
-    top: 14px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 22px;
-    font-size: 22px;
-    font-weight: 700;
-    color: #1b3a4b;
-    text-shadow: 0 1px 0 rgba(255,255,255,.5);
-    pointer-events: none;
+    position:absolute; top:max(10px,env(safe-area-inset-top)); left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:0 16px; font-size:18px; font-weight:800; color:#1b3a4b;
+    text-shadow:0 1px 0 rgba(255,255,255,.5); pointer-events:none;
   }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    background: rgba(10, 30, 45, 0.55);
-    color: #fff;
-    text-align: center;
-    padding: 20px;
+  #hud .col { display:flex; flex-direction:column; gap:2px; }
+  #hud .col.right { align-items:flex-end; }
+  #coins { color:#a86a00; }
+  #best  { font-size:14px; color:#8a5a00; }
+  #who   { font-size:12px; font-weight:700; opacity:.85; }
+  #level { font-size:15px; }
+
+  /* shield button (bomb escape #2) */
+  #shieldBtn {
+    position:absolute; right:14px; bottom:calc(env(safe-area-inset-bottom) + 16px);
+    width:74px; height:74px; border-radius:50%; border:none; font-size:30px; cursor:pointer;
+    background:radial-gradient(circle at 35% 30%, #8fd0ff, #2b7fd0); color:#fff; font-weight:900;
+    box-shadow:0 5px 0 #1c5da0, 0 8px 18px rgba(0,0,0,.3); display:none; align-items:center; justify-content:center;
+    transition:transform .06s, filter .2s; touch-action:manipulation;
   }
-  #overlay h1 { font-size: 40px; letter-spacing: 1px; }
-  #overlay p { font-size: 18px; max-width: 420px; line-height: 1.5; opacity: .95; }
-  #overlay button {
-    margin-top: 8px;
-    font-size: 20px;
-    font-weight: 700;
-    padding: 12px 28px;
-    border: none;
-    border-radius: 999px;
-    background: #ff8c42;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #d9722f;
-    transition: transform .05s;
-  }
-  #overlay button:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9722f; }
-  .hidden { display: none !important; }
-  .small { font-size: 15px; opacity: .8; }
-  #banner {
-    position: absolute;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 22px;
-    border-radius: 16px;
-    background: rgba(255, 140, 66, 0.92);
-    color: #fff;
-    font-size: 22px;
-    font-weight: 800;
-    text-align: center;
-    line-height: 1.4;
-    text-shadow: 0 1px 2px rgba(0,0,0,.3);
-    box-shadow: 0 4px 16px rgba(0,0,0,.25);
-    pointer-events: none;
-    animation: pop .4s ease, glow 1s ease-in-out infinite alternate;
-  }
-  #banner span { font-size: 18px; }
-  #banner.bomb { background: rgba(205, 30, 30, 0.93); }
-  #best { font-size: 15px; font-weight: 700; color: #8a5a00; margin-top: 2px; }
-  @keyframes pop { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
-  @keyframes glow { to { box-shadow: 0 4px 24px rgba(255,180,80,.9); } }
+  #shieldBtn:active { transform:translateY(3px); box-shadow:0 2px 0 #1c5da0; }
+  #shieldBtn.cooling { filter:grayscale(.7) brightness(.8); }
+  #shieldBtn small { position:absolute; bottom:-2px; font-size:11px; }
+
   #muteBtn {
-    position: absolute;
-    bottom: 14px;
-    right: 14px;
-    font-size: 22px;
-    width: 46px;
-    height: 46px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255,255,255,.7);
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:14px;
+    font-size:22px; width:46px; height:46px; border:none; border-radius:50%;
+    background:rgba(255,255,255,.75); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.2);
   }
+  #homeBtn {
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:68px;
+    font-size:22px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.75);
+    display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.2);
+  }
+
+  /* ---- banner ---- */
+  #banner {
+    position:absolute; top:calc(env(safe-area-inset-top) + 70px); left:50%; transform:translateX(-50%);
+    padding:11px 20px; border-radius:16px; background:rgba(255,140,66,.94); color:#fff;
+    font-size:20px; font-weight:800; text-align:center; line-height:1.35; pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.25); max-width:92vw;
+    animation:pop .35s ease, glow 1s ease-in-out infinite alternate;
+  }
+  #banner span { font-size:17px; }
+  #banner.bomb { background:rgba(205,30,30,.94); }
+  @keyframes pop { from { transform:translateX(-50%) scale(.6); opacity:0; } }
+  @keyframes glow { to { box-shadow:0 4px 24px rgba(255,180,80,.9); } }
+
+  /* ---- overlays (scrollable — fixes the "stuck / can't scroll" bug) ---- */
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:max(20px,env(safe-area-inset-top)) 20px calc(env(safe-area-inset-bottom) + 24px);
+    background:rgba(10,30,45,.62); color:#fff; text-align:center;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .screen h1 { font-size:clamp(26px,7vw,42px); letter-spacing:.5px; max-width:100%; overflow-wrap:anywhere; }
+  .screen p  { font-size:16px; max-width:min(440px,100%); line-height:1.5; opacity:.95; overflow-wrap:anywhere; }
+  .small { font-size:14px; opacity:.85; }
+  .pill {
+    font-size:20px; font-weight:800; padding:13px 30px; border:none; border-radius:999px;
+    background:#ff8c42; color:#fff; cursor:pointer; box-shadow:0 4px 0 #d9722f; transition:transform .05s; touch-action:manipulation;
+  }
+  .pill:active { transform:translateY(3px); box-shadow:0 1px 0 #d9722f; }
+  .pill.blue  { background:#3a8fd9; box-shadow:0 4px 0 #2b6ca8; }
+  .pill.green { background:#37b34a; box-shadow:0 4px 0 #2a8a39; }
+  .pill.sm { font-size:16px; padding:10px 22px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .hidden { display:none !important; }
+  .coinbig { font-size:22px; font-weight:900; color:#ffd34d; }
+  .testtag { position:absolute; top:6px; left:8px; font-size:11px; font-weight:800; color:#fff; background:#c0392b; padding:2px 8px; border-radius:8px; opacity:.85; z-index:30; }
+
+  /* ---- shop ---- */
+  #shopList { display:flex; flex-direction:column; gap:12px; width:100%; max-width:min(460px,100%); }
+  .bcard {
+    display:flex; align-items:center; gap:14px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.15);
+    border-radius:16px; padding:12px 14px; text-align:left;
+  }
+  .bcard.sel { border-color:#ffd34d; background:rgba(255,211,77,.18); }
+  .bcard .ico { font-size:38px; width:46px; text-align:center; }
+  .bcard .info { flex:1; min-width:0; }
+  .bcard .info b { font-size:17px; }
+  .bcard .info .d { font-size:13px; opacity:.85; line-height:1.35; }
+  .bcard .bars { display:flex; gap:10px; font-size:11px; margin-top:4px; opacity:.9; }
+  .bcard .act { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .bcard .price { font-size:14px; font-weight:800; color:#ffd34d; white-space:nowrap; }
+  .bcard button {
+    border:none; border-radius:999px; padding:8px 16px; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap;
+  }
+  .buyBtn { background:#37b34a; color:#fff; }
+  .buyBtn:disabled { background:#5a6b72; color:#c8d2d6; cursor:not-allowed; }
+  .selBtn { background:#3a8fd9; color:#fff; }
+  .selBtn.on { background:#ffd34d; color:#5a3d00; }
 </style>
 </head>
 <body>
 <div id="wrap">
   <canvas id="game"></canvas>
+
   <div id="hud">
-    <div>
+    <div class="col">
       <div id="score">Score: 0</div>
       <div id="best">🏆 Best: 0</div>
-      <div id="who" style="font-size:13px;font-weight:700;color:#1b3a4b;opacity:.85"></div>
+      <div id="who"></div>
     </div>
-    <div id="level">Level: 1</div>
-    <div id="lives">❤️❤️❤️</div>
+    <div class="col right">
+      <div id="coins">🪙 0</div>
+      <div id="level">Level 1</div>
+      <div id="lives">❤️❤️❤️</div>
+    </div>
   </div>
-  <button id="muteBtn" title="Toggle music">🔊</button>
-  <a id="homeBtn" href="../" title="Back to games" style="position:absolute;bottom:14px;left:14px;font-size:22px;
-     width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;
-     justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.2)">🏠</a>
-  <div id="banner" class="hidden">🌧️ FRUIT SHOWER! 🍎<br><span id="bannerTime">10</span>s — no bombs, catch them all!</div>
-  <div id="overlay">
+
+  <button id="shieldBtn" title="Shield">🛡️<small id="shieldLbl"></small></button>
+  <button id="muteBtn" title="Sound">🔊</button>
+  <a id="homeBtn" href="../" title="Back">🏠</a>
+
+  <div id="banner" class="hidden"></div>
+
+  <!-- START / GAME OVER -->
+  <div id="overlay" class="screen">
     <h1>🧺 Basket Catch</h1>
-    <p>Move with the <b>← →</b> arrow keys (or drag / A &amp; D).<br>
-       Catch the falling fruits &amp; eggs for points. Each catch makes them fall a little faster.<br>
-       Miss one and you lose a life. Catch a 💣 bomb and it's game over!<br>
-       Grab the ✨golden apple✨ for +40, and catch the ❤️ for an extra life!</p>
-    <p class="small">You start with 3 lives (catch hearts for more, up to 5).</p>
-    <p class="small" id="startBest"></p>
-    <button id="startBtn">Start Game</button>
+    <p>Drag (or <b>← →</b>) to move the basket. Catch falling fruit — it drops <i>into</i> the basket!<br>
+       Miss a fruit, lose a life. A 💣 is game over — move away from bombs or tap <b>🛡️ Shield</b>.</p>
+    <p class="small">Your score becomes <b>coins</b> 🪙 — spend them on better baskets in the shop.</p>
+    <div class="coinbig">🪙 <span id="ovCoins">0</span> coins</div>
+    <p class="small" id="ovBest"></p>
+    <div class="row">
+      <button class="pill green" id="startBtn">▶ Play</button>
+      <button class="pill blue" id="shopBtn">🧺 Baskets</button>
+    </div>
+    <p class="small" id="ovWho"></p>
+  </div>
+
+  <!-- SHOP -->
+  <div id="shop" class="screen hidden">
+    <h1>🧺 Basket Shop</h1>
+    <div class="coinbig">🪙 <span id="shopCoins">0</span> coins</div>
+    <p class="small">Better baskets move faster (+ handy perks) — never wider, so you can always dodge!</p>
+    <div id="shopList"></div>
+    <button class="pill sm" id="shopBack" style="margin-top:6px">← Back</button>
   </div>
 </div>
 
 <script>
+"use strict";
+/* =========================================================================
+   BASKET CATCH v2 (TEST) — realistic catching, bomb-shower escapes,
+   basket shop + coins, robust mobile audio, scrollable menus.
+   ========================================================================= */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const bestEl = document.getElementById('best');
-const levelEl = document.getElementById('level');
-const livesEl = document.getElementById('lives');
-const overlay = document.getElementById('overlay');
-const startBtn = document.getElementById('startBtn');
-const banner = document.getElementById('banner');
-let bannerTime = document.getElementById('bannerTime');
-function showBanner(html, kind) {
-  banner.innerHTML = html;
-  banner.className = kind === 'bomb' ? 'bomb' : '';  // also clears the 'hidden' class
-  bannerTime = banner.querySelector('#bannerTime');
-}
+const $ = id => document.getElementById(id);
 
 let W, H;
 function resize() {
-  W = canvas.width = Math.min(window.innerWidth, 700);
+  W = canvas.width  = Math.min(window.innerWidth, 760);
   H = canvas.height = window.innerHeight;
-  if (basket) basket.y = H - 90;
+  if (basket) basket.y = H - 96;
 }
 window.addEventListener('resize', resize);
 
-// ---- Game state ----
-const GOOD = ['🍎','🍊','🍌','🍓','🍇','🍑','🥚','🍐','🍉'];
-const BOMB = '💣';
+/* ---------- baskets catalog ---------- */
+/* Better baskets are FASTER to move (and add perks) — NOT wider. A wide basket
+   is a disadvantage on a small phone (harder to dodge bombs), so every basket
+   keeps a similar, modest width and the upgrade is move-speed + perks. */
+const BASKETS = [
+  {id:'starter', name:'Classic Basket', ico:'🧺', price:0,    w:94, depth:50, speed:9,  color:'#a9651f', rim:'#c98235', tease:'The trusty original.'},
+  {id:'quick',   name:'Quick Catch',    ico:'🥄', price:300,  w:90, depth:50, speed:13, color:'#6fa8dc', rim:'#9cc6f5', tease:'Lighter & quicker — dodge bombs more easily.'},
+  {id:'magnet',  name:'Magnet Basket',  ico:'🧲', price:800,  w:94, depth:50, speed:11, color:'#b13a3a', rim:'#e06a6a', tease:'Gently pulls fruit toward you.', perk:'magnet', perkTxt:'🧲 Fruit magnet'},
+  {id:'lucky',   name:'Lucky Basket',   ico:'🍀', price:1500, w:94, depth:50, speed:12, color:'#3a9d5d', rim:'#62c585', tease:'Earns extra coins every game.', perk:'coin', perkV:1.25, perkTxt:'💰 +25% coins'},
+  {id:'pro',     name:'Pro Scoop',      ico:'🥇', price:2800, w:92, depth:50, speed:17, color:'#e0a000', rim:'#ffd84d', tease:'Pro move speed — catch & dodge like a champ.'},
+];
+function getBasket(id){ return BASKETS.find(b=>b.id===id) || BASKETS[0]; }
 
-let basket, items, score, lives, level, baseSpeed, running, lastSpawn, spawnGap, raf, leftHeld, rightHeld;
-let shower, showerEnd, nextShower, clearing, showerStep;
-let bombShower, bombShowerEnd, nextBomb, nextGolden, nextLife;
-const SHOWER_MS = 10000;        // fruit shower lasts 10 seconds
-const BOMB_SHOWER_MS = 5000;    // bomb shower lasts 5 seconds
-const BOMB_STEP = 100;          // bomb shower roughly every 100 points
-const BOMB_GAP = 520;           // ms between bombs (escapable spacing)
-const BOMB_FALL = 3.0;          // fixed, gentle bomb fall speed during bomb shower
-const GOLDEN_FIRST = 100;       // first golden apple at 100, then DOUBLES: 100,200,400,800…
-const GOLDEN_VALUE = 40;        // points for catching the golden apple
-const LIFE_STEP = 150;          // an extra-life ❤️ falls every 150 points
-const LIFE_MAX = 5;             // cap on lives
-/* ---- shared account: the whole app uses the same store, so the high score is per player ---- */
+/* ---------- save / account layer (local for now; Firebase sync comes in Phase 2) ---------- */
 const STORE_KEY = 'soc_store_v1';
 function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
 function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
 const acctStore = igLoad();
 const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
-const legacyHigh = +(localStorage.getItem('basketCatchHigh') || 0);
-let highScore;
-if (acct) {
-  if (!acct.basket) acct.basket = {best:0};
-  if (legacyHigh > acct.basket.best) { acct.basket.best = legacyHigh; igSave(); }   // bring across old global best once
-  highScore = acct.basket.best;
-} else {
-  highScore = legacyHigh;
+
+const GUEST_KEY = 'basketCatchV2_guest';
+function defData(){ return { best:0, coins:0, owned:['starter'], sel:'starter' }; }
+function loadData(){
+  let d;
+  if (acct){
+    if (!acct.basket || typeof acct.basket !== 'object') acct.basket = {};
+    d = acct.basket;
+  } else {
+    try{ d = JSON.parse(localStorage.getItem(GUEST_KEY)); }catch(e){}
+    if (!d || typeof d !== 'object') d = {};
+  }
+  const def = defData();
+  if (typeof d.best  !== 'number') d.best  = def.best;
+  if (typeof d.coins !== 'number') d.coins = def.coins;
+  if (!Array.isArray(d.owned) || !d.owned.length) d.owned = def.owned.slice();
+  if (!d.owned.includes('starter')) d.owned.unshift('starter');
+  if (!d.sel || !d.owned.includes(d.sel)) d.sel = 'starter';
+  // bring across the old global best once
+  const legacy = +(localStorage.getItem('basketCatchHigh') || 0);
+  if (legacy > d.best) d.best = legacy;
+  return d;
 }
-function saveHigh(){
-  if (acct) { acct.basket.best = highScore; igSave(); }
-  else { try{ localStorage.setItem('basketCatchHigh', highScore); }catch(e){} }
+let data = loadData();
+function saveData(){
+  if (acct){ acct.basket = data; igSave(); }
+  else { try{ localStorage.setItem(GUEST_KEY, JSON.stringify(data)); }catch(e){} }
 }
 
-// ============================================================
-//  AUDIO ENGINE  (all synthesized — no external files needed)
-// ============================================================
-const Audio = (() => {
-  let ac = null, master = null, musicGain = null, musicTimer = null, musicOn = true, started = false;
+/* ============================================================
+   AUDIO — synthesized, with rock-solid mobile unlocking
+   (fixes "sometimes no sound on phones")
+   ============================================================ */
+const Sound = (() => {
+  let ac=null, master=null, musicGain=null, musicTimer=null, musicOn=true, unlocked=false;
 
-  function init() {
+  function init(){
     if (ac) return;
-    ac = new (window.AudioContext || window.webkitAudioContext)();
-    master = ac.createGain();
-    master.gain.value = 0.9;
-    master.connect(ac.destination);
-    musicGain = ac.createGain();
-    musicGain.gain.value = 0.16;          // background sits softly under SFX
-    musicGain.connect(master);
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+    musicGain = ac.createGain(); musicGain.gain.value = 0.15; musicGain.connect(master);
   }
-  function ensure() {
+  // Must be called from inside a real user gesture. Plays a silent blip to
+  // satisfy iOS/Android autoplay locks, and resumes if suspended.
+  function unlock(){
     init();
+    if (!ac) return;
     if (ac.state === 'suspended') ac.resume();
+    if (!unlocked){
+      try{
+        const b = ac.createBuffer(1, 1, 22050);
+        const s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start(0);
+        unlocked = true;
+      }catch(e){}
+    }
   }
+  function ready(){ init(); if (ac && ac.state === 'suspended') ac.resume(); return !!ac; }
 
-  // --- one synth note ---
-  function note(freq, t, dur, type = 'sine', gain = 0.5, dest = master, glideTo = null) {
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, t);
-    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
+  function note(freq, t, dur, type='sine', gain=0.5, dest=master, glideTo=null){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t+dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(dest);
-    o.start(t); o.stop(t + dur + 0.05);
+    g.gain.exponentialRampToValueAtTime(gain, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t+dur+0.05);
   }
-
-  // --- noise burst (for the bomb) ---
-  function noise(t, dur, gain = 0.8) {
-    const n = Math.floor(ac.sampleRate * dur);
-    const buf = ac.createBuffer(1, n, ac.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  function noise(t, dur, gain=0.8){
+    const n = Math.floor(ac.sampleRate*dur), buf = ac.createBuffer(1,n,ac.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
     const src = ac.createBufferSource(); src.buffer = buf;
-    const g = ac.createGain();
-    g.gain.setValueAtTime(gain, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    const lp = ac.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.setValueAtTime(1800, t);
-    lp.frequency.exponentialRampToValueAtTime(120, t + dur);
-    src.connect(lp); lp.connect(g); g.connect(master);
-    src.start(t); src.stop(t + dur);
+    const g = ac.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    const lp = ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(1800,t); lp.frequency.exponentialRampToValueAtTime(120,t+dur);
+    src.connect(lp); lp.connect(g); g.connect(master); src.start(t); src.stop(t+dur);
   }
 
-  // ---- Sound effects ----
-  function sfxCatch() {                    // bright happy chime
-    ensure();
-    const t = ac.currentTime;
-    note(880, t, 0.12, 'triangle', 0.4);
-    note(1320, t + 0.06, 0.16, 'triangle', 0.35);
-  }
-  function sfxBomb() {                      // explosion
-    ensure();
-    const t = ac.currentTime;
-    noise(t, 0.6, 0.9);
-    note(90, t, 0.5, 'sawtooth', 0.6, master, 40);
-  }
-  function sfxLife() {                      // short "uh-oh" drop
-    ensure();
-    const t = ac.currentTime;
-    note(440, t, 0.18, 'sine', 0.4, master, 300);
-    note(300, t + 0.16, 0.22, 'sine', 0.4, master, 200);
-  }
-  function sfxSad() {                       // sad descending phrase (game over)
-    ensure();
-    const t = ac.currentTime;
-    const seq = [523.25, 466.16, 392.0, 311.13]; // C5 Bb4 G4 Eb4-ish, mournful
-    seq.forEach((f, i) => note(f, t + i * 0.28, 0.4, 'sine', 0.45));
-  }
-  function sfxShower() {                    // happy rising fanfare (bonus start)
-    ensure();
-    const t = ac.currentTime;
-    const seq = [392.0, 523.25, 659.25, 783.99, 1046.5]; // rising arpeggio
-    seq.forEach((f, i) => note(f, t + i * 0.09, 0.3, 'triangle', 0.5));
-  }
-  function sfxGolden() {                    // sparkly chime (golden apple +50)
-    ensure();
-    const t = ac.currentTime;
-    const seq = [659.25, 880, 1108.73, 1318.5, 1760];
-    seq.forEach((f, i) => note(f, t + i * 0.07, 0.25, 'triangle', 0.55));
-    note(1760, t + 0.36, 0.5, 'sine', 0.3);
-  }
+  function sfx(fn){ if (!ready()) return; fn(ac.currentTime); }
+  const catchSfx  = () => sfx(t=>{ note(880,t,0.11,'triangle',0.4); note(1320,t+0.05,0.14,'triangle',0.32); });
+  const bombSfx   = () => sfx(t=>{ noise(t,0.6,0.9); note(90,t,0.5,'sawtooth',0.6,master,40); });
+  const lifeSfx   = () => sfx(t=>{ note(440,t,0.18,'sine',0.4,master,300); note(300,t+0.16,0.22,'sine',0.4,master,200); });
+  const sadSfx    = () => sfx(t=>{ [523.25,466.16,392,311.13].forEach((f,i)=>note(f,t+i*0.28,0.4,'sine',0.45)); });
+  const showerSfx = () => sfx(t=>{ [392,523.25,659.25,784,1046.5].forEach((f,i)=>note(f,t+i*0.09,0.3,'triangle',0.5)); });
+  const goldenSfx = () => sfx(t=>{ [659.25,880,1108.7,1318.5,1760].forEach((f,i)=>note(f,t+i*0.07,0.25,'triangle',0.55)); note(1760,t+0.36,0.5,'sine',0.3); });
+  const coinSfx   = () => sfx(t=>{ note(988,t,0.08,'square',0.3); note(1319,t+0.06,0.12,'square',0.28); });
+  const shieldSfx = () => sfx(t=>{ note(660,t,0.1,'triangle',0.4,master,990); note(1320,t+0.08,0.14,'sine',0.3); });
+  const clinkSfx  = () => sfx(t=>{ note(1500,t,0.07,'square',0.35); note(2200,t+0.04,0.06,'square',0.25); });
 
-  // ---- Background music: looping Indian-style melody ----
-  // A pleasant raga-flavoured scale (Raag Bhupali / pentatonic): Sa Re Ga Pa Dha
-  const SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
-  // a flowing phrase pattern (indexes into SCALE), with a little ornament
+  const SCALE = [261.63,293.66,329.63,392,440,523.25,587.33,659.25,784];
   const PHRASE = [0,1,2,4,3,2,1,2, 4,5,4,3,2,1,0,1, 2,3,4,5,7,5,4,3, 2,1,0,2,1,0,-1,0];
   let step = 0;
-
-  function tickMusic() {
-    if (!musicOn) return;
-    const t = ac.currentTime + 0.02;
-    const idx = PHRASE[step % PHRASE.length];
-    if (idx >= 0) {
-      const f = SCALE[idx];
-      note(f, t, 0.34, 'triangle', 0.5, musicGain);      // melody
-      note(f / 2, t, 0.42, 'sine', 0.35, musicGain);     // soft lower octave
-    }
-    // a gentle tonic drone pulse every 4 steps (tanpura feel)
-    if (step % 4 === 0) note(130.81, t, 0.9, 'sine', 0.3, musicGain);
+  function tickMusic(){
+    if (!musicOn || !ac) return;
+    const t = ac.currentTime + 0.02, idx = PHRASE[step % PHRASE.length];
+    if (idx >= 0){ const f = SCALE[idx]; note(f,t,0.34,'triangle',0.5,musicGain); note(f/2,t,0.42,'sine',0.35,musicGain); }
+    if (step % 4 === 0) note(130.81,t,0.9,'sine',0.3,musicGain);
     step++;
   }
+  function startMusic(){ if (!ready()) return; if (musicTimer) return; step=0; musicTimer=setInterval(tickMusic,260); tickMusic(); }
+  function stopMusic(){ clearInterval(musicTimer); musicTimer=null; }
+  function toggleMusic(){ musicOn=!musicOn; if(musicOn) startMusic(); else stopMusic(); return musicOn; }
 
-  function startMusic() {
-    ensure();
-    if (musicTimer) return;
-    step = 0;
-    musicTimer = setInterval(tickMusic, 260);   // ~ tempo
-    tickMusic();
-  }
-  function stopMusic() {
-    clearInterval(musicTimer); musicTimer = null;
-  }
-  function toggleMusic() {
-    musicOn = !musicOn;
-    if (musicOn) startMusic(); else stopMusic();
-    return musicOn;
-  }
-
-  return { ensure, sfxCatch, sfxBomb, sfxLife, sfxSad, sfxShower, sfxGolden, startMusic, stopMusic, toggleMusic,
-           get musicOn() { return musicOn; } };
+  return { unlock, ready, startMusic, stopMusic, toggleMusic,
+           catchSfx, bombSfx, lifeSfx, sadSfx, showerSfx, goldenSfx, coinSfx, shieldSfx, clinkSfx,
+           get musicOn(){ return musicOn; } };
 })();
 
-function newBasket() {
-  return { x: (W || 400) / 2, y: (H || 600) - 90, w: 96, h: 56, speed: 9 };
+/* Global audio unlock: the FIRST tap/key anywhere primes the audio engine.
+   This is the key fix for "sound sometimes doesn't play" on phones. */
+function primeAudio(){ Sound.unlock(); }
+['pointerdown','touchstart','keydown','click'].forEach(ev =>
+  window.addEventListener(ev, primeAudio, { passive:true }));
+// resume audio when returning to the tab/app
+document.addEventListener('visibilitychange', () => { if (!document.hidden) Sound.ready(); });
+
+/* ============================================================
+   GAME
+   ============================================================ */
+const GOOD = ['🍎','🍊','🍌','🍓','🍇','🍑','🥚','🍐','🍉'];
+const BOMB = '💣';
+
+const SHOWER_MS = 10000, BOMB_SHOWER_MS = 5500;
+const SHIELD_MS = 1600, SHIELD_CD = 5000;
+
+let basket, items, caught, particles, floats;
+let score, lives, level, running, lastSpawn, spawnGap, raf;
+let leftHeld, rightHeld, dragX;
+let shower, showerEnd, nextShower, showerStep, clearing;
+let bombShower, bombShowerEnd, nextBomb;
+let nextGolden, nextLife;
+let shieldUntil, shieldReadyAt;
+let baseSpeed;          // constant fall speed (px per 60fps-frame)
+let lastT = 0;          // for frame-rate-independent physics (same speed on 60Hz & 120Hz)
+
+function newBasket(){
+  const b = getBasket(data.sel);
+  return { x:(W||400)/2, y:(H||600)-96, w:b.w, depth:b.depth, speed:b.speed, def:b, sx:1, sy:1 };
 }
 
-function reset() {
+function reset(){
   basket = newBasket();
-  items = [];
-  score = 0;
-  lives = 3;
-  level = 1;
-  baseSpeed = 2.6;      // starting fall speed (px/frame)
-  spawnGap = 1100;      // ms between drops
-  lastSpawn = 0;
-  leftHeld = rightHeld = false;
-  shower = false;
-  showerEnd = 0;
-  showerStep = 25;          // points needed for the FIRST fruit shower
-  nextShower = showerStep;
-  bombShower = false;
-  bombShowerEnd = 0;
-  nextBomb = BOMB_STEP;     // first bomb shower at 100 points
-  nextGolden = GOLDEN_FIRST; // first golden apple at 100 points, then doubles
-  nextLife = LIFE_STEP;     // first extra-life heart at 150 points
-  clearing = false;
+  items = []; caught = []; particles = []; floats = [];
+  score = 0; lives = 3; level = 1;
+  baseSpeed = 1.7;                       // starts slow; speeds up a little with every catch
+  spawnGap = 1200; lastSpawn = 0; lastT = 0;
+  leftHeld = rightHeld = false; dragX = null;
+  shower = false; showerEnd = 0; showerStep = 25; nextShower = 25; clearing = false;
+  bombShower = false; bombShowerEnd = 0; nextBomb = 100;
+  nextGolden = 100; nextLife = 150;
+  shieldUntil = 0; shieldReadyAt = 0;
   updateHud();
 }
 
-function updateHud() {
-  scoreEl.textContent = 'Score: ' + score;
-  bestEl.textContent = '🏆 Best: ' + Math.max(highScore, score);
-  levelEl.textContent = 'Level: ' + level;
-  livesEl.textContent = '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives));
-}
 
-function startShower(now) {
-  shower = true;
-  showerEnd = now + SHOWER_MS;
-  // advance the threshold here (at trigger), so shower-earned points don't skew it.
-  showerStep += 25;          // each shower is progressively rarer
-  nextShower += showerStep;  // absolute thresholds: 25, 75, 150, 250, ...
-  Audio.sfxShower();
-  showBanner('🌧️ FRUIT SHOWER! 🍎<br><span id="bannerTime"></span>s — no bombs, catch them all!', 'fruit');
-}
-function endShower() {
-  shower = false;
-  banner.classList.add('hidden');
-  clearing = true;                  // clear the screen before normal play resumes
-}
-
-function startBombShower(now) {
-  bombShower = true;
-  bombShowerEnd = now + BOMB_SHOWER_MS;
-  nextBomb += BOMB_STEP;     // next bomb shower 100 points later: 100, 200, 300, ...
-  Audio.sfxBomb();
-  showBanner('💣 BOMB SHOWER! 💣<br>Dodge for <span id="bannerTime"></span>s!', 'bomb');
-}
-function endBombShower() {
-  bombShower = false;
-  banner.classList.add('hidden');
-  clearing = true;
-  // keep the two modes apart: offset the next fruit shower so it can't fire
-  // right on the heels of a bomb shower (resets its countdown from here).
-  nextShower = Math.max(nextShower, score + 25);
-}
-
-function spawnGolden() {
-  nextGolden *= 2;                    // doubles: 100 -> 200 -> 400 -> 800 …
-  spawn({ golden: true, vy: baseSpeed * 1.6 });  // a little faster than the rest (not full speed)
-  Audio.sfxGolden();
-}
-function spawnLife() {
-  nextLife += LIFE_STEP;             // every 150 points
-  spawn({ life: true, vy: baseSpeed * 1.1 });
-}
-
-function spawn(opts = {}) {
-  const golden = !!opts.golden;
-  const life = !!opts.life;
-  const isBomb = (golden || life) ? false
-               : (opts.bomb !== undefined ? opts.bomb : Math.random() < 0.16);  // ~16%
-  const emoji = life ? '❤️' : golden ? '🍎' : (isBomb ? BOMB : GOOD[(Math.random() * GOOD.length) | 0]);
-  // golden apple stays a touch bigger so it reads as special; the life ❤️ is normal fruit size
-  const size = golden ? 52 : 40;
-  const vy = opts.vy !== undefined ? opts.vy : baseSpeed * (0.9 + Math.random() * 0.3);
+/* ---------- spawning ---------- */
+function spawnFruit(opts={}){
+  const golden = !!opts.golden, life = !!opts.life;
+  const isBomb = (golden||life) ? false : (opts.bomb !== undefined ? opts.bomb : Math.random() < 0.15);
+  const emoji = life ? '❤️' : golden ? '🍎' : (isBomb ? BOMB : GOOD[(Math.random()*GOOD.length)|0]);
+  const size = golden ? 50 : 40;
+  const x = opts.x !== undefined ? opts.x : size + Math.random()*(W - size*2);
   items.push({
-    x: size + Math.random() * (W - size * 2),
-    y: -size,
-    size,
-    bomb: isBomb,
-    golden,
-    life,
-    emoji,
-    vy
+    x, y:-size, size, bomb:isBomb, golden, life, emoji,
+    vy: opts.vy !== undefined ? opts.vy : baseSpeed * (0.92 + Math.random()*0.16),  // constant fall, straight down
   });
 }
+function spawnGolden(){ nextGolden *= 2; spawnFruit({golden:true, vy:baseSpeed*1.2}); Sound.goldenSfx(); }
+function spawnLife(){ nextLife += 150; spawnFruit({life:true, vy:baseSpeed*1.0}); }
 
-function loseLife() {
-  lives--;
-  updateHud();
-  if (lives <= 0) gameOver(false);
-  else Audio.sfxLife();
+/* ---------- showers ---------- */
+function startShower(now){ shower=true; showerEnd=now+SHOWER_MS; showerStep+=25; nextShower+=showerStep; Sound.showerSfx(); showBanner('🌧️ FRUIT SHOWER! 🍎<br><span id="bt"></span>s — no bombs!','fruit'); }
+function endShower(){ shower=false; hideBanner(); clearing=true; }
+function startBombShower(now){ bombShower=true; bombShowerEnd=now+BOMB_SHOWER_MS; nextBomb+=100; Sound.bombSfx(); showBanner('💣 BOMB SHOWER! 💣<br>Move away or tap 🛡️ for <span id="bt"></span>s!','bomb'); }
+function endBombShower(){ bombShower=false; hideBanner(); clearing=true; nextShower=Math.max(nextShower, score+25); }
+
+/* bombs fall at a constant, gentle, escapable speed (no level scaling) */
+function bombFall(){ return 2.4; }
+
+/* ---------- shield (bomb escape #2) ---------- */
+function tryShield(){
+  const now = performance.now();
+  if (!running) return;
+  if (now < shieldReadyAt) return;            // on cooldown
+  shieldUntil = now + SHIELD_MS;
+  shieldReadyAt = now + SHIELD_MS + SHIELD_CD;
+  Sound.shieldSfx();
+}
+function shieldActive(now){ return now < shieldUntil; }
+
+/* ---------- HUD ---------- */
+function updateHud(){
+  $('score').textContent = 'Score: ' + score;
+  $('best').textContent  = '🏆 Best: ' + Math.max(data.best, score|0);
+  $('coins').textContent = '🪙 ' + data.coins;
+  $('level').textContent = 'Level ' + level;
+  $('lives').textContent = '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3-lives));
 }
 
-function gameOver(byBomb) {
-  running = false;
-  cancelAnimationFrame(raf);
-  Audio.stopMusic();
-  banner.classList.add('hidden');
-  if (!byBomb) Audio.sfxSad();   // sad tune when you run out of lives
+/* ---------- banner ---------- */
+const banner = $('banner');
+let bannerTimeEl = null;
+function showBanner(html, kind){ banner.innerHTML = html; banner.className = (kind==='bomb'?'bomb':''); bannerTimeEl = banner.querySelector('#bt'); }
+function hideBanner(){ banner.classList.add('hidden'); }
 
-  const isNewHigh = score > highScore;
-  if (isNewHigh) {
-    highScore = score;
-    saveHigh();
-  }
+/* ---------- effects ---------- */
+function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*6.28,s=1+Math.random()*3.5; particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,color}); } }
+function floatText(x,y,txt,color){ floats.push({x,y,txt,color,life:1}); }
 
-  overlay.classList.remove('hidden');
-  overlay.innerHTML = `
-    <h1>${byBomb ? '💥 Boom!' : 'Game Over'}</h1>
-    <p>${byBomb ? 'You caught a bomb!' : 'You ran out of lives.'}</p>
-    <p>Final score: <b>${score}</b> &nbsp;•&nbsp; Level <b>${level}</b></p>
-    ${isNewHigh
-      ? `<p style="color:#ffd34d;font-size:22px">🏆 New High Score!</p>`
-      : `<p class="small">🏆 Highest score ever: <b>${highScore}</b> — beat it!</p>`}
-    <button id="startBtn">Play Again</button>`;
-  document.getElementById('startBtn').addEventListener('click', start);
-}
-
-function start() {
-  resize();
-  reset();
-  overlay.classList.add('hidden');
-  running = true;
-  Audio.ensure();
-  Audio.startMusic();
-  lastSpawn = performance.now() - spawnGap; // spawn first item promptly
-  raf = requestAnimationFrame(loop);
-}
-
-function loop(now) {
+/* ============================================================
+   MAIN LOOP
+   ============================================================ */
+function loop(now){
   if (!running) return;
   raf = requestAnimationFrame(loop);
 
-  // move basket
-  if (leftHeld) basket.x -= basket.speed;
-  if (rightHeld) basket.x += basket.speed;
-  basket.x = Math.max(basket.w / 2, Math.min(W - basket.w / 2, basket.x));
+  // frame-rate-independent step: 1.0 at 60fps, 0.5 at 120fps, etc. (clamped after a stall)
+  if (!lastT) lastT = now;
+  const step = Math.max(0.2, Math.min(2.5, (now - lastT) / 16.667));
+  lastT = now;
 
-  // fruit-shower timer / countdown
-  if (shower) {
-    if (now > showerEnd) endShower();
-    else if (bannerTime) bannerTime.textContent = Math.ceil((showerEnd - now) / 1000);
+  // basket movement: keys, or drag toward finger
+  if (leftHeld)  basket.x -= basket.speed * step;
+  if (rightHeld) basket.x += basket.speed * step;
+  if (dragX !== null){
+    const dx = dragX - basket.x;
+    basket.x += Math.max(-basket.speed*2.4, Math.min(basket.speed*2.4, dx*0.4)) * step;
   }
-  // bomb-shower timer / countdown
-  if (bombShower) {
-    if (now > bombShowerEnd) endBombShower();
-    else if (bannerTime) bannerTime.textContent = Math.ceil((bombShowerEnd - now) / 1000);
-  }
+  basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
+
+  // shower timers
+  if (shower){ if (now>showerEnd) endShower(); else if (bannerTimeEl) bannerTimeEl.textContent = Math.ceil((showerEnd-now)/1000); }
+  if (bombShower){ if (now>bombShowerEnd) endBombShower(); else if (bannerTimeEl) bannerTimeEl.textContent = Math.ceil((bombShowerEnd-now)/1000); }
 
   // spawning
-  if (clearing) {
-    // hold all spawns until leftover items have fallen away -> blank screen
-    if (items.length === 0) { clearing = false; lastSpawn = now; }
-  } else if (bombShower) {
-    // bombs at an escapable spacing, plus exactly one catchable fruit on screen
-    if (now - lastSpawn > BOMB_GAP) { spawn({ bomb: true, vy: BOMB_FALL }); lastSpawn = now; }
-    if (!items.some(it => !it.bomb)) spawn({ bomb: false, vy: BOMB_FALL });
-  } else if (shower) {
-    if (now - lastSpawn > 150) { spawn({ bomb: false }); lastSpawn = now; }
+  if (clearing){
+    if (items.length === 0){ clearing=false; lastSpawn=now; }
+  } else if (bombShower){
+    // bombs spaced out, always leaving an open lane to move to; plus one fruit
+    if (now-lastSpawn > 560){ spawnBombSafe(); lastSpawn=now; }
+    if (!items.some(it=>!it.bomb)) spawnFruit({bomb:false, vy:baseSpeed});
+  } else if (shower){
+    if (now-lastSpawn > 150){ spawnFruit({bomb:false}); lastSpawn=now; }
   } else {
-    // give a golden apple a clear lane: hold other spawns until it has fallen
-    // past the upper part of the screen, so nothing comes near it up top.
-    const golden = items.find(it => it.golden);
-    const laneBusy = golden && golden.y < H * 0.45;
-    if (!laneBusy && now - lastSpawn > spawnGap) { spawn(); lastSpawn = now; }
+    const golden = items.find(it=>it.golden);
+    const laneBusy = golden && golden.y < H*0.45;
+    if (!laneBusy && now-lastSpawn > spawnGap){ spawnFruit(); lastSpawn=now; }
   }
 
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0,0,W,H);
 
-  // update + draw items
-  for (let i = items.length - 1; i >= 0; i--) {
+  const rimY = basket.y - basket.depth/2;     // top of the basket mouth
+  const sActive = shieldActive(now);
+
+  // update + draw falling items
+  for (let i=items.length-1; i>=0; i--){
     const it = items[i];
-    it.y += it.vy;
+    // constant fall, straight down (frame-rate independent)
+    it.y += it.vy * step;
 
-    // catch test: item center within basket mouth
-    const inX = it.x > basket.x - basket.w / 2 && it.x < basket.x + basket.w / 2;
-    const inY = it.y + it.size / 2 > basket.y - basket.h / 2 &&
-                it.y - it.size / 2 < basket.y + basket.h / 2;
+    // magnet basket: gently pull good fruit toward the basket
+    if (basket.def.perk==='magnet' && !it.bomb){
+      const d = basket.x - it.x;
+      if (Math.abs(d) < 110) it.x += Math.sign(d)*Math.min(1.4, Math.abs(d)*0.04)*step;
+    }
 
-    if (inX && inY) {
-      if (it.bomb) { Audio.sfxBomb(); gameOver(true); return; }
-      items.splice(i, 1);
-      if (it.life) { lives = Math.min(LIFE_MAX, lives + 1); Audio.sfxGolden(); }
-      else if (it.golden) { score += GOLDEN_VALUE; Audio.sfxGolden(); }
-      else { score++; Audio.sfxCatch(); }
-      // difficulty only ramps during normal play
-      if (!shower && !bombShower && !clearing) {
-        baseSpeed *= 1.01;
-        spawnGap = Math.max(420, spawnGap * 0.99);
+    // simple catch: fruit overlaps the basket mouth
+    const inX = it.x > basket.x - basket.w/2 && it.x < basket.x + basket.w/2;
+    const inY = it.y + it.size/2 > rimY && it.y - it.size/2 < basket.y + basket.depth/2;
+
+    if (inX && inY){
+      if (it.bomb){
+        if (sActive){ items.splice(i,1); Sound.clinkSfx(); burst(it.x, rimY, '#9fd0ff', 10); floatText(it.x, rimY-10, 'blocked!', '#2b7fd0'); continue; }
+        Sound.bombSfx(); burst(it.x, it.y, '#ff7043', 26); gameOver(true); return;
       }
-      const newLevel = Math.floor(score / 8) + 1;
-      if (newLevel !== level) level = newLevel;
-      // golden apple (100,200,400,800…) + extra-life ❤️ (every 150) can appear in ANY mode
-      if (score >= nextGolden) spawnGolden();
-      if (score >= nextLife) spawnLife();
-      // bomb / fruit showers only during normal play; bomb shower takes priority
-      if (!shower && !bombShower && !clearing) {
-        if (score >= nextBomb) startBombShower(now);
-        else if (score >= nextShower) startShower(now);
-      }
-      updateHud();
+      items.splice(i,1);
+      catchItem(it, rimY);
       continue;
     }
 
-    if (it.y - it.size > H) {
-      items.splice(i, 1);
-      // missed a good item -> lose a life (golden apple is a bonus: no penalty;
-      // also no penalty during special modes)
+    // missed
+    if (it.y - it.size > H){
+      items.splice(i,1);
       if (!it.bomb && !it.golden && !it.life && !shower && !bombShower && !clearing) loseLife();
       if (!running) return;
       continue;
     }
 
-    if (it.golden) {
-      // a SHINING GOLDEN apple (drawn, not the red emoji) + "+40" label
-      const r = it.size;
-      const pulse = 0.7 + 0.3 * Math.sin(now / 130);     // shimmering glow
-
-      // outer golden glow halo
-      const halo = ctx.createRadialGradient(it.x, it.y, 4, it.x, it.y, r * 1.15);
-      halo.addColorStop(0, 'rgba(255,240,150,' + (0.95 * pulse).toFixed(2) + ')');
-      halo.addColorStop(0.55, 'rgba(255,205,40,0.5)');
-      halo.addColorStop(1, 'rgba(255,190,0,0)');
-      ctx.fillStyle = halo;
-      ctx.beginPath();
-      ctx.arc(it.x, it.y, r * 1.15, 0, Math.PI * 2);
-      ctx.fill();
-
-      // golden apple body
-      const bw = r * 0.74, bh = r * 0.8;
-      const body = ctx.createRadialGradient(it.x - bw * 0.3, it.y - bh * 0.35, 2, it.x, it.y, bw);
-      body.addColorStop(0, '#fff6c0');
-      body.addColorStop(0.45, '#ffd633');
-      body.addColorStop(1, '#e0a000');
-      ctx.fillStyle = body;
-      ctx.beginPath();
-      ctx.moveTo(it.x, it.y - bh * 0.55);
-      ctx.bezierCurveTo(it.x - bw, it.y - bh * 0.9, it.x - bw, it.y + bh * 0.8, it.x, it.y + bh * 0.7);
-      ctx.bezierCurveTo(it.x + bw, it.y + bh * 0.8, it.x + bw, it.y - bh * 0.9, it.x, it.y - bh * 0.55);
-      ctx.fill();
-
-      // stem + leaf
-      ctx.strokeStyle = '#7a5200'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(it.x, it.y - bh * 0.5); ctx.lineTo(it.x, it.y - bh * 0.82); ctx.stroke();
-      ctx.fillStyle = '#5fbf3f';
-      ctx.beginPath();
-      ctx.ellipse(it.x + bw * 0.28, it.y - bh * 0.72, bw * 0.3, bh * 0.16, -0.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // glossy shine highlight
-      ctx.fillStyle = 'rgba(255,255,255,' + (0.85 * pulse).toFixed(2) + ')';
-      ctx.beginPath();
-      ctx.ellipse(it.x - bw * 0.32, it.y - bh * 0.18, bw * 0.18, bh * 0.28, -0.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // twinkling sparkle
-      const sp = (Math.sin(now / 85) + 1) / 2;
-      ctx.fillStyle = 'rgba(255,255,255,' + (0.9 * sp).toFixed(2) + ')';
-      const sx = it.x + bw * 0.5, sy = it.y - bh * 0.45, ss = 3 + 3 * sp;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy - ss); ctx.lineTo(sx + ss * 0.3, sy - ss * 0.3); ctx.lineTo(sx + ss, sy);
-      ctx.lineTo(sx + ss * 0.3, sy + ss * 0.3); ctx.lineTo(sx, sy + ss); ctx.lineTo(sx - ss * 0.3, sy + ss * 0.3);
-      ctx.lineTo(sx - ss, sy); ctx.lineTo(sx - ss * 0.3, sy - ss * 0.3); ctx.closePath();
-      ctx.fill();
-
-      // "+40" label
-      ctx.fillStyle = '#8a5a00';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('+40', it.x, it.y + r * 1.0);
-      continue;   // golden apple is fully custom-drawn — don't draw the red 🍎 emoji
-    }
-
-    if (it.life) {
-      // smaller, softer glow (normal fruit size, not a big highlight)
-      const r = it.size * 0.7;
-      const g = ctx.createRadialGradient(it.x, it.y, 2, it.x, it.y, r);
-      g.addColorStop(0, 'rgba(255,120,160,0.55)');
-      g.addColorStop(0.7, 'rgba(255,80,120,0.22)');
-      g.addColorStop(1, 'rgba(255,60,110,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(it.x, it.y, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#b3003a';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('+1 LIFE', it.x, it.y + it.size * 0.85);
-    }
-
-    ctx.font = it.size + 'px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(it.emoji, it.x, it.y);
+    drawItem(it, now);
   }
 
-  drawBasket();
+  drawBasket(now, sActive);
+  drawParticles(step);
+  drawFloats(step);
+
+  updateHud();
 }
 
-function drawBasket() {
-  const { x, y, w, h } = basket;
-  const left = x - w / 2, top = y - h / 2;
+function spawnBombSafe(){
+  // leave at least one clear lane the player can move to
+  const lanes = 4, lane = (Math.random()*lanes)|0;
+  const laneW = W/lanes;
+  const x = laneW*lane + laneW*0.5;
+  spawnFruit({bomb:true, x, vy:bombFall()});
+}
 
-  // basket body
-  ctx.fillStyle = '#a9651f';
-  ctx.strokeStyle = '#6e3f12';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(left, top);
-  ctx.lineTo(left + w, top);
-  ctx.lineTo(left + w - 12, top + h);
-  ctx.lineTo(left + 12, top + h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+function catchItem(it, rimY){
+  if (it.life){ lives = Math.min(5, lives+1); Sound.goldenSfx(); floatText(it.x, rimY, '+1 LIFE', '#ff5a78'); }
+  else if (it.golden){ score += 40; Sound.goldenSfx(); floatText(it.x, rimY, '+40', '#ffd34d'); }
+  else { score += 1; Sound.catchSfx(); }
+  burst(it.x, rimY, '#9be15d', 6);
 
+  // slow -> fast: every catch nudges the fall speed up a touch and tightens spawns
+  if (!shower && !bombShower && !clearing){
+    baseSpeed = Math.min(6, baseSpeed * 1.012);
+    spawnGap  = Math.max(480, spawnGap * 0.992);
+  }
+  level = Math.floor(score/8) + 1;       // for the HUD
+  if (score >= nextGolden) spawnGolden();
+  if (score >= nextLife)   spawnLife();
+  if (!shower && !bombShower && !clearing){
+    if (score >= nextBomb) startBombShower(performance.now());
+    else if (score >= nextShower) startShower(performance.now());
+  }
+}
+
+function loseLife(){ lives--; updateHud(); if (lives<=0) gameOver(false); else Sound.lifeSfx(); }
+
+/* ---------- drawing ---------- */
+function drawItem(it, now){
+  if (it.golden){ drawGolden(it, now); return; }
+  if (it.life){
+    const r = it.size*0.7;
+    const g = ctx.createRadialGradient(it.x,it.y,2,it.x,it.y,r);
+    g.addColorStop(0,'rgba(255,120,160,.55)'); g.addColorStop(.7,'rgba(255,80,120,.22)'); g.addColorStop(1,'rgba(255,60,110,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(it.x,it.y,r,0,6.28); ctx.fill();
+    ctx.fillStyle='#b3003a'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('+1 LIFE', it.x, it.y+it.size*0.85);
+  }
+  ctx.font = it.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(it.emoji, it.x, it.y);
+}
+function drawGolden(it, now){
+  const r = it.size, pulse = 0.7 + 0.3*Math.sin(now/130);
+  const halo = ctx.createRadialGradient(it.x,it.y,4,it.x,it.y,r*1.15);
+  halo.addColorStop(0,'rgba(255,240,150,'+(0.95*pulse).toFixed(2)+')'); halo.addColorStop(.55,'rgba(255,205,40,.5)'); halo.addColorStop(1,'rgba(255,190,0,0)');
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(it.x,it.y,r*1.15,0,6.28); ctx.fill();
+  const bw=r*0.74, bh=r*0.8;
+  const body = ctx.createRadialGradient(it.x-bw*0.3,it.y-bh*0.35,2,it.x,it.y,bw);
+  body.addColorStop(0,'#fff6c0'); body.addColorStop(.45,'#ffd633'); body.addColorStop(1,'#e0a000');
+  ctx.fillStyle=body; ctx.beginPath();
+  ctx.moveTo(it.x,it.y-bh*0.55);
+  ctx.bezierCurveTo(it.x-bw,it.y-bh*0.9,it.x-bw,it.y+bh*0.8,it.x,it.y+bh*0.7);
+  ctx.bezierCurveTo(it.x+bw,it.y+bh*0.8,it.x+bw,it.y-bh*0.9,it.x,it.y-bh*0.55); ctx.fill();
+  ctx.strokeStyle='#7a5200'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(it.x,it.y-bh*0.5); ctx.lineTo(it.x,it.y-bh*0.82); ctx.stroke();
+  ctx.fillStyle='#5fbf3f'; ctx.beginPath(); ctx.ellipse(it.x+bw*0.28,it.y-bh*0.72,bw*0.3,bh*0.16,-0.6,0,6.28); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,'+(0.85*pulse).toFixed(2)+')'; ctx.beginPath(); ctx.ellipse(it.x-bw*0.32,it.y-bh*0.18,bw*0.18,bh*0.28,-0.5,0,6.28); ctx.fill();
+  ctx.fillStyle='#8a5a00'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+40', it.x, it.y+r*1.0);
+}
+
+function drawBasket(now, sActive){
+  const x=basket.x, y=basket.y, w=basket.w, h=basket.depth, d=basket.def;
+  const left=x-w/2, top=y-h/2;
+  ctx.save();
+  // body (tapered)
+  ctx.fillStyle=d.color; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left+w,top); ctx.lineTo(left+w-14,top+h); ctx.lineTo(left+14,top+h); ctx.closePath(); ctx.fill(); ctx.stroke();
   // rim
-  ctx.fillStyle = '#c98235';
-  ctx.fillRect(left - 4, top - 8, w + 8, 12);
-  ctx.strokeRect(left - 4, top - 8, w + 8, 12);
+  ctx.fillStyle=d.rim; ctx.fillRect(left-4, top-8, w+8, 12); ctx.strokeRect(left-4, top-8, w+8, 12);
+  // weave
+  ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=2;
+  for (let gx=14; gx<w-10; gx+=16){ ctx.beginPath(); ctx.moveTo(left+gx, top+2); ctx.lineTo(left+gx-3, top+h-2); ctx.stroke(); }
+  ctx.restore();
 
-  // weave lines
-  ctx.strokeStyle = 'rgba(110,63,18,.6)';
-  ctx.lineWidth = 2;
-  for (let gx = 14; gx < w - 10; gx += 16) {
-    ctx.beginPath();
-    ctx.moveTo(left + gx, top + 2);
-    ctx.lineTo(left + gx - 3, top + h - 2);
-    ctx.stroke();
+  // shield dome
+  if (sActive){
+    const a = Math.min(1, (shieldUntil - now)/300);
+    ctx.save(); ctx.globalAlpha = 0.35 + 0.25*Math.sin(now/80);
+    const g = ctx.createRadialGradient(x, top-4, 4, x, top-4, w*0.85);
+    g.addColorStop(0,'rgba(180,225,255,.7)'); g.addColorStop(1,'rgba(60,140,220,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x, top-4, w*0.85, Math.PI, 0); ctx.fill();
+    ctx.globalAlpha = Math.max(0.3, a); ctx.strokeStyle='rgba(150,210,255,.9)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(x, top-4, w*0.85, Math.PI, 0); ctx.stroke();
+    ctx.restore();
   }
 }
 
-// ---- Input ----
+function drawParticles(step){
+  for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx*step; p.y+=p.vy*step; p.vy+=0.18*step; p.life-=0.035*step;
+    if (p.life<=0){ particles.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,6.28); ctx.fill(); }
+  ctx.globalAlpha=1;
+}
+function drawFloats(step){
+  for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.y-=0.8*step; f.life-=0.02*step;
+    if (f.life<=0){ floats.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,f.life); ctx.fillStyle=f.color; ctx.font='bold 18px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(f.txt, f.x, f.y); }
+  ctx.globalAlpha=1;
+}
+
+/* ---------- shield button cooldown UI ---------- */
+function refreshShieldBtn(){
+  const btn = $('shieldBtn'), lbl = $('shieldLbl');
+  if (!running){ btn.style.display='none'; return; }
+  btn.style.display='flex';
+  const now = performance.now();
+  if (now < shieldReadyAt && now >= shieldUntil){
+    btn.classList.add('cooling');
+    lbl.textContent = Math.ceil((shieldReadyAt-now)/1000)+'s';
+  } else {
+    btn.classList.remove('cooling');
+    lbl.textContent = shieldActive(now) ? 'ON' : '';
+  }
+}
+setInterval(refreshShieldBtn, 200);
+
+/* ============================================================
+   FLOW: start / game over / shop
+   ============================================================ */
+function start(){
+  resize(); reset();
+  $('overlay').classList.add('hidden'); $('shop').classList.add('hidden');
+  running = true;
+  Sound.ready(); Sound.startMusic();
+  lastSpawn = performance.now() - spawnGap;
+  lastT = performance.now();
+  refreshShieldBtn();
+  raf = requestAnimationFrame(loop);
+}
+
+function gameOver(byBomb){
+  running = false;
+  cancelAnimationFrame(raf);
+  Sound.stopMusic();
+  hideBanner();
+  $('shieldBtn').style.display='none';
+  if (!byBomb) Sound.sadSfx();
+
+  // pay out coins = score (golden basket gives a bonus)
+  const mult = basket.def.perk==='coin' ? basket.def.perkV : 1;
+  const earned = Math.round(score * mult);
+  data.coins += earned;
+  const isNewHigh = score > data.best;
+  if (isNewHigh) data.best = score;
+  saveData();
+  Sound.coinSfx();
+
+  $('overlay').classList.remove('hidden');
+  $('overlay').innerHTML = `
+    <h1>${byBomb ? '💥 Boom!' : 'Game Over'}</h1>
+    <p>${byBomb ? 'You caught a bomb!' : 'You ran out of lives.'}</p>
+    <p>Score: <b>${score}</b> &nbsp;•&nbsp; Level <b>${level}</b></p>
+    <div class="coinbig">🪙 +${earned} coins ${mult>1?'(✨ basket bonus!)':''}</div>
+    <p class="small">Total coins: <b>${data.coins}</b></p>
+    ${isNewHigh ? `<p style="color:#ffd34d;font-size:22px">🏆 New High Score!</p>`
+                : `<p class="small">🏆 Your best: <b>${data.best}</b> — beat it!</p>`}
+    <div class="row">
+      <button class="pill green" id="againBtn">▶ Play Again</button>
+      <button class="pill blue" id="shopBtn2">🧺 Baskets</button>
+    </div>`;
+  $('againBtn').addEventListener('click', start);
+  $('shopBtn2').addEventListener('click', openShop);
+}
+
+/* ---------- shop ---------- */
+function renderShop(){
+  $('shopCoins').textContent = data.coins;
+  const list = $('shopList'); list.innerHTML = '';
+  BASKETS.forEach(b => {
+    const owned = data.owned.includes(b.id);
+    const selected = data.sel === b.id;
+    const sBar = '▮'.repeat(Math.max(1, Math.round((b.speed-7)/2)));
+    const card = document.createElement('div');
+    card.className = 'bcard' + (selected?' sel':'');
+    card.innerHTML = `
+      <div class="ico">${b.ico}</div>
+      <div class="info">
+        <b>${b.name}</b> ${selected?'<span style="color:#ffd34d">• equipped</span>':''}
+        <div class="d">${b.tease}${b.perk ? ' <b style="color:#9be15d">('+b.perkTxt+')</b>' : ''}</div>
+        <div class="bars">Move speed ${sBar}</div>
+      </div>
+      <div class="act">
+        ${owned
+          ? `<button class="selBtn ${selected?'on':''}" data-sel="${b.id}">${selected?'Equipped':'Use'}</button>`
+          : `<div class="price">🪙 ${b.price}</div><button class="buyBtn" data-buy="${b.id}" ${data.coins<b.price?'disabled':''}>Buy</button>`}
+      </div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll('[data-buy]').forEach(btn => btn.onclick = () => {
+    const b = getBasket(btn.dataset.buy);
+    if (data.coins < b.price || data.owned.includes(b.id)) return;
+    data.coins -= b.price; data.owned.push(b.id); data.sel = b.id; saveData();
+    Sound.goldenSfx(); renderShop(); updateHud();
+  });
+  list.querySelectorAll('[data-sel]').forEach(btn => btn.onclick = () => {
+    data.sel = btn.dataset.sel; saveData(); Sound.catchSfx(); renderShop(); updateHud();
+  });
+}
+function openShop(){ $('overlay').classList.add('hidden'); $('shop').classList.remove('hidden'); renderShop(); }
+function closeShop(){ $('shop').classList.add('hidden'); $('overlay').classList.remove('hidden'); }
+
+/* ============================================================
+   INPUT
+   ============================================================ */
 window.addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = true;
-  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = true;
-  if ((e.key === ' ' || e.key === 'Enter') && !running) start();
+  if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=true;
+  if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=true;
+  if (e.key===' '||e.key==='Enter'){ if(!running && $('overlay').classList.contains('hidden')===false) start(); }
+  if (e.key==='Shift') tryShield();
 });
 window.addEventListener('keyup', e => {
-  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = false;
-  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = false;
+  if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=false;
+  if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=false;
 });
+function pointTo(clientX){ const r=canvas.getBoundingClientRect(); dragX = clientX - r.left; }
+canvas.addEventListener('pointerdown', e => { if(running) pointTo(e.clientX); });
+canvas.addEventListener('pointermove', e => { if(running && (e.buttons&1 || e.pointerType==='touch')) pointTo(e.clientX); });
+canvas.addEventListener('pointerup',   () => { dragX = null; });
+canvas.addEventListener('touchmove', e => { if(running){ pointTo(e.touches[0].clientX); e.preventDefault(); } }, {passive:false});
+canvas.addEventListener('touchstart', e => { if(running){ pointTo(e.touches[0].clientX); } }, {passive:false});
+canvas.addEventListener('touchend',  () => { dragX = null; });
 
-// touch / mouse drag
-function pointTo(clientX) {
-  const rect = canvas.getBoundingClientRect();
-  if (basket) basket.x = clientX - rect.left;
+$('startBtn').addEventListener('click', start);
+$('shopBtn').addEventListener('click', openShop);
+$('shopBack').addEventListener('click', closeShop);
+$('shieldBtn').addEventListener('click', tryShield);
+$('muteBtn').addEventListener('click', () => { Sound.ready(); const on = Sound.toggleMusic(); $('muteBtn').textContent = on ? '🔊' : '🔇'; });
+
+/* ---------- boot ---------- */
+function boot(){
+  $('who').textContent = acct ? '👤 ' + acct.name : '👤 Guest';
+  $('ovWho').innerHTML = acct ? `Playing as <b>${acct.name}</b>` : 'Playing as <b>Guest</b>';
+  $('ovCoins').textContent = data.coins;
+  $('ovBest').innerHTML = data.best>0 ? `🏆 Your best: <b>${data.best}</b>` : `🏆 No high score yet — set one!`;
+  resize();
 }
-canvas.addEventListener('mousemove', e => { if (running && (e.buttons & 1)) pointTo(e.clientX); });
-canvas.addEventListener('mousedown', e => { if (running) pointTo(e.clientX); });
-canvas.addEventListener('touchmove', e => { if (running) { pointTo(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
-canvas.addEventListener('touchstart', e => { if (running) pointTo(e.touches[0].clientX); }, { passive: false });
-
-startBtn.addEventListener('click', start);
-
-const muteBtn = document.getElementById('muteBtn');
-muteBtn.addEventListener('click', () => {
-  Audio.ensure();
-  const on = Audio.toggleMusic();
-  muteBtn.textContent = on ? '🔊' : '🔇';
-});
-
-// who is playing (from the shared account)
-const whoEl = document.getElementById('who');
-if (whoEl) whoEl.textContent = acct ? '👤 ' + acct.name : '👤 Guest';
-
-// show the saved high score on the opening screen
-const startBest = document.getElementById('startBest');
-if (startBest) {
-  const whoLine = acct ? `Playing as <b>${acct.name}</b><br>` : '';
-  startBest.innerHTML = whoLine + (highScore > 0
-    ? `🏆 Your best: <b>${highScore}</b> — beat it!`
-    : `🏆 No high score yet — set one!`);
-}
-bestEl.textContent = '🏆 Best: ' + highScore;
-
-resize();
-
-/* PWA: register the service worker for offline play */
-if('serviceWorker' in navigator){
-  let _ref=false;
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_ref) return; _ref=true; location.reload(); });
-  window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); });
-}
+boot();
 </script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
