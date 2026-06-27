@@ -1,9 +1,11 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v32';
+const CACHE = 'ilan-arcade-v33';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './analytics.js',
+  './announce.js',
   './icon-192.png',
   './icon-512.png',
   './icon-180.png',
@@ -67,6 +69,11 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const accept = req.headers.get('accept') || '';
+  // messages.json must always be fresh (announcements). Network-first, no caching.
+  if (new URL(req.url).pathname.endsWith('messages.json')) {
+    e.respondWith(fetch(req).catch(() => new Response('{"messages":[]}', { headers: { 'Content-Type': 'application/json' } })));
+    return;
+  }
   const isHTML = req.mode === 'navigate' || accept.includes('text/html');
   if (isHTML) {
     e.respondWith((async () => {

@@ -458,5 +458,7 @@ render();
 if('serviceWorker' in navigator){ let r=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(r)return; r=true; location.reload(); });
   window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{})); }
 </script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
 </body>
 </html>

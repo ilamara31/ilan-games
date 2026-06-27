@@ -17,6 +17,23 @@ Open `index.html` in any web browser. No installation needed — they're plain H
 ## Live website
 Published with GitHub Pages: **https://ilamara31.github.io/ilan-games/**
 
+## Analytics & player messages (Phase 1)
+Two shared scripts load on every page: `analytics.js` and `announce.js`.
+
+**See who plays what (Microsoft Clarity):**
+1. Create a free project at https://clarity.microsoft.com
+2. Copy the **Project ID** and paste it into `CLARITY_PROJECT_ID` near the top of `analytics.js`.
+3. Commit & push. You get session recordings, heatmaps, and rage/dead-click reports,
+   tagged by `game` (and `player` name if set). Custom events already fire:
+   `game_card_click`, `game_open`, `announcement_*`. Add more anywhere with
+   `window.track('game_over', { score: 42 })`.
+
+**Send a message to players (no backend):** edit `messages.json`, commit, push.
+- `target: "all"` → everyone. `target: "obby"` or `["obby","cricket"]` → only players
+  on that game now or who've played it before on their device.
+- Optional `cta` button, `start`/`end` dates, and `level` (info/success/warning).
+- Give each message a unique `id`; players can dismiss it and won't see it again.
+
 ## Working on a different laptop
 1. Install Git and the GitHub CLI (`gh`).
 2. `gh auth login` and sign in as Ilan.

@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "id": "welcome-2026-06",
+      "title": "🎮 Welcome to Ilan's Arcade!",
+      "body": "New game just dropped: Anime Tycoon. Build your anime empire!",
+      "target": "all",
+      "cta": { "label": "Play now", "href": "anime-tycoon/" },
+      "start": "2026-06-01",
+      "end": "2026-09-30",
+      "level": "info"
+    }
+  ]
+}
