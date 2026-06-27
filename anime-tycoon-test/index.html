@@ -390,7 +390,7 @@ const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c},o));
 const TMP=new THREE.Vector3();
 
 /* ---------- world ---------- */
-const ARENA=new THREE.Vector3(0,0,-78), ARENA_R=34;
+const ARENA=new THREE.Vector3(0,0,-78), ARENA_R=44;
 const PLOT=new THREE.Vector3(0,0,16);
 
 // realistic grass/earth ground (procedural canvas texture)
@@ -426,7 +426,9 @@ function cityBlock(x,z,seed){ const g=new THREE.Group();
 let bi=0;
 for(let ring=0;ring<3;ring++){ const rad=70+ring*42, cnt=8+ring*4;
   for(let i=0;i<cnt;i++){ const a=i/cnt*Math.PI*2 + ring*0.4; const x=Math.cos(a)*rad, z=Math.sin(a)*rad;
-    if(Math.abs(x)<34&&z>-46) continue; scene.add(cityBlock(x,z,(bi++*7)%30)); } }
+    if(Math.abs(x)<34&&z>-46) continue;
+    if(Math.hypot(x-ARENA.x, z-ARENA.z) < ARENA_R+12) continue; // keep the Battle Arena clear
+    scene.add(cityBlock(x,z,(bi++*7)%30)); } }
 
 // PLOT platform — large & spacious (concrete with path-coloured edge)
 const PW=52, PD=44;
@@ -1009,11 +1011,9 @@ function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-las
   if(keys['KeyD']||keys['ArrowRight']) right+=1; if(keys['KeyA']||keys['ArrowLeft']) right-=1;
   if(stickActive){ fwd=-stickVec.y; right=stickVec.x; }
   let speed=0; const buffSpd=P.buff?P.buff.spd:1;
-  // sprint: hold the SPRINT button (or R key) to run; never in the Battle Arena
-  const sprintBlocked = inArena(player.position);
-  const sprinting = !sprintBlocked && (sprintHeld || keys['KeyR']);
+  // sprint: hold the SPRINT button (or R key) to run — enabled everywhere, incl. the Battle Arena
+  const sprinting = sprintHeld || keys['KeyR'];
   const sprintMul = sprinting ? 1.85 : 1;
-  sprintBtnEl.classList.toggle('off', sprintBlocked);
   if(fwd||right){ let len=Math.hypot(fwd,right); if(len>1){ fwd/=len; right/=len; }
     const sn=Math.sin(camYaw), cs=Math.cos(camYaw);
     const wx=sn*fwd - cs*right, wz=cs*fwd + sn*right; // F=(sin,cos), R=(-cos,sin) (camera right = world -x)
