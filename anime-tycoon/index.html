@@ -93,6 +93,9 @@
     display:none; align-items:center; justify-content:center; text-align:center; user-select:none; -webkit-user-select:none; touch-action:none; }
   #sprintBtn.active{ background:rgba(255,176,58,.6); transform:scale(.94); }
   #sprintBtn.off{ opacity:.35; }
+  /* desktop hint under the SPRINT button */
+  #sprintHint{ position:absolute; right:89px; bottom:78px; width:100px; text-align:center; display:none;
+    font-size:11px; font-weight:bold; color:#ffd9a0; text-shadow:0 1px 3px rgba(0,0,0,.8); pointer-events:none; }
   /* joystick */
   #stick{ position:absolute; left:18px; bottom:18px; width:130px; height:130px; border-radius:50%; pointer-events:auto;
     background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.14); display:none; }
@@ -178,6 +181,7 @@
   </div>
   <div id="jumpBtn">JUMP</div>
   <div id="sprintBtn">SPRINT</div>
+  <div id="sprintHint">Press R to sprint</div>
   <div id="stick"><div class="nub" id="nub"></div></div>
 </div>
 
@@ -390,7 +394,7 @@ const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c},o));
 const TMP=new THREE.Vector3();
 
 /* ---------- world ---------- */
-const ARENA=new THREE.Vector3(0,0,-78), ARENA_R=26;
+const ARENA=new THREE.Vector3(0,0,-78), ARENA_R=44;
 const PLOT=new THREE.Vector3(0,0,16);
 
 // realistic grass/earth ground (procedural canvas texture)
@@ -426,7 +430,9 @@ function cityBlock(x,z,seed){ const g=new THREE.Group();
 let bi=0;
 for(let ring=0;ring<3;ring++){ const rad=70+ring*42, cnt=8+ring*4;
   for(let i=0;i<cnt;i++){ const a=i/cnt*Math.PI*2 + ring*0.4; const x=Math.cos(a)*rad, z=Math.sin(a)*rad;
-    if(Math.abs(x)<34&&z>-46) continue; scene.add(cityBlock(x,z,(bi++*7)%30)); } }
+    if(Math.abs(x)<34&&z>-46) continue;
+    if(Math.hypot(x-ARENA.x, z-ARENA.z) < ARENA_R+12) continue; // keep the Battle Arena clear
+    scene.add(cityBlock(x,z,(bi++*7)%30)); } }
 
 // PLOT platform — large & spacious (concrete with path-coloured edge)
 const PW=52, PD=44;
@@ -987,7 +993,9 @@ $('playBtn').onclick=()=>{ const nm=$('nameIn').value.trim()||'Player';
   dressInto(player,{path:S.path}); buildHeroStatue();
   plotEdge.material.color.setHex(PATHS[S.path].accent); plotEdge.material.emissive.setHex(PATHS[S.path].accent);
   $('start').classList.add('hidden'); $('hud').classList.remove('hidden');
-  if('ontouchstart' in window){ $('stick').style.display='block'; $('jumpBtn').style.display='flex'; $('sprintBtn').style.display='flex'; }
+  $('sprintBtn').style.display='flex';   // SPRINT button on every device (desktop + touch)
+  if(!('ontouchstart' in window)) $('sprintHint').style.display='block';   // PC keyboard hint
+  if('ontouchstart' in window){ $('stick').style.display='block'; $('jumpBtn').style.display='flex'; }
   rebuildBase(); buildPads(); refreshPowers(); applyCosmetics();
   shiftLock=false; if(S.lock) toggleLock();
   initAudio(); syncHUD(); toast('🏗️ Tap the green pads to build your mansion! 💰 Money auto-collects.','#ffd54a'); };
@@ -1008,11 +1016,9 @@ function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-las
   if(keys['KeyD']||keys['ArrowRight']) right+=1; if(keys['KeyA']||keys['ArrowLeft']) right-=1;
   if(stickActive){ fwd=-stickVec.y; right=stickVec.x; }
   let speed=0; const buffSpd=P.buff?P.buff.spd:1;
-  // sprint: hold the SPRINT button (or R key) to run; never in the Battle Arena
-  const sprintBlocked = inArena(player.position);
-  const sprinting = !sprintBlocked && (sprintHeld || keys['KeyR']);
+  // sprint: hold the SPRINT button (or R key) to run — enabled everywhere, incl. the Battle Arena
+  const sprinting = sprintHeld || keys['KeyR'];
   const sprintMul = sprinting ? 1.85 : 1;
-  sprintBtnEl.classList.toggle('off', sprintBlocked);
   if(fwd||right){ let len=Math.hypot(fwd,right); if(len>1){ fwd/=len; right/=len; }
     const sn=Math.sin(camYaw), cs=Math.cos(camYaw);
     const wx=sn*fwd - cs*right, wz=cs*fwd + sn*right; // F=(sin,cos), R=(-cos,sin) (camera right = world -x)
