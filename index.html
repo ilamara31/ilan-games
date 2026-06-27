@@ -49,6 +49,10 @@
     background:linear-gradient(135deg,#ffe14a,#ff9b3d); padding:13px 24px; border-radius:30px; box-shadow:0 8px 22px rgba(255,170,60,.4); animation:bannerpulse 2s infinite; }
   #newBanner a:active { transform:scale(.97); }
   @keyframes bannerpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.035) } }
+  /* recommended-device chip */
+  .rec { display:inline-block; margin-top:12px; font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px;
+    background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.18); color:#eaf2ff; }
+  .rec.warn { background:rgba(255,170,40,.16); border-color:rgba(255,180,60,.6); color:#ffd9a0; }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
   /* account bar + modal */
   #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
@@ -253,6 +257,33 @@
         banner.innerHTML='<a href="'+newest.getAttribute('href')+'">🎮 Try the new game — '+name+'! ▶</a>';
         banner.style.display='block';
       }
+    })();
+
+    /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
+    const REC = {
+      'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'obby/':'both',
+      'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both',
+    };
+    (function(){
+      const LABEL = {
+        both:     { t:'👍 Plays great on any device',  ideal:['desktop','tablet','mobile'] },
+        mobile:   { t:'📱 Best on phone',              ideal:['mobile','tablet'] },
+        pc:       { t:'💻 Best on PC / laptop',        ideal:['desktop'] },
+        pctablet: { t:'💻📱 Best on PC / tablet',       ideal:['desktop','tablet'] },
+      };
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const shortSide = Math.min(screen.width||innerWidth, screen.height||innerHeight);
+      const device = !coarse ? 'desktop' : (shortSide >= 600 ? 'tablet' : 'mobile');
+      document.querySelectorAll('a.card').forEach(card=>{
+        const cat = REC[card.getAttribute('href')]; if(!cat) return; const L = LABEL[cat];
+        const chip = document.createElement('div'); chip.className='rec';
+        const ideal = L.ideal.includes(device);
+        if(ideal){ chip.textContent = L.t; }
+        else { chip.classList.add('warn');
+          const tip = (cat==='pc'||cat==='pctablet') ? ' — easier with a keyboard' : (cat==='mobile' ? ' — easier on a touchscreen' : '');
+          chip.textContent = L.t + tip; }
+        card.appendChild(chip);
+      });
     })();
   </script>
 <script src="analytics.js" defer></script>
