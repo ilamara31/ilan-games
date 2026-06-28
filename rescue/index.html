@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Rescue Bounce</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rescue Bounce" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+  html, body {
+    height:100%; width:100%;
+    background:linear-gradient(#2a1a4a, #6a2b4a 55%, #b8553a);
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    overflow:hidden; overscroll-behavior:none;
+  }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  canvas { display:block; touch-action:none; }
+
+  /* ---- HUD ---- */
+  #hud {
+    position:absolute; top:max(10px,env(safe-area-inset-top)); left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:0 16px; font-size:18px; font-weight:800; color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,.5); pointer-events:none;
+  }
+  #hud .col { display:flex; flex-direction:column; gap:2px; }
+  #hud .col.right { align-items:flex-end; }
+  #coins { color:#ffd34d; }
+  #best  { font-size:14px; color:#ffd9c0; }
+  #who   { font-size:12px; font-weight:700; opacity:.9; }
+  #level { font-size:15px; }
+  #lives { font-size:17px; letter-spacing:1px; }
+
+  #muteBtn {
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:14px;
+    font-size:22px; width:46px; height:46px; border:none; border-radius:50%;
+    background:rgba(255,255,255,.78); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.3); z-index:20;
+  }
+  #homeBtn {
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:68px;
+    font-size:22px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.78);
+    display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); z-index:20;
+  }
+
+  /* ---- banner ---- */
+  #banner {
+    position:absolute; top:calc(env(safe-area-inset-top) + 64px); left:50%; transform:translateX(-50%);
+    padding:11px 20px; border-radius:16px; background:rgba(220,40,40,.95); color:#fff;
+    font-size:20px; font-weight:800; text-align:center; line-height:1.35; pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.35); max-width:92vw; z-index:15;
+    animation:pop .35s ease, glow 1s ease-in-out infinite alternate;
+  }
+  @keyframes pop { from { transform:translateX(-50%) scale(.6); opacity:0; } }
+  @keyframes glow { to { box-shadow:0 4px 26px rgba(255,120,80,.9); } }
+
+  /* ---- overlays ---- */
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:max(20px,env(safe-area-inset-top)) 20px calc(env(safe-area-inset-bottom) + 24px);
+    background:rgba(14,10,30,.72); color:#fff; text-align:center; z-index:25;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .screen h1 { font-size:clamp(30px,8vw,48px); letter-spacing:.5px;
+    background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .screen p  { font-size:16px; max-width:min(440px,100%); line-height:1.55; opacity:.95; }
+  .small { font-size:14px; opacity:.85; }
+  .pill {
+    font-size:20px; font-weight:800; padding:14px 34px; border:none; border-radius:999px;
+    background:linear-gradient(135deg,#ff5a5a,#d12f2f); color:#fff; cursor:pointer;
+    box-shadow:0 5px 0 #9e2020; transition:transform .05s; touch-action:manipulation;
+  }
+  .pill:active { transform:translateY(3px); box-shadow:0 2px 0 #9e2020; }
+  .coinbig { font-size:22px; font-weight:900; color:#ffd34d; }
+  .hidden { display:none !important; }
+  .tag { position:absolute; top:6px; left:8px; font-size:11px; font-weight:800; color:#fff;
+    background:#c0392b; padding:2px 8px; border-radius:8px; opacity:.85; z-index:30; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="col">
+      <div id="score">Rescued: 0</div>
+      <div id="best">🏆 Best: 0</div>
+      <div id="who"></div>
+    </div>
+    <div class="col right">
+      <div id="coins">🪙 0</div>
+      <div id="level">Level 1</div>
+      <div id="lives">❤️❤️❤️</div>
+    </div>
+  </div>
+
+  <button id="muteBtn" title="Sound">🔊</button>
+  <a id="homeBtn" href="../" title="All games">🏠</a>
+  <div id="banner" class="hidden"></div>
+  <div class="tag">TEST</div>
+
+  <!-- START / GAME OVER -->
+  <div id="overlay" class="screen">
+    <h1>🚒 Rescue Bounce</h1>
+    <p>People are jumping from the burning building! <b>Slide the trampoline</b> to bounce them safely into the ambulance. 🚑</p>
+    <p class="small">Drag (or use <b>← →</b>) to move. Catch 🧑 people &amp; 🐱 pets to rescue them. <b>Dodge 🔥 falling debris</b> — and don't let anyone hit the ground! 3 lives.</p>
+    <div id="ovExtra"></div>
+    <button id="startBtn" class="pill">▶ Play</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- player + saved data (shared arcade account system) ---------- */
+const STORE_KEY = 'soc_store_v1';
+function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
+function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
+const acctStore = igLoad();
+const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
+
+const GUEST_KEY = 'rescueBounce_guest';
+function defData(){ return { best:0, coins:0 }; }
+function loadData(){
+  let d;
+  if (acct){ if (!acct.rescue || typeof acct.rescue!=='object') acct.rescue={}; d=acct.rescue; }
+  else { try{ d=JSON.parse(localStorage.getItem(GUEST_KEY)); }catch(e){} if(!d||typeof d!=='object') d={}; }
+  const def = defData();
+  if (typeof d.best  !== 'number') d.best  = def.best;
+  if (typeof d.coins !== 'number') d.coins = def.coins;
+  return d;
+}
+let data = loadData();
+function saveData(){ if (acct){ acct.rescue=data; igSave(); } else { try{ localStorage.setItem(GUEST_KEY, JSON.stringify(data)); }catch(e){} } }
+$('who').textContent = acct ? ('Playing as '+acct.name) : 'Guest — set a name on the home screen to save scores';
+
+/* ---------- sound (synth, mobile-safe) ---------- */
+const Sound = (() => {
+  let ac=null, master=null, on=true;
+  function init(){ if(ac) return; try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination); }catch(e){} }
+  function unlock(){ init(); if(ac&&ac.state==='suspended') ac.resume(); }
+  function tone(f,t0,dur,type,vol){ if(!ac||!on) return; const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type||'sine'; o.frequency.value=f; o.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol||0.4,t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.start(t0); o.stop(t0+dur+0.02); }
+  function boing(){ if(!ac||!on) return; const t=ac.currentTime; const o=ac.createOscillator(),g=ac.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(620,t+0.14);
+    o.connect(g); g.connect(master); g.gain.setValueAtTime(0.45,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.2); o.start(t); o.stop(t+0.22); }
+  return {
+    unlock,
+    bounce(){ boing(); },
+    rescue(){ if(!ac) return; const t=ac.currentTime; tone(660,t,0.12,'triangle',0.35); tone(880,t+0.08,0.16,'triangle',0.3); },
+    hurt(){ if(!ac) return; const t=ac.currentTime; tone(160,t,0.25,'sawtooth',0.4); tone(110,t+0.05,0.3,'square',0.3); },
+    life(){ if(!ac) return; const t=ac.currentTime; tone(784,t,0.12,'sine',0.35); tone(1047,t+0.1,0.18,'sine',0.3); },
+    over(){ if(!ac) return; const t=ac.currentTime; [523,415,330,262].forEach((f,i)=>tone(f,t+i*0.14,0.3,'triangle',0.35)); },
+    click(){ if(!ac) return; tone(520,ac.currentTime,0.07,'square',0.25); },
+    toggle(){ on=!on; return on; }
+  };
+})();
+
+/* ---------- canvas ---------- */
+const cv = $('game'), ctx = cv.getContext('2d');
+let W=0, H=0, dpr=1;
+function resize(){
+  dpr = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*dpr; cv.height = H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------- game state ---------- */
+const PEOPLE=['🧑','👩','👨','👵','👴','🧒','🧕','👲','🧓'];
+const PETS=['🐱','🐶','🐰','🐹'];
+const DEBRIS=['🔥','🪵','🧱','🛢️'];
+let running=false, score=0, lives=3, level=1;
+let fallers=[], flyers=[], floats=[], parts=[];
+let tramp, spawnT=0, baseSpeed=130, storm=false, stormT=0, nextStorm=12, shake=0, lastT=0;
+
+function trampY(){ return H - 96; }
+function newTramp(){ const w = Math.max(110, Math.min(W*0.24, 168)); return { x:W/2, target:W/2, w:w, squash:0 }; }
+
+function reset(){
+  score=0; lives=3; level=1; fallers=[]; flyers=[]; floats=[]; parts=[];
+  spawnT=0.5; baseSpeed=130; storm=false; stormT=0; nextStorm=12; shake=0; lastT=0;
+  tramp=newTramp();
+}
+
+/* ---------- spawning ---------- */
+function spawnFaller(forceType){
+  const r = Math.random();
+  let type = forceType;
+  if(!type){
+    const debrisP = Math.min(0.34, 0.10 + score*0.004);
+    const petP    = 0.10, heartP = (lives<5 ? 0.04 : 0);
+    if(r < heartP) type='heart';
+    else if(r < heartP+petP) type='pet';
+    else if(r < heartP+petP+debrisP) type='debris';
+    else type='person';
+  }
+  const emoji = type==='person' ? PEOPLE[(Math.random()*PEOPLE.length)|0]
+              : type==='pet'    ? PETS[(Math.random()*PETS.length)|0]
+              : type==='heart'  ? '❤️'
+              : DEBRIS[(Math.random()*DEBRIS.length)|0];
+  const margin = Math.max(40, W*0.10);
+  const x = margin + Math.random()*(W-2*margin);
+  const spd = (baseSpeed + score*3 + (storm?120:0)) * (0.92+Math.random()*0.18);
+  fallers.push({ x, y:-30, vy:spd, size:type==='debris'?40:46, type, emoji, rot:(Math.random()-.5)*0.5, done:false });
+}
+
+/* ---------- input ---------- */
+let keyL=false, keyR=false;
+function pointerX(e){ const t=e.touches?e.touches[0]:e; return t.clientX; }
+function onMove(e){ if(!running) return; if(e.cancelable) e.preventDefault(); tramp.target = Math.max(tramp.w/2, Math.min(W-tramp.w/2, pointerX(e))); }
+cv.addEventListener('mousemove', onMove);   // desktop: trampoline follows the cursor
+cv.addEventListener('mousedown', onMove);
+cv.addEventListener('touchstart', e=>{ Sound.unlock(); onMove(e); }, {passive:false});
+cv.addEventListener('touchmove', onMove, {passive:false});
+addEventListener('keydown', e=>{ if(e.code==='ArrowLeft') keyL=true; if(e.code==='ArrowRight') keyR=true; });
+addEventListener('keyup',   e=>{ if(e.code==='ArrowLeft') keyL=false; if(e.code==='ArrowRight') keyR=false; });
+
+/* ---------- effects ---------- */
+function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*6.28, s=40+Math.random()*140; parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.6,color}); } }
+function floatText(x,y,txt,color){ floats.push({x,y,txt,color,life:0.9}); }
+
+/* ---------- catch handling ---------- */
+function onCatch(f){
+  const tx = tramp.x, ty = trampY();
+  tramp.squash = 1;
+  if(f.type==='debris'){
+    lives--; shake=14; Sound.hurt(); burst(tx,ty,'#ff7a3a',16); floatText(tx,ty-30,'OUCH! 💥','#ff5a5a');
+    if(lives<=0) gameOver();
+  } else if(f.type==='heart'){
+    if(lives<5) lives++; Sound.life(); burst(tx,ty,'#ff5a78',14); floatText(tx,ty-30,'+1 LIFE ❤️','#ff8aa0');
+  } else {
+    const pts = f.type==='pet'?2:1; score+=pts;
+    Sound.bounce(); Sound.rescue(); burst(tx,ty,'#7ee0ff',10);
+    flyers.push({ emoji:f.emoji, x0:tx, y0:ty, x:tx, y:ty, t:0, dur:0.55, pts });
+    if(score>data.best){} // best handled at game over
+  }
+}
+
+/* ---------- update ---------- */
+const AMB = () => ({ x: 58, y: H - 56 });
+function update(dt){
+  // trampoline move
+  if(keyL) tramp.target -= 620*dt;
+  if(keyR) tramp.target += 620*dt;
+  tramp.target = Math.max(tramp.w/2, Math.min(W-tramp.w/2, tramp.target));
+  tramp.x += (tramp.target - tramp.x) * Math.min(1, dt*16);
+  tramp.squash = Math.max(0, tramp.squash - dt*4);
+
+  // difficulty + storm
+  level = Math.floor(score/10)+1;
+  if(!storm && score>=nextStorm){ storm=true; stormT=6; nextStorm += 22; banner('🔥 FIRE STORM! Save them all!'); }
+  if(storm){ stormT-=dt; if(stormT<=0){ storm=false; hideBanner(); } }
+
+  // spawning
+  spawnT -= dt;
+  if(spawnT<=0){
+    spawnFaller();
+    const gap = Math.max(0.42, (storm?0.55:1.35) - score*0.018);
+    spawnT = gap;
+    if(score>14 && Math.random()<Math.min(0.4, 0.12+score*0.006)) spawnFaller(); // double drop
+  }
+
+  // fallers
+  const ty = trampY();
+  for(let i=fallers.length-1;i>=0;i--){
+    const f=fallers[i]; if(f.done){ fallers.splice(i,1); continue; }
+    f.y += f.vy*dt; f.rot += dt*0.6;
+    if(f.y>=ty-8 && f.y<=ty+46 && Math.abs(f.x-tramp.x) <= tramp.w/2 + f.size*0.32){
+      onCatch(f); fallers.splice(i,1); continue;
+    }
+    if(f.y > H+40){
+      if(f.type==='person'||f.type==='pet'){ lives--; shake=10; Sound.hurt(); floatText(f.x,H-70,'MISSED! 😟','#ffb04a'); if(lives<=0) gameOver(); }
+      fallers.splice(i,1);
+    }
+  }
+
+  // flyers -> ambulance
+  const amb=AMB();
+  for(let i=flyers.length-1;i>=0;i--){
+    const fl=flyers[i]; fl.t += dt/fl.dur;
+    if(fl.t>=1){ floatText(amb.x+10, amb.y-26, '+'+fl.pts, '#9bff8e'); burst(amb.x+10, amb.y-20, '#9bff8e', 8); flyers.splice(i,1); continue; }
+    const t=fl.t; fl.x = fl.x0 + (amb.x - fl.x0)*t; fl.y = fl.y0 + (amb.y - fl.y0)*t - Math.sin(Math.PI*t)*Math.min(180, H*0.3);
+  }
+
+  // floats + particles + shake
+  for(let i=floats.length-1;i>=0;i--){ const o=floats[i]; o.y-=34*dt; o.life-=dt; if(o.life<=0) floats.splice(i,1); }
+  for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life-=dt; if(p.life<=0){ parts.splice(i,1); continue; } p.vy+=420*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+  if(shake>0) shake=Math.max(0,shake-dt*40);
+}
+
+/* ---------- draw ---------- */
+let lightOn=false, lightT=0;
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(shake>0){ ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); }
+
+  // sky
+  const sky=ctx.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#241640'); sky.addColorStop(.55,'#6a2b4a'); sky.addColorStop(1,'#c2603a');
+  ctx.fillStyle=sky; ctx.fillRect(-20,-20,W+40,H+40);
+
+  drawBuilding();
+  drawGround();
+  drawAmbulance();
+
+  // fallers
+  for(const f of fallers){
+    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(Math.sin(f.rot)*0.18);
+    ctx.font=f.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(f.type==='debris'){ ctx.shadowColor='#ff6a2a'; ctx.shadowBlur=14; }
+    ctx.fillText(f.emoji,0,0); ctx.restore();
+  }
+
+  drawTrampoline();
+
+  // flyers
+  for(const fl of flyers){ ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(fl.emoji,fl.x,fl.y); }
+
+  // particles
+  for(const p of parts){ ctx.globalAlpha=Math.max(0,p.life/0.6); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,3.2,0,6.28); ctx.fill(); }
+  ctx.globalAlpha=1;
+
+  // floats
+  for(const o of floats){ ctx.globalAlpha=Math.max(0,o.life/0.9); ctx.fillStyle=o.color; ctx.font='bold 20px system-ui'; ctx.textAlign='center';
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeText(o.txt,o.x,o.y); ctx.fillText(o.txt,o.x,o.y); }
+  ctx.globalAlpha=1;
+
+  ctx.restore();
+}
+
+function drawBuilding(){
+  const bh=Math.min(150,H*0.22), bw=W*0.62, bx=(W-bw)/2;
+  ctx.fillStyle='#2b2740'; ctx.fillRect(bx,-10,bw,bh+10);
+  ctx.fillStyle='#211d33'; ctx.fillRect(bx-8,bh-8,bw+16,12); // ledge
+  // windows (some on fire)
+  const cols=Math.max(4,(bw/46)|0), rows=Math.max(2,(bh/40)|0);
+  const gw=bw/cols, gh=bh/rows;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const wx=bx+c*gw+gw*0.22, wy=r*gh+gh*0.25, ww=gw*0.56, wh=gh*0.5;
+    const fire=((r*3+c*7+ (r===rows-1?2:0))%4===0);
+    if(fire){ const fl=0.6+0.4*Math.sin((lightT*6)+(c+r)); ctx.fillStyle=`rgba(255,${120+fl*80|0},40,0.95)`; ctx.fillRect(wx,wy,ww,wh); ctx.fillStyle='rgba(255,220,120,.7)'; ctx.fillRect(wx+ww*0.3,wy+wh*0.2,ww*0.4,wh*0.4); }
+    else { ctx.fillStyle='rgba(120,150,200,.5)'; ctx.fillRect(wx,wy,ww,wh); }
+  }
+  // smoke puffs
+  ctx.fillStyle='rgba(40,30,40,.35)';
+  for(let i=0;i<4;i++){ const sx=bx+bw*(0.2+i*0.22)+Math.sin(lightT+i)*8; ctx.beginPath(); ctx.arc(sx,-14-((lightT*14+i*30)%40),16+i*3,0,6.28); ctx.fill(); }
+}
+function drawGround(){
+  const gy=H-30; ctx.fillStyle='#3a2a2a'; ctx.fillRect(-20,gy,W+40,60);
+  ctx.fillStyle='rgba(255,255,255,.12)'; for(let x=10;x<W;x+=46){ ctx.fillRect(x,gy+12,26,4); }
+}
+function drawAmbulance(){
+  const a=AMB(); lightT+=0.016; lightT%=1000;
+  if((lightT*4|0)!==(lightOn?1:0)){ lightOn=!lightOn; }
+  ctx.save(); ctx.translate(a.x-30, a.y-28);
+  ctx.fillStyle='#f2f4f8'; roundRect(0,0,72,40,8); ctx.fill();           // body
+  ctx.fillStyle='#e23b3b'; ctx.fillRect(0,28,72,12);                      // stripe
+  ctx.fillStyle='#cdd6e6'; roundRect(46,6,22,18,4); ctx.fill();           // cab window
+  ctx.fillStyle='#e23b3b'; ctx.fillRect(14,8,16,4); ctx.fillRect(20,2,4,16); // red cross
+  ctx.fillStyle=lightOn?'#5bc0ff':'#ff5a5a'; roundRect(30,-8,12,8,3); ctx.fill(); // beacon
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(18,40,8,0,6.28); ctx.arc(56,40,8,0,6.28); ctx.fill();
+  ctx.restore();
+  ctx.font='15px system-ui'; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText('🚑 SAFE', a.x+6, a.y+24);
+}
+function drawTrampoline(){
+  const ty=trampY(), w=tramp.w, x=tramp.x, sq=tramp.squash;
+  const matH = 14 - sq*8;
+  // legs
+  ctx.strokeStyle='#7a1f2b'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x-w/2+10,ty+6); ctx.lineTo(x-w/2+2,ty+40); ctx.moveTo(x+w/2-10,ty+6); ctx.lineTo(x+w/2-2,ty+40); ctx.stroke();
+  // mat
+  ctx.fillStyle='#e23b3b'; roundRect(x-w/2, ty - matH/2 + sq*6, w, matH+8, (matH+8)/2); ctx.fill();
+  ctx.fillStyle='#ff7a7a'; roundRect(x-w/2+6, ty - matH/2 + sq*6 + 2, w-12, 5, 3); ctx.fill();
+  // frame ring
+  ctx.strokeStyle='#9e2020'; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(x, ty+sq*6, w/2, (matH+8)/2, 0, 0, 6.28); ctx.stroke();
+}
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ---------- HUD + banner ---------- */
+function updateHud(){
+  $('score').textContent = 'Rescued: '+score;
+  $('best').textContent  = '🏆 Best: '+Math.max(data.best, score);
+  $('coins').textContent = '🪙 '+data.coins;
+  $('level').textContent = 'Level '+level;
+  $('lives').textContent = '❤️'.repeat(Math.max(0,lives)) || '💀';
+}
+let bannerT=0;
+function banner(txt){ const b=$('banner'); b.textContent=txt; b.classList.remove('hidden'); bannerT=2.2; }
+function hideBanner(){ $('banner').classList.add('hidden'); }
+
+/* ---------- loop ---------- */
+function frame(now){
+  requestAnimationFrame(frame);
+  const t=now/1000; let dt = lastT ? t-lastT : 0; lastT=t; if(dt>0.05) dt=0.05;
+  if(running){ update(dt); if(bannerT>0){ bannerT-=dt; if(bannerT<=0 && !storm) hideBanner(); } }
+  draw(); updateHud();
+}
+reset();                 // build the scene (trampoline etc.) so it renders behind the start screen
+requestAnimationFrame(frame);
+
+/* ---------- start / game over ---------- */
+function start(){ Sound.unlock(); Sound.click(); reset(); running=true; $('overlay').classList.add('hidden'); hideBanner(); if(window.track) track('game_start',{game:'rescue'}); }
+function gameOver(){
+  running=false;
+  const earned=score; data.coins+=earned;
+  const isHigh = score>data.best; if(isHigh) data.best=score;
+  saveData();
+  if(window.track) track('game_over',{game:'rescue', score:score});
+  Sound.over();
+  $('overlay').querySelector('h1').textContent = '🚒 Game Over';
+  $('ovExtra').innerHTML =
+    `<div class="coinbig">You rescued ${score} ${score===1?'soul':'souls'}! 🎉</div>`+
+    `<div class="coinbig">🪙 +${earned} coins</div>`+
+    `<p class="small">Total coins: <b>${data.coins}</b></p>`+
+    (isHigh ? `<p class="small">🏆 New best!</p>` : `<p class="small">🏆 Your best: <b>${data.best}</b> — beat it!</p>`);
+  $('startBtn').textContent = '▶ Play Again';
+  $('overlay').classList.remove('hidden');
+}
+
+/* ---------- buttons ---------- */
+$('startBtn').addEventListener('click', start);
+$('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.toggle(); $('muteBtn').textContent=on?'🔊':'🔇'; });
+['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>Sound.unlock(),{once:true}));
+
+// register service worker (offline support)
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
+</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+</body>
+</html>
