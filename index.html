@@ -84,6 +84,9 @@
   <h1>ILAN GAMES</h1>
   <div class="sub">Games made by Ilan 🎮 — pick one and play!</div>
   <div id="acctBar"></div>
+  <button id="overallLbBtn" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#241600;border:none;
+    padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(255,170,60,.4)">🏆 Leaderboard</button>
   <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
     border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
@@ -252,6 +255,13 @@
       if(window.IGAuth){ IGAuth.onReady(function(){ renderBar(); if(!igActive() && !IGAuth.getUser()) openEnter(false); }); }
       else setTimeout(bootAuth, 60);
     })();
+
+    /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
+    function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }
+    document.getElementById('overallLbBtn').onclick=openOverall;
+    function maybeHashLB(){ if(location.hash==='#leaderboard') openOverall(); }
+    window.addEventListener('hashchange', maybeHashLB);
+    maybeHashLB();
 
     /* prominent install flow */
     const installBtn=document.getElementById('installBtn');

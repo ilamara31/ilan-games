@@ -1,13 +1,13 @@
 {
   "messages": [
     {
-      "id": "welcome-2026-06",
-      "title": "🎮 Welcome to Ilan's Arcade!",
-      "body": "New game just dropped: Anime Tycoon. Build your anime empire!",
+      "id": "leaderboard-live-2026-06",
+      "title": "🏆 Leaderboards are live!",
+      "body": "Log in, beat the high scores, and climb to the top across every game!",
       "target": "all",
-      "cta": { "label": "Play now", "href": "anime-tycoon/" },
+      "cta": { "label": "Check the leaderboard", "href": "#leaderboard" },
       "start": "2026-06-01",
-      "end": "2026-09-30",
+      "end": "2026-12-31",
       "level": "info"
     }
   ]

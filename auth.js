@@ -18,6 +18,11 @@
     football: a => (a.pk && a.pk.won) || 0,
   };
   const NS = ["ipl", "odi", "basket", "f1", "pk", "puz"];
+  const GAME_TITLES = {
+    catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
+    try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
+    tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour"
+  };
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}
   const cbs = [];
@@ -82,7 +87,8 @@
     const ok = await loadSDK();
     if (ok) sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
     player = loadPlayer();
-    if (player) migrateAndSeed(player.name);   // re-merge device scores + (re)seed leaderboard each load
+    if (player) migrateAndSeed(player.name);    // re-merge device scores + (re)seed leaderboard each load
+    else autoGuestSeed();                       // not signed in? post device scores as a guest + nudge to log in
     ready = true; fire();
   }
 
@@ -265,6 +271,62 @@
     }).join("");
   }
 
+  // Overall leaderboard across ALL games: who's playing what, and their points.
+  async function showOverall() {
+    const ov = modal(`<h2>🏆 Ilan Games Leaderboard</h2><p>Top scores across every game</p><div id="iga-lb">Loading…</div>
+      <button class="iga-btn iga-x" id="iga-close" style="margin-top:10px">Close</button>`);
+    ov.querySelector("#iga-close").onclick = () => ov.remove();
+    let rows = [];
+    if (sb) { try { const { data } = await sb.from("leaderboard").select("name,game,score,is_guest").order("score", { ascending: false }).limit(300); rows = data || []; } catch (e) {} }
+    // one row per (name, game): registered beats guest, keep highest score
+    const map = {};
+    for (const r of rows) {
+      const k = r.name + "|" + r.game;
+      if (!map[k]) map[k] = { name: r.name, game: r.game, score: r.score, is_guest: !!r.is_guest };
+      else { map[k].score = Math.max(map[k].score, r.score); if (!r.is_guest) map[k].is_guest = false; }
+    }
+    const list = Object.values(map).sort((a, b) => b.score - a.score).slice(0, 60);
+    const box = ov.querySelector("#iga-lb");
+    if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
+    box.innerHTML = list.map((r, i) => {
+      const me = player && r.name === player.name;
+      const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+      const gt = (GAME_TITLES[r.game] || r.game);
+      return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm} <small style="color:#8aa0c6">· ${gt}</small></span><span class="sc">${r.score}</span></div>`;
+    }).join("");
+  }
+
+  // If a visitor isn't signed in but has on-device scores, auto-post them as a
+  // guest so they show on the leaderboard, then nudge them to log in to claim it.
+  function autoGuestSeed() {
+    try {
+      const s = storeLoad();
+      const act = s.accounts.find(a => a.id === s.activeId) || s.accounts[0];
+      const nm = act && act.name;
+      if (!nm) return;
+      let has = false;
+      for (const g in GAME_BEST) { if (GAME_BEST[g](act) > 0) { has = true; break; } }
+      try { const gk = JSON.parse(localStorage.getItem("basketCatchV2_guest")); if (gk && (gk.best || 0) > 0) has = true; } catch (e) {}
+      try { const o = JSON.parse(localStorage.getItem("omt_save_v1")); if (o && (o.best || 0) > 0) has = true; } catch (e) {}
+      if (!has) return;
+      savePlayer({ name: nm, guest: true });
+      migrateAndSeed(nm);
+      setTimeout(nudgeLogin, 1600);
+    } catch (e) {}
+  }
+  function nudgeLogin() {
+    if (sessionStorage.getItem("iga_nudged")) return;
+    try { sessionStorage.setItem("iga_nudged", "1"); } catch (e) {}
+    injectStyles();
+    const t = document.createElement("div");
+    t.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9500;background:#0f1d36;border:1px solid #2a3c63;color:#fff;padding:12px 16px;border-radius:14px;font:14px -apple-system,system-ui;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center";
+    t.innerHTML = `🏆 Your scores are on the leaderboard as a <b>guest</b>. <b class="iga-link" id="iga-nudge-go">Log in to claim them</b> <span id="iga-nudge-x" style="color:#7e90b5;cursor:pointer;margin-left:8px">✕</span>`;
+    document.body.appendChild(t);
+    const go = t.querySelector("#iga-nudge-go"); if (go) go.onclick = () => { t.remove(); savePlayer(null); openAuth(); };
+    const x = t.querySelector("#iga-nudge-x"); if (x) x.onclick = () => t.remove();
+    setTimeout(() => t.remove(), 13000);
+  }
+
   /* ---------- public API ---------- */
   window.IGAuth = {
     onReady: cb => { if (ready) cb(); else cbs.push(() => cb()); },
@@ -272,7 +334,7 @@
     getUser: () => player,
     isGuest: () => !!(player && player.guest),
     isReady: () => ready,
-    openAuth, openAccount, signOut, submitScore, topScores, showLeaderboard,
+    openAuth, openAccount, signOut, submitScore, topScores, showLeaderboard, showOverall,
     displayName: () => player ? player.name : null,
   };
   init();
