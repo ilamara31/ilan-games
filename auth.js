@@ -23,6 +23,11 @@
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour"
   };
+  const GAME_METRIC = {
+    catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
+    try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
+    tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won"
+  };
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}
   const cbs = [];
@@ -181,7 +186,11 @@
     .iga-row .r{width:34px;color:#ffd54a;font-weight:800;text-align:left}
     .iga-row .n{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .iga-row .n small{color:#8aa0c6}
-    .iga-row .sc{font-weight:800;color:#ffd54a}`;
+    .iga-row .sc{font-weight:800;color:#ffd54a}
+    .iga-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch}
+    .iga-tab{flex:0 0 auto;background:#16243f;color:#cfe0ff;border:1px solid #2a3c63;border-radius:20px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .iga-tab.on{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#241600;border-color:transparent}
+    .iga-metric{font-size:12px;color:#8aa0c6;margin:-2px 0 8px}`;
     document.head.appendChild(css);
   }
   function modal(html) {
@@ -271,13 +280,17 @@
     }).join("");
   }
 
-  // Overall leaderboard across ALL games: who's playing what, and their points.
+  // Overall leaderboard — one tab per game; tap a game to see its top players.
   async function showOverall() {
-    const ov = modal(`<h2>🏆 Ilan Games Leaderboard</h2><p>Top scores across every game</p><div id="iga-lb">Loading…</div>
+    const ov = modal(`<h2>🏆 Ilan Games Leaderboard</h2><p>Top players in each game</p>
+      <div class="iga-tabs" id="iga-tabs"></div>
+      <div class="iga-metric" id="iga-metric"></div>
+      <div id="iga-lb">Loading…</div>
       <button class="iga-btn iga-x" id="iga-close" style="margin-top:10px">Close</button>`);
     ov.querySelector("#iga-close").onclick = () => ov.remove();
+    const tabs = ov.querySelector("#iga-tabs"), box = ov.querySelector("#iga-lb"), metric = ov.querySelector("#iga-metric");
     let rows = [];
-    if (sb) { try { const { data } = await sb.from("leaderboard").select("name,game,score,is_guest").order("score", { ascending: false }).limit(300); rows = data || []; } catch (e) {} }
+    if (sb) { try { const { data } = await sb.from("leaderboard").select("name,game,score,is_guest").order("score", { ascending: false }).limit(1000); rows = data || []; } catch (e) {} }
     // one row per (name, game): registered beats guest, keep highest score
     const map = {};
     for (const r of rows) {
@@ -285,15 +298,26 @@
       if (!map[k]) map[k] = { name: r.name, game: r.game, score: r.score, is_guest: !!r.is_guest };
       else { map[k].score = Math.max(map[k].score, r.score); if (!r.is_guest) map[k].is_guest = false; }
     }
-    const list = Object.values(map).sort((a, b) => b.score - a.score).slice(0, 60);
-    const box = ov.querySelector("#iga-lb");
-    if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
-    box.innerHTML = list.map((r, i) => {
-      const me = player && r.name === player.name;
-      const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
-      const gt = (GAME_TITLES[r.game] || r.game);
-      return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm} <small style="color:#8aa0c6">· ${gt}</small></span><span class="sc">${r.score}</span></div>`;
-    }).join("");
+    // group by game
+    const byGame = {};
+    for (const v of Object.values(map)) { (byGame[v.game] = byGame[v.game] || []).push(v); }
+    for (const g in byGame) byGame[g].sort((a, b) => b.score - a.score);
+    // tab order: known games first (in GAME_TITLES order), then any others
+    const order = Object.keys(GAME_TITLES).filter(g => byGame[g] && byGame[g].length);
+    for (const g in byGame) if (!order.includes(g)) order.push(g);
+    if (!order.length) { metric.textContent = ""; box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
+    function render(g) {
+      tabs.querySelectorAll(".iga-tab").forEach(t => t.classList.toggle("on", t.dataset.g === g));
+      metric.textContent = GAME_METRIC[g] ? (GAME_METRIC[g] + " — higher is better") : "";
+      box.innerHTML = byGame[g].slice(0, 20).map((r, i) => {
+        const me = player && r.name === player.name;
+        const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+        return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
+      }).join("");
+    }
+    tabs.innerHTML = order.map(g => `<button class="iga-tab" data-g="${g}">${GAME_TITLES[g] || g}</button>`).join("");
+    tabs.querySelectorAll(".iga-tab").forEach(t => t.onclick = () => render(t.dataset.g));
+    render(order[0]);
   }
 
   // If a visitor isn't signed in but has on-device scores, auto-post them as a
