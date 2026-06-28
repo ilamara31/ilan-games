@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v44';
+const CACHE = 'ilan-arcade-v45';
 const ASSETS = [
   './',
   './index.html',
@@ -85,9 +85,15 @@ self.addEventListener('fetch', e => {
   // never touch cross-origin requests (Supabase API, CDN SDK, etc.) — let the browser handle them
   if (new URL(req.url).origin !== self.location.origin) return;
   const accept = req.headers.get('accept') || '';
+  const path = new URL(req.url).pathname;
   // messages.json must always be fresh (announcements). Network-first, no caching.
-  if (new URL(req.url).pathname.endsWith('messages.json')) {
+  if (path.endsWith('messages.json')) {
     e.respondWith(fetch(req).catch(() => new Response('{"messages":[]}', { headers: { 'Content-Type': 'application/json' } })));
+    return;
+  }
+  // auth/config scripts change often — always try the network first (fall back to cache offline)
+  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js')) {
+    e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; }).catch(() => caches.match(req)));
     return;
   }
   const isHTML = req.mode === 'navigate' || accept.includes('text/html');
