@@ -78,11 +78,28 @@
     ready = true; fire();
   }
 
+  // RPC with retry — "Load failed" / fetch errors are often transient (flaky
+  // network, Private Relay). Retry a couple times before giving up.
+  async function callRpc(name, args) {
+    let lastErr;
+    for (let i = 0; i < 3; i++) {
+      try { return await sb.rpc(name, args); }
+      catch (e) { lastErr = e; await new Promise(r => setTimeout(r, 350 * (i + 1))); }
+    }
+    throw lastErr;
+  }
+  function netMsg(e) {
+    const m = (e && e.message) || "";
+    if (/load failed|failed to fetch|networkerror/i.test(m))
+      return "Couldn't reach the server. Turn off any ad-blocker / Private Relay for this site, or try another network or browser.";
+    return m || "Could not connect.";
+  }
+
   /* ---------- leaderboard ---------- */
   async function submitScore(game, score) {
     if (!sb || !player) return;
     score = Math.round(score || 0); if (!score) return;
-    try { await sb.rpc("post_score", { p_name: player.name, p_password: player.pw || "", p_game: game, p_score: score, p_guest: !!player.guest }); }
+    try { await callRpc("post_score", { p_name: player.name, p_password: player.pw || "", p_game: game, p_score: score, p_guest: !!player.guest }); }
     catch (e) {}
   }
   async function topScores(game, n) {
@@ -98,27 +115,27 @@
     if (!name) return { error: "Enter a name." };
     if (!pw) return { error: "Enter a password." };
     try {
-      const { data, error } = await sb.rpc("account_auth", { p_name: name, p_password: pw, p_recovery: recovery || null });
+      const { data, error } = await callRpc("account_auth", { p_name: name, p_password: pw, p_recovery: recovery || null });
       if (error) return { error: error.message };
       if (data === "wrong") return { error: "That name is taken — wrong password." };
       if (data === "invalid") return { error: "Enter a name and password." };
       savePlayer({ name, pw, guest: false });   // 'ok' or 'created'
       migrateAndSeed(name);
       return { ok: true };
-    } catch (e) { return { error: e.message || "Could not connect." }; }
+    } catch (e) { return { error: netMsg(e) }; }
   }
   async function resetPassword(name, recovery, newPw) {
     if (!sb) return { error: "Connecting… try again in a moment." };
     name = (name || "").trim().slice(0, 16);
     if (!name || !newPw) return { error: "Enter your name and a new password." };
     try {
-      const { data, error } = await sb.rpc("reset_password", { p_name: name, p_recovery: recovery || "", p_new_password: newPw });
+      const { data, error } = await callRpc("reset_password", { p_name: name, p_recovery: recovery || "", p_new_password: newPw });
       if (error) return { error: error.message };
       if (data === "ok") return { ok: true };
       if (data === "norecovery") return { error: "No recovery word was set for that name — ask the game owner to reset it." };
       if (data === "wrong") return { error: "Recovery word doesn't match." };
       return { error: "Could not reset." };
-    } catch (e) { return { error: e.message || "Could not connect." }; }
+    } catch (e) { return { error: netMsg(e) }; }
   }
   function guest(name) {
     name = (name || "").trim().slice(0, 16) || "Guest";
