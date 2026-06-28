@@ -21,7 +21,15 @@
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}
   const cbs = [];
-  function fire() { cbs.forEach(cb => { try { cb(player); } catch (e) {} }); }
+  function fire() { cbs.forEach(cb => { try { cb(player); } catch (e) {} }); refreshButtons(); }
+  // Centrally update the standard account button in every game (auth.js loads
+  // deferred, so per-page onChange wiring may register too late — this is robust).
+  function refreshButtons() {
+    try {
+      const label = player ? ("👤 " + player.name) : "👤 Log in";
+      document.querySelectorAll("#IGA_login, #acctBtn").forEach(b => { b.textContent = label; });
+    } catch (e) {}
+  }
 
   /* ---------- player persistence ---------- */
   function loadPlayer() { try { const p = JSON.parse(localStorage.getItem(PKEY)); if (p && p.name) return p; } catch (e) {} return null; }
@@ -240,9 +248,18 @@
     ov.querySelector("#iga-close").onclick = () => ov.remove();
     const rows = await topScores(game, 50);
     const box = ov.querySelector("#iga-lb");
-    if (!rows.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
-    box.innerHTML = rows.map((r, i) => {
-      const me = player && r.name === player.name && (!!r.is_guest === !!player.guest);
+    // collapse same-name entries: if a registered name exists, drop the guest
+    // duplicate and keep the highest score under the registered name.
+    const byName = {};
+    for (const r of rows) {
+      const k = (r.name || "Player");
+      if (!byName[k]) byName[k] = { name: r.name, score: r.score, is_guest: !!r.is_guest };
+      else { byName[k].score = Math.max(byName[k].score, r.score); if (!r.is_guest) byName[k].is_guest = false; }
+    }
+    const list = Object.values(byName).sort((a, b) => b.score - a.score);
+    if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
+    box.innerHTML = list.map((r, i) => {
+      const me = player && r.name === player.name;
       const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
       return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
     }).join("");

@@ -198,8 +198,9 @@
       document.getElementById('switchBtn').onclick=openAccounts;
       document.getElementById('loginBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth(); };
     }
-    // keep the bar in sync when the online sign-in state resolves/changes
-    if(window.IGAuth) IGAuth.onChange(renderBar);
+    // keep the bar in sync when the online sign-in state resolves/changes.
+    // auth.js is deferred, so poll until IGAuth exists before wiring.
+    (function wireAuth(){ if(window.IGAuth){ IGAuth.onChange(renderBar); renderBar(); } else setTimeout(wireAuth,60); })();
     function closeModal(){ modal.style.display='none'; }
     function openEnter(canCancel){
       modal.style.display='flex';
@@ -247,8 +248,10 @@
     }
     /* boot: make sure there's an active player (unless they're signed in online) */
     renderBar();
-    if(window.IGAuth) IGAuth.onReady(()=>{ renderBar(); if(!igActive() && !IGAuth.getUser()) openEnter(false); });
-    else if(!igActive()) openEnter(false);
+    (function bootAuth(){
+      if(window.IGAuth){ IGAuth.onReady(function(){ renderBar(); if(!igActive() && !IGAuth.getUser()) openEnter(false); }); }
+      else setTimeout(bootAuth, 60);
+    })();
 
     /* prominent install flow */
     const installBtn=document.getElementById('installBtn');
