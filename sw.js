@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v46';
+const CACHE = 'ilan-arcade-v47';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,8 @@ const ASSETS = [
   './pptour/index.html',
   './fruit-arena/',
   './fruit-arena/index.html',
+  './paper/',
+  './paper/index.html',
   './rescue/',
   './rescue/index.html',
   './try/',

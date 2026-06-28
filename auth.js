@@ -21,12 +21,14 @@
   const GAME_TITLES = {
     catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
-    tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour"
+    tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
+    paper: "Paper Territory"
   };
   const GAME_METRIC = {
     catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
-    tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won"
+    tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won",
+    paper: "Territory %"
   };
   // Read a game's best straight from its own localStorage save (every game on
   // this origin shares storage), so we can re-post high scores on each load.
@@ -41,6 +43,7 @@
     obby:          () => kget("ilanObbySave_v1", "bestStage"),
     try:           () => kget("omt_save_v1", "best"),
     rescue:        () => Math.max(kget("rescueBounce_guest", "best"), accMax("rescue", "best")),
+    paper:         () => kget("paperTerritory_v1", "best"),
   };
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}
