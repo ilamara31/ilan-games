@@ -109,6 +109,7 @@
     player = loadPlayer();
     if (player) migrateAndSeed(player.name);    // re-merge device scores + (re)seed leaderboard each load
     else autoGuestSeed();                       // not signed in? post device scores as a guest + nudge to log in
+    try { seedLocalAll(); } catch (e) {}        // always populate the local fallback board (works without login/server)
     ready = true; fire();
     setTimeout(fetchBoard, 800);                // warm the leaderboard cache so it opens instantly
   }
@@ -130,10 +131,35 @@
     return m || "Could not connect.";
   }
 
+  /* ---------- local leaderboard fallback (always works, even offline / not logged in) ---------- */
+  function localRows() { try { const a = JSON.parse(localStorage.getItem("iglb_local")); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function localName() {
+    if (player && player.name) return player.name;
+    try { const s = storeLoad(); const a = s.accounts.find(x => x.id === s.activeId) || s.accounts[0]; if (a && a.name) return a.name; } catch (e) {}
+    let n; try { n = localStorage.getItem("iglb_guestname"); } catch (e) {}
+    if (!n) { n = "You"; try { localStorage.setItem("iglb_guestname", n); } catch (e) {} }
+    return n;
+  }
+  function recordLocal(game, score, guest) {
+    score = Math.round(score || 0); if (!score) return;
+    const name = localName(); const a = localRows(); const row = a.find(r => r.name === name && r.game === game);
+    if (row) { if (score > row.score) row.score = score; if (guest === false) row.is_guest = false; }
+    else a.push({ name, game, score, is_guest: guest !== false });
+    try { localStorage.setItem("iglb_local", JSON.stringify(a)); } catch (e) {}
+  }
+  function mergeLocal(rows) { return (rows || []).concat(localRows()); }
+  // record every game's on-device best locally, so the leaderboard lists every game even with no server/login
+  function seedLocalAll() {
+    const guest = !(player && !player.guest);
+    try { const s = storeLoad(); const acct = s.accounts.find(a => a.id === s.activeId); if (acct) for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) recordLocal(g, v, guest); } } catch (e) {}
+    for (const g in DEVICE_BEST) { try { const v = DEVICE_BEST[g](); if (v > 0) recordLocal(g, v, guest); } catch (e) {} }
+  }
+
   /* ---------- leaderboard ---------- */
   async function submitScore(game, score) {
-    if (!sb || !player) return;
     score = Math.round(score || 0); if (!score) return;
+    recordLocal(game, score, !(player && !player.guest));   // always log locally so it shows up no matter what
+    if (!sb || !player) return;
     // skip the network call if we've already posted this score (or higher) for this player
     const ck = "igsent_" + game + "_" + player.name + (player.guest ? "_g" : "");
     try { if (+(localStorage.getItem(ck) || 0) >= score) return; } catch (e) {}
@@ -168,7 +194,7 @@
   }
   async function topScores(game, n) {
     await fetchBoard();
-    return (boardRows || []).filter(r => r.game === game).slice(0, n || 50);
+    return mergeLocal(boardRows || []).filter(r => r.game === game).sort((a, b) => b.score - a.score).slice(0, n || 50);
   }
 
   /* ---------- account actions ---------- */
@@ -322,8 +348,8 @@
         return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
       }).join("");
     };
-    const c = cachedBoard(); if (c) render(c);            // instant from cache
-    const fresh = await fetchBoard(); render(fresh);       // then refresh
+    render(mergeLocal(cachedBoard() || []));              // instant (cache + local fallback)
+    const fresh = await fetchBoard(); render(mergeLocal(fresh));   // then refresh
   }
 
   // Overall leaderboard — one tab per game; tap a game to see its top players.
@@ -364,8 +390,8 @@
       tabs.querySelectorAll(".iga-tab").forEach(t => t.onclick = () => render(t.dataset.g));
       render(order.includes(activeG) ? activeG : order[0]);   // keep the tab the user was on across refresh
     }
-    const c = cachedBoard(); if (c) build(c);             // instant from cache
-    const fresh = await fetchBoard(); build(fresh);        // then refresh
+    build(mergeLocal(cachedBoard() || []));               // instant (cache + local fallback)
+    const fresh = await fetchBoard(); build(mergeLocal(fresh));    // then refresh
   }
 
   // If a visitor isn't signed in but has on-device scores, auto-post them as a
