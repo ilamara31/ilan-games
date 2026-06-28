@@ -28,6 +28,20 @@
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won"
   };
+  // Read a game's best straight from its own localStorage save (every game on
+  // this origin shares storage), so we can re-post high scores on each load.
+  function kget(key, field) { try { const o = JSON.parse(localStorage.getItem(key)); return (o && +o[field]) || 0; } catch (e) { return 0; } }
+  function accMax(ns, field) { try { const s = storeLoad(); let m = 0; for (const a of s.accounts) { if (a[ns] && +a[ns][field] > m) m = +a[ns][field]; } return m; } catch (e) { return 0; } }
+  const DEVICE_BEST = {
+    "fruit-arena": () => kget("fruitArena_v1", "best"),
+    tennis:        () => kget("tennisTour_v1", "trophies"),
+    pptour:        () => kget("ppTour_v2", "wins"),
+    karate:        () => kget("karateChamp_v1", "wins"),
+    "anime-tycoon":() => kget("animeTycoon_v1", "lifetime"),
+    obby:          () => kget("ilanObbySave_v1", "bestStage"),
+    try:           () => kget("omt_save_v1", "best"),
+    rescue:        () => Math.max(kget("rescueBounce_guest", "best"), accMax("rescue", "best")),
+  };
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}
   const cbs = [];
@@ -73,10 +87,8 @@
     return acct;
   }
   function migrateAndSeed(name) {
-    const acct = setActiveByName(name);
-    for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) submitScore(g, v); }   // seed leaderboard with existing bests
-    // One More Try keeps its best in its own save key (not in the account object)
-    try { const o = JSON.parse(localStorage.getItem("omt_save_v1")); if (o && (o.best || 0) > 0) submitScore("try", o.best); } catch (e) {}
+    setActiveByName(name);
+    seedLeaderboard();   // posts every game's best from device saves (catch/cricket/f1/football + all own-save games)
   }
 
   /* ---------- Supabase client (anon — only for RPC + leaderboard reads) ---------- */
@@ -118,8 +130,21 @@
   async function submitScore(game, score) {
     if (!sb || !player) return;
     score = Math.round(score || 0); if (!score) return;
-    try { await callRpc("post_score", { p_name: player.name, p_password: player.pw || "", p_game: game, p_score: score, p_guest: !!player.guest }); }
-    catch (e) {}
+    // skip the network call if we've already posted this score (or higher) for this player
+    const ck = "igsent_" + game + "_" + player.name + (player.guest ? "_g" : "");
+    try { if (+(localStorage.getItem(ck) || 0) >= score) return; } catch (e) {}
+    try {
+      await callRpc("post_score", { p_name: player.name, p_password: player.pw || "", p_game: game, p_score: score, p_guest: !!player.guest });
+      try { localStorage.setItem(ck, score); } catch (e) {}   // remember success so we don't re-post; if it threw, we'll retry next load
+    } catch (e) {}
+  }
+  // Post the player's best for every game from on-device saves (self-healing:
+  // any high score that didn't make it earlier gets posted on the next load).
+  function seedLeaderboard() {
+    if (!player) return;
+    const s = storeLoad(); const acct = s.accounts.find(a => a.id === s.activeId);
+    if (acct) for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) submitScore(g, v); }
+    for (const g in DEVICE_BEST) { const v = DEVICE_BEST[g](); if (v > 0) submitScore(g, v); }
   }
   async function topScores(game, n) {
     if (!sb) return [];
