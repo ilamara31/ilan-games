@@ -41,20 +41,24 @@
   // make `name` the active account, carrying over whatever the player had on this device
   function setActiveByName(name) {
     const s = storeLoad();
-    const src = s.accounts.find(a => a.id === s.activeId);
     let acct = s.accounts.find(a => a.name === name);
     if (!acct) { acct = { id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name }; s.accounts.push(acct); }
-    if (src && src.id !== acct.id) mergeGameData(acct, src);
+    // pull in scores from EVERY other on-device account (highest per field) so nothing is lost
+    for (const a of s.accounts) { if (a.id !== acct.id) mergeGameData(acct, a); }
+    // fold Basket Catch guest + legacy saves
     try {
       const g = JSON.parse(localStorage.getItem("basketCatchV2_guest"));
       if (g) { acct.basket = acct.basket || {}; acct.basket.best = Math.max(acct.basket.best || 0, g.best || 0); acct.basket.coins = Math.max(acct.basket.coins || 0, g.coins || 0); acct.basket.owned = Array.from(new Set([...(acct.basket.owned || ["starter"]), ...(g.owned || [])])); acct.basket.sel = acct.basket.sel || g.sel || "starter"; }
     } catch (e) {}
+    try { const lh = +(localStorage.getItem("basketCatchHigh") || 0); if (lh > 0) { acct.basket = acct.basket || {}; acct.basket.best = Math.max(acct.basket.best || 0, lh); } } catch (e) {}
     s.activeId = acct.id; storeSave(s);
     return acct;
   }
   function migrateAndSeed(name) {
     const acct = setActiveByName(name);
     for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) submitScore(g, v); }   // seed leaderboard with existing bests
+    // One More Try keeps its best in its own save key (not in the account object)
+    try { const o = JSON.parse(localStorage.getItem("omt_save_v1")); if (o && (o.best || 0) > 0) submitScore("try", o.best); } catch (e) {}
   }
 
   /* ---------- Supabase client (anon — only for RPC + leaderboard reads) ---------- */
@@ -70,7 +74,7 @@
     const ok = await loadSDK();
     if (ok) sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
     player = loadPlayer();
-    if (player) setActiveByName(player.name);
+    if (player) migrateAndSeed(player.name);   // re-merge device scores + (re)seed leaderboard each load
     ready = true; fire();
   }
 
