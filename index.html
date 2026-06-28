@@ -185,7 +185,9 @@
       const u = window.IGAuth && IGAuth.getUser();
       if(u){
         const nm = IGAuth.displayName();
-        bar.innerHTML = `☁️ <b>${nm}</b> <span style="color:#7CFFB2;font-size:12px">online</span> <button class="mini" id="acctBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Account</button>`;
+        const guest = IGAuth.isGuest && IGAuth.isGuest();
+        const tag = guest ? `<span style="color:#9fb3d8;font-size:12px">guest</span>` : `<span style="color:#7CFFB2;font-size:12px">online</span>`;
+        bar.innerHTML = `${guest?'👤':'☁️'} <b>${nm}</b> ${tag} <button class="mini" id="acctBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Account</button>`;
         document.getElementById('acctBtn').onclick=()=>IGAuth.openAccount();
         return;
       }

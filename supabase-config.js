@@ -2,5 +2,3 @@
    (The publishable key is browser-safe; the secret service key is NOT here.) */
 window.SUPABASE_URL = "https://xanrofecdpoljnerpsow.supabase.co";
 window.SUPABASE_KEY = "sb_publishable_jff4Q2OLVzIf0Cr1FILZyQ_vgy8xRrT";
-// flip to true once the GitHub OAuth provider is enabled in Supabase
-window.GITHUB_SSO = false;
