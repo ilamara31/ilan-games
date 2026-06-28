@@ -107,6 +107,7 @@
     if (player) migrateAndSeed(player.name);    // re-merge device scores + (re)seed leaderboard each load
     else autoGuestSeed();                       // not signed in? post device scores as a guest + nudge to log in
     ready = true; fire();
+    setTimeout(fetchBoard, 800);                // warm the leaderboard cache so it opens instantly
   }
 
   // RPC with retry — "Load failed" / fetch errors are often transient (flaky
@@ -146,10 +147,25 @@
     if (acct) for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) submitScore(g, v); }
     for (const g in DEVICE_BEST) { const v = DEVICE_BEST[g](); if (v > 0) submitScore(g, v); }
   }
+  // ---- leaderboard cache: load is instant from cache, then refreshed in the background ----
+  let boardRows = null;
+  function cachedBoard() {
+    if (boardRows) return boardRows;
+    try { const c = JSON.parse(localStorage.getItem("iglb_cache")); if (c && Array.isArray(c.rows)) { boardRows = c.rows; return boardRows; } } catch (e) {}
+    return null;
+  }
+  async function fetchBoard() {
+    if (!sb) return boardRows || [];
+    try {
+      const { data } = await sb.from("leaderboard").select("name,game,score,is_guest").order("score", { ascending: false }).limit(1000);
+      boardRows = data || [];
+      try { localStorage.setItem("iglb_cache", JSON.stringify({ t: Date.now(), rows: boardRows })); } catch (e) {}
+      return boardRows;
+    } catch (e) { return boardRows || []; }
+  }
   async function topScores(game, n) {
-    if (!sb) return [];
-    try { const { data } = await sb.from("leaderboard").select("name,score,is_guest").eq("game", game).order("score", { ascending: false }).limit(n || 50); return data || []; }
-    catch (e) { return []; }
+    await fetchBoard();
+    return (boardRows || []).filter(r => r.game === game).slice(0, n || 50);
   }
 
   /* ---------- account actions ---------- */
@@ -286,23 +302,25 @@
     const ov = modal(`<h2>🏆 ${title || "Leaderboard"}</h2><p>All-time best scores</p><div id="iga-lb">Loading…</div>
       <button class="iga-btn iga-x" id="iga-close" style="margin-top:10px">Close</button>`);
     ov.querySelector("#iga-close").onclick = () => ov.remove();
-    const rows = await topScores(game, 50);
     const box = ov.querySelector("#iga-lb");
-    // collapse same-name entries: if a registered name exists, drop the guest
-    // duplicate and keep the highest score under the registered name.
-    const byName = {};
-    for (const r of rows) {
-      const k = (r.name || "Player");
-      if (!byName[k]) byName[k] = { name: r.name, score: r.score, is_guest: !!r.is_guest };
-      else { byName[k].score = Math.max(byName[k].score, r.score); if (!r.is_guest) byName[k].is_guest = false; }
-    }
-    const list = Object.values(byName).sort((a, b) => b.score - a.score);
-    if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
-    box.innerHTML = list.map((r, i) => {
-      const me = player && r.name === player.name;
-      const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
-      return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
-    }).join("");
+    const render = (all) => {
+      // collapse same-name entries: registered beats guest, keep highest score
+      const byName = {};
+      for (const r of all.filter(r => r.game === game)) {
+        const k = (r.name || "Player");
+        if (!byName[k]) byName[k] = { name: r.name, score: r.score, is_guest: !!r.is_guest };
+        else { byName[k].score = Math.max(byName[k].score, r.score); if (!r.is_guest) byName[k].is_guest = false; }
+      }
+      const list = Object.values(byName).sort((a, b) => b.score - a.score).slice(0, 50);
+      if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
+      box.innerHTML = list.map((r, i) => {
+        const me = player && r.name === player.name;
+        const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+        return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
+      }).join("");
+    };
+    const c = cachedBoard(); if (c) render(c);            // instant from cache
+    const fresh = await fetchBoard(); render(fresh);       // then refresh
   }
 
   // Overall leaderboard — one tab per game; tap a game to see its top players.
@@ -314,35 +332,37 @@
       <button class="iga-btn iga-x" id="iga-close" style="margin-top:10px">Close</button>`);
     ov.querySelector("#iga-close").onclick = () => ov.remove();
     const tabs = ov.querySelector("#iga-tabs"), box = ov.querySelector("#iga-lb"), metric = ov.querySelector("#iga-metric");
-    let rows = [];
-    if (sb) { try { const { data } = await sb.from("leaderboard").select("name,game,score,is_guest").order("score", { ascending: false }).limit(1000); rows = data || []; } catch (e) {} }
-    // one row per (name, game): registered beats guest, keep highest score
-    const map = {};
-    for (const r of rows) {
-      const k = r.name + "|" + r.game;
-      if (!map[k]) map[k] = { name: r.name, game: r.game, score: r.score, is_guest: !!r.is_guest };
-      else { map[k].score = Math.max(map[k].score, r.score); if (!r.is_guest) map[k].is_guest = false; }
+    let activeG = null;
+    function build(rows) {
+      // one row per (name, game): registered beats guest, keep highest score
+      const map = {};
+      for (const r of rows) {
+        const k = r.name + "|" + r.game;
+        if (!map[k]) map[k] = { name: r.name, game: r.game, score: r.score, is_guest: !!r.is_guest };
+        else { map[k].score = Math.max(map[k].score, r.score); if (!r.is_guest) map[k].is_guest = false; }
+      }
+      const byGame = {};
+      for (const v of Object.values(map)) { (byGame[v.game] = byGame[v.game] || []).push(v); }
+      for (const g in byGame) byGame[g].sort((a, b) => b.score - a.score);
+      const order = Object.keys(GAME_TITLES).filter(g => byGame[g] && byGame[g].length);
+      for (const g in byGame) if (!order.includes(g)) order.push(g);
+      if (!order.length) { metric.textContent = ""; tabs.innerHTML = ""; box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
+      function render(g) {
+        activeG = g;
+        tabs.querySelectorAll(".iga-tab").forEach(t => t.classList.toggle("on", t.dataset.g === g));
+        metric.textContent = GAME_METRIC[g] ? (GAME_METRIC[g] + " — higher is better") : "";
+        box.innerHTML = byGame[g].slice(0, 20).map((r, i) => {
+          const me = player && r.name === player.name;
+          const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+          return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
+        }).join("");
+      }
+      tabs.innerHTML = order.map(g => `<button class="iga-tab" data-g="${g}">${GAME_TITLES[g] || g}</button>`).join("");
+      tabs.querySelectorAll(".iga-tab").forEach(t => t.onclick = () => render(t.dataset.g));
+      render(order.includes(activeG) ? activeG : order[0]);   // keep the tab the user was on across refresh
     }
-    // group by game
-    const byGame = {};
-    for (const v of Object.values(map)) { (byGame[v.game] = byGame[v.game] || []).push(v); }
-    for (const g in byGame) byGame[g].sort((a, b) => b.score - a.score);
-    // tab order: known games first (in GAME_TITLES order), then any others
-    const order = Object.keys(GAME_TITLES).filter(g => byGame[g] && byGame[g].length);
-    for (const g in byGame) if (!order.includes(g)) order.push(g);
-    if (!order.length) { metric.textContent = ""; box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
-    function render(g) {
-      tabs.querySelectorAll(".iga-tab").forEach(t => t.classList.toggle("on", t.dataset.g === g));
-      metric.textContent = GAME_METRIC[g] ? (GAME_METRIC[g] + " — higher is better") : "";
-      box.innerHTML = byGame[g].slice(0, 20).map((r, i) => {
-        const me = player && r.name === player.name;
-        const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
-        return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
-      }).join("");
-    }
-    tabs.innerHTML = order.map(g => `<button class="iga-tab" data-g="${g}">${GAME_TITLES[g] || g}</button>`).join("");
-    tabs.querySelectorAll(".iga-tab").forEach(t => t.onclick = () => render(t.dataset.g));
-    render(order[0]);
+    const c = cachedBoard(); if (c) build(c);             // instant from cache
+    const fresh = await fetchBoard(); build(fresh);        // then refresh
   }
 
   // If a visitor isn't signed in but has on-device scores, auto-post them as a
