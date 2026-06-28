@@ -16,18 +16,20 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { min-height:100%; font-family:'Trebuchet MS','Segoe UI',sans-serif; color:#fff;
     background:radial-gradient(circle at 50% 20%, #1b3a6b, #0a0e1a 75%); }
-  body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center; }
-  h1 { font-size:clamp(36px,9vw,72px); letter-spacing:2px; margin-bottom:6px;
+  body { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; padding:16px 14px 28px; text-align:center; }
+  h1 { font-size:clamp(30px,7vw,56px); letter-spacing:2px; margin-bottom:4px;
     background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .sub { color:#9fb3d8; margin-bottom:36px; font-size:clamp(14px,3.5vw,19px); }
-  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; max-width:720px; width:100%; }
-  a.card { display:block; text-decoration:none; color:#fff; padding:34px 22px; border-radius:22px;
-    border:3px solid rgba(255,255,255,.12); transition:transform .12s, border-color .12s, box-shadow .12s; }
-  a.card:hover { transform:translateY(-6px) scale(1.02); border-color:#fff; box-shadow:0 14px 36px rgba(0,0,0,.45); }
-  a.card:active { transform:scale(.97); }
-  .emoji { font-size:64px; display:block; margin-bottom:14px; }
-  .card h2 { font-size:26px; margin-bottom:8px; }
-  .card p { color:#cdd9f0; font-size:14px; line-height:1.4; }
+  .sub { color:#9fb3d8; margin-bottom:16px; font-size:clamp(13px,3.2vw,17px); }
+  /* compact "Poki-style" tile grid — many games visible, little scrolling */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:12px; max-width:880px; width:100%; }
+  a.card { display:flex; flex-direction:column; align-items:center; justify-content:center; text-decoration:none; color:#fff;
+    padding:12px 6px; border-radius:16px; min-height:104px;
+    border:2px solid rgba(255,255,255,.12); transition:transform .12s, border-color .12s, box-shadow .12s; }
+  a.card:hover { transform:translateY(-3px) scale(1.03); border-color:#fff; box-shadow:0 10px 26px rgba(0,0,0,.45); }
+  a.card:active { transform:scale(.96); }
+  .emoji { font-size:42px; display:block; margin-bottom:6px; line-height:1; }
+  .card h2 { font-size:13px; margin-bottom:0; line-height:1.15; }
+  .card p { display:none; }   /* hide long descriptions in the compact grid */
   .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
   .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
   .f1      { background:linear-gradient(135deg,#e10600,#7a0400); }
@@ -53,8 +55,8 @@
     background:linear-gradient(135deg,#ffe14a,#ff9b3d); padding:13px 24px; border-radius:30px; box-shadow:0 8px 22px rgba(255,170,60,.4); animation:bannerpulse 2s infinite; }
   #newBanner a:active { transform:scale(.97); }
   @keyframes bannerpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.035) } }
-  /* recommended-device chip */
-  .rec { display:inline-block; margin-top:12px; font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px;
+  /* recommended-device chip — hidden in the compact grid to keep tiles small */
+  .rec { display:none; margin-top:12px; font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px;
     background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.18); color:#eaf2ff; }
   .rec.warn { background:rgba(255,170,40,.16); border-color:rgba(255,180,60,.6); color:#ffd9a0; }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
