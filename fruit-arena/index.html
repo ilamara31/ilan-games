@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Fruit Arena</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fruit Arena" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; background:#3a2414; font-family:'Trebuchet MS','Segoe UI',sans-serif;
+    color:#fff; user-select:none; -webkit-user-select:none; }
+  #app { position:relative; width:100vw; height:100vh; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+  .hidden { display:none !important; }
+  b { color:#ffd54a; }
+
+  /* ===== overlays ===== */
+  .screen { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; gap:14px; padding:22px;
+    background:radial-gradient(circle at 50% 28%, rgba(74,46,22,.86), rgba(24,14,7,.94)); overflow-y:auto; }
+  .screen h1 { font-size:clamp(30px,8vw,54px); margin:4px 0;
+    background:linear-gradient(90deg,#ff5e3a,#ffd54a 50%,#39d98a); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .screen h2 { font-size:22px; color:#ffe6c0; }
+  .screen p { font-size:15px; color:#f0e0c8; max-width:440px; line-height:1.55; }
+  .btn { font-size:19px; font-weight:800; padding:13px 30px; border:none; border-radius:28px; cursor:pointer; color:#3a1500;
+    background:linear-gradient(135deg,#ffd54a,#ff8c3d); box-shadow:0 7px 18px rgba(255,160,50,.4); transition:transform .07s; }
+  .btn:active { transform:translateY(2px) scale(.98); }
+  .btn.alt { background:linear-gradient(135deg,#cdb89a,#9a7a52); color:#241204; }
+  .btn.wide { width:min(320px,80%); }
+  .btn.grn { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .menu-btns { display:flex; flex-direction:column; gap:12px; width:min(320px,82%); }
+
+  /* ===== top bars (menu) ===== */
+  .topbar { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start;
+    padding:12px 14px; z-index:21; pointer-events:none; }
+  .tb-left, .tb-right { display:flex; align-items:center; gap:8px; }
+  .pill { background:rgba(12,18,38,.7); border:1px solid rgba(255,255,255,.14); border-radius:30px; padding:6px 12px;
+    font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .pill .ico { font-size:18px; }
+  .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#ff8c3d,#d4561c);
+    display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  .title-tag { font-size:12px; color:#ffe08a; }
+
+  /* ===== game HUD ===== */
+  #hud { position:absolute; inset:0; z-index:8; pointer-events:none; }
+  #gScore { position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:40px; font-weight:900;
+    text-shadow:0 3px 10px rgba(0,0,0,.6); }
+  #gLives { position:absolute; top:12px; left:14px; font-size:24px; }
+  #gCoins { position:absolute; top:12px; right:14px; font-size:18px; font-weight:800; color:#ffd54a; text-shadow:0 2px 6px rgba(0,0,0,.6); }
+  #pauseBtn { position:absolute; bottom:16px; left:16px; pointer-events:auto; width:52px; height:52px; border-radius:50%;
+    border:none; background:rgba(12,18,38,.8); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.4); }
+  #gShopBtn { position:absolute; bottom:16px; left:78px; pointer-events:auto; width:52px; height:52px; border-radius:50%;
+    border:none; background:rgba(12,18,38,.8); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.4); }
+  #comboWrap { position:absolute; bottom:18px; right:16px; width:120px; text-align:right; }
+  #comboLbl { font-size:14px; font-weight:800; color:#ffe45a; text-shadow:0 2px 6px rgba(0,0,0,.6); margin-bottom:4px; }
+  #comboBar { height:12px; background:rgba(0,0,0,.4); border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,.2); }
+  #comboFill { height:100%; width:0%; background:linear-gradient(90deg,#ffd54a,#ff5e2a); transition:width .12s; }
+  #bossBar { position:absolute; top:58px; left:50%; transform:translateX(-50%); width:min(70%,420px); display:none; }
+  #bossName { font-size:13px; font-weight:800; color:#ff8a8a; text-shadow:0 2px 6px rgba(0,0,0,.6); margin-bottom:3px; }
+  #bossTrack { height:14px; background:rgba(0,0,0,.45); border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,.25); }
+  #bossHp { height:100%; width:100%; background:linear-gradient(90deg,#ff3b3b,#ff8a3a); transition:width .15s; }
+  #eventBanner { position:absolute; top:28%; left:50%; transform:translateX(-50%); z-index:9;
+    background:linear-gradient(135deg,#b18cff,#6a3bd0); color:#fff; font-weight:900; font-size:clamp(18px,5vw,30px);
+    padding:12px 26px; border-radius:24px; box-shadow:0 8px 24px rgba(0,0,0,.45); pointer-events:none; opacity:0; white-space:nowrap; }
+  #eventBanner.show { animation:evt 3s ease forwards; }
+  @keyframes evt { 0%{opacity:0;transform:translateX(-50%) scale(.5);} 18%{opacity:1;transform:translateX(-50%) scale(1.08);} 80%{opacity:1;} 100%{opacity:0;} }
+
+  /* ===== shop / lists ===== */
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:6px; }
+  .tab { font-size:14px; font-weight:700; padding:8px 18px; border:none; border-radius:20px; cursor:pointer;
+    background:rgba(255,255,255,.1); color:#e6d3b8; }
+  .tab.on { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#3a1500; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; width:min(560px,94%);
+    max-height:58vh; overflow-y:auto; padding:4px; }
+  .item { background:rgba(255,255,255,.07); border:2px solid transparent; border-radius:16px; padding:12px 10px; text-align:center; }
+  .item.eq { border-color:#39ff88; }
+  .item .prev { height:46px; border-radius:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .item .nm { font-size:13px; font-weight:800; margin-bottom:3px; }
+  .item .ds { font-size:11px; color:#cdb89a; min-height:14px; margin-bottom:6px; }
+  .item button { font-size:12px; font-weight:800; padding:6px 12px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#3a1500; }
+  .item button.own { background:#3a4c73; color:#dfe8fb; }
+  .item button.eq { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .item button:disabled { opacity:.45; }
+  .mlist { width:min(480px,94%); display:flex; flex-direction:column; gap:10px; }
+  .mrow { background:rgba(255,255,255,.07); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; text-align:left; }
+  .mrow .mi { flex:1; }
+  .mrow .mt { font-weight:800; font-size:15px; }
+  .mrow .mp { font-size:12px; color:#cdb89a; }
+  .mbar { height:8px; background:rgba(0,0,0,.4); border-radius:6px; overflow:hidden; margin-top:5px; }
+  .mbar > div { height:100%; background:linear-gradient(90deg,#39ff88,#1ea85a); }
+  .mrow button { font-size:12px; font-weight:800; padding:7px 12px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .mrow button:disabled { background:#3a4c73; color:#9fb3d8; }
+  .colgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:8px; width:min(520px,94%); }
+  .cell { background:rgba(255,255,255,.07); border-radius:12px; padding:10px 4px; font-size:26px; }
+  .cell.lock { filter:grayscale(1) brightness(.5); }
+  .cell small { display:block; font-size:9px; color:#cdb89a; margin-top:3px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:min(420px,94%); }
+  .stat { background:rgba(255,255,255,.08); border-radius:14px; padding:10px 12px; text-align:left; }
+  .stat .v { font-size:22px; font-weight:900; color:#ffd54a; } .stat .k { font-size:11px; color:#e6d3b8; }
+  .switch { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.08); padding:10px 16px; border-radius:14px; }
+  .secTitle { font-size:13px; color:#ffe08a; font-weight:800; margin:8px 0 -2px; letter-spacing:1px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ===================== MAIN MENU ===================== -->
+  <div id="menu" class="screen">
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="avatar" id="mAvatar">🧑</div>
+        <div style="text-align:left"><div style="font-size:13px;font-weight:700" id="mName">Player</div>
+          <div class="title-tag" id="mTitle">Fruit Beginner</div></div>
+      </div>
+      <div class="tb-right">
+        <div class="pill"><span class="ico">🪙</span><b id="mCoins">0</b></div>
+        <div class="pill"><span class="ico">⭐</span>Lv <b id="mLevel">1</b></div>
+      </div>
+    </div>
+    <h1>🍉 FRUIT ARENA</h1>
+    <div class="menu-btns">
+      <button class="btn grn" id="btnPlay">▶ PLAY</button>
+      <button class="btn" id="btnShop">🛒 SHOP</button>
+      <button class="btn" id="btnMissions">🎯 MISSIONS</button>
+      <button class="btn" id="btnTutorial">📖 TUTORIAL</button>
+      <button class="btn alt" id="btnSettings">⚙️ SETTINGS</button>
+    </div>
+    <a href="../" style="color:#cdb89a;font-size:13px;margin-top:6px;text-decoration:none">🏠 All Ilan Games</a>
+  </div>
+
+  <!-- ===================== GAME HUD ===================== -->
+  <div id="hud" class="hidden">
+    <div id="gLives">❤️❤️❤️</div>
+    <div id="gScore">0</div>
+    <div id="gCoins">🪙 0</div>
+    <div id="bossBar"><div id="bossName">BOSS</div><div id="bossTrack"><div id="bossHp"></div></div></div>
+    <button id="pauseBtn">⏸</button>
+    <button id="gShopBtn">🛒</button>
+    <div id="comboWrap"><div id="comboLbl">Combo x1</div><div id="comboBar"><div id="comboFill"></div></div></div>
+    <div id="eventBanner"></div>
+  </div>
+
+  <!-- ===================== PAUSE ===================== -->
+  <div id="pause" class="screen hidden">
+    <h1>⏸ Paused</h1>
+    <div class="menu-btns">
+      <button class="btn grn" id="btnResume">▶ RESUME</button>
+      <button class="btn" id="btnPauseShop">🛒 SHOP</button>
+      <button class="btn alt" id="btnQuit">🏠 QUIT TO MENU</button>
+    </div>
+  </div>
+
+  <!-- ===================== TUTORIAL ===================== -->
+  <div id="tutorial" class="screen hidden">
+    <div id="tutBody"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn alt" id="tutBack" style="font-size:15px;padding:10px 20px">⬅</button>
+      <button class="btn" id="tutNext">NEXT ▶</button>
+    </div>
+    <div id="tutDots" style="margin-top:8px"></div>
+  </div>
+
+  <!-- ===================== SHOP ===================== -->
+  <div id="shop" class="screen hidden">
+    <div class="topbar"><div></div><div class="tb-right"><div class="pill"><span class="ico">🪙</span><b id="shopCoins">0</b></div></div></div>
+    <h1>🛒 SHOP</h1>
+    <div class="tabs">
+      <button class="tab on" data-cat="blades">Blades</button>
+      <button class="tab" data-cat="effects">Effects</button>
+      <button class="tab" data-cat="titles">Titles</button>
+    </div>
+    <div class="grid" id="shopGrid"></div>
+    <button class="btn alt" id="shopBack" style="margin-top:8px">⬅ Back</button>
+  </div>
+
+  <!-- ===================== MISSIONS ===================== -->
+  <div id="missions" class="screen hidden">
+    <h1>🎯 DAILY MISSIONS</h1>
+    <p style="margin-top:-8px;font-size:13px">Resets every day. Complete them for coins!</p>
+    <div class="mlist" id="missionList"></div>
+    <button class="btn alt" id="missionsBack" style="margin-top:10px">⬅ Back</button>
+  </div>
+
+  <!-- ===================== COLLECTION ===================== -->
+  <div id="collection" class="screen hidden">
+    <h1>📒 COLLECTION</h1>
+    <div id="colBody" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px"></div>
+    <button class="btn alt" id="colBack" style="margin-top:10px">⬅ Back</button>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div id="settings" class="screen hidden">
+    <h1>⚙️ SETTINGS</h1>
+    <label class="switch"><input type="checkbox" id="setSound"> 🔊 Sound effects</label>
+    <p style="font-size:13px">Profile: <b id="setName">Player</b> • Level <b id="setLevel">1</b> • <b id="setTitle">Fruit Beginner</b></p>
+    <button class="btn alt" id="btnReset" style="font-size:14px;padding:10px 20px;background:linear-gradient(135deg,#ff6b6b,#c0392b);color:#fff">🗑 Reset all progress</button>
+    <button class="btn alt" id="setBack" style="margin-top:6px">⬅ Back</button>
+  </div>
+
+  <!-- ===================== GAME OVER ===================== -->
+  <div id="gameover" class="screen hidden">
+    <h1 id="goTitle">Game Over</h1>
+    <p id="goSub"></p>
+    <div class="stats" id="goStats"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn grn" id="goAgain">▶ PLAY AGAIN</button>
+      <button class="btn alt" id="goMenu">🏠 MENU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FRUIT ARENA — single-file game
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const canvas = $('game'), ctx = canvas.getContext('2d');
+let W, H;
+
+/* ---------------- SAVE ---------------- */
+const SAVE_KEY = 'fruitArena_v1';
+function defaults(){ return {
+  seenTutorial:false, coins:0, xp:0,
+  ownedBlades:['starter'], blade:'starter',
+  ownedEffects:['none'], effect:'none',
+  title:'beginner',
+  fruitsSeen:{}, bossesSeen:{}, ach:{},
+  best:0, plays:0, total:0, worst:null, bossKills:0,
+  mSlice:0, mCoin:0, mGiant:0, maxCombo:0, mTiers:{score:0,combo:0,slice:0,giant:0},
+  sound:true,
+}; }
+let S = (()=>{ try{ const r=localStorage.getItem(SAVE_KEY); if(r) return Object.assign(defaults(), JSON.parse(r)); }catch(e){} return defaults(); })();
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+// arcade name (read-only, optional)
+let playerName='Player';
+try{ const st=JSON.parse(localStorage.getItem('soc_store_v1')); if(st){ const a=st.accounts.find(x=>x.id===st.activeId); if(a) playerName=a.name; } }catch(e){}
+
+/* ---------------- CATALOGS ---------------- */
+const BLADES = [
+  { id:'starter',   name:'Starter Blade',   cost:0,    color:'#ffffff', glow:'#ffffff', w:14, icon:'🗡️' },
+  { id:'fire',      name:'Fire Blade',      cost:150,  color:'#ff5a1e', glow:'#ffb070', w:16, icon:'🔥' },
+  { id:'ice',       name:'Ice Blade',       cost:300,  color:'#7fe6ff', glow:'#dffaff', w:16, icon:'❄️' },
+  { id:'lightning', name:'Lightning Blade', cost:600,  color:'#eaff5a', glow:'#ffffff', w:16, icon:'⚡' },
+  { id:'galaxy',    name:'Galaxy Blade',    cost:1200, color:'#b070ff', glow:'#e3c0ff', w:18, icon:'🌌' },
+  { id:'dragon',    name:'Dragon Blade',    cost:2200, color:'#39d98a', glow:'#aef0c8', w:18, icon:'🐉' },
+  { id:'rainbow',   name:'Rainbow Blade',   cost:4000, color:'rainbow', glow:'#ffffff', w:20, icon:'🌈' },
+];
+const EFFECTS = [
+  { id:'none',      name:'Default',         cost:0,    color:null,       icon:'✨' },
+  { id:'fire',      name:'Fire Slash',      cost:200,  color:'#ff5a1e',  icon:'🔥' },
+  { id:'ice',       name:'Ice Slash',       cost:350,  color:'#7fe6ff',  icon:'❄️' },
+  { id:'rainbow',   name:'Rainbow Slash',   cost:700,  color:'rainbow',  icon:'🌈' },
+  { id:'lightning', name:'Lightning Slash', cost:500,  color:'#eaff5a',  icon:'⚡' },
+  { id:'galaxy',    name:'Galaxy Slash',    cost:1100, color:'#b070ff',  icon:'🌌' },
+];
+const TITLES = [
+  { lv:1, id:'beginner', name:'Fruit Beginner' }, { lv:5, id:'slicer', name:'Fruit Slicer' },
+  { lv:10, id:'expert', name:'Fruit Expert' }, { lv:20, id:'master', name:'Fruit Master' },
+  { lv:30, id:'legend', name:'Fruit Legend' }, { lv:50, id:'king', name:'Fruit King' },
+];
+const ACHS = [
+  { id:'first',   name:'First Blood',     desc:'Slice your first fruit' },
+  { id:'combo10', name:'Combo Master',    desc:'Reach a x10 combo' },
+  { id:'boss',    name:'Boss Slayer',     desc:'Defeat a boss fruit' },
+  { id:'rich',    name:'Rich',            desc:'Bank 1000 coins' },
+  { id:'treasure',name:'Treasure Hunter', desc:'Slice a treasure fruit' },
+  { id:'lv10',    name:'Veteran',         desc:'Reach level 10' },
+];
+const FRUITS = [
+  { skin:'#e23b3b', flesh:'#ff8a8a', r:38, icon:'🍎', name:'apple' },
+  { skin:'#ff9d2e', flesh:'#ffd08a', r:40, icon:'🍊', name:'orange' },
+  { skin:'#f4d83a', flesh:'#fff0a0', r:34, icon:'🍋', name:'lemon' },
+  { skin:'#5fbf3f', flesh:'#bfe88a', r:36, icon:'🍏', name:'lime' },
+  { skin:'#2f9e44', flesh:'#ff5b6e', r:52, icon:'🍉', name:'watermelon' },
+  { skin:'#b15bd6', flesh:'#e3b8f0', r:34, icon:'🍇', name:'grape' },
+];
+const BOSS_NAMES = ['Watermelon King','Pineapple Tyrant','Dragonfruit Beast','Coconut Titan'];
+
+/* ---------------- LEVEL / TITLE ---------------- */
+function levelOf(xp){ return 1 + Math.floor(Math.sqrt(xp/30)); }
+function xpForLevel(lv){ return Math.ceil(Math.pow(lv-1,2)*30); }
+function titleObj(id){ return TITLES.find(t=>t.id===id) || TITLES[0]; }
+function highestTitle(){ const lv=levelOf(S.xp); let t=TITLES[0]; for(const x of TITLES) if(lv>=x.lv) t=x; return t; }
+function blade(){ return BLADES.find(b=>b.id===S.blade) || BLADES[0]; }
+function effectDef(){ return EFFECTS.find(e=>e.id===S.effect) || EFFECTS[0]; }
+
+/* ---------------- AUDIO ---------------- */
+const Sfx = (()=>{ let ac=null;
+  function ensure(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); }
+  function noise(d,hp,g){ const n=Math.floor(ac.sampleRate*d),b=ac.createBuffer(1,n,ac.sampleRate),da=b.getChannelData(0);
+    for(let i=0;i<n;i++)da[i]=(Math.random()*2-1)*(1-i/n); const s=ac.createBufferSource();s.buffer=b;const ga=ac.createGain();ga.gain.value=g;
+    const f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=hp;s.connect(f);f.connect(ga);ga.connect(ac.destination);s.start();s.stop(ac.currentTime+d); }
+  function tone(fr,d,ty,g,gl){ const o=ac.createOscillator(),ga=ac.createGain();o.type=ty;o.frequency.setValueAtTime(fr,ac.currentTime);
+    if(gl)o.frequency.exponentialRampToValueAtTime(gl,ac.currentTime+d);ga.gain.setValueAtTime(.0001,ac.currentTime);
+    ga.gain.exponentialRampToValueAtTime(g,ac.currentTime+.01);ga.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);
+    o.connect(ga);ga.connect(ac.destination);o.start();o.stop(ac.currentTime+d+.03); }
+  function play(fn){ if(!S.sound) return; ensure(); fn(); }
+  return {
+    slice(){ play(()=>{ noise(.1,2600,.16); tone(900,.09,'triangle',.1,1700); }); },
+    bomb(){ play(()=>{ noise(.5,120,.7); tone(90,.5,'sawtooth',.5,40); }); },
+    combo(){ play(()=>{ [660,880,1175].forEach((f,i)=>setTimeout(()=>{ensure();tone(f,.16,'triangle',.22);},i*60)); }); },
+    coin(){ play(()=>{ tone(1200,.08,'square',.2,1800); }); },
+    power(){ play(()=>{ tone(500,.25,'sawtooth',.25,1200); }); },
+    treasure(){ play(()=>{ [784,988,1318,1568,2093].forEach((f,i)=>setTimeout(()=>{ensure();tone(f,.22,'triangle',.3);},i*70)); }); },
+    boss(){ play(()=>{ noise(.6,90,.6); tone(70,.6,'sawtooth',.5,30); }); },
+    hit(){ play(()=>{ tone(300,.08,'square',.18,180); }); },
+    level(){ play(()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>{ensure();tone(f,.2,'triangle',.28);},i*80)); }); },
+    miss(){ play(()=>{ tone(300,.18,'sine',.18,150); }); },
+  };
+})();
+
+/* ---------------- WOOD BG ---------------- */
+let wood=document.createElement('canvas'), wctx=wood.getContext('2d');
+function drawWood(){ wood.width=W; wood.height=H;
+  const g=wctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#5a3a1e'); g.addColorStop(.5,'#4a2f17'); g.addColorStop(1,'#3a2412');
+  wctx.fillStyle=g; wctx.fillRect(0,0,W,H);
+  const pk=Math.max(70,H/9);
+  for(let y=0;y<H;y+=pk){ wctx.fillStyle=(Math.floor(y/pk)%2)?'rgba(0,0,0,.07)':'rgba(255,220,170,.04)'; wctx.fillRect(0,y,W,pk);
+    wctx.strokeStyle='rgba(0,0,0,.28)'; wctx.lineWidth=2; wctx.beginPath(); wctx.moveTo(0,y); wctx.lineTo(W,y); wctx.stroke();
+    wctx.strokeStyle='rgba(0,0,0,.1)'; wctx.lineWidth=1;
+    for(let k=0;k<6;k++){ const yy=y+pk*(.15+k*.14); wctx.beginPath(); wctx.moveTo(0,yy);
+      for(let x=0;x<=W;x+=40) wctx.lineTo(x,yy+Math.sin(x*.03+k)*2.2); wctx.stroke(); } }
+  const v=wctx.createRadialGradient(W/2,H*.42,H*.2,W/2,H*.5,H*.85); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.45)');
+  wctx.fillStyle=v; wctx.fillRect(0,0,W,H);
+}
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; drawWood(); }
+window.addEventListener('resize', resize);
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+let state='menu';   // menu | play | paused | over
+const GRAV=1500;
+let objects=[], halves=[], juices=[], floats=[], blade_=[], score=0, lives=3, matchCoins=0, matchXp=0,
+    last=0, spawnT=0, elapsed=0, comboCount=0, comboTimer=0, comboMax=0, shakeT=0, slowT=0, nextBoss=25,
+    boss=null, eventActive=null, eventUntil=0, nextEvent=99, coinMul=1, pointMul=1, stormT=0, giantT=0, giantGap=125;
+let shopReturn='menu';
+let tutMode=false, tutStep=0, tutData={}, coachMsg='';
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+function diff(){ return Math.min(1, elapsed/95); }   // 0 -> 1 over 95s (slow to fast)
+function curGrav(){ return lerp(950, 1600, diff()); }   // floaty & slow at the start (like Basket Catch), faster later
+
+function resetGame(){
+  objects=[]; halves=[]; juices=[]; floats=[]; blade_=[]; score=0; lives=3; matchCoins=0; matchXp=0;
+  elapsed=0; spawnT=1.2; comboCount=0; comboTimer=0; comboMax=0; shakeT=0; slowT=0;
+  nextBoss=25; giantGap=125; boss=null; eventActive=null; eventUntil=0; nextEvent=60+Math.random()*30;
+  coinMul=1; pointMul=1; stormT=0; giantT=0;
+  $('bossBar').style.display='none'; $('comboFill').style.width='0%'; $('comboLbl').textContent='Combo x1';
+  updateHud();
+}
+
+/* ---------------- spawning ---------------- */
+function launchVel(x, frac){ const g=curGrav(); const vy=-Math.sqrt(2*g*H*frac); const vx=(W/2-x)*0.5+(Math.random()*200-100); return {vx,vy}; }
+function makeFruit(special){
+  const x=W*(0.14+Math.random()*0.72); const v=launchVel(x, 0.6+Math.random()*0.22);
+  let o={ x, y:H+40, vx:v.vx, vy:v.vy, rot:Math.random()*6, vrot:Math.random()*5-2.5, sliced:false };
+  if(special==='bomb'){ Object.assign(o,{kind:'bomb',r:32,skin:'#111',flesh:'#333',icon:'💣'}); }
+  else if(special){ const map={fire:['#ff5a1e','#ffd08a','🔥'],ice:['#7fe6ff','#dffaff','❄️'],lightning:['#eaff5a','#ffffd0','⚡'],coin:['#ffd54a','#fff0a0','🪙'],poison:['#6a3d8a','#9a6fb0','☠️'],treasure:['#ffcf3a','#fff3b0','💎']};
+    const m=map[special]; Object.assign(o,{kind:special,r:special==='treasure'?44:38,skin:m[0],flesh:m[1],icon:m[2]}); }
+  else { const f=FRUITS[Math.random()*FRUITS.length|0]; Object.assign(o,{kind:'fruit',r:giantT>0?f.r*1.7:f.r,skin:f.skin,flesh:f.flesh,icon:f.icon,fname:f.name}); }
+  if(o.kind==='fruit'){ S.fruitsSeen[o.fname]=1; }
+  objects.push(o);
+}
+function spawnWave(){
+  const d=diff();
+  // sometimes drop a power-up surrounded by a cluster of fruit — slice the glowing one to chain them!
+  if(Math.random() < 0.18+d*0.10){
+    spawnSpecialCluster(['fire','ice','lightning','coin'][Math.random()*4|0]);
+    return;
+  }
+  const n = stormT>0 ? 4+(Math.random()*3|0) : 1+Math.floor(d*2.2);
+  for(let i=0;i<n;i++){
+    const r=Math.random();
+    let special=null;
+    if(r < (0.025+d*0.12)) special='bomb';
+    else if(r < 0.045) special='treasure';                // rare lone treasure
+    else if(r < 0.075) special='poison';                  // lone poison (avoid it)
+    makeFruit(special);
+  }
+}
+/* a power-up in the middle + a tight cluster of fruit around it, launched together so they stay
+   close near the top — slicing fire chains them, lightning auto-slices them, etc. */
+function spawnSpecialCluster(special){
+  const cx=W*(0.3+Math.random()*0.4);
+  const baseVx=(W/2-cx)*0.4+(Math.random()*120-60);
+  const baseFrac=0.66+Math.random()*0.10;
+  const spawnOne=(sp,ox,ofrac,ovx)=>{
+    const x=cx+ox, g=curGrav(), vy=-Math.sqrt(2*g*H*Math.max(0.4,baseFrac+ofrac));
+    let o={ x, y:H+40, vx:baseVx+ovx, vy, rot:Math.random()*6, vrot:Math.random()*5-2.5, sliced:false };
+    if(sp){ const m={fire:['#ff5a1e','#ffd08a','🔥'],ice:['#7fe6ff','#dffaff','❄️'],lightning:['#eaff5a','#ffffd0','⚡'],coin:['#ffd54a','#fff0a0','🪙']}[sp];
+      Object.assign(o,{kind:sp,r:40,skin:m[0],flesh:m[1],icon:m[2]}); }
+    else { const f=FRUITS[Math.random()*FRUITS.length|0]; Object.assign(o,{kind:'fruit',r:giantT>0?f.r*1.7:f.r,skin:f.skin,flesh:f.flesh,icon:f.icon,fname:f.name}); S.fruitsSeen[f.name]=1; }
+    objects.push(o);
+  };
+  spawnOne(special,0,0,0);
+  const n=3+(Math.random()*3|0);
+  for(let i=0;i<n;i++) spawnOne(null, Math.random()*200-100, Math.random()*0.06-0.03, Math.random()*80-40);
+}
+function spawnBoss(){
+  const name=BOSS_NAMES[Math.random()*BOSS_NAMES.length|0];
+  const hp=6+Math.floor(score/50);
+  boss={ x:W*0.5, y:H*0.3, vx:120*(Math.random()<.5?1:-1), vy:0, r:Math.min(90,W*0.16), rot:0, vrot:1,
+    kind:'boss', skin:'#2f9e44', flesh:'#ff5b6e', icon:'🍉', name, hp, maxhp:hp };
+  S.bossesSeen[name]=1;
+  $('bossName').textContent='👑 '+name; $('bossBar').style.display='block'; $('bossHp').style.width='100%';
+  banner('⚔️ BOSS: '+name+'!'); Sfx.boss(); shakeT=0.3;
+}
+/* GIANT bonus fruit — comes in very slowly, you can keep slicing it for points (it never splits) */
+function spawnGiant(){
+  objects.length=0;                          // clear all falling food so only the giant is on screen
+  const f=FRUITS[Math.random()*FRUITS.length|0];
+  const fromLeft=Math.random()<0.5;
+  boss={ kind:'giant', x: fromLeft? -90 : W+90, y:H*0.4, vx:(fromLeft?1:-1)*(W*0.05), vy:0,
+    r:Math.min(125, W*0.21), rot:0, vrot:0.5, skin:f.skin, flesh:f.flesh, icon:f.icon,
+    life:7.0, hitCd:0, leaving:false };
+  $('bossBar').style.display='none';
+  banner('🍈 GIANT FRUIT — slice it lots for bonus points!'); Sfx.boss(); shakeT=0.2;
+}
+function hitGiant(){ if(!boss || boss.hitCd>0 || boss.leaving) return; boss.hitCd=0.11;
+  const pts=1*pointMul; score+=pts; matchXp+=1;
+  addFloat(boss.x+(Math.random()*60-30), boss.y+(Math.random()*60-30), '+'+pts, '#ffe45a');
+  juiceBurst(boss, boss.flesh, 8); Sfx.slice();
+  comboCount++; comboTimer=0.4; comboMax=Math.max(comboMax,comboCount); if(!tutMode){ S.mSlice++; S.mGiant=(S.mGiant||0)+1; } updateHud();
+}
+
+/* ---------------- slicing ---------------- */
+function addFloat(x,y,text,col){ floats.push({x,y,vy:-70,life:1,text,col:col||'#fff'}); }
+function juiceBurst(o,col,count){ for(let i=0;i<(count||14);i++){ const a=Math.random()*6.28,sp=80+Math.random()*260;
+  juices.push({x:o.x,y:o.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,r:3+Math.random()*5,life:.6+Math.random()*.4,col}); } }
+function splitHalves(o,nx,ny){ const px=-ny,py=nx;
+  for(const s of [1,-1]) halves.push({x:o.x+px*s*10,y:o.y+py*s*10,vx:o.vx+px*s*240,vy:o.vy+py*s*240-30,
+    r:o.r,skin:o.skin,flesh:o.flesh,side:s,ang:Math.atan2(ny,nx),rot:o.rot,vrot:(o.vrot||0)+s*5,life:1.6}); }
+
+function unlockAch(id){ if(!S.ach[id]){ S.ach[id]=1; const a=ACHS.find(x=>x.id===id); if(a) banner('🏅 '+a.name); save(); } }
+
+function sliceObj(o, nx, ny){
+  if(o.sliced) return;
+  if(o.kind==='bomb'){ if(tutMode){ o.sliced=true; juiceBurst(o,'#333',12); coachMsg='💣 That was a BOMB — in a real game that ends it! Avoid bombs.'; Sfx.hit(); return; } endGame(true); return; }
+  o.sliced=true;
+  comboCount++; comboTimer=0.4; comboMax=Math.max(comboMax,comboCount);
+  if(comboCount>=10) unlockAch('combo10');
+  const ef=effectDef();
+  juiceBurst(o, o.flesh, 14);
+  if(ef.color){ juiceBurst(o, ef.color==='rainbow'? hsl(Math.random()) : ef.color, 10); }
+  splitHalves(o,nx,ny);
+  Sfx.slice();
+  unlockAch('first');
+
+  if(o.kind==='poison'){ const pen=Math.max(0,5); score=Math.max(0,score-5); addFloat(o.x,o.y,'-5','#ff6b6b'); shakeT=Math.max(shakeT,.15); updateHud(); return; }
+  if(o.kind==='coin'){ const c=8+ (Math.random()*6|0); matchCoins+=c*coinMul; addFloat(o.x,o.y,'+'+c*coinMul+'🪙','#ffd54a'); Sfx.coin(); S.mCoin+=c*coinMul; updateHud(); return; }
+  if(o.kind==='treasure'){ const c=60+ (Math.random()*40|0); matchCoins+=c*coinMul; addFloat(o.x,o.y,'+'+c*coinMul+'🪙','#ffd54a'); Sfx.treasure();
+    for(let i=0;i<40;i++) juiceBurst(o, hsl(Math.random()), 1); banner('💎 TREASURE! +'+c*coinMul+' coins'); unlockAch('treasure'); S.mCoin+=c*coinMul; updateHud(); return; }
+
+  // normal/special scoring
+  let pts=1*pointMul; score+=pts; matchXp+=3;
+  if(tutMode) tutOnSlice(o);
+  addFloat(o.x,o.y,'+'+pts, '#fff');
+
+  if(o.kind==='fire'){ Sfx.power(); shakeT=Math.max(shakeT,.3); banner('🔥 EXPLOSION!'); explode(o.x,o.y,180); }
+  else if(o.kind==='ice'){ Sfx.power(); slowT=3.2; banner('❄️ SLOW MOTION!'); }
+  else if(o.kind==='lightning'){ Sfx.power(); banner('⚡ AUTO SLICE!'); autoSlice(); }
+
+  if(!tutMode) S.mSlice++;
+  updateHud();
+}
+function explode(x,y,rad){ for(const o of objects){ if(o.sliced||o.kind==='bomb'||o.kind==='boss') continue;
+  if(Math.hypot(o.x-x,o.y-y)<rad){ let dx=o.x-x,dy=o.y-y,l=Math.hypot(dx,dy)||1; sliceObj(o,dx/l,dy/l); } } }
+function autoSlice(){ for(const o of objects){ if(!o.sliced&&o.kind!=='bomb'&&o.kind!=='boss'){ sliceObj(o,1,0); } } }
+function hitBoss(){ if(!boss) return; boss.hp--; Sfx.hit(); shakeT=Math.max(shakeT,.12);
+  juiceBurst(boss, boss.flesh, 10); $('bossHp').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%';
+  if(boss.hp<=0){ const c=40+score, xp=60; matchCoins+=c*coinMul; matchXp+=xp; score+=10; S.bossKills++; S.mBoss++;
+    addFloat(boss.x,boss.y,'BOSS DOWN! +'+c*coinMul+'🪙','#ffd54a'); for(let i=0;i<60;i++) juiceBurst(boss,hsl(Math.random()),1);
+    banner('👑 BOSS DEFEATED!'); Sfx.treasure(); shakeT=.4; unlockAch('boss'); boss=null; $('bossBar').style.display='none'; updateHud(); }
+}
+
+/* ---------------- events ---------------- */
+const EVENTS=[
+  { id:'dcoin', text:'💰 DOUBLE COINS!', dur:15, on(){coinMul=2;}, off(){coinMul=1;} },
+  { id:'dpts',  text:'⭐ DOUBLE POINTS!', dur:15, on(){pointMul=2;}, off(){pointMul=1;} },
+  { id:'storm', text:'🌪️ FRUIT STORM!', dur:10, on(){stormT=10;}, off(){stormT=0;} },
+  { id:'slow',  text:'🐢 SLOW MOTION!', dur:6, on(){slowT=6;}, off(){} },
+  { id:'giant', text:'🍈 GIANT FRUIT!', dur:10, on(){giantT=10;}, off(){giantT=0;} },
+  { id:'treas', text:'💎 TREASURE TIME!', dur:1, on(){ makeFruit('treasure'); makeFruit('treasure'); }, off(){} },
+];
+function triggerEvent(){ const e=EVENTS[Math.random()*EVENTS.length|0]; e.on(); eventActive=e; eventUntil=elapsed+e.dur;
+  nextEvent=elapsed+60+Math.random()*30; banner(e.text); Sfx.power(); }
+
+/* ---------------- banner ---------------- */
+function banner(t){ const b=$('eventBanner'); b.textContent=t; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
+
+/* ---------------- loop ---------------- */
+function loop(now){
+  requestAnimationFrame(loop);
+  let dt=Math.min(0.04,(now-last)/1000||0); last=now;
+  const playing = state==='play';
+  const tdt = playing ? dt*(slowT>0?0.4:1) : 0;
+
+  // background + shake
+  const sx=shakeT>0?(Math.random()*16-8):0, sy=shakeT>0?(Math.random()*16-8):0;
+  ctx.setTransform(1,0,0,1,sx,sy);
+  ctx.drawImage(wood,0,0);
+
+  if(playing){
+    elapsed+=dt; if(shakeT>0)shakeT-=dt; if(slowT>0)slowT-=dt;
+    if(stormT>0)stormT-=tdt; if(giantT>0)giantT-=tdt;
+
+    if(tutMode){ tutUpdate(dt); }
+    else {
+      // events
+      if(eventActive && elapsed>eventUntil){ eventActive.off(); eventActive=null; }
+      if(!eventActive && elapsed>nextEvent) triggerEvent();
+      // giant bonus fruit: 25, then 150, 375, ... (gap grows +100 each time, since you bank ~100 off each giant)
+      if(!boss && score>=nextBoss){ spawnGiant(); nextBoss += giantGap; giantGap += 100; }
+      // spawning
+      spawnT-=tdt;
+      if(spawnT<=0){ if(!boss) spawnWave(); const d=diff(); spawnT=lerp(2.1,0.6,d)*(0.7+Math.random()*0.6)/(stormT>0?2.2:1); }
+    }
+
+    // combo timer
+    if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0){ if(comboCount>=3){ const bonus=comboCount; score+=bonus; matchCoins+=bonus; addFloat(W/2,H*0.3,comboCount+' COMBO! +'+bonus,'#ffe45a'); Sfx.combo(); } comboCount=0; updateHud(); } }
+    updateComboMeter();
+
+    // boss / giant update
+    if(boss){
+      if(boss.kind==='giant'){
+        boss.hitCd=Math.max(0,boss.hitCd-dt); boss.rot+=boss.vrot*tdt;   // cooldown in real time -> full slice rate even in slow-mo
+        if(!boss.leaving){ boss.life-=tdt; boss.x+=boss.vx*tdt; boss.y=H*0.4+Math.sin(elapsed*1.2)*40;
+          if(boss.life<=0) boss.leaving=true; }
+        else { boss.vy-=1300*tdt; boss.y+=boss.vy*tdt; boss.x+=boss.vx*0.4*tdt; }   // floats up & away
+        if(boss.x<-boss.r-120 || boss.x>W+boss.r+120 || boss.y<-boss.r-90){ boss=null; }
+      } else {
+        boss.x+=boss.vx*tdt; boss.rot+=boss.vrot*tdt;
+        if(boss.x<boss.r){boss.x=boss.r;boss.vx*=-1;} if(boss.x>W-boss.r){boss.x=W-boss.r;boss.vx*=-1;}
+        boss.y=H*0.28+Math.sin(elapsed*1.5)*30;
+      }
+    }
+  }
+
+  // blade trail
+  blade_=blade_.filter(p=>now-p.t<140);
+  if(blade_.length>1){ const bl=blade();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    for(let i=1;i<blade_.length;i++){ const a=blade_[i-1],b=blade_[i],age=(now-b.t)/140;
+      ctx.strokeStyle = bl.color==='rainbow' ? hsl((i*0.05+now*0.0005)%1, 0.4*(1-age)) : rgba(bl.color, 0.7*(1-age));
+      ctx.lineWidth=bl.w*(1-age)+2; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+  }
+
+  // objects
+  for(let i=objects.length-1;i>=0;i--){ const o=objects[i];
+    if(o.sliced){ objects.splice(i,1); continue; }   // sliced fruit is gone — only its halves + juice remain
+    if(playing){ o.vy+=curGrav()*tdt; o.x+=o.vx*tdt; o.y+=o.vy*tdt; o.rot+=o.vrot*tdt; }
+    if(o.y>H+o.r+70){ objects.splice(i,1);
+      if(playing && !o.sliced && o.kind!=='bomb' && o.kind!=='coin' && o.kind!=='poison' && o.kind!=='treasure'){
+        if(tutMode){ tutOnMiss(o); } else { lives--; Sfx.miss(); updateHud(); if(lives<=0){ endGame(false); } } }
+      continue; }
+    drawObj(o);
+  }
+  if(boss) drawObj(boss);
+
+  // halves
+  for(let i=halves.length-1;i>=0;i--){ const h=halves[i];
+    if(playing){ h.vy+=curGrav()*tdt; h.x+=h.vx*tdt; h.y+=h.vy*tdt; h.rot+=h.vrot*tdt; h.life-=dt; }
+    if(h.y>H+140||h.life<=0){ halves.splice(i,1); continue; } drawHalf(h); }
+
+  // juice
+  for(let i=juices.length-1;i>=0;i--){ const p=juices[i];
+    if(playing){ p.vy+=GRAV*0.5*tdt; p.x+=p.vx*tdt; p.y+=p.vy*tdt; p.life-=dt; }
+    if(p.life<=0){ juices.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.2832); ctx.fill(); ctx.globalAlpha=1; }
+
+  // floating score numbers
+  for(let i=floats.length-1;i>=0;i--){ const f=floats[i];
+    if(playing){ f.y+=f.vy*dt; f.life-=dt*0.8; }
+    if(f.life<=0){ floats.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,f.life); ctx.fillStyle=f.col; ctx.font='900 26px Trebuchet MS'; ctx.textAlign='center';
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeText(f.text,f.x,f.y); ctx.fillText(f.text,f.x,f.y); ctx.globalAlpha=1; }
+
+  if(tutMode) drawCoachText();
+  ctx.setTransform(1,0,0,1,0,0);
+}
+
+/* ---------------- drawing ---------------- */
+function drawObj(o){
+  ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot*0.2);
+  // glow for special
+  if(o.kind==='treasure'||o.kind==='coin'){ ctx.shadowColor='#ffcf3a'; ctx.shadowBlur=30; }
+  else if(o.kind==='fire'){ ctx.shadowColor='#ff5a1e'; ctx.shadowBlur=22; }
+  else if(o.kind==='ice'){ ctx.shadowColor='#7fe6ff'; ctx.shadowBlur=22; }
+  else if(o.kind==='lightning'){ ctx.shadowColor='#eaff5a'; ctx.shadowBlur=22; }
+  else if(o.kind==='boss'){ ctx.shadowColor='#ff3b3b'; ctx.shadowBlur=28; }
+  else if(o.kind==='giant'){ ctx.shadowColor='#39ff88'; ctx.shadowBlur=34; }
+  const g=ctx.createRadialGradient(-o.r*0.3,-o.r*0.3,o.r*0.2,0,0,o.r);
+  g.addColorStop(0,lighten(o.skin,40)); g.addColorStop(1,o.skin);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,o.r,0,6.2832); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,255,255,.3)'; ctx.beginPath(); ctx.ellipse(-o.r*0.3,-o.r*0.33,o.r*0.2,o.r*0.12,-0.6,0,6.2832); ctx.fill();
+  if(o.kind==='fire'||o.kind==='ice'||o.kind==='lightning'||o.kind==='coin'){   // pulsing "slice me!" ring on power-ups
+    const pr=o.r*(1.22+0.14*Math.sin(elapsed*8+o.x*0.01));
+    ctx.strokeStyle=rgba(o.skin,0.6); ctx.lineWidth=4; ctx.beginPath(); ctx.arc(0,0,pr,0,6.2832); ctx.stroke();
+  }
+  if(o.icon){ ctx.font=(o.r*1.1)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(o.icon,0,o.r*0.04); }
+  ctx.restore();
+}
+function drawHalf(h){ ctx.save(); ctx.translate(h.x,h.y); ctx.rotate(h.rot*0.2+h.ang+(h.side>0?0:Math.PI));
+  ctx.globalAlpha=Math.max(0,Math.min(1,h.life));
+  ctx.fillStyle=h.skin; ctx.beginPath(); ctx.arc(0,0,h.r,0,Math.PI); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=h.flesh; ctx.beginPath(); ctx.arc(0,0,h.r*0.8,0,Math.PI); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(-h.r*0.8,0,h.r*1.6,2.5);
+  ctx.globalAlpha=1; ctx.restore(); }
+function lighten(hex,amt){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join('');
+  const r=Math.min(255,parseInt(c.slice(0,2),16)+amt),g=Math.min(255,parseInt(c.slice(2,4),16)+amt),b=Math.min(255,parseInt(c.slice(4,6),16)+amt);
+  return 'rgb('+r+','+g+','+b+')'; }
+function rgba(hex,a){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join('');
+  return 'rgba('+parseInt(c.slice(0,2),16)+','+parseInt(c.slice(2,4),16)+','+parseInt(c.slice(4,6),16)+','+a+')'; }
+function hsl(h,a){ return 'hsla('+(h*360|0)+',90%,60%,'+(a==null?1:a)+')'; }
+
+/* ---------------- input ---------------- */
+let down=false;
+function pPos(e){ const r=canvas.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+function addPoint(x,y){ const now=performance.now(); const last=blade_[blade_.length-1];
+  if(state==='play'){
+    for(const o of objects){ if(o.sliced) continue;
+      let hit=false, nx=1, ny=0;
+      if(last){ if(segCircle(last.x,last.y,x,y,o.x,o.y,o.r)){ hit=true; const dx=x-last.x,dy=y-last.y,l=Math.hypot(dx,dy)||1; nx=dx/l; ny=dy/l; } }
+      if(!hit && Math.hypot(x-o.x,y-o.y) <= o.r*1.12){ hit=true; }   // just touching / passing over a fruit slices it
+      if(hit) sliceObj(o,nx,ny);
+    }
+    if(boss){ let bh=false;
+      if(last && segCircle(last.x,last.y,x,y,boss.x,boss.y,boss.r)) bh=true;
+      else if(Math.hypot(x-boss.x,y-boss.y) <= boss.r) bh=true;
+      if(bh){ if(boss.kind==='giant') hitGiant(); else hitBoss(); } }
+  }
+  blade_.push({x,y,t:now});
+}
+function segCircle(ax,ay,bx,by,cx,cy,r){ const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy; let t=l2?((cx-ax)*dx+(cy-ay)*dy)/l2:0; t=Math.max(0,Math.min(1,t));
+  const px=ax+dx*t,py=ay+dy*t,ddx=cx-px,ddy=cy-py; return ddx*ddx+ddy*ddy<=r*r; }
+canvas.addEventListener('pointerdown',e=>{ if(state!=='play')return;
+  if(tutMode && tutPhase==='brief'){ tutBeginAct(); return; }   // tap to start each tutorial step
+  down=true; if(e.pointerType!=='mouse')blade_.length=0; const[x,y]=pPos(e); addPoint(x,y); });
+canvas.addEventListener('pointermove',e=>{ if(state!=='play')return; if(e.pointerType==='mouse'||down){ const[x,y]=pPos(e); addPoint(x,y); } });
+window.addEventListener('pointerup',()=>{ down=false; });
+canvas.addEventListener('pointerleave',()=>{ blade_.length=0; });
+
+/* ---------------- HUD ---------------- */
+function updateHud(){ $('gScore').textContent=score; $('gCoins').textContent='🪙 '+matchCoins;
+  $('gLives').textContent='❤️'.repeat(Math.max(0,lives))+'🖤'.repeat(Math.max(0,3-lives)); }
+function updateComboMeter(){ const mult=1+Math.floor(comboCount/3); $('comboLbl').textContent='Combo x'+mult;
+  $('comboFill').style.width=Math.min(100,comboCount/10*100)+'%'; }
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+function showScreen(id){ for(const s of document.querySelectorAll('.screen')) s.classList.add('hidden');
+  $('hud').classList.add('hidden'); if(id) $(id).classList.remove('hidden'); }
+function refreshMenu(){ const lv=levelOf(S.xp);
+  $('mCoins').textContent=S.coins; $('mLevel').textContent=lv; $('mName').textContent=playerName;
+  $('mTitle').textContent=titleObj(S.title).name; }
+
+function gotoMenu(){ state='menu'; tutMode=false; coachMsg=''; boss=null; objects=[]; halves=[]; juices=[]; floats=[]; blade_=[];
+  $('bossBar').style.display='none'; showScreen('menu'); refreshMenu(); }
+
+/* ---- play ---- */
+function startGame(){ state='play'; tutMode=false; coachMsg=''; showScreen(null); $('hud').classList.remove('hidden'); resetGame(); }
+function endGame(byBomb){ if(state==='over')return; state='over';
+  if(byBomb){ Sfx.bomb(); shakeT=.45; } else Sfx.miss();
+  // bank rewards
+  const beforeLv=levelOf(S.xp);
+  S.coins+=matchCoins; S.xp+=matchXp; S.plays++; S.total+=score; S.best=Math.max(S.best,score); S.maxCombo=Math.max(S.maxCombo||0, comboMax);
+  S.worst=(S.worst==null)?score:Math.min(S.worst,score);
+  if(S.coins>=1000) unlockAch('rich');
+  const afterLv=levelOf(S.xp); if(afterLv>beforeLv){ Sfx.level(); }
+  if(afterLv>=10) unlockAch('lv10');
+  // auto-equip highest unlocked title if current locked
+  if(levelOf(S.xp) < titleObj(S.title).lv) S.title=highestTitle().id;
+  save();
+  $('goTitle').textContent=byBomb?'💥 BOOM!':'🍉 Game Over';
+  $('goSub').innerHTML=(byBomb?'You sliced a bomb!':'You ran out of lives!')+'<br>Score <b>'+score+'</b> • earned <b>🪙 '+matchCoins+'</b>'+(afterLv>beforeLv?' • <b>⬆ Level '+afterLv+'!</b>':'');
+  $('goStats').innerHTML = stat('🏆 Best',S.best)+stat('🎮 Plays',S.plays)+stat('💀 Lowest',S.worst==null?'—':S.worst)+stat('🔥 Max combo',comboMax)
+    +stat('⭐ Level',afterLv)+stat('🪙 Bank',S.coins);
+  showScreen('gameover');
+}
+function stat(k,v){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
+
+/* ---- pause ---- */
+function pauseGame(){ if(state!=='play')return; state='paused'; showScreen('pause'); }
+function resumeGame(){ if(state!=='paused')return; state='play'; showScreen(null); $('hud').classList.remove('hidden'); last=performance.now(); }
+
+/* ---- tutorial ---- */
+const TUT=[
+  { e:'👋', t:'Welcome to Fruit Arena!', b:'Swipe across fruits to slice them.<br><span style="font-size:34px">✋➡️🍉</span><br><span style="font-size:12px;color:#cdb89a">On a laptop just move your cursor over the fruit!</span>' },
+  { e:'🔥', t:'Special fruits have powers', b:'🔥 Fire Fruit = Explosion<br>❄️ Ice Fruit = Slow Motion<br>⚡ Lightning Fruit = Auto Slice<br>🪙 Coin Fruit = Bonus Coins<br>☠️ Poison Fruit = Lose Points' },
+  { e:'💰', t:'Earn coins to unlock blades', b:'Slice fruit and complete missions to earn coins, then buy new <b>blades</b> and slash <b>effects</b> in the Shop.' },
+  { e:'🏆', t:'Complete missions & level up', b:'Finish daily missions for coins, gain XP to <b>level up</b>, and earn new <b>titles</b>.' },
+  { e:'🎯', t:'Defeat Boss Fruits', b:'Every 50 points a giant <b>Boss Fruit</b> appears — hit it many times to defeat it for huge rewards!' },
+];
+let tutI=0;
+function showTutorial(){ tutI=0; renderTut(); showScreen('tutorial'); }
+function renderTut(){ const s=TUT[tutI];
+  $('tutBody').innerHTML='<div style="font-size:64px">'+s.e+'</div><h2 style="margin:6px 0">'+s.t+'</h2><p>'+s.b+'</p>';
+  $('tutBack').style.visibility=tutI>0?'visible':'hidden';
+  $('tutNext').textContent=tutI<TUT.length-1?'NEXT ▶':'🍉 START';
+  $('tutDots').innerHTML=TUT.map((_,i)=>'<span style="display:inline-block;width:'+(i===tutI?20:8)+'px;height:8px;border-radius:5px;margin:0 3px;background:'+(i===tutI?'#ffd54a':'#5a4530')+'"></span>').join('');
+}
+
+/* ---- interactive tutorial (coach-guided; each step waits for a tap, like the cricket coach) ---- */
+let tutPhase='brief', tutSliced=0, tutBombT=0, tutPow=0;
+const TUT_STEPS=[
+  { brief:"👋 Hi! I'm your coach. To slice, SWIPE across a fruit — or even just touch it. Slice 3 to continue!",
+    act:"Slice the fruit! ✋🍉",
+    spawn(){ tutSliced=0; spawnTutFruits(2); },
+    tick(){ if(objects.length===0 && tutSliced<3) spawnTutFruits(2); },
+    done(){ return tutSliced>=3; } },
+  { brief:"💣 Now BOMBS! NEVER slice a bomb — in a real game it ends your run. Just let them fall past you.",
+    act:"Don't slice the bombs — let them drop!",
+    spawn(){ tutBombT=0; makeFruit('bomb'); },
+    tick(dt){ tutBombT+=dt; if(objects.length===0 && tutBombT<4.5) makeFruit('bomb'); },
+    done(){ return tutBombT>=4.5 && objects.length===0; } },
+  { brief:"✨ Power-ups come inside a cluster of fruit: 🔥 explodes everything near it, ❄️ slows time, ⚡ slices all, 🪙 gives coins. Slice them!",
+    act:"Slice the glowing power-ups!",
+    spawn(){ tutPow=0; spawnSpecialCluster('fire'); },
+    tick(){ if(objects.length===0 && tutPow<3){ const t=['ice','lightning','coin'][tutPow]; tutPow++; spawnSpecialCluster(t); } },
+    done(){ return tutPow>=3 && objects.length===0; } },
+  { brief:"🍈 GIANT FRUIT! It floats in slowly and never breaks — spam-slice it for tons of points!",
+    act:"SLICE THE GIANT as fast as you can! 🍈💥",
+    spawn(){ spawnGiant(); }, tick(){}, done(){ return boss===null; } },
+  { brief:"🎉 That's everything — you're ready! Tap to go to the menu, then hit ▶ PLAY whenever you like.",
+    act:"", spawn(){}, tick(){}, done(){ return true; }, end:true },
+];
+function startInteractiveTutorial(){ state='play'; tutMode=true; showScreen(null); $('hud').classList.remove('hidden');
+  resetGame(); tutStep=0; tutBrief(); }
+function tutBrief(){ objects.length=0; boss=null; $('bossBar').style.display='none'; tutPhase='brief';
+  coachMsg=TUT_STEPS[tutStep].brief+"\n\n👉 Tap the screen to continue"; }
+function tutBeginAct(){ const s=TUT_STEPS[tutStep]; if(s.end){ tutFinish(); return; }
+  tutPhase='act'; tutData={t:0}; coachMsg=s.act||s.brief; s.spawn(); }
+function tutAdvance(){ tutStep++; if(tutStep>=TUT_STEPS.length){ tutFinish(); return; } tutBrief(); }
+function tutUpdate(dt){ if(tutPhase!=='act') return; const s=TUT_STEPS[tutStep]; tutData.t=(tutData.t||0)+dt;
+  if(s.tick) s.tick(dt);
+  if(tutData.t>=0.3 && s.done()) tutAdvance(); }
+function tutFinish(){ if(!tutMode) return; tutMode=false; coachMsg=''; if(!S.seenTutorial){ S.seenTutorial=true; save(); } gotoMenu(); }
+function spawnTutFruits(n){ for(let i=0;i<n;i++) makeFruit(null); }
+function tutOnSlice(o){ if(tutStep===0 && o.kind==='fruit') tutSliced++; }
+function tutOnMiss(o){ if(tutStep===0) coachMsg="😅 So close — try again! Swipe right across the fruit."; }
+function rRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function drawCoachText(){ if(!coachMsg) return;
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+  const maxw=Math.min(W*0.9,560), pad=16, x=W/2;
+  ctx.font='600 18px system-ui,Arial'; ctx.textAlign='left'; ctx.textBaseline='top';
+  const words=coachMsg.split(' '); const lines=[]; let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxw-pad*2-40 && line){ lines.push(line); line=w; } else line=t; }
+  if(line) lines.push(line);
+  const lh=24, boxH=lines.length*lh+pad*2, boxY=H*0.12, boxX=x-maxw/2;
+  ctx.fillStyle='rgba(10,14,8,.85)'; rRect(boxX,boxY,maxw,boxH,16); ctx.fill();
+  ctx.strokeStyle='rgba(255,213,74,.75)'; ctx.lineWidth=2; rRect(boxX,boxY,maxw,boxH,16); ctx.stroke();
+  ctx.fillStyle='#fff'; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], boxX+pad+40, boxY+pad+i*lh);
+  ctx.font='30px serif'; ctx.fillText('🧑', boxX+8, boxY+pad);
+  ctx.restore(); }
+
+/* ---- shop ---- */
+let shopCat='blades';
+function openShop(from){ shopReturn=from||'menu'; if(from==='game' && state==='play') state='paused'; shopCat='blades'; renderShop(); showScreen('shop'); }
+function renderShop(){ $('shopCoins').textContent=S.coins;
+  for(const t of document.querySelectorAll('#shop .tab')) t.classList.toggle('on', t.dataset.cat===shopCat);
+  const grid=$('shopGrid'); let h='';
+  if(shopCat==='blades'){ for(const b of BLADES){ const owned=S.ownedBlades.includes(b.id), eq=S.blade===b.id;
+    const prevBg = b.color==='rainbow'?'background:conic-gradient(red,orange,yellow,green,cyan,blue,violet,red)':'background:'+b.color;
+    h+=item(b.id,'blades',b.icon,prevBg,b.name,'',b.cost,owned,eq); } }
+  else if(shopCat==='effects'){ for(const e of EFFECTS){ const owned=S.ownedEffects.includes(e.id), eq=S.effect===e.id;
+    const prevBg = e.color==='rainbow'?'background:conic-gradient(red,orange,yellow,green,cyan,blue,violet,red)':(e.color?'background:'+e.color:'background:#555');
+    h+=item(e.id,'effects',e.icon,prevBg,e.name,'',e.cost,owned,eq); } }
+  else { const lv=levelOf(S.xp); for(const t of TITLES){ const unlocked=lv>=t.lv, eq=S.title===t.id;
+    let btn; if(eq) btn='<button class="eq" disabled>EQUIPPED</button>';
+      else if(unlocked) btn='<button class="own" data-eq="titles:'+t.id+'">EQUIP</button>';
+      else btn='<button disabled>Reach Lv '+t.lv+'</button>';
+    h+='<div class="item'+(eq?' eq':'')+'"><div class="prev" style="background:rgba(255,255,255,.06)">🏷️</div><div class="nm">'+t.name+'</div><div class="ds">Level '+t.lv+'</div>'+btn+'</div>'; } }
+  grid.innerHTML=h;
+}
+function item(id,cat,icon,prevBg,name,desc,cost,owned,eq){
+  let btn; if(eq) btn='<button class="eq" disabled>EQUIPPED</button>';
+    else if(owned) btn='<button class="own" data-eq="'+cat+':'+id+'">EQUIP</button>';
+    else btn='<button data-buy="'+cat+':'+id+'" '+(S.coins>=cost?'':'disabled')+'>🪙 '+cost+'</button>';
+  return '<div class="item'+(eq?' eq':'')+'"><div class="prev" style="'+prevBg+'">'+icon+'</div><div class="nm">'+name+'</div><div class="ds">'+desc+'</div>'+btn+'</div>';
+}
+$('shopGrid').addEventListener('click',e=>{ const buy=e.target.closest('[data-buy]'), eq=e.target.closest('[data-eq]');
+  if(buy){ const [cat,id]=buy.dataset.buy.split(':'); const list=cat==='blades'?BLADES:EFFECTS; const it=list.find(x=>x.id===id);
+    if(it && S.coins>=it.cost){ S.coins-=it.cost; (cat==='blades'?S.ownedBlades:S.ownedEffects).push(id);
+      if(cat==='blades')S.blade=id; else S.effect=id; save(); Sfx.coin(); renderShop(); refreshMenu(); } }
+  else if(eq){ const [cat,id]=eq.dataset.eq.split(':');
+    if(cat==='blades')S.blade=id; else if(cat==='effects')S.effect=id; else S.title=id; save(); renderShop(); refreshMenu(); } });
+
+/* ---- missions ---- */
+function checkMissionReset(){}   // missions are now endless progressive goals — no daily wipe
+/* progressive missions: finish one and it advances to a harder tier (new mission). */
+const MISSION_DEFS=[
+  { id:'score', icon:'🎯', label:g=>'Reach '+g+' points in one game', tiers:[50,100,200,350,500,750,1000], reward:g=>Math.round(40+g*0.2), prog:()=>S.best||0 },
+  { id:'combo', icon:'🔥', label:g=>'Hit a '+g+'× combo', tiers:[5,8,12,18,25,35], reward:g=>30+g*4, prog:()=>S.maxCombo||0 },
+  { id:'slice', icon:'🍉', label:g=>'Slice '+g+' fruits (all-time)', tiers:[50,150,400,800,1500,3000], reward:g=>Math.round(40+g*0.12), prog:()=>S.mSlice||0 },
+  { id:'giant', icon:'🍈', label:g=>'Slice the giant fruit '+g+' times', tiers:[20,60,120,250,500], reward:g=>50+g, prog:()=>S.mGiant||0 },
+];
+function mTier(id){ return (S.mTiers&&S.mTiers[id])||0; }
+function openMissions(){ renderMissions(); showScreen('missions'); }
+function renderMissions(){ let h='';
+  for(const m of MISSION_DEFS){ const ti=mTier(m.id), maxed=ti>=m.tiers.length;
+    const goal=m.tiers[Math.min(ti,m.tiers.length-1)], p=Math.min(goal,m.prog()), done=!maxed && m.prog()>=goal, rew=m.reward(goal);
+    h+='<div class="mrow"><div class="mi"><div class="mt">'+m.icon+' '+m.label(goal)+(maxed?' ✓':'')+'</div>'
+      +'<div class="mp">'+(maxed?'⭐ MAXED — all tiers done!':(p+' / '+goal+' • 🪙 '+rew))+'</div>'
+      +'<div class="mbar"><div style="width:'+(maxed?100:(p/goal*100))+'%"></div></div></div>'
+      +'<button data-claim="'+m.id+'" '+(done?'':'disabled')+'>'+(maxed?'✓':(done?'Claim':'…'))+'</button></div>'; }
+  $('missionList').innerHTML=h;
+}
+$('missionList').addEventListener('click',e=>{ const b=e.target.closest('[data-claim]'); if(!b)return;
+  const m=MISSION_DEFS.find(x=>x.id===b.dataset.claim); if(!m)return; const ti=mTier(m.id); if(ti>=m.tiers.length)return;
+  const goal=m.tiers[ti]; if(m.prog()>=goal){ S.coins+=m.reward(goal); if(!S.mTiers)S.mTiers={}; S.mTiers[m.id]=ti+1; save(); Sfx.coin(); renderMissions(); refreshMenu(); } });
+
+/* ---- collection ---- */
+function openCollection(){ const lv=levelOf(S.xp); let h='';
+  h+='<div class="secTitle">🍎 FRUITS</div><div class="colgrid">'+FRUITS.map(f=>cell(f.icon,f.name,S.fruitsSeen[f.name])).join('')+'</div>';
+  h+='<div class="secTitle">👑 BOSS FRUITS</div><div class="colgrid">'+BOSS_NAMES.map(n=>cell('👑',n,S.bossesSeen[n])).join('')+'</div>';
+  h+='<div class="secTitle">🗡️ BLADES</div><div class="colgrid">'+BLADES.map(b=>cell(b.icon,b.name,S.ownedBlades.includes(b.id))).join('')+'</div>';
+  h+='<div class="secTitle">🏅 ACHIEVEMENTS</div><div class="colgrid">'+ACHS.map(a=>cell('🏅',a.name,S.ach[a.id])).join('')+'</div>';
+  $('colBody').innerHTML=h; showScreen('collection');
+}
+function cell(icon,name,unlocked){ return '<div class="cell'+(unlocked?'':' lock')+'">'+icon+'<small>'+(unlocked?name:'???')+'</small></div>'; }
+
+/* ---- settings ---- */
+function openSettings(){ $('setSound').checked=S.sound; $('setName').textContent=playerName;
+  $('setLevel').textContent=levelOf(S.xp); $('setTitle').textContent=titleObj(S.title).name; showScreen('settings'); }
+
+/* ============================================================
+   WIRE BUTTONS
+   ============================================================ */
+$('btnPlay').onclick=()=>{ if(!S.seenTutorial){ startInteractiveTutorial(); } else startGame(); };
+$('btnShop').onclick=()=>openShop('menu');
+$('btnMissions').onclick=openMissions;
+$('btnTutorial').onclick=startInteractiveTutorial;
+$('btnSettings').onclick=openSettings;
+$('shopBack').onclick=()=>{ if(shopReturn==='game') resumeGame(); else gotoMenu(); };
+$('missionsBack').onclick=gotoMenu;
+$('colBack').onclick=gotoMenu;
+$('setBack').onclick=gotoMenu;
+for(const t of document.querySelectorAll('#shop .tab')) t.onclick=()=>{ shopCat=t.dataset.cat; renderShop(); };
+$('pauseBtn').onclick=pauseGame;
+$('gShopBtn').onclick=()=>openShop('game');
+$('btnResume').onclick=resumeGame;
+$('btnPauseShop').onclick=()=>openShop('game');
+$('btnQuit').onclick=()=>{ state='over'; save(); gotoMenu(); };
+$('goAgain').onclick=startGame;
+$('goMenu').onclick=gotoMenu;
+$('tutNext').onclick=()=>{ if(tutI<TUT.length-1){ tutI++; renderTut(); } else { S.seenTutorial=true; save(); startGame(); } };
+$('tutBack').onclick=()=>{ if(tutI>0){ tutI--; renderTut(); } };
+$('setSound').onchange=()=>{ S.sound=$('setSound').checked; save(); };
+$('btnReset').onclick=()=>{ if(confirm('Reset ALL progress, coins and unlocks?')){ S=defaults(); save(); refreshMenu(); openSettings(); } };
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+checkMissionReset();
+resize();
+gotoMenu();
+last=performance.now();
+requestAnimationFrame(loop);
+
+if('serviceWorker' in navigator){ let _r=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_r)return; _r=true; location.reload(); });
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }); }
+</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+</body>
+</html>

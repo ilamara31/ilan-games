@@ -38,6 +38,7 @@
   .anime   { background:linear-gradient(135deg,#ff7ad9,#3b1d6e); }
   .tennis  { background:linear-gradient(135deg,#9bff8e,#1e7a3a); }
   .pptour  { background:linear-gradient(135deg,#3a6cf0,#0c1430); }
+  .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
   /* new / recently-updated badges */
   a.card { position:relative; overflow:visible; }
   .badge { position:absolute; top:-9px; right:-7px; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
@@ -113,6 +114,11 @@
       <span class="emoji">🏓</span>
       <h2>Ping Pong Tour</h2>
       <p>First-person table tennis — climb the tournament, earn coins, unlock rackets!</p>
+    </a>
+    <a class="card fruit" href="fruit-arena/">
+      <span class="emoji">🍉</span>
+      <h2>Fruit Arena</h2>
+      <p>Slice fruit, dodge bombs, chain power-ups &amp; spam the giant fruit — with a coach tutorial!</p>
     </a>
     <a class="card obby" href="obby/">
       <span class="emoji">🌈</span>
@@ -245,6 +251,7 @@
       'anime-tycoon/': { updated: '2026-06-27T19:00:00' },
       'catch/':        { updated: '2026-06-27T12:00:00' },
       'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
+      'fruit-arena/':  { added:   '2026-06-28T12:00:00' },   // new game
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 24h.
     };
     (function(){

@@ -11,6 +11,7 @@ Games made by Ilan!
 - ⚽ **Penalty Kings** — `football/` — penalty shootout knockout tournament.
 - 🌈 **Rainbow Obby** — `obby/` — 3D obstacle course (Three.js): 50 stages across 5 worlds, coins, checkpoints, and a shop of skins, trails, auras &amp; power coils.
 - 🏓 **Ping Pong Tour** — `pptour/` — first-person table tennis: tutorial, tournament ladder (Quarter-Final → World Championship), coins, and a shop of racket designs.
+- 🍉 **Fruit Arena** — `fruit-arena/` — slice fruit, dodge bombs, chain power-ups, spam the giant fruit; coach-guided tutorial, progressive missions, and a shop of blades & effects.
 
 ## How to play locally
 Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.
