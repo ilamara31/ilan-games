@@ -78,6 +78,13 @@
   .hidden { display:none !important; }
   .tag { position:absolute; top:6px; left:8px; font-size:11px; font-weight:800; color:#fff;
     background:#c0392b; padding:2px 8px; border-radius:8px; opacity:.85; z-index:30; }
+  #rotate { position:fixed; inset:0; z-index:40; display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; background:#0e1428; color:#fff; text-align:center; padding:26px; }
+  #rotate .ph { font-size:74px; animation:rot 1.7s ease-in-out infinite; }
+  @keyframes rot { 0%,38%{ transform:rotate(0) } 60%,100%{ transform:rotate(90deg) } }
+  #rotate h2 { font-size:26px; margin-bottom:2px; }
+  #rotate p { font-size:17px; max-width:360px; line-height:1.55; opacity:.95; }
+  #rotate .lnk { margin-top:6px; font-size:14px; opacity:.8; text-decoration:underline; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -119,6 +126,13 @@
     <button id="tutNext" class="pill">Next ▶</button>
     <p class="small" id="tutSkip" style="cursor:pointer;text-decoration:underline;opacity:.8">Skip tutorial</p>
   </div>
+
+  <div id="rotate">
+    <div class="ph">📱</div>
+    <h2>Turn your phone sideways</h2>
+    <p>Rescue Bounce plays best in <b>landscape</b> — you get much more room to move the trampoline. Rotate your phone! 🔄</p>
+    <div class="lnk" id="rotateSkip">Play anyway</div>
+  </div>
 </div>
 
 <script>
@@ -129,6 +143,7 @@ const COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').ma
 const IS_DESKTOP = !COARSE && !('ontouchstart' in window) && (navigator.maxTouchPoints||0)===0;
 const FOLLOW = IS_DESKTOP ? 30 : 16;
 const KEYV   = IS_DESKTOP ? 1050 : 640;
+let rotateDismissed=false, rotateShown=false;   // phone landscape prompt
 
 /* ---------- player + saved data ---------- */
 const STORE_KEY = 'soc_store_v1';
@@ -187,6 +202,16 @@ function resize(){
 }
 window.addEventListener('resize', resize); resize();
 
+/* ---------- phone: nudge to landscape (more room for the left↔right game) ---------- */
+function isPhone(){ return !IS_DESKTOP && Math.min(window.innerWidth,window.innerHeight)<560; }
+function checkOrient(){
+  rotateShown = isPhone() && (window.innerHeight>window.innerWidth) && !rotateDismissed;
+  const r=$('rotate'); if(r) r.style.display = rotateShown ? 'flex' : 'none';
+}
+window.addEventListener('resize', checkOrient);
+window.addEventListener('orientationchange', ()=>setTimeout(checkOrient,180));
+checkOrient();
+
 /* ---------- constants ---------- */
 const GRAV=1500, LAUNCH_VY=-660, FLING_MAX=720;
 const PEOPLE=['🧑','👩','👨','👵','👴','🧒','🧕','👲','🧓'];
@@ -194,7 +219,7 @@ const PETS=['🐱','🐶','🐰','🐹'];
 function stepVx(){ return W*0.19; }   // each bounce hops the survivor ~one step toward the ambulance
 function trampY(){ return H-96; }
 function groundY(){ return H-30; }
-function zoneX(){ return W*0.76; }
+function zoneX(){ return W-100; }   // deliver AT the ambulance (right edge), not before it
 function ambTopY(){ return groundY()-64; }
 function ceil(){ return Math.min(150,H*0.22); }
 const PTS={person:1, pet:2, vip:5};
@@ -257,9 +282,10 @@ function launch(x,type,emoji){
 }
 function deliver(b){
   const pts=PTS[b.type]||1; score+=pts; cleared++; combo++; if(combo>comboMax) comboMax=combo;
-  if(b.type==='vip'){ Sound.vip(); burst(zoneX()+W*0.08, ambTopY(),'#ffe14a',16); }
-  else { Sound.rescue(); burst(zoneX()+W*0.08, ambTopY(),'#9bff8e',12); }
-  floatText(zoneX()+W*0.08, ambTopY()-10, '+'+pts+(combo>=3?'  🔥x'+combo:''), b.type==='vip'?'#ffe14a':'#9bff8e');
+  const fx=W-50;
+  if(b.type==='vip'){ Sound.vip(); burst(fx, ambTopY(),'#ffe14a',16); }
+  else { Sound.rescue(); burst(fx, ambTopY(),'#9bff8e',12); }
+  floatText(fx, ambTopY()-10, '+'+pts+(combo>=3?'  🔥x'+combo:''), b.type==='vip'?'#ffe14a':'#9bff8e');
   spawnCD=Math.max(spawnCD,0.45);
 }
 function rescued(x,y,type){ const pts=PTS[type]||1; score+=pts; cleared++; Sound.rescue(); floatText(x,y,'+'+pts,'#9bff8e'); spawnCD=Math.max(spawnCD,0.45); }
@@ -287,8 +313,8 @@ function update(dt){
   //    as you go (faster), but it's always one arrival at a time.
   spawnCD-=dt;
   if(!tutorial){
-    const ready = (cleared<10) ? (inPlay()===0) : (fallers.length===0);
-    if(ready && spawnCD<=0){ spawnFaller(); spawnCD = (cleared<10) ? 0.6 : Math.max(0.5, 1.5-(cleared-10)*0.045); }
+    const ready = (cleared<6) ? (inPlay()===0) : (fallers.length===0);   // overlap now starts after 6 rescues
+    if(ready && spawnCD<=0){ spawnFaller(); spawnCD = (cleared<6) ? 0.6 : Math.max(0.5, 1.5-(cleared-6)*0.045); }
   }
 
   const ty=trampY(), gy=groundY(), zx=zoneX();
@@ -456,7 +482,7 @@ function hideBanner(){ $('banner').classList.add('hidden'); }
 function frame(now){
   requestAnimationFrame(frame);
   const t=now/1000; let dt=lastT?t-lastT:0; lastT=t; if(dt>0.05) dt=0.05;
-  if(running) update(dt);
+  if(running && !rotateShown) update(dt);   // pause while the rotate prompt is up
   draw(); updateHud();
 }
 reset();
@@ -485,6 +511,7 @@ $('startBtn').addEventListener('click', ()=>{ if(!data.tutDone) openTut(); else 
 $('howBtn').addEventListener('click', openTut);
 $('tutNext').addEventListener('click', tutAdvance);
 $('tutSkip').addEventListener('click', skipTut);
+$('rotateSkip').addEventListener('click', ()=>{ rotateDismissed=true; checkOrient(); });
 $('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.toggle(); $('muteBtn').textContent=on?'🔊':'🔇'; });
 ['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>Sound.unlock(),{once:true}));
 
