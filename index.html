@@ -40,6 +40,7 @@
   .pptour  { background:linear-gradient(135deg,#3a6cf0,#0c1430); }
   .karate  { background:linear-gradient(135deg,#ff8b3d,#7a1f12); }
   .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
+  .rescue  { background:linear-gradient(135deg,#4aa3ff,#13499e); }
   /* new / recently-updated badges */
   a.card { position:relative; overflow:visible; }
   .badge { position:absolute; top:-9px; right:-7px; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
@@ -120,6 +121,11 @@
       <span class="emoji">🍉</span>
       <h2>Fruit Arena</h2>
       <p>Slice fruit, dodge bombs, chain power-ups &amp; spam the giant fruit — with a coach tutorial!</p>
+    </a>
+    <a class="card rescue" href="rescue/">
+      <span class="emoji">🚒</span>
+      <h2>Rescue Bounce</h2>
+      <p>Bounce people off your trampoline into the ambulance — easy to learn, with a tutorial. Best in landscape!</p>
     </a>
     <a class="card obby" href="obby/">
       <span class="emoji">🌈</span>
@@ -252,7 +258,8 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 18h. */
     const GAMES = {
-      'karate/':       { added:   '2026-06-28T12:00:00' },   // newest -> also the bottom banner
+      'rescue/':       { added:   '2026-06-28T20:00:00' },   // newest -> also the bottom banner
+      'karate/':       { added:   '2026-06-28T12:00:00' },
       'pptour/':       { added:   '2026-06-27T18:00:00' },
       'tennis/':       { added:   '2026-06-27T12:05:00' },
       'anime-tycoon/': { updated: '2026-06-27T19:00:00' },
@@ -285,6 +292,7 @@
     const REC = {
       'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'obby/':'both',
       'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both', 'pptour/':'both', 'karate/':'both',
+      'fruit-arena/':'both', 'rescue/':'both',
     };
     (function(){
       const LABEL = {

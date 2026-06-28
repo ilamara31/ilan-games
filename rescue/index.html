@@ -107,7 +107,6 @@
   <button id="muteBtn" title="Sound">🔊</button>
   <a id="homeBtn" href="../" title="All games">🏠</a>
   <div id="banner" class="hidden"></div>
-  <div class="tag">TEST</div>
 
   <div id="overlay" class="screen">
     <h1>🚒 Rescue Bounce</h1>
@@ -167,11 +166,22 @@ function saveData(){ if (acct){ acct.rescue=data; igSave(); } else { try{ localS
 $('who').textContent = acct ? ('Playing as '+acct.name) : 'Guest — set a name on the home screen to save scores';
 $('ctrlHint').textContent = IS_DESKTOP ? '💻 PC mode: fast trampoline — move the mouse or use ← → keys.' : '📱 Drag the trampoline left & right.';
 
-/* ---------- sound ---------- */
+/* ---------- sound + looping music (synth, works on every device once unlocked) ---------- */
 const Sound = (() => {
-  let ac=null, master=null, on=true;
-  function init(){ if(ac) return; try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination); }catch(e){} }
-  function unlock(){ init(); if(ac&&ac.state==='suspended') ac.resume(); }
+  let ac=null, master=null, musicGain=null, on=true, muted=false;
+  const MUSIC_VOL=0.16;
+  // cheerful loop: chords C - G - Am - F, 16 steps (melody) + bass on the roots
+  const MEL=[523.25,659.25,783.99,659.25, 587.33,493.88,587.33,392.00, 440.00,523.25,659.25,523.25, 349.23,440.00,523.25,440.00];
+  const ROOTS=[65.41,98.00,110.00,87.31];
+  const STEP=0.18;
+  let mTimer=null, mNext=0, mStep=0;
+
+  function init(){ if(ac) return; try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination);
+    musicGain=ac.createGain(); musicGain.gain.value=muted?0:MUSIC_VOL; musicGain.connect(master);
+  }catch(e){} }
+  function unlock(){ init(); if(ac&&ac.state==='suspended') ac.resume(); if(!muted) startMusic(); }
   function tone(f,t0,dur,type,vol){ if(!ac||!on) return; const o=ac.createOscillator(),g=ac.createGain();
     o.type=type||'sine'; o.frequency.value=f; o.connect(g); g.connect(master);
     g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol||0.4,t0+0.012);
@@ -179,6 +189,19 @@ const Sound = (() => {
   function boing(){ if(!ac||!on) return; const t=ac.currentTime; const o=ac.createOscillator(),g=ac.createGain();
     o.type='sine'; o.frequency.setValueAtTime(240,t); o.frequency.exponentialRampToValueAtTime(560,t+0.12);
     o.connect(g); g.connect(master); g.gain.setValueAtTime(0.4,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18); o.start(t); o.stop(t+0.2); }
+  // --- music scheduler (lookahead) ---
+  function noteM(f,t,dur,type,vol){ const o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.value=f;
+    o.connect(g); g.connect(musicGain); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t); o.stop(t+dur+0.03); }
+  function sched(){ if(!ac||muted) return; while(mNext < ac.currentTime+0.16){
+      const s=mStep%16, m=MEL[s];
+      if(m) noteM(m, mNext, STEP*0.92, 'triangle', 0.11);
+      if(s%2===0) noteM(ROOTS[(s/4)|0], mNext, STEP*1.7, 'triangle', 0.14);
+      mNext+=STEP; mStep++; } }
+  function startMusic(){ if(mTimer||!ac) return; mNext=ac.currentTime+0.12; mStep=0; mTimer=setInterval(sched,40); }
+  function stopMusic(){ if(mTimer){ clearInterval(mTimer); mTimer=null; } }
+  function setMuted(m){ muted=m; on=!m; if(musicGain) musicGain.gain.value=m?0:MUSIC_VOL; if(m) stopMusic(); else startMusic(); }
+
   return {
     unlock, bounce(){ boing(); },
     rescue(){ if(!ac) return; const t=ac.currentTime; tone(660,t,0.12,'triangle',0.35); tone(990,t+0.08,0.16,'triangle',0.3); },
@@ -187,9 +210,11 @@ const Sound = (() => {
     life(){ if(!ac) return; const t=ac.currentTime; tone(784,t,0.12,'sine',0.35); tone(1047,t+0.1,0.18,'sine',0.3); },
     over(){ if(!ac) return; const t=ac.currentTime; [523,415,330,262].forEach((f,i)=>tone(f,t+i*0.14,0.3,'triangle',0.35)); },
     click(){ if(!ac) return; tone(520,ac.currentTime,0.07,'square',0.25); },
-    toggle(){ on=!on; return on; }
+    setMuted, toggle(){ setMuted(!muted); return !muted; }
   };
 })();
+Sound.setMuted(!!data.muted);
+$('muteBtn').textContent = data.muted ? '🔇' : '🔊';
 
 /* ---------- canvas ---------- */
 const cv = $('game'), ctx = cv.getContext('2d');
@@ -511,7 +536,7 @@ $('howBtn').addEventListener('click', openTut);
 $('tutNext').addEventListener('click', tutAdvance);
 $('tutSkip').addEventListener('click', skipTut);
 $('rotateSkip').addEventListener('click', ()=>{ rotateDismissed=true; checkOrient(); });
-$('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.toggle(); $('muteBtn').textContent=on?'🔊':'🔇'; });
+$('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.toggle(); $('muteBtn').textContent=on?'🔊':'🔇'; data.muted=!on; saveData(); });
 ['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>Sound.unlock(),{once:true}));
 
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
