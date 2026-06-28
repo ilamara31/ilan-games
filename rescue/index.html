@@ -105,7 +105,7 @@
   <div id="overlay" class="screen">
     <h1>🚒 Rescue Bounce</h1>
     <p>Someone jumps from the building — catch them on your trampoline and <b>bounce them into the 🚑 ambulance</b> on the right by <b>moving the trampoline that way</b>.</p>
-    <p class="small">They come <b>one at a time</b> at first, then quicker — so dash back, catch the next, and keep them safe! 🐱 pets and 🦸 VIPs are worth more. 3 lives, no fire — just rescues.</p>
+    <p class="small">They come <b>one at a time</b> at first. Every 10 rescues, one more joins at once (2, then 3, then 4…). 🐱 pets &amp; 🦸 VIPs score more, and a rare <b>⭐ Super Spring</b> flings everyone straight to safety. 3 lives.</p>
     <div id="ovExtra"></div>
     <button id="startBtn" class="pill">▶ Play</button>
     <p class="small" id="ctrlHint"></p>
@@ -191,14 +191,16 @@ const PTS={person:1, pet:2, vip:5};
 
 /* ---------- state ---------- */
 let running=false, score=0, lives=3, level=1, combo=0, comboMax=0;
-let fallers=[], bouncers=[], floats=[], parts=[];
-let tramp, spawnedCount=0, spawnCD=0, rushActive=false, rushT=0, nextRush=12, shake=0, lastT=0;
+let fallers=[], bouncers=[], floats=[], parts=[], powerups=[];
+let tramp, spawnedCount=0, cleared=0, spawnCD=0, shake=0, lastT=0;
+let superSpring=false, springT=0, powerTimer=20;
 
 function newTramp(){ const w=Math.max(110, Math.min(W*0.25, 168)); return { x:W*0.35, target:W*0.35, px:W*0.35, vx:0, w:w, squash:0 }; }
 function reset(){
   score=0; lives=3; level=1; combo=0; comboMax=0;
-  fallers=[]; bouncers=[]; floats=[]; parts=[];
-  spawnedCount=0; spawnCD=0.5; rushActive=false; rushT=0; nextRush=12; shake=0; lastT=0;
+  fallers=[]; bouncers=[]; floats=[]; parts=[]; powerups=[];
+  spawnedCount=0; cleared=0; spawnCD=0.5; shake=0; lastT=0;
+  superSpring=false; springT=0; powerTimer=8;   // first ⭐ ~8s after you reach 20 pts, then rarer
   tramp=newTramp();
 }
 
@@ -206,7 +208,7 @@ function reset(){
 function spawnFaller(){
   const r=Math.random(); let type;
   if(lives<3 && r<0.05) type='heart';
-  else if(spawnedCount>8 && r<0.09) type='vip';
+  else if(cleared>8 && r<0.09) type='vip';
   else if(r<0.20) type='pet';
   else type='person';
   const emoji = type==='person'?PEOPLE[(Math.random()*PEOPLE.length)|0]
@@ -214,11 +216,12 @@ function spawnFaller(){
               : type==='vip'?'🦸':'❤️';
   const margin=Math.max(34,W*0.08);
   const x=margin+Math.random()*(W*0.52-margin);     // arrive on the left; ambulance is right
-  const spd=Math.min(360, 116+spawnedCount*3.6+(rushActive?70:0))*(0.92+Math.random()*0.16);
+  const spd=Math.min(355, 116+cleared*3.2)*(0.92+Math.random()*0.16);
   fallers.push({ x, y:-30, vy:spd, size:type==='vip'?52:46, type, emoji, rot:(Math.random()-.5)*0.5 });
   spawnedCount++;
 }
-function inPlay(){ return fallers.length + bouncers.length; }
+function spawnPower(){ const margin=Math.max(34,W*0.08); powerups.push({ x:margin+Math.random()*(W*0.6-margin), y:-30, vy:150, size:42, rot:0 }); }
+function inPlay(){ return fallers.length + bouncers.length; }   // people only; power-ups don't block pacing
 
 /* ---------- input ---------- */
 let keyL=false, keyR=false;
@@ -236,15 +239,20 @@ function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*6.28,s=
 function floatText(x,y,txt,color){ floats.push({x,y,txt,color,life:0.95}); }
 
 function flingVx(){ return Math.max(-FLING_MAX, Math.min(FLING_MAX, tramp.vx*FLING_K)); }
-function launch(x,type,emoji){ bouncers.push({ x, y:trampY()-6, vx:flingVx(), vy:LAUNCH_VY, size:type==='vip'?52:46, type, emoji, rot:0 }); tramp.squash=1; Sound.bounce(); }
+function launch(x,type,emoji){
+  const sup=superSpring;
+  bouncers.push({ x, y:trampY()-6, vx:sup?FLING_MAX:flingVx(), vy:sup?LAUNCH_VY*1.08:LAUNCH_VY, size:type==='vip'?52:46, type, emoji, rot:0, super:sup });
+  tramp.squash=1; Sound.bounce();
+}
 function deliver(b){
-  const pts=PTS[b.type]||1; score+=pts; combo++; if(combo>comboMax) comboMax=combo;
+  const pts=PTS[b.type]||1; score+=pts; cleared++; combo++; if(combo>comboMax) comboMax=combo;
   if(b.type==='vip'){ Sound.vip(); burst(zoneX()+W*0.08, ambTopY(),'#ffe14a',16); }
   else { Sound.rescue(); burst(zoneX()+W*0.08, ambTopY(),'#9bff8e',12); }
   floatText(zoneX()+W*0.08, ambTopY()-10, '+'+pts+(combo>=3?'  🔥x'+combo:''), b.type==='vip'?'#ffe14a':'#9bff8e');
   spawnCD=Math.max(spawnCD,0.45);
 }
-function loseLife(x,y,msg){ lives--; combo=0; shake=12; Sound.miss(); floatText(x,y,msg,'#ffb04a'); spawnCD=Math.max(spawnCD,0.5); if(lives<=0) gameOver(); }
+function rescued(x,y,type){ const pts=PTS[type]||1; score+=pts; cleared++; Sound.rescue(); floatText(x,y,'+'+pts,'#9bff8e'); spawnCD=Math.max(spawnCD,0.45); }
+function loseLife(x,y,msg){ lives--; cleared++; combo=0; shake=12; Sound.miss(); floatText(x,y,msg,'#ffb04a'); spawnCD=Math.max(spawnCD,0.5); if(lives<=0) gameOver(); }
 
 /* ---------- update ---------- */
 function update(dt){
@@ -256,18 +264,16 @@ function update(dt){
   tramp.vx=(tramp.x-tramp.px)/Math.max(0.001,dt);
   tramp.squash=Math.max(0,tramp.squash-dt*4);
 
-  level=Math.floor(score/10)+1;
+  level=Math.floor(cleared/10)+1;
 
-  // RUSH HOUR event (bonus rescues, no hazard)
-  if(!rushActive && score>=nextRush){ rushActive=true; rushT=6; nextRush+=18; banner('🚨 RUSH HOUR! Bonus rescues!'); }
-  if(rushActive){ rushT-=dt; if(rushT<=0){ rushActive=false; hideBanner(); } }
+  // ⭐ SUPER SPRING — rare helper (after 20 pts): catch it, then every rescue rockets to the ambulance
+  if(superSpring){ springT-=dt; if(springT<=0){ superSpring=false; hideBanner(); } }
+  else if(score>=20){ powerTimer-=dt; if(powerTimer<=0 && powerups.length===0){ spawnPower(); powerTimer=22; } }
 
-  // paced spawning
+  // paced spawning: ONE at a time until 10 rescues, then +1 more allowed every 10 (2, 3, 4, 5, 6)
   spawnCD-=dt;
-  const earlyPhase = spawnedCount<10;
-  const maxConc = rushActive?3 : earlyPhase?1 : (spawnedCount<22?2:3);
-  const gap = rushActive?0.7 : earlyPhase?0.55 : Math.max(0.7, 1.5-(spawnedCount-10)*0.05);
-  if(inPlay()<maxConc && spawnCD<=0){ spawnFaller(); spawnCD=gap; }
+  const maxConc = Math.min(6, Math.floor(cleared/10)+1);
+  if(inPlay()<maxConc && spawnCD<=0){ spawnFaller(); spawnCD=0.5; }
 
   const ty=trampY(), gy=groundY(), zx=zoneX();
 
@@ -280,7 +286,7 @@ function update(dt){
       fallers.splice(i,1); continue;
     }
     if(f.y>gy){
-      if(f.type!=='heart' && f.x>=zx){ const pts=PTS[f.type]||1; score+=pts; Sound.rescue(); floatText(f.x,gy-20,'+'+pts,'#9bff8e'); spawnCD=Math.max(spawnCD,0.45); }
+      if(f.type!=='heart' && f.x>=zx){ rescued(f.x,gy-20,f.type); }   // lucky drop straight into the ambulance
       else if(f.type!=='heart'){ loseLife(f.x,gy-20,'MISSED! 😟'); }
       fallers.splice(i,1);
     }
@@ -288,18 +294,29 @@ function update(dt){
 
   // bounced survivors -> herd into ambulance
   for(let i=bouncers.length-1;i>=0;i--){
-    const b=bouncers[i]; b.vy+=GRAV*dt; b.x+=b.vx*dt; b.y+=b.vy*dt; b.rot+=dt*(b.vx>0?2:-2);
-    if(b.x<b.size*0.4){ b.x=b.size*0.4; b.vx=Math.abs(b.vx)*0.7; }
+    const b=bouncers[i]; b.vy+=GRAV*dt;
+    if(b.super) b.vx=Math.min(FLING_MAX, b.vx+1300*dt);   // super spring: home in on the ambulance
+    b.x+=b.vx*dt; b.y+=b.vy*dt; b.rot+=dt*(b.vx>0?2:-2);
+    if(!b.super && b.x<b.size*0.4){ b.x=b.size*0.4; b.vx=Math.abs(b.vx)*0.7; }
     if(b.y<ceil()){ b.y=ceil(); b.vy=Math.abs(b.vy)*0.5; }
     if(b.vy>0 && b.x>=zx && b.y>=ambTopY()){ deliver(b); bouncers.splice(i,1); continue; }
     if(b.vy>0 && b.y>=ty-6 && b.y<=ty+34 && b.x<zx && Math.abs(b.x-tramp.x)<=tramp.w/2+12){
-      b.y=ty-6; b.vy=LAUNCH_VY; b.vx=flingVx(); tramp.squash=1; Sound.bounce(); continue;
+      b.y=ty-6; b.vy=superSpring?LAUNCH_VY*1.08:LAUNCH_VY; b.vx=superSpring?FLING_MAX:flingVx(); b.super=superSpring; tramp.squash=1; Sound.bounce(); continue;
     }
     if(b.y>gy){
-      if(b.x>=zx){ const pts=PTS[b.type]||1; score+=pts; Sound.rescue(); floatText(b.x,gy-20,'+'+pts,'#9bff8e'); spawnCD=Math.max(spawnCD,0.45); }
+      if(b.x>=zx) rescued(b.x,gy-20,b.type);
       else loseLife(b.x,gy-20,'LOST! 😢');
       bouncers.splice(i,1);
     }
+  }
+
+  // ⭐ power-ups (Super Spring pickup) — catching one starts the boost; missing it is harmless
+  for(let i=powerups.length-1;i>=0;i--){
+    const p=powerups[i]; p.y+=p.vy*dt; p.rot+=dt*2.4;
+    if(p.y>=ty-8 && p.y<=ty+40 && Math.abs(p.x-tramp.x)<=tramp.w/2+14){
+      superSpring=true; springT=6; banner('⭐ SUPER SPRING! Catch them — they fly to safety!'); Sound.vip(); burst(tramp.x,trampY(),'#ffe14a',18); powerups.splice(i,1); continue;
+    }
+    if(p.y>gy) powerups.splice(i,1);
   }
 
   for(let i=floats.length-1;i>=0;i--){ const o=floats[i]; o.y-=34*dt; o.life-=dt; if(o.life<=0) floats.splice(i,1); }
@@ -324,7 +341,11 @@ function draw(){
     if(f.type==='vip'){ ctx.shadowColor='#ffe14a'; ctx.shadowBlur=16; } ctx.fillText(f.emoji,0,0); ctx.restore(); }
   for(const b of bouncers){ ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.rot*0.3);
     ctx.font=b.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    if(b.type==='vip'){ ctx.shadowColor='#ffe14a'; ctx.shadowBlur=16; } ctx.fillText(b.emoji,0,0); ctx.restore(); }
+    if(b.type==='vip'||b.super){ ctx.shadowColor='#ffe14a'; ctx.shadowBlur=16; } ctx.fillText(b.emoji,0,0); ctx.restore(); }
+
+  for(const p of powerups){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.font=p.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='#ffe14a'; ctx.shadowBlur=20; ctx.fillText('⭐',0,0); ctx.restore(); }
 
   drawTrampoline();
 
@@ -369,11 +390,14 @@ function drawAmbulance(){
 }
 function drawTrampoline(){
   const ty=trampY(), w=tramp.w, x=tramp.x, sq=tramp.squash, matH=14-sq*8;
+  const mat=superSpring?'#ffd54a':'#e23b3b', mat2=superSpring?'#fff0b0':'#ff7a7a', ring=superSpring?'#d99a00':'#9e2020';
   ctx.strokeStyle='#7a1f2b'; ctx.lineWidth=6; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(x-w/2+10,ty+6); ctx.lineTo(x-w/2+2,ty+40); ctx.moveTo(x+w/2-10,ty+6); ctx.lineTo(x+w/2-2,ty+40); ctx.stroke();
-  ctx.fillStyle='#e23b3b'; roundRect(x-w/2, ty-matH/2+sq*6, w, matH+8, (matH+8)/2); ctx.fill();
-  ctx.fillStyle='#ff7a7a'; roundRect(x-w/2+6, ty-matH/2+sq*6+2, w-12, 5, 3); ctx.fill();
-  ctx.strokeStyle='#9e2020'; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(x, ty+sq*6, w/2, (matH+8)/2, 0,0,6.28); ctx.stroke();
+  if(superSpring){ ctx.shadowColor='#ffe14a'; ctx.shadowBlur=22; }
+  ctx.fillStyle=mat; roundRect(x-w/2, ty-matH/2+sq*6, w, matH+8, (matH+8)/2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=mat2; roundRect(x-w/2+6, ty-matH/2+sq*6+2, w-12, 5, 3); ctx.fill();
+  ctx.strokeStyle=ring; ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(x, ty+sq*6, w/2, (matH+8)/2, 0,0,6.28); ctx.stroke();
 }
 function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
