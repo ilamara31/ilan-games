@@ -192,6 +192,7 @@
       <p>Save your scores online and join the leaderboard. Or just play as a guest.</p>
       <input id="iga-email" type="email" placeholder="Email" autocomplete="email">
       <input id="iga-pwd" type="password" placeholder="Password" autocomplete="current-password">
+      <input id="iga-name" type="text" placeholder="Display name (for a new account)" maxlength="16" autocomplete="nickname">
       <div class="iga-msg" id="iga-m"></div>
       <button class="iga-btn iga-p" id="iga-login">Log in</button>
       <button class="iga-btn iga-s" id="iga-signup">Create account</button>
@@ -200,6 +201,7 @@
     const $ = id => ov.querySelector(id);
     const msg = (t, ok) => { const m = $("#iga-m"); m.textContent = t; m.className = "iga-msg " + (ok ? "iga-ok" : "iga-err"); };
     const email = () => $("#iga-email").value.trim(), pwd = () => $("#iga-pwd").value;
+    const nameVal = () => ($("#iga-name").value.trim() || email().split("@")[0] || "Player").slice(0, 16);
     $("#iga-login").onclick = async () => {
       if (!email() || !pwd()) return msg("Enter your email and password.");
       msg("Logging in…", true);
@@ -209,10 +211,8 @@
     };
     $("#iga-signup").onclick = async () => {
       if (!email() || pwd().length < 6) return msg("Use a valid email and a password of 6+ characters.");
-      const name = prompt("Pick a display name for the leaderboard:", email().split("@")[0]);
-      if (!name) return;
       msg("Creating account…", true);
-      const r = await signUp(email(), pwd(), name.slice(0, 16));
+      const r = await signUp(email(), pwd(), nameVal());
       if (r.error) msg(r.error);
       else if (r.needsVerify) msg("Account made! Check your email to verify, then Log in.", true);
       else { await ensureMigrated(r.user); location.reload(); }

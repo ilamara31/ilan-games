@@ -1,11 +1,13 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v43';
+const CACHE = 'ilan-arcade-v44';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './analytics.js',
   './announce.js',
+  './supabase-config.js',
+  './auth.js',
   './icon-192.png',
   './icon-512.png',
   './icon-180.png',
@@ -80,6 +82,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // never touch cross-origin requests (Supabase API, CDN SDK, etc.) — let the browser handle them
+  if (new URL(req.url).origin !== self.location.origin) return;
   const accept = req.headers.get('accept') || '';
   // messages.json must always be fresh (announcements). Network-first, no caching.
   if (new URL(req.url).pathname.endsWith('messages.json')) {

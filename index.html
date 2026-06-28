@@ -182,11 +182,22 @@
 
     const modal=document.getElementById('acctModal'), box=document.getElementById('acctBox'), bar=document.getElementById('acctBar');
     function renderBar(){
+      const u = window.IGAuth && IGAuth.getUser();
+      if(u){
+        const nm = IGAuth.displayName();
+        bar.innerHTML = `☁️ <b>${nm}</b> <span style="color:#7CFFB2;font-size:12px">online</span> <button class="mini" id="acctBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Account</button>`;
+        document.getElementById('acctBtn').onclick=()=>IGAuth.openAccount();
+        return;
+      }
       const a=igActive();
-      bar.innerHTML = a ? `👤 Playing as <b>${a.name}</b> <button class="mini" id="switchBtn">Switch</button>`
-                        : `👤 <b>No player yet</b> <button class="mini" id="switchBtn">Set up</button>`;
+      bar.innerHTML = (a ? `👤 Playing as <b>${a.name}</b> <button class="mini" id="switchBtn">Switch</button>`
+                         : `👤 <b>No player yet</b> <button class="mini" id="switchBtn">Set up</button>`)
+        + ` <button class="mini" id="loginBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">☁️ Log in</button>`;
       document.getElementById('switchBtn').onclick=openAccounts;
+      document.getElementById('loginBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth(); };
     }
+    // keep the bar in sync when the online sign-in state resolves/changes
+    if(window.IGAuth) IGAuth.onChange(renderBar);
     function closeModal(){ modal.style.display='none'; }
     function openEnter(canCancel){
       modal.style.display='flex';
@@ -232,9 +243,10 @@
       if(igActive()) openAccounts(); else openEnter(false);
       renderBar();
     }
-    /* boot: make sure there's an active player */
+    /* boot: make sure there's an active player (unless they're signed in online) */
     renderBar();
-    if(!igActive()) openEnter(false);
+    if(window.IGAuth) IGAuth.onReady(()=>{ renderBar(); if(!igActive() && !IGAuth.getUser()) openEnter(false); });
+    else if(!igActive()) openEnter(false);
 
     /* prominent install flow */
     const installBtn=document.getElementById('installBtn');
@@ -316,6 +328,8 @@
       });
     })();
   </script>
+<script src="supabase-config.js"></script>
+<script src="auth.js" defer></script>
 <script src="analytics.js" defer></script>
 <script src="announce.js" defer></script>
 </body>

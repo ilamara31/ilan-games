@@ -48,7 +48,13 @@ p('controlled by service worker = ' + !!(navigator.serviceWorker && navigator.se
     const s = await sb.auth.getSession();
     p('   session = ' + (s.data.session ? 'logged in' : 'none'), 'ok');
 
-    p('ALL STEPS PASSED ✅ — login should work here.', 'ok');
+    p('5) test login call (bogus creds — reproduces "Load failed")…');
+    const lr = await sb.auth.signInWithPassword({ email: 'nobody-test@example.com', password: 'wrongpass123' });
+    if (lr.error && /invalid login/i.test(lr.error.message)) p('   login endpoint reachable ✅ (got "invalid credentials" as expected)', 'ok');
+    else if (lr.error) p('   login error: ' + lr.error.message + '  ← if this says "Load failed", the network is blocking Supabase', 'err');
+    else p('   (unexpected) logged in', 'ok');
+
+    p('DONE ✅ — if step 5 said "invalid credentials", real login works here.', 'ok');
   } catch (e) {
     p('FAILED ❌  ' + (e && e.message ? e.message : e), 'err');
   }
