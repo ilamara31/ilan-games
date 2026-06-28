@@ -88,19 +88,32 @@
   }
 
   /* ---------- account actions ---------- */
-  async function login(name, pw) {
+  async function login(name, pw, recovery) {
     if (!sb) return { error: "Connecting… try again in a moment." };
     name = (name || "").trim().slice(0, 16);
     if (!name) return { error: "Enter a name." };
     if (!pw) return { error: "Enter a password." };
     try {
-      const { data, error } = await sb.rpc("account_auth", { p_name: name, p_password: pw });
+      const { data, error } = await sb.rpc("account_auth", { p_name: name, p_password: pw, p_recovery: recovery || null });
       if (error) return { error: error.message };
       if (data === "wrong") return { error: "That name is taken — wrong password." };
       if (data === "invalid") return { error: "Enter a name and password." };
       savePlayer({ name, pw, guest: false });   // 'ok' or 'created'
       migrateAndSeed(name);
       return { ok: true };
+    } catch (e) { return { error: e.message || "Could not connect." }; }
+  }
+  async function resetPassword(name, recovery, newPw) {
+    if (!sb) return { error: "Connecting… try again in a moment." };
+    name = (name || "").trim().slice(0, 16);
+    if (!name || !newPw) return { error: "Enter your name and a new password." };
+    try {
+      const { data, error } = await sb.rpc("reset_password", { p_name: name, p_recovery: recovery || "", p_new_password: newPw });
+      if (error) return { error: error.message };
+      if (data === "ok") return { ok: true };
+      if (data === "norecovery") return { error: "No recovery word was set for that name — ask the game owner to reset it." };
+      if (data === "wrong") return { error: "Recovery word doesn't match." };
+      return { error: "Could not reset." };
     } catch (e) { return { error: e.message || "Could not connect." }; }
   }
   function guest(name) {
@@ -127,6 +140,7 @@
     .iga-x{background:transparent;color:#7e90b5;font-weight:700}
     .iga-msg{font-size:13px;margin:8px 0;min-height:16px}
     .iga-err{color:#ff8088}.iga-ok{color:#7CFFB2}
+    .iga-link{color:#7cc0ff;cursor:pointer;font-size:13px;text-decoration:underline}
     .iga-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;margin:4px 0;background:#16243f;font-size:15px}
     .iga-row.me{background:rgba(255,211,77,.18)}
     .iga-row .r{width:34px;color:#ffd54a;font-weight:800;text-align:left}
@@ -150,17 +164,40 @@
       <p>Pick a name &amp; password to claim your spot on the leaderboard — no email needed. Or just play as a guest.</p>
       <input id="iga-name" type="text" placeholder="Name" maxlength="16" autocomplete="nickname">
       <input id="iga-pwd" type="password" placeholder="Password" autocomplete="current-password">
+      <input id="iga-rec" type="text" placeholder="Recovery word (optional, to reset password)" maxlength="24">
       <div class="iga-msg" id="iga-m"></div>
       <button class="iga-btn iga-p" id="iga-go">Save my name &amp; play</button>
-      <button class="iga-btn iga-g" id="iga-guest">Play as Guest</button>`);
+      <button class="iga-btn iga-g" id="iga-guest">Play as Guest</button>
+      <div style="margin-top:8px"><span class="iga-link" id="iga-forgot">Forgot password?</span></div>`);
     const $ = id => ov.querySelector(id);
     const msg = (t, ok) => { const m = $("#iga-m"); m.textContent = t; m.className = "iga-msg " + (ok ? "iga-ok" : "iga-err"); };
     $("#iga-go").onclick = async () => {
       msg("Saving…", true);
-      const r = await login($("#iga-name").value, $("#iga-pwd").value);
+      const r = await login($("#iga-name").value, $("#iga-pwd").value, $("#iga-rec").value);
       if (r.error) msg(r.error); else location.reload();
     };
     $("#iga-guest").onclick = () => { guest($("#iga-name").value); location.reload(); };
+    $("#iga-forgot").onclick = () => { ov.remove(); openReset(); };
+  }
+
+  function openReset() {
+    const ov = modal(`
+      <h2>Reset password</h2>
+      <p>Enter your name, your recovery word, and a new password.</p>
+      <input id="iga-rname" type="text" placeholder="Name" maxlength="16">
+      <input id="iga-rrec" type="text" placeholder="Recovery word" maxlength="24">
+      <input id="iga-rnew" type="password" placeholder="New password">
+      <div class="iga-msg" id="iga-rm"></div>
+      <button class="iga-btn iga-p" id="iga-rdo">Set new password</button>
+      <button class="iga-btn iga-x" id="iga-rback">Back</button>`);
+    const $ = id => ov.querySelector(id);
+    const msg = (t, ok) => { const m = $("#iga-rm"); m.textContent = t; m.className = "iga-msg " + (ok ? "iga-ok" : "iga-err"); };
+    $("#iga-rdo").onclick = async () => {
+      msg("Resetting…", true);
+      const r = await resetPassword($("#iga-rname").value, $("#iga-rrec").value, $("#iga-rnew").value);
+      if (r.error) msg(r.error); else { msg("Done! Now log in with your new password.", true); setTimeout(() => { ov.remove(); openAuth(); }, 1400); }
+    };
+    $("#iga-rback").onclick = () => { ov.remove(); openAuth(); };
   }
 
   function openAccount() {
