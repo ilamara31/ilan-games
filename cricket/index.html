@@ -554,7 +554,9 @@ function recordProfile(fmtKey){
    TOURNAMENT  (round-robin league -> playoffs)
    ============================================================ */
 let T=null;   // tournament state
-function startTournamentFlow(key){ careerMode=false; managerManual=false; chosenFormat=FORMATS[key]; goTeamSelect(); }
+function startTournamentFlow(key){ const live=loadTour();
+  if(live){ alert('You have a '+live.fmt.label.replace('TOURNAMENT','').trim()+' tournament in progress — finish it first!'); resumeTour(live); return; }
+  careerMode=false; managerManual=false; chosenFormat=FORMATS[key]; goTeamSelect(); }
 
 function beginTournament(){
   const base=teamPool().find(t=>t.id===selectedTeamId);
@@ -625,7 +627,7 @@ function standings(){
 }
 function showLeague(){
   show('scr-league');
-  if(careerMode && CS) saveSeason();   // remember progress so the season resumes after closing
+  if(careerMode && CS) saveSeason(); else if(!managerManual) saveTour();   // remember progress so it resumes after closing
   document.getElementById('leagueTitle').textContent = T.fmt.label.replace('TOURNAMENT','').trim()+' — POINTS TABLE';
   const done=T.roundIdx, total=T.schedule.length;
   document.getElementById('leagueSub').innerHTML =
@@ -687,7 +689,7 @@ function poTeams(step){
 }
 function showPlayoffs(){
   show('scr-playoffs');
-  if(careerMode && CS) saveSeason();   // remember progress so the season resumes after closing
+  if(careerMode && CS) saveSeason(); else if(!managerManual) saveTour();   // remember progress so it resumes after closing
   const P=T.playoff, qualified=P.seeds.includes(T.myId);
   document.getElementById('playoffSub').innerHTML = qualified
     ? `You qualified! Win it all to lift the cup.`
@@ -734,6 +736,7 @@ function resolvePlayoff(step, win, lose, aScore, bScore){
 function topOf(map){ let best=null,bv=-1; for(const k in map){ if(map[k]>bv){ bv=map[k]; best=k; } } return best?{name:best,val:bv,team:T.stats.team[best]}:null; }
 function showTournamentEnd(){
   show('scr-tend');
+  clearTour();   // tournament finished -> a new one can be started now
   const orange=topOf(T.stats.runs), purple=topOf(T.stats.wkts);
   const motm=orange; // highest run scorer
   const champ=T.champion?byId(T.champion):null;
@@ -871,6 +874,20 @@ function resumeSeason(){
   if(T.stage==='playoffs' && T.playoff) showPlayoffs(); else showLeague();
 }
 
+/* ---- save / resume a plain (non-career) IPL Tournament / ODI World Cup ---- */
+const TOUR_KEY='cricTourLive_v1';
+function saveTour(){ if(T && !careerMode && !managerManual){ try{ localStorage.setItem(TOUR_KEY, JSON.stringify(T)); }catch(e){} } }
+function loadTour(){ try{ const t=JSON.parse(localStorage.getItem(TOUR_KEY)); if(t&&t.teams&&t.myId&&t.fmt) return t; }catch(e){} return null; }
+function clearTour(){ try{ localStorage.removeItem(TOUR_KEY); }catch(e){} }
+function resumeTour(t){
+  careerMode=false; managerManual=false; tutorialMode=false;
+  T=t; chosenFormat=t.fmt||FORMATS.ipl;
+  selectedTeamId=t.myId; myTeam=T.teams.find(x=>x.id===T.myId);
+  if(!myTeam){ clearTour(); return false; }
+  if(T.stage==='playoffs' && T.playoff) showPlayoffs(); else showLeague();
+  return true;
+}
+
 /* ============================================================
    INTERACTIVE TUTORIAL + WELCOME + EXIT
    ============================================================ */
@@ -901,7 +918,7 @@ function tutorialDone(){
   show('scr-tutdone');
 }
 function finishTutorial(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
-function exitTournament(){ if(confirm('Exit the tournament? Your progress is saved — pick up where you left off next time.')){ if(careerMode) saveSeason(); T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
+function exitTournament(){ if(confirm('Exit the tournament? Your progress is saved — pick up where you left off next time.')){ if(careerMode) saveSeason(); else if(!managerManual) saveTour(); T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
 
 function careerEnter(){
   if(!profile){ showAccounts(); return; }
