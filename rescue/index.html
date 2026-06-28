@@ -104,11 +104,20 @@
 
   <div id="overlay" class="screen">
     <h1>🚒 Rescue Bounce</h1>
-    <p>Someone jumps from the building — catch them on your trampoline and <b>bounce them into the 🚑 ambulance</b> on the right by <b>moving the trampoline that way</b>.</p>
-    <p class="small">They come <b>one at a time</b> at first. Every 10 rescues, one more joins at once (2, then 3, then 4…). 🐱 pets &amp; 🦸 VIPs score more, and a rare <b>⭐ Super Spring</b> flings everyone straight to safety. 3 lives.</p>
+    <p>Catch the people who jump from the building. <b>Every catch hops them one step → toward the 🚑 ambulance</b> — keep catching them until they’re safe!</p>
+    <p class="small">They come <b>one at a time</b> at first, then the next arrives while you’re still bouncing the last. 🐱 pets &amp; 🦸 VIPs score more, and a rare <b>⭐ Super Spring</b> sends them straight to safety. 3 lives.</p>
     <div id="ovExtra"></div>
     <button id="startBtn" class="pill">▶ Play</button>
+    <button id="howBtn" class="pill" style="background:linear-gradient(135deg,#9bb0c8,#5e7494);box-shadow:0 5px 0 #41546e;font-size:16px;padding:11px 24px">❓ How to Play</button>
     <p class="small" id="ctrlHint"></p>
+  </div>
+
+  <div id="tut" class="screen hidden">
+    <div style="font-size:60px" id="tutEmoji">🚒</div>
+    <h1 id="tutTitle">How to Play</h1>
+    <div id="tutBody" style="font-size:17px;max-width:460px;line-height:1.65"></div>
+    <button id="tutNext" class="pill">Next ▶</button>
+    <p class="small" id="tutSkip" style="cursor:pointer;text-decoration:underline;opacity:.8">Skip tutorial</p>
   </div>
 </div>
 
@@ -179,9 +188,10 @@ function resize(){
 window.addEventListener('resize', resize); resize();
 
 /* ---------- constants ---------- */
-const GRAV=1500, LAUNCH_VY=-660, FLING_K=1.05, FLING_MAX=640;
+const GRAV=1500, LAUNCH_VY=-660, FLING_MAX=720;
 const PEOPLE=['🧑','👩','👨','👵','👴','🧒','🧕','👲','🧓'];
 const PETS=['🐱','🐶','🐰','🐹'];
+function stepVx(){ return W*0.19; }   // each bounce hops the survivor ~one step toward the ambulance
 function trampY(){ return H-96; }
 function groundY(){ return H-30; }
 function zoneX(){ return W*0.76; }
@@ -194,6 +204,7 @@ let running=false, score=0, lives=3, level=1, combo=0, comboMax=0;
 let fallers=[], bouncers=[], floats=[], parts=[], powerups=[];
 let tramp, spawnedCount=0, cleared=0, spawnCD=0, shake=0, lastT=0;
 let superSpring=false, springT=0, powerTimer=20;
+let tutorial=false, tutStep=0, tutWinT=0;
 
 function newTramp(){ const w=Math.max(110, Math.min(W*0.25, 168)); return { x:W*0.35, target:W*0.35, px:W*0.35, vx:0, w:w, squash:0 }; }
 function reset(){
@@ -238,10 +249,10 @@ addEventListener('keyup',   e=>{ if(e.code==='ArrowLeft') keyL=false; if(e.code=
 function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*6.28,s=40+Math.random()*150; parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.6,color}); } }
 function floatText(x,y,txt,color){ floats.push({x,y,txt,color,life:0.95}); }
 
-function flingVx(){ return Math.max(-FLING_MAX, Math.min(FLING_MAX, tramp.vx*FLING_K)); }
 function launch(x,type,emoji){
   const sup=superSpring;
-  bouncers.push({ x, y:trampY()-6, vx:sup?FLING_MAX:flingVx(), vy:sup?LAUNCH_VY*1.08:LAUNCH_VY, size:type==='vip'?52:46, type, emoji, rot:0, super:sup });
+  // every catch hops them one fixed STEP to the right (toward the ambulance) — no aiming needed
+  bouncers.push({ x, y:trampY()-6, vx:sup?FLING_MAX:stepVx(), vy:sup?LAUNCH_VY*1.08:LAUNCH_VY, size:type==='vip'?52:46, type, emoji, rot:0, super:sup });
   tramp.squash=1; Sound.bounce();
 }
 function deliver(b){
@@ -270,10 +281,15 @@ function update(dt){
   if(superSpring){ springT-=dt; if(springT<=0){ superSpring=false; hideBanner(); } }
   else if(score>=20){ powerTimer-=dt; if(powerTimer<=0 && powerups.length===0){ spawnPower(); powerTimer=22; } }
 
-  // paced spawning: ONE at a time until 10 rescues, then +1 more allowed every 10 (2, 3, 4, 5, 6)
+  // spawning: never two people FALLING at once.
+  //  • first 10 rescues: fully sequential — the next appears only after the current is delivered/lost.
+  //  • after that: the next FALLS while you're still bouncing the previous one, and the gap shrinks
+  //    as you go (faster), but it's always one arrival at a time.
   spawnCD-=dt;
-  const maxConc = Math.min(6, Math.floor(cleared/10)+1);
-  if(inPlay()<maxConc && spawnCD<=0){ spawnFaller(); spawnCD=0.5; }
+  if(!tutorial){
+    const ready = (cleared<10) ? (inPlay()===0) : (fallers.length===0);
+    if(ready && spawnCD<=0){ spawnFaller(); spawnCD = (cleared<10) ? 0.6 : Math.max(0.5, 1.5-(cleared-10)*0.045); }
+  }
 
   const ty=trampY(), gy=groundY(), zx=zoneX();
 
@@ -286,7 +302,8 @@ function update(dt){
       fallers.splice(i,1); continue;
     }
     if(f.y>gy){
-      if(f.type!=='heart' && f.x>=zx){ rescued(f.x,gy-20,f.type); }   // lucky drop straight into the ambulance
+      if(tutorial){ tutRetry(); }
+      else if(f.type!=='heart' && f.x>=zx){ rescued(f.x,gy-20,f.type); }   // lucky drop straight into the ambulance
       else if(f.type!=='heart'){ loseLife(f.x,gy-20,'MISSED! 😟'); }
       fallers.splice(i,1);
     }
@@ -299,12 +316,16 @@ function update(dt){
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.rot+=dt*(b.vx>0?2:-2);
     if(!b.super && b.x<b.size*0.4){ b.x=b.size*0.4; b.vx=Math.abs(b.vx)*0.7; }
     if(b.y<ceil()){ b.y=ceil(); b.vy=Math.abs(b.vy)*0.5; }
-    if(b.vy>0 && b.x>=zx && b.y>=ambTopY()){ deliver(b); bouncers.splice(i,1); continue; }
+    if(b.vy>0 && b.x>=zx && b.y>=ambTopY()){
+      if(tutorial){ tutWin(); } else deliver(b);
+      bouncers.splice(i,1); continue;
+    }
     if(b.vy>0 && b.y>=ty-6 && b.y<=ty+34 && b.x<zx && Math.abs(b.x-tramp.x)<=tramp.w/2+12){
-      b.y=ty-6; b.vy=superSpring?LAUNCH_VY*1.08:LAUNCH_VY; b.vx=superSpring?FLING_MAX:flingVx(); b.super=superSpring; tramp.squash=1; Sound.bounce(); continue;
+      b.y=ty-6; b.vy=superSpring?LAUNCH_VY*1.08:LAUNCH_VY; b.vx=superSpring?FLING_MAX:stepVx(); b.super=superSpring; tramp.squash=1; Sound.bounce(); continue;  // another step right
     }
     if(b.y>gy){
-      if(b.x>=zx) rescued(b.x,gy-20,b.type);
+      if(tutorial){ tutRetry(); }
+      else if(b.x>=zx) rescued(b.x,gy-20,b.type);
       else loseLife(b.x,gy-20,'LOST! 😢');
       bouncers.splice(i,1);
     }
@@ -322,7 +343,26 @@ function update(dt){
   for(let i=floats.length-1;i>=0;i--){ const o=floats[i]; o.y-=34*dt; o.life-=dt; if(o.life<=0) floats.splice(i,1); }
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life-=dt; if(p.life<=0){ parts.splice(i,1); continue; } p.vy+=420*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
   if(shake>0) shake=Math.max(0,shake-dt*40);
+  if(tutWinT>0){ tutWinT-=dt; if(tutWinT<=0) endTut(); }
 }
+
+/* ---------- tutorial ---------- */
+const TUT=[
+  { e:'🕹️', t:'Move your trampoline', b:'People jump from the building. <b>Move the trampoline left and right</b> to get under them — drag with your finger, move the mouse, or use the <b>← →</b> keys.' },
+  { e:'➡️', t:'Bounce them to the right', b:'Each time you catch someone, they <b>hop one step toward the 🚑 ambulance</b>. You don’t aim — just <b>keep catching them</b> on every bounce and they march to the right.' },
+  { e:'🟢', t:'Get them to SAFE', b:'Keep bouncing each person until they reach the green <b>SAFE</b> zone on the right. <b>Don’t let anyone hit the ground!</b><br><br>Let’s practise one now.' }
+];
+function openTut(){ Sound.unlock(); tutStep=0; running=false; tutorial=false; tutWinT=0; $('overlay').classList.add('hidden'); showTutCard(); }
+function showTutCard(){ const c=TUT[tutStep]; $('tutEmoji').textContent=c.e; $('tutTitle').innerHTML=c.t; $('tutBody').innerHTML=c.b;
+  $('tutNext').textContent = tutStep<TUT.length-1 ? 'Next ▶' : 'Try it ▶'; $('tut').classList.remove('hidden'); }
+function tutAdvance(){ Sound.click(); if(tutStep<TUT.length-1){ tutStep++; showTutCard(); } else startPractice(); }
+function spawnSlow(){ fallers.push({ x:W*0.16, y:-30, vy:120, size:46, type:'person', emoji:'🧑', rot:(Math.random()-.5)*0.3 }); }
+function startPractice(){ $('tut').classList.add('hidden'); reset(); tutorial=true; tutWinT=0; running=true; spawnSlow(); banner('👇 Catch them, then keep bouncing → to the 🚑!'); }
+function tutRetry(){ banner('Almost! Slide under them and catch! 👇'); spawnSlow(); }
+function tutWin(){ if(tutWinT>0) return; banner('🎉 Rescued! You’ve got it!'); burst(zoneX()+W*0.08, ambTopY(),'#9bff8e',16); Sound.rescue(); tutWinT=1.8; }
+function endTut(){ tutorial=false; tutWinT=0; running=false; data.tutDone=true; saveData(); hideBanner();
+  $('overlay').querySelector('h1').textContent='🚒 Rescue Bounce'; $('startBtn').textContent='▶ Play'; $('overlay').classList.remove('hidden'); }
+function skipTut(){ tutorial=false; tutWinT=0; data.tutDone=true; saveData(); $('tut').classList.add('hidden'); $('overlay').classList.remove('hidden'); }
 
 /* ---------- draw ---------- */
 let lightOn=false, lightT=0;
@@ -423,7 +463,7 @@ reset();
 requestAnimationFrame(frame);
 
 /* ---------- start / game over ---------- */
-function start(){ Sound.unlock(); Sound.click(); reset(); running=true; $('overlay').classList.add('hidden'); hideBanner(); if(window.track) track('game_start',{game:'rescue'}); }
+function start(){ Sound.unlock(); Sound.click(); reset(); tutorial=false; tutWinT=0; running=true; $('overlay').classList.add('hidden'); $('tut').classList.add('hidden'); hideBanner(); if(window.track) track('game_start',{game:'rescue'}); }
 function gameOver(){
   running=false;
   const bonus=Math.floor(comboMax*1.5), earned=score+bonus; data.coins+=earned;
@@ -441,7 +481,10 @@ function gameOver(){
 }
 
 /* ---------- buttons ---------- */
-$('startBtn').addEventListener('click', start);
+$('startBtn').addEventListener('click', ()=>{ if(!data.tutDone) openTut(); else start(); });
+$('howBtn').addEventListener('click', openTut);
+$('tutNext').addEventListener('click', tutAdvance);
+$('tutSkip').addEventListener('click', skipTut);
 $('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.toggle(); $('muteBtn').textContent=on?'🔊':'🔇'; });
 ['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>Sound.unlock(),{once:true}));
 
