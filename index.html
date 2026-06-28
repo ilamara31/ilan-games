@@ -21,14 +21,14 @@
     background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sub { color:#9fb3d8; margin-bottom:16px; font-size:clamp(13px,3.2vw,17px); }
   /* compact "Poki-style" tile grid — many games visible, little scrolling */
-  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:12px; max-width:880px; width:100%; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:14px; max-width:900px; width:100%; }
   a.card { display:flex; flex-direction:column; align-items:center; justify-content:center; text-decoration:none; color:#fff;
-    padding:12px 6px; border-radius:16px; min-height:104px;
+    padding:18px 10px; border-radius:18px; min-height:132px;
     border:2px solid rgba(255,255,255,.12); transition:transform .12s, border-color .12s, box-shadow .12s; }
-  a.card:hover { transform:translateY(-3px) scale(1.03); border-color:#fff; box-shadow:0 10px 26px rgba(0,0,0,.45); }
+  a.card:hover { transform:translateY(-4px) scale(1.03); border-color:#fff; box-shadow:0 12px 30px rgba(0,0,0,.45); }
   a.card:active { transform:scale(.96); }
-  .emoji { font-size:42px; display:block; margin-bottom:6px; line-height:1; }
-  .card h2 { font-size:13px; margin-bottom:0; line-height:1.15; }
+  .emoji { font-size:54px; display:block; margin-bottom:8px; line-height:1; }
+  .card h2 { font-size:15px; margin-bottom:0; line-height:1.2; }
   .card p { display:none; }   /* hide long descriptions in the compact grid */
   .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
   .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
