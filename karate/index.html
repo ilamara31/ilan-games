@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Karate Champions</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:#0a0c14; color:#fff;
+    font-family:'Trebuchet MS',system-ui,Segoe UI,Roboto,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; }
+  canvas{ display:block; } #game{ position:fixed; inset:0; }
+  .hidden{ display:none !important; }
+  .scr{ position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:18px; text-align:center; overflow:auto;
+    background:radial-gradient(900px 520px at 50% -8%,#a8321f 0%,transparent 60%),linear-gradient(160deg,#241016,#140a10 60%,#0a0710); }
+  h1{ font-size:clamp(32px,8.5vw,72px); margin:.1em 0; letter-spacing:2px;
+    background:linear-gradient(90deg,#ffd54a,#ff6a3d,#ffd54a); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
+  .sub{ color:#e9c6b8; opacity:.85; margin-bottom:16px; font-size:clamp(13px,3.4vw,17px); }
+  .btn{ display:block; width:min(330px,86vw); margin:8px auto; padding:15px; border:none; border-radius:14px; font-size:19px; font-weight:bold; cursor:pointer; color:#2a1006;
+    background:linear-gradient(135deg,#ff9b3d,#ff5a2d); box-shadow:0 8px 22px rgba(220,80,30,.35); }
+  .btn.gold{ background:linear-gradient(135deg,#ffe14a,#ff9b3d); } .btn.alt{ background:linear-gradient(135deg,#b9a6a0,#7e6a64); color:#1a1008; }
+  .btn:active{ transform:scale(.97); }
+  input.in{ width:min(330px,86vw); padding:12px 16px; border-radius:12px; border:2px solid #7a4030; background:#1c1010; color:#fff; font-size:17px; text-align:center; outline:none; margin-bottom:10px; }
+  input.in:focus{ border-color:#ffb070; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:min(560px,94vw); } .row .btn{ width:auto; flex:1 1 150px; }
+  .foot{ margin-top:14px; font-size:12px; opacity:.6; max-width:540px; line-height:1.5; }
+  /* customization preview */
+  .swrow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px 0 14px; }
+  .sw{ width:38px; height:38px; border-radius:10px; cursor:pointer; border:3px solid transparent; }
+  .sw.on{ border-color:#fff; transform:scale(1.1); }
+  /* cards */
+  .vs{ display:flex; align-items:center; gap:14px; justify-content:center; flex-wrap:wrap; margin:8px 0 16px; }
+  .pcard{ width:172px; background:linear-gradient(160deg,#3a1a14,#1f0e0c); border:2px solid #7a4030; border-radius:18px; padding:14px; }
+  .pcard .av{ width:84px; height:84px; border-radius:50%; margin:0 auto 8px; border:3px solid #fff; }
+  .pcard b{ font-size:18px } .pcard .lv{ font-size:12px; opacity:.85; margin-top:3px } .pcard .be{ font-size:12px; margin-top:5px; font-weight:bold }
+  .vsbadge{ font-size:30px; font-weight:bold; color:#ffd54a; } .tourlogo{ font-size:18px; font-weight:bold; color:#ffd54a; margin-bottom:6px; }
+
+  /* HUD */
+  #hud{ position:fixed; inset:0; z-index:20; pointer-events:none; }
+  .hpwrap{ position:absolute; top:12px; width:42vw; max-width:420px; }
+  #hpL{ left:12px } #hpR{ right:12px }
+  .hpname{ font-size:14px; font-weight:bold; margin-bottom:3px; display:flex; justify-content:space-between; }
+  #hpR .hpname{ flex-direction:row-reverse; }
+  .hpbar{ height:18px; background:#3a0d12; border:2px solid rgba(255,255,255,.25); border-radius:9px; overflow:hidden; }
+  .hpfill{ height:100%; width:100%; background:linear-gradient(90deg,#ff4d4d,#ffd54a); transition:width .12s; }
+  #hpR .hpfill{ background:linear-gradient(270deg,#ff4d4d,#ffd54a); margin-left:auto; }
+  .spbar{ height:7px; background:#10203a; border:1px solid rgba(255,255,255,.18); border-radius:5px; overflow:hidden; margin-top:4px; }
+  .spfill{ height:100%; width:0%; background:linear-gradient(90deg,#42b8ff,#b96bff); }
+  .spbar.full .spfill{ animation:sppulse .6s infinite; } @keyframes sppulse{ 0%,100%{opacity:.6}50%{opacity:1} }
+  #timer{ position:absolute; top:10px; left:50%; transform:translateX(-50%); width:62px; height:62px; border-radius:50%; background:rgba(8,6,12,.8);
+    border:3px solid #ffd54a; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:bold; }
+  #combo{ position:absolute; top:96px; left:50%; transform:translateX(-50%); font-size:26px; font-weight:bold; color:#ffd54a; text-shadow:0 2px 8px #000; display:none; }
+  #center{ position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); font-size:clamp(34px,9vw,72px); font-weight:bold; text-align:center;
+    color:#fff; text-shadow:0 4px 16px #000,0 0 22px #ff5a2d; pointer-events:none; }
+  #spReady{ position:absolute; bottom:124px; left:50%; transform:translateX(-50%); font-size:14px; font-weight:bold; color:#b96bff; display:none; }
+  #coach{ position:absolute; top:80px; left:50%; transform:translateX(-50%); width:min(680px,94vw); background:rgba(8,6,12,.92); border:3px solid #ffd54a; border-radius:16px;
+    padding:14px 22px; font-size:clamp(17px,2.6vw,22px); line-height:1.45; font-weight:bold; display:none; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.55); }
+  #homeBtn{ position:absolute; top:10px; left:50%; margin-left:42px; }
+  .exit{ position:absolute; top:12px; right:12px; }
+
+  /* controls */
+  #ctl{ position:absolute; inset:0; pointer-events:none; }
+  #stick{ position:absolute; left:16px; bottom:18px; width:118px; height:118px; border-radius:50%; pointer-events:auto; display:none;
+    background:rgba(255,255,255,.05); border:2px solid rgba(255,255,255,.14); }
+  #stick .nub{ position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px; border-radius:50%; background:rgba(255,255,255,.28); border:2px solid rgba(255,255,255,.5); }
+  .abtns{ position:absolute; right:12px; bottom:14px; display:grid; grid-template-columns:repeat(2,1fr); gap:9px; pointer-events:auto; }
+  .abtn{ width:82px; height:82px; border-radius:16px; border:2px solid rgba(255,255,255,.28); color:#fff; font-weight:bold;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; position:relative; }
+  .abtn .ic{ font-size:24px; line-height:1; } .abtn .lbl{ font-size:10px; letter-spacing:.5px; } .abtn .key{ font-size:11px; opacity:.9; background:rgba(0,0,0,.4); border-radius:6px; padding:0 7px; margin-top:1px; }
+  .abtn:active{ transform:scale(.93); }
+  .al{ background:radial-gradient(circle at 40% 30%,#ff8b6a,#d11f3a); }
+  .ak{ background:radial-gradient(circle at 40% 30%,#ffd06a,#e08a1a); }
+  .aj{ background:radial-gradient(circle at 40% 30%,#9bff8e,#1e9a4a); }
+  .ai{ background:radial-gradient(circle at 40% 30%,#d6a0ff,#7a2dff); }
+  .ai.off{ filter:grayscale(.65); opacity:.5; }
+  .ablk{ position:absolute; left:20px; bottom:150px; width:80px; height:80px; pointer-events:auto; background:radial-gradient(circle at 40% 30%,#7ec8ff,#2a6df0); display:flex; }
+  .ablk.on{ box-shadow:0 0 0 3px #fff, 0 0 18px #7ec8ff; }
+  .abtn .cd{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(0,0,0,.45); border-radius:16px; }
+  #dHint{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.6; text-align:center; width:94%; }
+
+  /* modal */
+  .modal{ position:fixed; inset:0; z-index:60; background:rgba(6,4,10,.82); display:flex; align-items:center; justify-content:center; padding:14px; }
+  .mbox{ width:min(580px,94vw); max-height:88vh; overflow:auto; background:linear-gradient(160deg,#2a1410,#160b0a); border:2px solid #7a4030; border-radius:20px; padding:18px; }
+  .mbox h2{ margin:.1em 0 .5em } .closeX{ float:right; font-size:24px; cursor:pointer; opacity:.7; line-height:1 }
+  .tabs{ display:flex; gap:7px; margin-bottom:12px; flex-wrap:wrap } .tab{ padding:7px 13px; border-radius:11px; border:1.5px solid #7a4030; background:#1c1010; cursor:pointer; font-size:13px }
+  .tab.on{ background:#ffd54a; color:#241006; border-color:#ffd54a; font-weight:bold }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px }
+  .it{ border:1.5px solid #7a4030; border-radius:14px; padding:11px; background:#1c1010; text-align:center }
+  .it .sw2{ width:100%; height:48px; border-radius:10px; margin-bottom:7px } .it b{ font-size:14px } .it button{ width:100%; padding:8px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:6px }
+  .b-buy{ background:linear-gradient(135deg,#ffe14a,#ff9b3d); color:#2a1a00 } .b-eq{ background:#2a6df0; color:#fff } .b-on{ background:#1f7a3a; color:#fff } .b-no{ background:#444; color:#aaa }
+  .setrow{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid #3a201a }
+  .switch{ width:52px; height:30px; border-radius:16px; background:#4a2a22; position:relative; cursor:pointer } .switch.on{ background:#2a6df0 } .switch .k{ position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s } .switch.on .k{ left:25px }
+  .dngr{ background:#7a1f2b; color:#fff; border:none; padding:10px 14px; border-radius:11px; cursor:pointer; margin-top:10px }
+  .stage{ display:flex; align-items:center; gap:12px; background:#1c1010; border:1.5px solid #7a4030; border-radius:14px; padding:12px; margin:8px auto; width:min(440px,94vw); text-align:left }
+  .stage .ic{ font-size:30px } .stage .info{ flex:1 } .stage .info b{ font-size:16px } .stage .info small{ display:block; opacity:.7 }
+  .stage.locked{ opacity:.45 } .stage .go{ background:linear-gradient(135deg,#ff9b3d,#ff5a2d); color:#2a1006; border:none; padding:9px 14px; border-radius:12px; font-weight:bold; cursor:pointer } .stage .done{ color:#ffd54a; font-weight:bold }
+  .res-big{ font-size:40px; font-weight:bold; margin:6px 0 } .res-line{ font-size:17px; margin:5px 0 }
+  .bracket{ display:flex; justify-content:center; gap:8px; margin:10px 0; flex-wrap:wrap }
+  .bnode{ background:#1c1010; border:1.5px solid #7a4030; border-radius:10px; padding:7px 11px; font-size:13px } .bnode.cur{ border-color:#ffd54a; color:#ffd54a; font-weight:bold } .bnode.win{ opacity:.6 }
+  /* force landscape on phones */
+  #rotate{ display:none; }
+  @media (orientation:portrait) and (max-width:900px){
+    #rotate{ display:flex; position:fixed; inset:0; z-index:9999; background:#0a0c14; color:#fff; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+    #rotate .ic{ font-size:64px; animation:rot 1.8s ease-in-out infinite; } @keyframes rot{ 0%,40%{transform:rotate(0)} 60%,100%{transform:rotate(-90deg)} }
+    #rotate b{ font-size:22px; margin-top:14px; } #rotate span{ color:#e9c6b8; margin-top:6px; font-size:14px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="rotate"><div class="ic">📱</div><b>Please rotate your phone</b><span>Karate Champions plays in landscape — turn your device sideways.</span></div>
+
+<!-- MENU -->
+<div id="menu" class="scr">
+  <h1>KARATE CHAMPIONS</h1>
+  <div class="sub">🥋 Fast arcade fighting — punch, kick, combo & KO your way to the World Cup!</div>
+  <input id="nameIn" class="in" maxlength="12" placeholder="Fighter name" autocomplete="off">
+  <div class="sub" style="margin:2px 0 4px;font-size:12px">Belt: <b id="beltLbl">White</b></div>
+  <button class="btn gold" data-mode="career">🏆 Career Mode</button>
+  <button class="btn" data-mode="quick">⚡ Quick Fight</button>
+  <div class="row" style="margin-top:6px">
+    <button class="btn alt" id="howBtn">❓ How to Play</button>
+    <button class="btn alt" id="shopBtn">🛒 Shop</button>
+    <button class="btn alt" id="setBtn">⚙️ Settings</button>
+  </div>
+  <a class="btn alt" href="../" style="display:block;text-decoration:none;margin-top:6px">🚪 Exit to Ilan Games</a>
+  <div class="foot">Desktop: <b>A/D</b> or <b>← →</b> move • <b>W/↑</b> jump • <b>L</b> punch • <b>K</b> kick • <b>J</b> uppercut • <b>I</b> combo • <b>Space</b> block. Each move has a short cooldown — mix it up! Mobile: joystick + buttons (landscape).</div>
+</div>
+
+<!-- CAREER -->
+<div id="career" class="scr hidden">
+  <h1 style="font-size:clamp(26px,7vw,48px)">🏆 Career</h1>
+  <div class="sub">Fight up from the Local Dojo to the World Karate Cup.</div>
+  <div id="stageList"></div>
+  <button class="btn alt" data-back style="margin-top:12px">← Back</button>
+</div>
+
+<!-- CARDS -->
+<div id="cards" class="scr hidden">
+  <div class="tourlogo" id="tourName">Tournament</div>
+  <div id="bracket" class="bracket"></div>
+  <div class="vs">
+    <div class="pcard"><div class="av" id="pAv"></div><b id="pName">You</b><div class="lv" id="pLv">Lv 1</div><div class="be" id="pBe">White Belt</div></div>
+    <div class="vsbadge">VS</div>
+    <div class="pcard"><div class="av" id="oAv"></div><b id="oName">Rival</b><div class="lv" id="oLv">Lv 1</div><div class="be" id="oBe"></div></div>
+  </div>
+  <button class="btn gold" id="startBtn">▶ FIGHT</button>
+  <button class="btn alt" data-back>← Back</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hpwrap" id="hpL">
+    <div class="hpname"><span id="nmL">You</span><span id="hpTxtL">100</span></div>
+    <div class="hpbar"><div class="hpfill" id="fillL"></div></div>
+    <div class="spbar" id="spL"><div class="spfill" id="spfL"></div></div>
+  </div>
+  <div class="hpwrap" id="hpR">
+    <div class="hpname"><span id="nmR">Rival</span><span id="hpTxtR">100</span></div>
+    <div class="hpbar"><div class="hpfill" id="fillR"></div></div>
+    <div class="spbar" id="spR"><div class="spfill" id="spfR"></div></div>
+  </div>
+  <div id="timer">60</div>
+  <div id="combo"></div>
+  <div id="coach"></div>
+  <div id="center"></div>
+  <div id="spReady">🌀 COMBO READY — press I!</div>
+  <div id="ctl">
+    <div id="stick"><div class="nub" id="nub"></div></div>
+    <div class="abtns" id="abtns">
+      <div class="abtn al" id="bPunch"><span class="ic">👊</span><span class="lbl">PUNCH</span><span class="key">L</span><span class="cd" id="cdPunch" style="display:none"></span></div>
+      <div class="abtn ak" id="bKick"><span class="ic">🦵</span><span class="lbl">KICK</span><span class="key">K</span><span class="cd" id="cdKick" style="display:none"></span></div>
+      <div class="abtn aj" id="bUpper"><span class="ic">⬆️</span><span class="lbl">UPPERCUT</span><span class="key">J</span><span class="cd" id="cdUpper" style="display:none"></span></div>
+      <div class="abtn ai off" id="bCombo"><span class="ic">🌀</span><span class="lbl">COMBO</span><span class="key">I</span><span class="cd" id="comboCd" style="display:none"></span></div>
+    </div>
+    <div class="abtn ablk" id="bBlock"><span class="ic">🛡️</span><span class="lbl">BLOCK</span><span class="key">Space</span></div>
+    <div id="dHint"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="scr hidden">
+  <div class="res-big" id="resTitle">You Win!</div>
+  <div class="res-line" id="resSub"></div>
+  <div class="res-line">🪙 Coins: <b id="resCoins">0</b> &nbsp; ⭐ XP: <b id="resXp">0</b></div>
+  <div class="res-line" id="resStats" style="opacity:.8;font-size:14px"></div>
+  <button class="btn gold" id="resNext">Continue</button>
+</div>
+
+<!-- SHOP -->
+<div id="shopModal" class="modal hidden"><div class="mbox">
+  <span class="closeX" data-close="shopModal">×</span><h2>🛒 Shop</h2>
+  <div class="tabs" id="shopTabs"></div><div class="grid" id="shopGrid"></div>
+</div></div>
+
+<!-- SETTINGS -->
+<div id="setModal" class="modal hidden"><div class="mbox">
+  <span class="closeX" data-close="setModal">×</span><h2>⚙️ Settings</h2>
+  <div class="setrow"><span>🎵 Music</span><div class="switch on" id="swMusic"><div class="k"></div></div></div>
+  <div class="setrow"><span>🔊 Sound effects</span><div class="switch on" id="swSfx"><div class="k"></div></div></div>
+  <button class="dngr" id="resetBtn">Reset all progress</button>
+</div></div>
+
+<!-- TUTORIAL -->
+<div id="tutOv" class="modal hidden"><div class="mbox" style="max-width:420px;text-align:center">
+  <div style="font-size:54px;animation:tbob 1.6s infinite" id="tutCoach">🥋</div>
+  <style>@keyframes tbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}</style>
+  <div id="tutText" style="font-size:17px;line-height:1.5;min-height:96px;display:flex;align-items:center;justify-content:center"></div>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+    <button class="btn alt" id="tutSkip" style="width:auto;flex:0 0 auto;padding:11px 20px;margin:0">Skip</button>
+    <button class="btn gold" id="tutNext" style="width:auto;flex:0 0 auto;padding:11px 20px;margin:0">Next ▶</button>
+  </div>
+  <div id="tutDots" style="margin-top:12px"></div>
+</div></div>
+
+<script type="module">
+import * as THREE from '../obby/libs/three.module.js';
+
+/* ============================================================ DATA / PURE LOGIC ============================================================ */
+const SK='karateChamp_v1';
+const BELTS=[['White',0xf4f4f4],['Yellow',0xffe14a],['Orange',0xff8c1a],['Green',0x2fbf4a],['Blue',0x2a7aff],['Purple',0x8a3fd6],['Brown',0x6b3a18],['Black',0x161616]];
+const ARENAS={
+  dojo:    {name:'Local Dojo',          sky:0x3a2a22, floor:0x6b4a2a, accent:0xffb060, wall:0x4a3326},
+  city:    {name:'City Arena',          sky:0x1a2438, floor:0x39404e, accent:0x7ee0ff, wall:0x222a3a},
+  beach:   {name:'Beach Arena',         sky:0x6fc7e8, floor:0xe8d6a0, accent:0xff9b3d, wall:0x2a8fb0},
+  temple:  {name:'Mountain Temple',     sky:0x2a3a4a, floor:0x4a5a4a, accent:0x9bff8e, wall:0x2f3f33},
+  stadium: {name:'International Stadium',sky:0x141826, floor:0x2a3050, accent:0xffd54a, wall:0x1a1f33},
+  world:   {name:'World Championship',  sky:0x2a0e1a, floor:0x3a1420, accent:0xff4d6d, wall:0x24101a},
+};
+const CAREER=[
+  {id:'dojo',   name:'Local Dojo',           arena:'dojo',    diff:0, coins:80,  xp:60,  beltUp:1},
+  {id:'city',   name:'City Tournament',      arena:'city',    diff:1, coins:150, xp:100, beltUp:2},
+  {id:'state',  name:'State Tournament',     arena:'beach',   diff:2, coins:280, xp:160, beltUp:3},
+  {id:'nation', name:'National Championship', arena:'temple', diff:3, coins:480, xp:240, beltUp:5},
+  {id:'inter',  name:'International Masters', arena:'stadium', diff:4, coins:800, xp:340, beltUp:6},
+  {id:'world',  name:'World Karate Cup',      arena:'world',   diff:5, coins:1400,xp:500, beltUp:7},
+];
+const DIFFNAME=['Very Easy','Easy','Medium','Hard','Very Hard','Expert'];
+// AI tuning per difficulty 0..5
+const AI=[   // always-attacking; lower difficulty = slower reactions (easier to block/counter), not passive
+  {react:0.55, aggr:0.78, block:0, jump:0.04, combo:0.02, speed:3.4},
+  {react:0.47, aggr:0.83, block:0, jump:0.06, combo:0.08, speed:3.9},
+  {react:0.39, aggr:0.88, block:0, jump:0.10, combo:0.18, speed:4.3},
+  {react:0.31, aggr:0.92, block:0, jump:0.14, combo:0.32, speed:4.8},
+  {react:0.24, aggr:0.96, block:0, jump:0.18, combo:0.45, speed:5.2},
+  {react:0.18, aggr:1.00, block:0, jump:0.22, combo:0.60, speed:5.6},
+];
+const OPP_NAMES=['Kenji','Mika','Hiro','Sana','Drax','Lola','Bruno','Yuki','Tariq','Vera','Semo','Kai','Rex','Nova','Zane','Ito'];
+const ROUNDS=['Quarter-Final','Semi-Final','Final'];
+
+// combat constants — L punch, K kick, J uppercut (I = combo special, handled separately)
+const DMG={ punch:6, kick:11, uppercut:12 };
+function damageFor(type, blocking){ const base=DMG[type]||6; return blocking ? Math.max(1,Math.round(base*0.18)) : base; }
+function comboBonus(n){ return n>=2 ? Math.round((n-1)*1.5) : 0; }           // extra damage from a combo chain
+function matchWinner(hpA,hpB){ if(hpA<=0&&hpB<=0) return 'draw'; if(hpB<=0) return 'a'; if(hpA<=0) return 'b'; return hpA>=hpB?'a':'b'; }
+function levelFromXP(xp){ let l=1,r=xp; while(l<60){ const n=70*l; if(r<n) break; r-=n; l++; } return l; }
+function coinsForMatch(diff,win){ const base=40+diff*30; return win?base:Math.round(base*0.3); }
+
+const SHOP={
+  uniforms:[ {id:'u0',name:'Classic White',price:0,col:0xf2f2f2}, {id:'u1',name:'Crimson Gi',price:200,col:0xc62828},
+    {id:'u2',name:'Midnight',price:200,col:0x232a3a}, {id:'u3',name:'Royal Blue',price:400,col:0x2a5fd0}, {id:'u4',name:'Golden Master',price:1200,col:0xffd54a} ],
+  belts:[ {id:'b0',name:'White',price:0,col:0xf4f4f4}, {id:'b1',name:'Red',price:150,col:0xd23b2e}, {id:'b2',name:'Green',price:150,col:0x2fbf4a},
+    {id:'b3',name:'Blue',price:300,col:0x2a7aff}, {id:'b4',name:'Black',price:600,col:0x161616} ],
+  gloves:[ {id:'g0',name:'Bare',price:0,col:0xe9b48a}, {id:'g1',name:'Red Mitts',price:150,col:0xd23b2e}, {id:'g2',name:'Blue Mitts',price:150,col:0x2a6df0}, {id:'g3',name:'Gold Mitts',price:500,col:0xffd54a} ],
+  arenas:[ {id:'a_dojo',name:'Dojo',price:0,col:0x6b4a2a,key:'dojo'}, {id:'a_beach',name:'Beach',price:300,col:0xe8d6a0,key:'beach'},
+    {id:'a_temple',name:'Temple',price:300,col:0x4a5a4a,key:'temple'}, {id:'a_world',name:'World Arena',price:800,col:0x3a1420,key:'world'} ],
+  victory:[ {id:'v0',name:'Bow',price:0,col:0xffffff}, {id:'v1',name:'Fire Burst',price:300,col:0xff5a2d}, {id:'v2',name:'Star Shower',price:600,col:0xffe14a} ],
+};
+const SHOP_TABS=[['uniforms','Uniforms'],['belts','Belts'],['gloves','Gloves'],['arenas','Arenas'],['victory','Victory']];
+const ALLSHOP={}; for(const k in SHOP) SHOP[k].forEach(i=>ALLSHOP[i.id]=Object.assign({cat:k},i));
+
+function freshSave(){ return { name:'', coins:0, xp:0, careerStage:0, belt:0, wins:0,
+  owned:['u0','b0','g0','a_dojo','v0'], equip:{uniforms:'u0',belts:'b0',gloves:'g0',arenas:'a_dojo',victory:'v0'},
+  music:true, sfx:true }; }
+let S=freshSave();
+function load(){ try{ const r=JSON.parse(localStorage.getItem(SK)); if(r&&typeof r==='object') S=Object.assign(freshSave(),r); }catch(e){} }
+function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
+function shopBuy(id){ const it=ALLSHOP[id]; if(!it) return 'no'; if(S.owned.includes(id)) return 'own';
+  if(S.coins<it.price) return 'poor'; S.coins-=it.price; S.owned.push(id); save(); return 'ok'; }
+
+window.__KC={BELTS,ARENAS,CAREER,AI,SHOP,DMG,damageFor,comboBonus,matchWinner,levelFromXP,coinsForMatch,shopBuy,freshSave,DIFFNAME,get S(){return S;},set S(v){S=v;}};
+
+/* ============================================================ THREE SETUP ============================================================ */
+const TESTMODE=(typeof window!=='undefined' && window.__KC_TEST__);
+if(!TESTMODE){
+load();
+const cvs=document.getElementById('game');
+const renderer=new THREE.WebGLRenderer({canvas:cvs,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,200);
+function onResize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); }
+addEventListener('resize',onResize); onResize();
+const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c},o));
+
+const hemi=new THREE.HemisphereLight(0xffffff,0x442a22,0.9); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0dc,1.5); sun.position.set(6,16,10); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=60;
+sun.shadow.camera.left=-14; sun.shadow.camera.right=14; sun.shadow.camera.top=14; sun.shadow.camera.bottom=-14; sun.shadow.bias=-0.0004; scene.add(sun);
+const amb=new THREE.AmbientLight(0xffffff,0.35); scene.add(amb);
+const spot=new THREE.PointLight(0xffffff,0.6,40); spot.position.set(0,12,6); scene.add(spot);
+
+/* ---------- arena ---------- */
+const ARENA_X=8;   // fighters constrained to [-ARENA_X, ARENA_X]
+let arenaGroup=new THREE.Group(); scene.add(arenaGroup);
+let crowd=[];
+function buildArena(key){ scene.remove(arenaGroup); arenaGroup=new THREE.Group(); scene.add(arenaGroup); crowd=[];
+  const A=ARENAS[key]||ARENAS.dojo; scene.background=new THREE.Color(A.sky); scene.fog=new THREE.Fog(A.sky, 26, 60);
+  hemi.groundColor.setHex(A.floor);
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(ARENA_X*2+8,1,14), mat(A.floor,{roughness:.95})); floor.position.y=-0.5; floor.receiveShadow=true; arenaGroup.add(floor);
+  // ring mat
+  const ringMat=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_X*2+4,9), mat(A.accent,{roughness:.8,metalness:.1,emissive:A.accent,emissiveIntensity:.06}));
+  ringMat.rotation.x=-Math.PI/2; ringMat.position.y=0.01; ringMat.receiveShadow=true; arenaGroup.add(ringMat);
+  const border=new THREE.Mesh(new THREE.TorusGeometry(0.1,0.1,4,4), mat(0xffffff)); // placeholder unused
+  // back wall
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(ARENA_X*2+10,12,1), mat(A.wall,{roughness:.95})); wall.position.set(0,5.5,-5.5); wall.receiveShadow=true; arenaGroup.add(wall);
+  // side posts + ropes
+  for(const sx of [-1,1]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,4,10), mat(A.accent,{emissive:A.accent,emissiveIntensity:.3})); post.position.set(sx*(ARENA_X+1.5),2,2.2); post.castShadow=true; arenaGroup.add(post); }
+  // banners / lights
+  for(let i=-2;i<=2;i++){ const ln=new THREE.PointLight(A.accent,0.4,18); ln.position.set(i*5,9,-3); arenaGroup.add(ln); }
+  // simple seated crowd (two tiers behind)
+  const cols=[0xff6b6b,0xffd54a,0x6ad0ff,0x9bff8e,0xff9bd0,0xffffff,0xff8b2d];
+  const bGeo=new THREE.BoxGeometry(0.5,0.6,0.4), hGeo=new THREE.SphereGeometry(0.22,7,7), skM=mat(0xf0c79a,{roughness:.8});
+  for(let r=0;r<2;r++){ for(let x=-ARENA_X-2;x<=ARENA_X+2;x+=1.2){ const g=new THREE.Group();
+    g.add(new THREE.Mesh(bGeo, mat(cols[(Math.abs(x*7+r)|0)%cols.length],{roughness:.9})));
+    const h=new THREE.Mesh(hGeo,skM); h.position.y=0.5; g.add(h);
+    g.position.set(x+(r?0.4:0), 1.0+r*0.9, -6.5-r*1.0); g.userData.b=g.position.y; arenaGroup.add(g); crowd.push(g); } }
+}
+function cheer(t){ const c=Math.abs(Math.sin(t*16)); for(const g of crowd) g.position.y=g.userData.b+c*0.3; }
+
+/* ---------- fighter ---------- */
+function buildFighter(opt){ // {uniform, belt, glove, skin}
+  const g=new THREE.Group();
+  const skin=opt.skin||0xe9b48a, gi=opt.uniform, beltC=opt.belt, glove=opt.glove||skin;
+  const skM=mat(skin,{roughness:.7}), giM=mat(gi,{roughness:.7}), beltM=mat(beltC,{roughness:.5}), gloveM=mat(glove,{roughness:.6});
+  const trim=mat(0xffffff,{roughness:.6});
+  // hips/torso (gi jacket)
+  const hips=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.5), mat(0x2a2630,{roughness:.7})); hips.position.y=1.5; hips.castShadow=true; g.add(hips);
+  const torso=new THREE.Mesh(new THREE.BoxGeometry(0.92,1.0,0.56), giM); torso.position.y=2.2; torso.castShadow=true; g.add(torso);
+  const lapelL=new THREE.Mesh(new THREE.BoxGeometry(0.12,1.0,0.58), trim); lapelL.position.set(-0.16,2.2,0.01); g.add(lapelL);
+  const lapelR=lapelL.clone(); lapelR.position.x=0.16; g.add(lapelR);
+  const belt=new THREE.Mesh(new THREE.BoxGeometry(0.98,0.2,0.6), beltM); belt.position.y=1.72; g.add(belt);
+  const knot=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.26,0.18), beltM); knot.position.set(0,1.72,0.32); g.add(knot);
+  // neck + head
+  const head=new THREE.Group(); head.position.y=3.0; g.add(head);
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(0.42,18,16), skM); skull.castShadow=true; head.add(skull);
+  for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,8), new THREE.MeshBasicMaterial({color:0x14110f})); e.position.set(0.13*s,0.05,0.36); head.add(e); }
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.44,16,12,0,Math.PI*2,0,Math.PI*0.55), mat(0x161210,{roughness:.6})); hair.position.y=0.07; head.add(hair);
+  const band=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.06,8,18), mat(opt.belt,{roughness:.5})); band.rotation.x=Math.PI/2; band.position.y=0.12; head.add(band);
+  // arm: shoulder pivot -> upper -> elbow pivot -> fore -> hand
+  function arm(side){ const sh=new THREE.Group(); sh.position.set(0.56*side,2.55,0);
+    const up=new THREE.Mesh(new THREE.CapsuleGeometry(0.15,0.45,4,8), giM); up.position.y=-0.32; up.castShadow=true; sh.add(up);
+    const el=new THREE.Group(); el.position.y=-0.6; sh.add(el);
+    const fore=new THREE.Mesh(new THREE.CapsuleGeometry(0.13,0.42,4,8), skM); fore.position.y=-0.28; fore.castShadow=true; el.add(fore);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), gloveM); hand.position.y=-0.56; el.add(hand);
+    g.add(sh); return {sh,el}; }
+  const armL=arm(1), armR=arm(-1);
+  // leg: hip pivot -> thigh -> knee -> shin -> foot
+  function leg(side){ const hp=new THREE.Group(); hp.position.set(0.22*side,1.4,0);
+    const th=new THREE.Mesh(new THREE.CapsuleGeometry(0.18,0.5,4,8), mat(0xece9e2,{roughness:.8})); th.position.y=-0.38; th.castShadow=true; hp.add(th);
+    const kn=new THREE.Group(); kn.position.y=-0.72; hp.add(kn);
+    const sh2=new THREE.Mesh(new THREE.CapsuleGeometry(0.15,0.5,4,8), mat(0xece9e2,{roughness:.8})); sh2.position.y=-0.34; sh2.castShadow=true; kn.add(sh2);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.16,0.5), mat(0x2a2026)); foot.position.set(0,-0.64,0.08); kn.add(foot); g.add(hp); return {hp,kn}; }
+  const legL=leg(1), legR=leg(-1);
+  g.userData={head,torso,armL,armR,legL,legR,belt,band,parts:{torso,belt,band,glL:armL,glR:armR}};
+  g.scale.setScalar(0.92);
+  return g;
+}
+// pose helper: lerp a rotation toward target
+function rl(obj,axis,target,k){ obj.rotation[axis]+=(target-obj.rotation[axis])*k; }
+function animateFighter(f,dt,t){ const u=f.g.userData; const k=Math.min(1,dt*14);
+  const fr=f.facing; // front arm = the one toward opponent
+  // defaults (fighting stance)
+  let sLx=0.5, sRx=0.5, eLx=-1.1, eRx=-1.1, hLx=0, hRx=0, knL=0, knR=0, headT=0, torsoT=0, rootZ=0, rootRotZ=0;
+  const st=f.state;
+  if(st==='walk'){ const s=Math.sin(t*9)*0.5; hLx=s; hRx=-s; sLx=0.5-s*0.4; sRx=0.5+s*0.4; }
+  else if(st==='jump'){ hLx=-0.6; hRx=-0.6; knL=0.8; knR=0.8; sLx=-0.4; sRx=-0.4; }
+  else if(st==='block'){ sLx=-0.3; sRx=-0.3; eLx=-2.0; eRx=-2.0; torsoT=-0.1; }
+  else if(st==='hurt'){ const p=f.stun/0.3; torsoT=0.4*p; headT=0.5*p; sLx=0.9; sRx=0.9; }
+  else if(st==='ko'){ rootRotZ = -fr*1.4; rootZ=0; sLx=-0.4; sRx=-0.4; hLx=-0.4; hRx=-0.4; }
+  else if(st==='win'){ const w=Math.sin(t*4); sLx=-2.4; sRx=-1.2+w*0.3; headT=-0.1; }
+  else if(st==='combo' && f.comboMove){ const ct=f.comboMove.t;
+    if(ct<0.4){ const e=Math.sin(Math.min(1,ct/0.4)*Math.PI); hRx=-1.8*e; knR=-1.0*e; torsoT=0.18*e; sLx=0.9; }      // kick
+    else if(ct<0.75){ const e=Math.sin(Math.min(1,(ct-0.4)/0.35)*Math.PI); sRx=-1.6*e+0.2; eRx=-1.1+1.1*e; torsoT=-0.12*e; }  // punch
+    else if(ct<1.15){ const e=Math.sin(Math.min(1,(ct-0.75)/0.4)*Math.PI); sLx=-2.4*e+0.2; eLx=-1.1+1.1*e; torsoT=-0.3*e; headT=-0.2*e; }  // uppercut
+    else if(ct<1.75){ rootRotZ=-fr*1.35; sLx=-0.5; sRx=-0.5; hLx=-0.3; hRx=-0.3; }                                   // fall
+    else { torsoT=0.25*(1-(ct-1.75)/0.55); }                                                                         // get up
+  }
+  // single-attack overrides (punch=L, kick=K, uppercut=J)
+  if(f.attack){ const a=f.attack, p=a.t/a.dur;
+    if(a.type==='punch'){ const ext=Math.sin(Math.min(1,p*1.7)*Math.PI);   // straight punch to the face
+      if(a.arm>0){ sLx=-1.55*ext+0.2; eLx=-1.1+1.1*ext; } else { sRx=-1.55*ext+0.2; eRx=-1.1+1.1*ext; } torsoT=-0.08*ext;
+    } else if(a.type==='kick'){ const ext=Math.sin(Math.min(1,p*1.5)*Math.PI);
+      hRx=-1.8*ext; knR=-1.0*ext; torsoT=0.16*ext; sLx=0.9;
+    } else if(a.type==='uppercut'){ const ext=Math.sin(Math.min(1,p*1.6)*Math.PI);   // rising punch
+      if(a.arm>0){ sLx=-2.5*ext+0.2; eLx=-1.1+0.9*ext; } else { sRx=-2.5*ext+0.2; eRx=-1.1+0.9*ext; } torsoT=-0.22*ext; headT=-0.15*ext;
+    }
+  }
+  rl(u.armL.sh,'x',sLx,k); rl(u.armR.sh,'x',sRx,k); rl(u.armL.el,'x',eLx,k); rl(u.armR.el,'x',eRx,k);
+  rl(u.legL.hp,'x',hLx,k); rl(u.legR.hp,'x',hRx,k); rl(u.legL.kn,'x',knL,k); rl(u.legR.kn,'x',knR,k);
+  rl(u.torso,'x',torsoT,k); rl(u.head,'x',headT,k);
+  // facing + ko lie
+  const fy = fr>0 ? Math.PI/2 : -Math.PI/2;
+  f.g.rotation.y += ((fy)-f.g.rotation.y)*k;
+  rl(f.g,'z', rootRotZ, Math.min(1,dt*8));
+  if(st==='ko'){ f.g.position.y += ((0.2)-f.g.position.y)*k; }
+}
+
+/* ---------- particles + floating text ---------- */
+const parts=[];
+function burst(pos,color,n=12,spd=5,life=0.45){ for(let i=0;i<n;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.12,6,6), new THREE.MeshBasicMaterial({color,transparent:true}));
+  m.position.copy(pos); const a=Math.random()*Math.PI*2,e=Math.random()*Math.PI; m.userData={v:new THREE.Vector3(Math.sin(e)*Math.cos(a),Math.abs(Math.cos(e))+0.3,Math.sin(e)*Math.sin(a)).multiplyScalar(spd*(0.5+Math.random())),life,max:life}; scene.add(m); parts.push(m); } }
+function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const m=parts[i]; m.userData.life-=dt; if(m.userData.life<=0){ scene.remove(m); parts.splice(i,1); continue; } m.userData.v.y-=14*dt; m.position.addScaledVector(m.userData.v,dt); m.material.opacity=m.userData.life/m.userData.max; } }
+
+/* ============================================================ FIGHTERS / MATCH STATE ============================================================ */
+let P=null, O=null;   // player, opponent fighter objects
+function newFighter(opt,x,facing,isAI){ const g=buildFighter(opt); scene.add(g);
+  return { g, x, y:0, vy:0, facing, hp:100, meter:0, state:'idle', attack:null, stun:0, blockHeld:false, isAI,
+    aiT:0, aiAct:null, combo:0, comboT:0, cd:{}, lastArm:1, opt,
+    comboMove:null, comboCD:0, comboUses:1, invuln:false, blockT:0, blockLock:false,
+    mcd:{punch:0,kick:0,uppercut:0}, muse:{punch:0,kick:0,uppercut:0} }; }
+function fighterCos(){ return { uniform:ALLSHOP[S.equip.uniforms].col, belt:ALLSHOP[S.equip.belts].col, glove:ALLSHOP[S.equip.gloves].col, skin:0xe9b48a }; }
+function oppCos(diff){ const us=[0xc62828,0x232a3a,0x2a5fd0,0x2fbf4a,0x8a3fd6,0x161616]; return { uniform:us[diff%us.length], belt:0x161616, glove:0xe9b48a, skin:0xd9a47a }; }
+
+const M={ active:false, ctx:null, state:'idle', timer:60, t:0, slow:1, winner:null, hits:{a:0,b:0}, maxCombo:0, tut:null };
+
+function startMatch(ctx){ M.ctx=ctx; M.active=true; M.timer=60; M.state='intro'; M.t=0; M.slow=1; M.winner=null; M.hits={a:0,b:0}; M.maxCombo=0; M.tut=null;
+  buildArena(ctx.arena);
+  if(P) scene.remove(P.g); if(O) scene.remove(O.g);
+  P=newFighter(fighterCos(),-3,1,false); O=newFighter(oppCos(ctx.diff),3,-1,true);
+  show('hud'); $('nmL').textContent=S.name||'You'; $('nmR').textContent=ctx.oppName;
+  $('abtns').style.display='grid';                       // 4 action buttons on desktop & mobile
+  if('ontouchstart' in window){ $('stick').style.display='block'; }
+  $('dHint').textContent='A/D or ←→ move • W/↑ jump • L punch • K kick • J uppercut • I combo • SPACE block';
+  $('coach').style.display='none';
+  syncHUD(); initAudio();
+  if(ctx.tutorial){ music('menu'); O.invuln=true; O.hp=100; center(''); $('coach').style.display='block'; M.state='fight'; M.tut={step:-1,t:0,oppT:0,hidden:false,did_punch:false,did_kick:false,did_uppercut:false,did_combo:false,blocked:false}; tutStep(0); return; }
+  music('fight');
+  center('ROUND 1'); setTimeout(()=>{ if(M.active){ center('FIGHT!'); M.state='fight'; sfx('bell'); setTimeout(()=>center(''),700); } }, 1100);
+}
+function startTutorial(){ S.name=($('nameIn').value.trim()||S.name||'You'); initAudio(); startMatch({mode:'tutorial',diff:0,arena:'dojo',oppName:'Sensei',tourName:'Training',roundLabel:'Tutorial',tutorial:true}); }
+const TOUCH = ('ontouchstart' in window) || matchMedia('(pointer:coarse)').matches;
+const KB=(key,btn)=> TOUCH ? ('tap the <b>'+btn+'</b> button (bottom-right)') : ('press <b>'+key+'</b> ('+btn.split(' ')[0]+')');
+const TUTSTEPS=[
+  {msg:()=>"🥋 Sensei: Let's learn the moves! First, "+KB('L','👊 PUNCH')+" to punch.", check:t=>t.did_punch, hide:true},
+  {msg:()=>"🥋 Sensei: Good! Now "+KB('K','🦵 KICK')+" to kick.", check:t=>t.did_kick, hide:true},
+  {msg:()=>"🥋 Sensei: Nice! Now "+KB('J','⬆️ UPPERCUT')+" to uppercut.", check:t=>t.did_uppercut, hide:true},
+  {msg:()=>"🥋 Sensei: Here comes your opponent — now HIT HIM and knock his health down!", check:()=>O.hp<=80, reveal:true},
+  {msg:()=>"🥋 Sensei: Great! Now "+KB('I','🌀 COMBO')+" for your combo move!", check:t=>t.did_combo},
+  {msg:()=>"🥋 Sensei: Defence! "+(TOUCH?'hold the <b>🛡️ BLOCK</b> button (left)':'hold <b>SPACE</b>')+" to block — no damage! You can still Kick &amp; Combo while blocking, but not Punch. I'll attack — block me!", check:t=>t.blocked, opp:'attack'},
+  {msg:()=>"🥋 Sensei: Perfect! Now finish me off — beat me! 🥊", check:()=>false, opp:'easy'},
+];
+function tutStep(i){ if(!M.tut) return; if(i>=TUTSTEPS.length){ tutorialDone(); return; } M.tut.step=i; M.tut.oppT=0.9; const s=TUTSTEPS[i];
+  $('coach').innerHTML=s.msg(); sfx('bell');
+  if(s.hide){ M.tut.hidden=true; O.invuln=true; O.g.visible=false; }
+  else { M.tut.hidden=false; O.g.visible=true; }
+  if(s.reveal){ O.invuln=false; O.hp=100; }
+  if(s.opp==='attack'){ O.invuln=true; }                 // block lesson: he attacks but can't be KO'd yet
+  if(s.opp==='easy'){ O.invuln=false; O.hp=45; P.hp=100; } }
+function updateTutorial(dt){ const T=M.tut; if(!T||M.state!=='fight') return; T.t+=dt; const s=TUTSTEPS[T.step]; const dist=Math.abs(O.x-P.x);
+  if(s.opp==='attack'){ if(canAct(O)){ if(dist>2.3){ O.x-=Math.sign(O.x-P.x)*3*dt; O.state='walk'; } else { O.state='idle'; T.oppT-=dt; if(T.oppT<=0){ T.oppT=1.7; startAttack(O,'punch'); } } } }
+  else if(s.opp==='easy'){ updateAI(O,P,dt); }
+  else { O.state='idle'; }
+  if(s.check(T)) tutStep(T.step+1);
+}
+function tutorialDone(){ M.tut=null; M.active=false; M.state='done';
+  $('coach').innerHTML="🥋 Sensei: Training complete! In real matches, rivals fight back and get tougher. All the best! 🏆";
+  try{localStorage.setItem('kc_tut','1');}catch(e){}
+  setTimeout(()=>{ $('coach').style.display='none'; show('menu'); refreshMenu(); music('menu'); }, 2800);
+}
+
+function center(txt){ const c=$('center'); c.textContent=txt; c.style.opacity=txt?1:0; }
+
+/* ---------- attacks / combat ---------- */
+const ATK={ punch:{dur:0.32,a0:0.09,a1:0.20,range:2.3}, kick:{dur:0.46,a0:0.16,a1:0.32,range:2.9}, uppercut:{dur:0.42,a0:0.14,a1:0.28,range:2.1} };
+function canAct(f){ return f.state!=='ko' && f.state!=='hurt' && !f.attack && !f.comboMove && !f.blockHeld && M.state==='fight'; }   // punch / uppercut / move
+function canActK(f){ return f.state!=='ko' && f.state!=='hurt' && !f.attack && !f.comboMove && M.state==='fight'; }            // kick / combo allowed even while blocking
+const MOVE_CD=0.7, MOVE_MAX=1;   // each move has a 0.7s cooldown after use (player only) — mix your attacks
+function startAttack(f,type){ const allow=(type==='kick')?canActK(f):canAct(f); if(!allow) return; const def=ATK[type]; if(!def) return;
+  if(!f.isAI){ if(f.mcd[type]>0) return;                 // on cooldown -> must use another move
+    f.muse[type]=(f.muse[type]||0)+1; if(f.muse[type]>=MOVE_MAX){ f.mcd[type]=MOVE_CD; f.muse[type]=0; } }
+  f.attack={type,t:0,dur:def.dur,hit:false,arm:(f.lastArm=-f.lastArm)};
+  f.state='attack'; sfx(type==='kick'?'kickw':'punchw');
+  if(f===P && M.tut) M.tut['did_'+type]=true;
+}
+function startCombo(f){ if(!canActK(f)||f.comboCD>0) return;   // reusable every 15s; allowed while blocking
+  f.comboCD=15; f.invuln=true; f.comboMove={t:0,hits:[false,false,false]}; f.state='combo'; f.attack=null; sfx('kickw');
+  if(f===P && M.tut) M.tut.did_combo=true;
+  if(f===P){ center('COMBO!'); setTimeout(()=>{ if(M.state==='fight') center(''); }, 600); } }
+function tryHit(f,o){ if(o.invuln){ f.attack.hit=true; return; } const def=ATK[f.attack.type]; const dx=(o.x-f.x)*f.facing; // positive = in front
+  if(dx>0 && Math.abs(o.x-f.x)<=def.range && Math.abs(o.y-f.y)<2.4){
+    const blocking = o.blockHeld && o.state!=='ko' && ((f.x-o.x)*o.facing>0);   // facing the attacker
+    let dmg = blocking ? 0 : (DMG[f.attack.type]||6);                            // a successful block takes NO damage
+    if(!blocking){ f.combo = (f.comboT>0? f.combo+1 : 1); f.comboT=1.1; dmg += comboBonus(f.combo); if(f.combo>M.maxCombo) M.maxCombo=f.combo; }
+    o.hp=Math.max(0,o.hp - dmg);
+    const kb=blocking?0.55:(f.attack.type==='kick'?0.9:f.attack.type==='uppercut'?0.6:0.5);  // hits PUSH the target (even blocked)
+    o.x = clamp(o.x + f.facing*kb, -ARENA_X, ARENA_X);
+    if(!blocking){ if(f.attack.type==='uppercut'){ o.vy=9.5; o.y=Math.max(o.y,0.01); } o.state='hurt'; o.stun=(f.attack.type==='uppercut'?0.5:0.3); o.attack=null; }
+    burst(new THREE.Vector3(o.x + f.facing*0.6, 2.3, 0), blocking?0x9fd8ff:(f.attack.type==='uppercut'?0xff6a3d:0xffd54a), blocking?8:(f.attack.type==='kick'?20:16), blocking?4:7, .5);
+    sfx(blocking?'block':(f.attack.type==='kick'?'kick':'punch'));
+    if(o===P && blocking && M.tut) M.tut.blocked=true;      // tutorial: detect a successful block
+    if(f===P) M.hits.a++; else M.hits.b++;
+    if(!blocking && (f.attack.type==='kick'||f.attack.type==='uppercut')) shake=Math.min(0.55, shake+0.25);
+    if(f===P && !blocking) showCombo(f.combo);
+    if(o.hp<=0) knockout(o);
+    f.attack.hit=true;
+  }
+}
+function knockout(loser){ loser.state='ko'; M.state='ko'; M.slow=0.25; center('K.O.!'); sfx('ko'); shake=0.7;
+  if(M.ctx && M.ctx.tutorial){ cheerT=1.2; setTimeout(()=>tutorialDone(), 1700); return; }
+  M.winner = (loser===O)?'a':'b';
+  const w=(loser===O)?P:O; setTimeout(()=>{ if(w) w.state='win'; }, 300);
+  if(M.winner==='a') cheerT=1.2;
+  setTimeout(()=>endMatch(M.winner==='a'), 1900);
+}
+function updateFighter(f,o,dt){
+  // combo chain timer + cooldown
+  if(f.comboT>0){ f.comboT-=dt; if(f.comboT<=0) f.combo=0; }
+  if(f.comboCD>0){ f.comboCD-=dt; if(f.comboCD<0) f.comboCD=0; }
+  for(const k in f.mcd){ if(f.mcd[k]>0){ f.mcd[k]-=dt; if(f.mcd[k]<0) f.mcd[k]=0; } }
+  for(const k in f.cd){ if(f.cd[k]>0) f.cd[k]-=dt; }
+  if(f.stun>0){ f.stun-=dt; if(f.stun<=0 && f.state==='hurt') f.state='idle'; }
+  // gravity / jump
+  f.vy-=26*dt; f.y+=f.vy*dt; if(f.y<=0){ f.y=0; f.vy=0; }
+  if(f.state!=='ko'&&!f.comboMove) f.facing = (o.x>=f.x)?1:-1;
+  // ===== COMBO MOVE: kick -> punch -> uppercut -> fall -> get up (invincible) =====
+  if(f.comboMove){ const c=f.comboMove; c.t+=dt;
+    if(c.t<0.2 && Math.abs(o.x-f.x)>2.0) f.x+=Math.sign(o.x-f.x)*6*dt;   // step in
+    const land=(idx,time,dmg,launch,col)=>{ if(!c.hits[idx] && c.t>=time){ c.hits[idx]=true;
+      if(!o.invuln && Math.abs(o.x-f.x)<3.3){ const blk=o.blockHeld&&((f.x-o.x)*o.facing>0); const dd=blk?0:dmg;
+        o.hp=Math.max(0,o.hp-dd); if(!blk){ o.state='hurt'; o.stun=0.3; o.attack=null; if(launch){ o.vy=10; } } o.x=clamp(o.x+f.facing*0.6,-ARENA_X,ARENA_X);
+        burst(new THREE.Vector3(o.x,2.4,0), blk?0x9fd8ff:col, blk?8:(idx===2?26:16), 7, .5); sfx(blk?'block':(idx===1?'punch':'kick')); shake=Math.min(0.6,shake+0.25);
+        if(f===P) M.hits.a++; else M.hits.b++; if(o.hp<=0) knockout(o); } } };
+    land(0,0.25,11,false,0xffd54a); land(1,0.55,10,false,0xffd54a); land(2,0.95,12,true,0xff6a3d);  // ~33 total = 3x a hit
+    if(c.t>=2.3){ f.comboMove=null; f.invuln=false; if(f.state==='combo') f.state='idle'; }
+    f.x=clamp(f.x,-ARENA_X,ARENA_X); f.g.position.x=f.x; f.g.position.y=f.y; return;
+  }
+  // attack progression
+  if(f.attack){ f.attack.t+=dt; const def=ATK[f.attack.type];
+    if(!f.attack.hit && f.attack.t>=def.a0 && f.attack.t<=def.a1) tryHit(f,o);
+    if(f.attack.t>=f.attack.dur){ f.attack=null; if(f.state==='attack') f.state='idle'; }
+  }
+  // position clamp + avoid overlap
+  f.x=clamp(f.x,-ARENA_X,ARENA_X);
+  const minGap=1.4; if(!(M.tut&&M.tut.hidden) && Math.abs(P.x-O.x)<minGap){ const mid=(P.x+O.x)/2; P.x=mid-(P.x<O.x?minGap/2:-minGap/2); O.x=mid-(O.x<P.x?minGap/2:-minGap/2); P.x=clamp(P.x,-ARENA_X,ARENA_X); O.x=clamp(O.x,-ARENA_X,ARENA_X); }
+  f.g.position.x=f.x; f.g.position.y=f.state==='ko'?f.g.position.y:f.y;
+}
+
+/* ---------- AI ---------- */
+function updateAI(f,o,dt){ if(M.state!=='fight'||f.comboMove){ return; } const D=AI[M.ctx.diff]; f.aiT-=dt;
+  const dist=Math.abs(o.x-f.x);
+  const idleTarget = (o.state==='idle'||o.state==='walk') && !o.attack && !o.invuln;  // player just standing -> punish
+  if(f.aiT<=0 && canAct(f)){
+    // base pace; if player is passive & close, attack much faster ("tok tok tok")
+    f.aiT = D.react*(0.45+Math.random()*0.5) * (idleTarget && dist<2.6 ? 0.7 : 1);
+    f.aiAct='approach';                         // ALWAYS press forward — never retreat
+    if(dist<=2.7){ const r=Math.random();       // in range -> attack relentlessly
+      if(M.ctx.diff>=2 && f.comboCD<=0 && Math.random()<D.combo*0.35){ startCombo(f); }
+      else if(r < D.aggr){ const a=Math.random(); startAttack(f, a<0.5?'kick':a<0.82?'punch':'uppercut'); }
+      else if(Math.random()<D.jump){ if(f.y<=0) f.vy=11; }
+      else { startAttack(f, Math.random()<0.5?'punch':'kick'); }   // even the fallback attacks
+    }
+  }
+  if(canAct(f) && f.aiAct==='approach'){ const dir=(o.x>f.x)?1:-1;
+    if(dist>1.7){ f.x+=dir*D.speed*dt; f.state='walk'; } else if(f.state==='walk') f.state='idle';
+  }
+}
+function aiChain(f){ setTimeout(()=>{ if(M.active&&canAct(f)) startAttack(f,'kick'); },300); }
+
+/* ============================================================ INPUT ============================================================ */
+const keys={};
+addEventListener('keydown',e=>{ keys[e.code]=true;
+  if(['KeyA','KeyD','KeyW','KeyJ','KeyK','KeyL','KeyI','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
+  if(!M.active||M.state!=='fight') return;
+  if((e.code==='KeyW'||e.code==='ArrowUp') && P.y<=0 && canAct(P)) P.vy=11;
+  if(e.code==='KeyL') startAttack(P,'punch');
+  if(e.code==='KeyK') startAttack(P,'kick');
+  if(e.code==='KeyJ') startAttack(P,'uppercut');
+  if(e.code==='KeyI') startCombo(P);
+});
+addEventListener('keyup',e=>{ keys[e.code]=false; });
+// touch
+let stickX=0, stickId=-1, stOrig=0;
+const stickEl=$('stick'), nub=$('nub');
+function $(id){ return document.getElementById(id); }
+stickEl.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.changedTouches[0]; stickId=t.identifier; const r=stickEl.getBoundingClientRect(); stOrig=r.left+r.width/2; mvStick(t.clientX); },{passive:false});
+addEventListener('touchmove',e=>{ for(const t of e.changedTouches) if(t.identifier===stickId) mvStick(t.clientX); },{passive:false});
+addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===stickId){ stickId=-1; stickX=0; nub.style.left='50%'; } });
+function mvStick(cx){ const dx=Math.max(-46,Math.min(46,cx-stOrig)); stickX=dx/46; nub.style.left=(50+stickX*42)+'%';
+  if(Math.abs(stickX)<0.5 && P && P.y<=0 && stickX<-0.0){} }
+function bind(id,fn){ const el=$(id); el.addEventListener('touchstart',e=>{e.preventDefault(); fn(true);},{passive:false}); el.addEventListener('touchend',e=>{e.preventDefault(); fn(false);},{passive:false}); el.addEventListener('mousedown',()=>fn(true)); el.addEventListener('mouseup',()=>fn(false)); el.addEventListener('mouseleave',()=>fn(false)); }
+let blockBtn=false;
+bind('bPunch',(d)=>{ if(d&&M.active) startAttack(P,'punch'); });
+bind('bKick',(d)=>{ if(d&&M.active) startAttack(P,'kick'); });
+bind('bUpper',(d)=>{ if(d&&M.active) startAttack(P,'uppercut'); });
+bind('bCombo',(d)=>{ if(d&&M.active) startCombo(P); });
+bind('bBlock',(d)=>{ blockBtn=d; });
+// jump via stick flick up
+addEventListener('touchmove',e=>{ for(const t of e.changedTouches){ if(t.identifier===stickId){ const r=stickEl.getBoundingClientRect(); const dy=t.clientY-(r.top+r.height/2); if(dy<-30 && P&&P.y<=0&&canAct(P)) P.vy=11; } } },{passive:false});
+
+/* ============================================================ AUDIO ============================================================ */
+let actx=null,musicGain=null,musicTimer=null,curMusic='';
+function initAudio(){ if(actx) return; try{ actx=new (window.AudioContext||window.webkitAudioContext)(); musicGain=actx.createGain(); musicGain.gain.value=S.music?0.09:0; musicGain.connect(actx.destination); }catch(e){} }
+function sfx(type){ if(!actx||!S.sfx) return; const o=actx.createOscillator(),gn=actx.createGain(); o.connect(gn); gn.connect(actx.destination); const now=actx.currentTime; let dur=0.1;
+  if(type==='punch'){ o.type='square'; o.frequency.setValueAtTime(330,now); o.frequency.exponentialRampToValueAtTime(110,now+0.09); dur=0.1; }
+  else if(type==='kick'){ o.type='sawtooth'; o.frequency.setValueAtTime(260,now); o.frequency.exponentialRampToValueAtTime(70,now+0.14); dur=0.16; }
+  else if(type==='punchw'||type==='kickw'){ o.type='triangle'; o.frequency.setValueAtTime(700,now); o.frequency.exponentialRampToValueAtTime(300,now+0.06); dur=0.06; }
+  else if(type==='block'){ o.type='square'; o.frequency.setValueAtTime(500,now); o.frequency.exponentialRampToValueAtTime(300,now+0.06); dur=0.07; }
+  else if(type==='ko'){ o.type='sawtooth'; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(50,now+0.5); dur=0.5; }
+  else if(type==='bell'){ o.type='sine'; o.frequency.setValueAtTime(880,now); dur=0.25; }
+  else if(type==='win'){ o.type='triangle'; o.frequency.setValueAtTime(523,now); o.frequency.setValueAtTime(659,now+0.12); o.frequency.setValueAtTime(784,now+0.24); dur=0.5; }
+  gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.3,now+0.01); gn.gain.exponentialRampToValueAtTime(0.0001,now+dur); o.start(now); o.stop(now+dur+0.02); }
+const MEL={ menu:[0,3,7,3,5,2,0,2], fight:[0,0,7,0,5,5,3,5] };
+let mstep=0;
+function music(name){ curMusic=name; if(musicTimer) clearInterval(musicTimer); mstep=0; musicTimer=setInterval(()=>{ if(!actx||!S.music) return; const seq=MEL[curMusic]||MEL.menu; const root=name==='fight'?130:98;
+  const f=root*Math.pow(2,seq[mstep%seq.length]/12); const o=actx.createOscillator(),gn=actx.createGain(); o.type=name==='fight'?'sawtooth':'triangle'; o.frequency.value=f; o.connect(gn); gn.connect(musicGain); const now=actx.currentTime;
+  gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.4,now+0.03); gn.gain.exponentialRampToValueAtTime(0.0001,now+0.32); o.start(now); o.stop(now+0.36); mstep++; }, name==='fight'?240:340); }
+let cheerT=0;
+
+/* ============================================================ UI ============================================================ */
+function show(id){ ['menu','career','cards','result'].forEach(s=>$(s).classList.add('hidden')); $('hud').classList.add('hidden'); if(id==='hud') $('hud').classList.remove('hidden'); else if(id) $(id).classList.remove('hidden'); }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+let comboHideT=0;
+function showCombo(n){ if(n<2){ return; } const c=$('combo'); c.textContent='COMBO x'+n+'!'; c.style.display='block'; comboHideT=1.0; }
+function syncHUD(){ $('fillL').style.width=Math.max(0,P?P.hp:100)+'%'; $('fillR').style.width=Math.max(0,O?O.hp:100)+'%';
+  $('hpTxtL').textContent=Math.max(0,Math.round(P?P.hp:100)); $('hpTxtR').textContent=Math.max(0,Math.round(O?O.hp:100));
+  // spbar = COMBO charge (recharges every 15s)
+  const pReady=P&&P.comboCD<=0; const pFill=P?(1-Math.min(1,P.comboCD/15))*100:0;
+  $('spfL').style.width=pFill+'%'; $('spfR').style.width=(O?(1-Math.min(1,O.comboCD/15))*100:0)+'%';
+  $('spL').classList.toggle('full',pReady); $('spR').classList.toggle('full',O&&O.comboCD<=0);
+  $('spReady').style.display=pReady?'block':'none';
+  const bc=$('bCombo'), cd=$('comboCd'); if(bc){ bc.classList.toggle('off',!pReady);
+    if(P&&P.comboCD>0){ cd.style.display='flex'; cd.textContent=Math.ceil(P.comboCD); }
+    else cd.style.display='none'; }
+  const bb=$('bBlock'); if(bb) bb.classList.toggle('on', P&&P.blockT>0);
+  // per-move cooldown indicators on Punch / Kick / Uppercut
+  const mb={punch:['bPunch','cdPunch'],kick:['bKick','cdKick'],uppercut:['bUpper','cdUpper']};
+  for(const mv in mb){ const b=$(mb[mv][0]), c=$(mb[mv][1]); if(!b) continue; const t=P?P.mcd[mv]:0;
+    b.classList.toggle('off',t>0); if(t>0){ c.style.display='flex'; c.textContent=Math.ceil(t); } else c.style.display='none'; } }
+
+function avatarURL(col,belt){ const c=document.createElement('canvas'); c.width=c.height=84; const g=c.getContext('2d');
+  g.fillStyle='#1c1010'; g.fillRect(0,0,84,84);
+  g.fillStyle='#'+(col>>>0).toString(16).padStart(6,'0').slice(-6); g.fillRect(18,40,48,44);
+  g.fillStyle='#e9b48a'; g.beginPath(); g.arc(42,34,20,0,7); g.fill();
+  g.fillStyle='#161210'; g.beginPath(); g.arc(42,24,20,Math.PI,0); g.fill();
+  g.fillStyle='#'+(belt>>>0).toString(16).padStart(6,'0').slice(-6); g.fillRect(18,62,48,8);
+  g.fillStyle='#14110f'; g.beginPath(); g.arc(36,36,2.5,0,7); g.arc(48,36,2.5,0,7); g.fill();
+  return c.toDataURL(); }
+
+/* ---------- match flow / career ---------- */
+let pendingCtx=null;
+function toCards(ctx){ pendingCtx=ctx; show('cards'); $('tourName').textContent=ctx.tourName;
+  $('bracket').innerHTML = ctx.bracketLabels ? ctx.bracketLabels.map((l,i)=>`<div class="bnode ${i<ctx.round?'win':i===ctx.round?'cur':''}">${l}</div>`).join('') : '';
+  $('pAv').style.backgroundImage=`url(${avatarURL(ALLSHOP[S.equip.uniforms].col,BELTS[S.belt][1])})`; $('pAv').style.backgroundSize='cover';
+  $('pName').textContent=S.name||'You'; $('pLv').textContent='Lv '+levelFromXP(S.xp); $('pBe').textContent=BELTS[S.belt][0]+' Belt'; $('pBe').style.color='#'+BELTS[S.belt][1].toString(16).padStart(6,'0');
+  $('oAv').style.backgroundImage=`url(${avatarURL(oppCos(ctx.diff).uniform,0x161616)})`; $('oAv').style.backgroundSize='cover';
+  $('oName').textContent=ctx.oppName; $('oLv').textContent=DIFFNAME[ctx.diff]; $('oBe').textContent=ctx.roundLabel||''; }
+$('startBtn').onclick=()=>startMatch(pendingCtx);
+
+function endMatch(win){ M.active=false; M.state='done'; show('result'); music('menu');
+  const coins=coinsForMatch(M.ctx.diff,win), xp=Math.round((win?1:0.4)*(40+M.ctx.diff*40));
+  S.coins+=coins; S.xp+=xp; if(win) S.wins++;
+  let advanced=false, beltUp=false;
+  if(M.ctx.mode==='career' && win){ const st=CAREER[M.ctx.stageIndex];
+    if(M.ctx.round < ROUNDS.length-1){ /* next round handled in resultNext */ }
+    else { // won the final of this stage
+      if(M.ctx.stageIndex===S.careerStage && S.careerStage<CAREER.length-1){ S.careerStage++; advanced=true; }
+      if(st.beltUp>S.belt){ S.belt=st.beltUp; beltUp=true; }
+    }
+  }
+  save(); sfx(win?'win':'ko');
+  $('resTitle').textContent=win?'🏆 VICTORY!':'💥 DEFEAT'; $('resTitle').style.color=win?'#ffd54a':'#ff6a6a';
+  $('resSub').textContent = beltUp ? ('🥋 Promoted to '+BELTS[S.belt][0]+' Belt!') : (M.ctx.roundLabel||'');
+  $('resCoins').textContent=coins; $('resXp').textContent=xp;
+  $('resStats').textContent=`Your hits: ${M.hits.a} • Opponent hits: ${M.hits.b} • Best combo: x${M.maxCombo}`;
+  resultNext=()=>{
+    if(M.ctx.mode==='career' && win && M.ctx.round < ROUNDS.length-1){ toCards(makeCareerCtx(M.ctx.stageIndex, M.ctx.round+1)); return; }
+    if(M.ctx.mode==='career'){ openCareer(); return; }
+    if(M.ctx.mode==='tournament' && win && M.ctx.round<ROUNDS.length-1){ toCards(makeQuickBracket(M.ctx.round+1)); return; }
+    show('menu'); refreshMenu();
+  };
+}
+let resultNext=()=>show('menu'); $('resNext').onclick=()=>resultNext();
+
+function makeCareerCtx(idx,round){ const st=CAREER[idx]; const names=ROUNDS.map((_,i)=>OPP_NAMES[(idx*3+i)%OPP_NAMES.length]);
+  return { mode:'career', stageIndex:idx, round, diff:st.diff, arena:st.arena, oppName:names[round],
+    tourName:st.name, roundLabel:ROUNDS[round], bracketLabels:ROUNDS }; }
+function makeQuickBracket(round){ const diff=Math.min(5,1+round); return { mode:'tournament', round, diff, arena:['city','beach','stadium'][round]||'city',
+    oppName:OPP_NAMES[(round*4+3)%OPP_NAMES.length], tourName:'Open Tournament', roundLabel:ROUNDS[round], bracketLabels:ROUNDS }; }
+function makeQuickCtx(){ const diff=Math.floor(Math.random()*3); const ekey=(ALLSHOP[S.equip.arenas]&&ALLSHOP[S.equip.arenas].key)||'dojo'; return { mode:'quick', round:0, diff, arena:ekey,
+    oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], tourName:'Quick Fight', roundLabel:'Exhibition' }; }
+
+function openCareer(){ show('career'); const list=$('stageList'); list.innerHTML='';
+  CAREER.forEach((c,i)=>{ const unlocked=i<=S.careerStage, done=i<S.careerStage; const d=document.createElement('div'); d.className='stage'+(unlocked?'':' locked');
+    d.innerHTML=`<div class="ic">🥋</div><div class="info"><b>${c.name}</b><small>${DIFFNAME[c.diff]} • 3-fight bracket • 🪙${c.coins} ⭐${c.xp}</small></div>`;
+    const btn=document.createElement(unlocked?'button':'span'); if(unlocked){ btn.className='go'; btn.textContent=done?'Replay':'Enter'; btn.onclick=()=>toCards(makeCareerCtx(i,0)); } else btn.textContent='🔒';
+    if(done){ const dn=document.createElement('span'); dn.className='done'; dn.textContent='✓'; d.appendChild(dn); } d.appendChild(btn); list.appendChild(d); }); }
+
+/* ---------- shop ---------- */
+let shopTab='uniforms';
+function openShop(){ $('shopModal').classList.remove('hidden'); renderTabs(); renderShop(); }
+function renderTabs(){ const t=$('shopTabs'); t.innerHTML=''; SHOP_TABS.forEach(([k,l])=>{ const b=document.createElement('div'); b.className='tab'+(k===shopTab?' on':''); b.textContent=l; b.onclick=()=>{shopTab=k; renderTabs(); renderShop();}; t.appendChild(b); }); }
+function renderShop(){ const g=$('shopGrid'); g.innerHTML=''; SHOP[shopTab].forEach(it=>{ const owned=S.owned.includes(it.id), eq=S.equip[shopTab]===it.id; const col='#'+it.col.toString(16).padStart(6,'0');
+  const d=document.createElement('div'); d.className='it'; let btn; if(eq) btn='<button class="b-on">Equipped</button>'; else if(owned) btn='<button class="b-eq">Equip</button>'; else { const can=S.coins>=it.price; btn=`<button class="${can?'b-buy':'b-no'}">${it.price===0?'Free':('🪙 '+it.price)}</button>`; }
+  d.innerHTML=`<div class="sw2" style="background:linear-gradient(135deg,${col},#160b0a)"></div><b>${it.name}</b>${btn}`;
+  d.querySelector('button').onclick=()=>{ if(eq) return; if(owned){ S.equip[shopTab]=it.id; save(); renderShop(); } else { const r=shopBuy(it.id); if(r==='ok'){ S.equip[shopTab]=it.id; save(); renderShop(); } else if(r==='poor') alert('Not enough coins!'); } };
+  g.appendChild(d); }); }
+
+/* ---------- tutorial ---------- */
+const TUT=[ "Hi! I'm Sensei. Welcome to <b>Karate Champions</b>! 🥋",
+  "Move with <b>A / D</b> or the <b>arrow keys</b> ← → (or joystick). Press <b>W</b> / <b>↑</b> to <b>jump</b>.",
+  "<b>L = Punch</b> 👊 (fast) &nbsp; <b>K = Kick</b> 🦵 (strong) &nbsp; <b>J = Uppercut</b> ⬆️ (launches them up)!",
+  "You can't spam one move — after <b>2 uses</b> it <b>cools down (~5s)</b>, so mix your attacks!",
+  "<b>I = COMBO MOVE</b> 🌀 — an unstoppable kick → punch → uppercut for big damage. You <b>can't be hit</b> during it.",
+  "The Combo Move can be used <b>only once per fight</b> — save it for the perfect moment! 💥",
+  "Win by <b>K.O.</b> or more health when time runs out. Climb to the World Karate Cup! 🏆" ];
+let tut=0;
+function openTut(){ tut=0; renderTut(); $('tutOv').classList.remove('hidden'); }
+function renderTut(){ $('tutText').innerHTML=TUT[tut]; $('tutDots').innerHTML=TUT.map((_,k)=>`<i style="display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 3px;background:${k===tut?'#ffd54a':'#5a3a30'}"></i>`).join(''); $('tutNext').textContent=tut===TUT.length-1?'Got it! ✓':'Next ▶'; }
+$('tutNext').onclick=()=>{ if(tut<TUT.length-1){ tut++; renderTut(); } else { $('tutOv').classList.add('hidden'); try{localStorage.setItem('kc_tut','1');}catch(e){} } };
+$('tutSkip').onclick=()=>{ $('tutOv').classList.add('hidden'); try{localStorage.setItem('kc_tut','1');}catch(e){} };
+
+/* ---------- menu wiring ---------- */
+function refreshMenu(){ $('nameIn').value=S.name||''; $('beltLbl').textContent=BELTS[S.belt][0]; $('beltLbl').style.color='#'+BELTS[S.belt][1].toString(16).padStart(6,'0'); }
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('nameIn').value.trim()||'You'); save(); initAudio();
+  if(b.dataset.mode==='career') openCareer(); else toCards(makeQuickCtx()); });
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
+document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
+$('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden'); $('howBtn').onclick=startTutorial;
+$('swMusic').onclick=function(){ S.music=!S.music; this.classList.toggle('on',S.music); if(musicGain) musicGain.gain.value=S.music?0.09:0; save(); };
+$('swSfx').onclick=function(){ S.sfx=!S.sfx; this.classList.toggle('on',S.sfx); save(); };
+$('resetBtn').onclick=()=>{ if(confirm('Reset all progress?')){ localStorage.removeItem(SK); location.reload(); } };
+refreshMenu(); buildArena('dojo');
+['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
+try{ if(!localStorage.getItem('kc_tut')) setTimeout(()=>{ if(M.state==='idle') startTutorial(); },700); }catch(e){}
+
+/* ============================================================ LOOP ============================================================ */
+let last=performance.now(), shake=0;
+function tick(now){ requestAnimationFrame(tick); let dt=Math.min(0.05,(now-last)/1000); last=now; const t=now/1000;
+  const sdt=dt*(M.slow||1);
+  updateParts(sdt);
+  if(M.active && (M.state==='fight'||M.state==='ko'||M.state==='intro')){
+    // player input
+    if(M.state==='fight' && !P.comboMove){
+      // timed block: press to block for ~2s, then it ends (even if held); release to block again
+      const blockInput=(keys['Space']||blockBtn);
+      if(P.blockT>0){ P.blockT-=sdt; if(P.blockT<=0){ P.blockT=0; P.blockLock=true; } }
+      if(!blockInput) P.blockLock=false;
+      if(blockInput && P.blockT<=0 && !P.blockLock && P.state!=='ko' && P.state!=='hurt' && !P.attack) P.blockT=2.0;
+      P.blockHeld = P.blockT>0;
+      if(P.attack){ /* kick/combo mid-swing: keep attack animation, block still negates damage */ }
+      else if(P.blockHeld){ P.state='block'; }   // you can still Kick & Combo while blocking (not Punch/Uppercut)
+      else {
+        let mv=0; if(keys['KeyA']||keys['ArrowLeft']) mv-=1; if(keys['KeyD']||keys['ArrowRight']) mv+=1; if(stickX) mv=Math.abs(stickX)>0.25?Math.sign(stickX):0;
+        if(canAct(P) && mv){ P.x=clamp(P.x+mv*4.6*sdt,-ARENA_X,ARENA_X); P.state='walk'; }
+        else if(P.state==='walk'||P.state==='block') P.state='idle';
+        if(P.y>0 && P.state!=='ko' && !P.attack) P.state='jump';
+        else if(P.state==='jump' && P.y<=0) P.state='idle';
+      }
+    }
+    if(M.tut) updateTutorial(sdt); else updateAI(O,P,sdt);
+    updateFighter(P,O,sdt); updateFighter(O,P,sdt);
+    animateFighter(P,dt,t); animateFighter(O,dt,t);
+    // timer
+    if(M.state==='fight' && !M.tut){ M.timer-=dt; if(M.timer<=0){ M.timer=0; M.state='ko'; M.winner=matchWinner(P.hp,O.hp); center('TIME!'); setTimeout(()=>endMatch(M.winner==='a'),1400); } $('timer').textContent=Math.ceil(M.timer); }
+    else if(M.tut){ $('timer').textContent='🥋'; }
+    if(M.slow<1) M.slow=Math.min(1,M.slow+dt*0.4);
+    syncHUD();
+    if(comboHideT>0){ comboHideT-=dt; if(comboHideT<=0) $('combo').style.display='none'; }
+    if(cheerT>0){ cheerT-=dt; cheer(t); }
+  } else { animateFighter? (P&&animateFighter(P,dt,t)) : 0; if(O) animateFighter(O,dt,t); }
+  // camera: side view, frame both fighters
+  const midX=P?((P.x+O.x)/2):0, spread=P?Math.abs(P.x-O.x):4;
+  const dist=10 + Math.max(0,spread-3)*0.8;
+  camTarget.set(midX*0.6, 2.6, dist);
+  camera.position.lerp(camTarget, 0.12);
+  if(shake>0){ camera.position.x+=(Math.random()-.5)*shake; camera.position.y+=(Math.random()-.5)*shake; shake=Math.max(0,shake-dt*2); }
+  camera.lookAt(midX*0.6, 2.2, 0);
+  renderer.render(scene,camera);
+}
+const camTarget=new THREE.Vector3(0,2.6,11);
+function canActOrIdle(f){ return f.state!=='ko'&&f.state!=='hurt'&&!f.attack; }
+requestAnimationFrame(tick);
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
+} // end !TESTMODE
+</script>
+</body>
+</html>
