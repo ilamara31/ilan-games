@@ -97,6 +97,10 @@
     <a href="../" class="ico" style="text-decoration:none">🏠</a>
   </header>
   <div class="who" id="who"></div>
+  <div class="row" id="iga_bar" style="gap:8px;margin-bottom:12px;">
+    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('puzzles','Puzzle Pad')">🏆 Leaderboard</button>
+  </div>
   <div id="hub"></div>
   <div id="screen" class="hidden"></div>
 </div>
@@ -170,6 +174,11 @@ const EMOJI=[
 <script>
 /* ======================= SHELL ======================= */
 $('who').textContent = acct ? ('Playing as '+acct.name) : 'Guest — set a name on the home screen to save scores';
+/* ---- online leaderboard: one combined "overall progress" metric for key 'puzzles' ---- */
+function igaTotal(){ const p=(acct&&acct.puz)||{};
+  return (p.wordleStreak||0)+(p.connWins||0)+(p.searchWins||0)+(p.scrambleBest||0)+(p.best2048||0)+(p.simonBest||0)+(p.emojiBest||0)+(p.sudokuWins||0); }
+function igaSubmit(){ if(window.IGAuth) IGAuth.submitScore('puzzles', igaTotal()); }
+if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in'; });
 const GAMES=[
   {id:'wordle', e:'🟩', n:'Word Guess', d:'Guess the 5-letter word in 6 tries. Daily + share!', bestKey:'wordleStreak', bestLabel:s=>s?('🔥 streak '+s):'' },
   {id:'conn',   e:'🟪', n:'Connections', d:'Group 16 words into 4 hidden sets.', bestKey:'connWins', bestLabel:s=>s?(s+' solved'):'' },
@@ -182,6 +191,7 @@ const GAMES=[
 ];
 function renderHub(){
   $('screen').classList.add('hidden'); $('hub').classList.remove('hidden');
+  { const bar=$('iga_bar'); if(bar) bar.classList.remove('hidden'); }
   const g=el('div','grid');
   GAMES.forEach(G=>{ const c=el('button','gcard');
     c.innerHTML=`<div class="e">${G.e}</div><div class="n">${G.n}</div><div class="d">${G.d}</div><div class="best">${G.bestLabel(best(G.bestKey))||'&nbsp;'}</div>`;
@@ -189,7 +199,8 @@ function renderHub(){
   $('hub').innerHTML=''; $('hub').appendChild(g);
 }
 function openGame(G){
-  $('hub').classList.add('hidden'); const s=$('screen'); s.classList.remove('hidden'); s.innerHTML='';
+  $('hub').classList.add('hidden'); { const bar=$('iga_bar'); if(bar) bar.classList.add('hidden'); }
+  const s=$('screen'); s.classList.remove('hidden'); s.innerHTML='';
   const top=el('div','gametop'); top.innerHTML=`<button class="ico" id="bk">‹</button><div class="t">${G.e} ${G.n}</div><div style="width:42px"></div>`;
   s.appendChild(top); $('bk').onclick=()=>{ if(window._cleanup){window._cleanup();window._cleanup=null;} renderHub(); };
   const root=el('div'); s.appendChild(root);
@@ -231,6 +242,7 @@ GAMEFN.wordle=function(root,G){
   function afterEnd(win,tries){
     const prev=best('wordleStreak'); setBest('wordleStreak', win?prev+1:0, true);
     if(!win && acct){ acct.puz.wordleStreak=0; save(); }
+    igaSubmit();
     const sq={g:'🟩',y:'🟨',x:'⬛'};
     const share='🧩 Puzzle Pad Word Guess '+(win?tries+'/6':'X/6')+'\n'+guesses.map(r=>r.map(x=>sq[x]).join('')).join('\n');
     const sb=el('button','btn grn','📋 Share result'); sb.onclick=()=>copy(share);
@@ -267,7 +279,7 @@ GAMEFN.conn=function(root,G){
     if(sel.every(o=>o.gi===gi)){
       const g=puz.groups[gi]; const bar=el('div','csolved'); bar.style.background=cols[solved.length]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar);
       solved.push(gi); words=words.filter(o=>o.gi!==gi); sel=[]; render();
-      if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; sub.disabled=true; setBest('connWins',best('connWins')+1);
+      if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; sub.disabled=true; setBest('connWins',best('connWins')+1); igaSubmit();
         const sb=el('button','btn grn','📋 Share'); sb.onclick=()=>copy('🧩 Puzzle Pad Connections — solved with '+mistakes+' mistakes!');
         const np=el('button','btn','🔁 New puzzle'); np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); };
         const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr); }
@@ -310,7 +322,7 @@ GAMEFN.search=function(root,G){
     if(line){ const word=line.map(([rr,cc])=>grid[rr][cc]).join(''); const rev=word.split('').reverse().join('');
       const hit=words.find(w=>(w===word||w===rev)&&!found.has(w));
       if(hit){ found.add(hit); line.forEach(([rr,cc])=>cells[rr+'_'+cc].classList.add('found')); updList();
-        if(found.size===words.length){ info.innerHTML='🎉 All found! Well done.'; setBest('searchWins',best('searchWins')+1); } } }
+        if(found.size===words.length){ info.innerHTML='🎉 All found! Well done.'; setBest('searchWins',best('searchWins')+1); igaSubmit(); } } }
     start=null; }
   updList();
   GAMEFN.search._line=lineCells;
@@ -342,7 +354,7 @@ GAMEFN.scramble=function(root,G){
   ok.onclick=checkWord;
   const keyh=e=>{ const k=(e.key||'').toLowerCase(); if(/^[a-z]$/.test(k)){ typeLetter(k); e.preventDefault(); } else if(e.key==='Backspace'){ undo(); e.preventDefault(); } else if(e.key==='Enter'){ checkWord(); e.preventDefault(); } };
   window.addEventListener('keydown',keyh);
-  timer=setInterval(()=>{ timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); window.removeEventListener('keydown',keyh); setBest('scrambleBest',score);
+  timer=setInterval(()=>{ timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); window.removeEventListener('keydown',keyh); setBest('scrambleBest',score); igaSubmit();
     wrap.innerHTML='<div class="big">⏱ Time up!</div><div class="sub2">You unscrambled <b>'+score+'</b> words</div>'; const r=el('button','btn','Play again'); r.style.marginTop='10px'; r.onclick=()=>{ root.innerHTML=''; GAMEFN.scramble(root,G); }; wrap.appendChild(r); } },1000);
   window._cleanup=()=>{ clearInterval(timer); window.removeEventListener('keydown',keyh); };
   newWord();
@@ -367,7 +379,7 @@ GAMEFN.g2048=function(root,G){
     else if(dir==='R'){ g2=g2.map(r=>slide(r.reverse()).reverse()); }
     else if(dir==='U'){ let t=rot(g2); t=t.map(slide); g2=rot(t); }
     else if(dir==='D'){ let t=rot(g2); t=t.map(r=>slide(r.reverse()).reverse()); g2=rot(t); }
-    grid=g2; if(JSON.stringify(grid)!==before){ add(); draw(); if(isOver()){ over=true; setBest('best2048',score); hint.innerHTML='💀 Game over! Score <b>'+score+'</b>'; } }
+    grid=g2; if(JSON.stringify(grid)!==before){ add(); draw(); if(isOver()){ over=true; setBest('best2048',score); igaSubmit(); hint.innerHTML='💀 Game over! Score <b>'+score+'</b>'; } }
   }
   function isOver(){ for(let r=0;r<4;r++)for(let c=0;c<4;c++){ if(!grid[r][c])return false; if(c<3&&grid[r][c]===grid[r][c+1])return false; if(r<3&&grid[r][c]===grid[r+1][c])return false; } return true; }
   const keyh=e=>{ const m={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D'}; if(m[e.key]){ e.preventDefault(); move(m[e.key]); } };
@@ -395,8 +407,8 @@ GAMEFN.simon=function(root,G){
   function start(){ seq=[]; next(); startBtn.style.display='none'; }
   function next(){ idx=0; seq.push(Math.floor(Math.random()*4)); info.textContent='Round '+seq.length; playing=false; let t=0; sub.textContent='Watch…';
     seq.forEach((s,k)=>{ setTimeout(()=>flash(s), 600*(k+1)); }); setTimeout(()=>{ playing=true; sub.textContent='Your turn!'; }, 600*(seq.length+1)); }
-  function click(i){ if(!playing)return; flash(i); if(i===seq[idx]){ idx++; if(idx===seq.length){ playing=false; setBest('simonBest',seq.length); setTimeout(next,700); } }
-    else { playing=false; info.textContent='💀 Game over'; sub.textContent='You reached round '+seq.length; setBest('simonBest',seq.length-1>0?seq.length-1:0,true); const r=el('button','btn','Play again'); r.style.marginTop='8px'; r.onclick=()=>{root.innerHTML='';GAMEFN.simon(root,G);}; wrap.appendChild(r); } }
+  function click(i){ if(!playing)return; flash(i); if(i===seq[idx]){ idx++; if(idx===seq.length){ playing=false; setBest('simonBest',seq.length); igaSubmit(); setTimeout(next,700); } }
+    else { playing=false; info.textContent='💀 Game over'; sub.textContent='You reached round '+seq.length; setBest('simonBest',seq.length-1>0?seq.length-1:0,true); igaSubmit(); const r=el('button','btn','Play again'); r.style.marginTop='8px'; r.onclick=()=>{root.innerHTML='';GAMEFN.simon(root,G);}; wrap.appendChild(r); } }
 };
 
 /* ======================= GUESS THE EMOJI ======================= */
@@ -406,7 +418,7 @@ GAMEFN.emoji=function(root,G){
   const hud=el('div','sub2'); wrap.appendChild(hud);
   const emo=el('div','emo'); wrap.appendChild(emo);
   const opts=el('div','opts'); wrap.appendChild(opts); root.appendChild(wrap);
-  function show(){ if(pos>=order.length){ wrap.innerHTML='<div class="big">🎉 Done!</div><div class="sub2">Score '+score+'/'+order.length+'</div>'; setBest('emojiBest',score); const r=el('button','btn','Play again'); r.onclick=()=>{root.innerHTML='';GAMEFN.emoji(root,G);}; wrap.appendChild(r); return; }
+  function show(){ if(pos>=order.length){ wrap.innerHTML='<div class="big">🎉 Done!</div><div class="sub2">Score '+score+'/'+order.length+'</div>'; setBest('emojiBest',score); igaSubmit(); const r=el('button','btn','Play again'); r.onclick=()=>{root.innerHTML='';GAMEFN.emoji(root,G);}; wrap.appendChild(r); return; }
     const it=EMOJI[order[pos]]; hud.textContent='Question '+(pos+1)+'/'+order.length+' • Score '+score; emo.textContent=it[0];
     const choices=shuffle(it[2]); opts.innerHTML='';
     choices.forEach(ch=>{ const b=el('button','opt',ch); b.onclick=()=>{ if(ch===it[1]){ b.classList.add('good'); score++; } else { b.classList.add('bad'); [...opts.children].forEach(o=>{ if(o.textContent===it[1])o.classList.add('good'); }); } [...opts.children].forEach(o=>o.disabled=true); setTimeout(()=>{pos++;show();},850); }; opts.appendChild(b); }); }
@@ -441,7 +453,7 @@ GAMEFN.sudoku=function(root,G){
     for(let k=0;k<6;k++){ if(k!==c&&cur[r*6+k]===v)return true; if(k!==r&&cur[k*6+c]===v)return true; }
     const br=Math.floor(r/2)*2, bc=Math.floor(c/3)*3; for(let dr=0;dr<2;dr++)for(let dc=0;dc<3;dc++){ const j=(br+dr)*6+(bc+dc); if(j!==i&&cur[j]===v)return true; } return false; }
   function redraw(){ for(let i=0;i<36;i++){ const cell=cells[i]; if(puz[i])continue; cell.textContent=cur[i]||''; cell.classList.toggle('sel',i===selIdx); cell.classList.toggle('bad',conflict(i)); } }
-  function check(){ if(cur.every((v,i)=>v && !conflict(i))){ info.innerHTML='🎉 Solved! Great logic.'; setBest('sudokuWins',best('sudokuWins')+1); } }
+  function check(){ if(cur.every((v,i)=>v && !conflict(i))){ info.innerHTML='🎉 Solved! Great logic.'; setBest('sudokuWins',best('sudokuWins')+1); igaSubmit(); } }
   redraw();
   GAMEFN.sudoku._conflict=(arr,i)=>{ const r=Math.floor(i/6),c=i%6,v=arr[i]; if(!v)return false; for(let k=0;k<6;k++){ if(k!==c&&arr[r*6+k]===v)return true; if(k!==r&&arr[k*6+c]===v)return true;} const br=Math.floor(r/2)*2,bc=Math.floor(c/3)*3; for(let dr=0;dr<2;dr++)for(let dc=0;dc<3;dc++){ const j=(br+dr)*6+(bc+dc); if(j!==i&&arr[j]===v)return true;} return false; };
 };
@@ -452,6 +464,8 @@ if('serviceWorker' in navigator){ let _r=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_r)return; _r=true; location.reload(); });
   window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{})); }
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

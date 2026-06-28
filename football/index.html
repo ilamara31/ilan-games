@@ -53,8 +53,31 @@
       <p>The original fast-paced 2D Penalty Kings shootout.</p>
     </a>
   </div>
+  <div style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <a class="exit" id="IGA_login" style="margin-top:0;cursor:pointer" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</a>
+    <a class="exit" id="IGA_lb" style="margin-top:0;cursor:pointer" onclick="window.IGAuth && IGAuth.showLeaderboard('football','Penalty Kings')">🏆 Leaderboard</a>
+  </div>
   <a class="exit" href="../">🏠 All Ilan Games</a>
 
+  <script src="../supabase-config.js"></script>
+  <script src="../auth.js" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    if(!window.IGAuth) return;
+    function pkWins(){
+      try{
+        var s=JSON.parse(localStorage.getItem('soc_store_v1'));
+        var a=(s&&Array.isArray(s.accounts))?s.accounts.find(function(x){return x.id===s.activeId;}):null;
+        return (a&&a.pk)?(a.pk.won|0):0;
+      }catch(e){ return 0; }
+    }
+    IGAuth.onChange(function(p){
+      var b=document.getElementById('IGA_login');
+      if(b) b.textContent = p?('👤 '+IGAuth.displayName()):'👤 Log in';
+      IGAuth.submitScore('football', pkWins());
+    });
+  });
+  </script>
   <script src="../analytics.js" defer></script>
   <script src="../announce.js" defer></script>
 </body>

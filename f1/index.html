@@ -58,7 +58,7 @@
   #lampY.on { background:#ffd21f; box-shadow:0 0 26px #ffd21f; }
   #lampG.on { background:#27e36a; box-shadow:0 0 26px #27e36a; }
   #lightsTxt { font-size:clamp(22px,6vw,34px); font-weight:900; text-shadow:0 3px 14px rgba(0,0,0,.6); }
-  #homeBtn { position:absolute; bottom:14px; left:14px; z-index:6; font-size:22px; width:46px; height:46px; border-radius:50%;
+  #homeBtn { position:absolute; bottom:14px; left:14px; z-index:50; font-size:22px; width:46px; height:46px; border-radius:50%;
     background:rgba(255,255,255,.75); color:#111; display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   .steerhint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:6; color:#9fb3d8; font-size:12px;
     background:rgba(8,14,28,.6); padding:6px 14px; border-radius:20px; pointer-events:none; }
@@ -101,6 +101,8 @@
     <div id="locList" class="list"></div>
     <button class="btn green" id="garageBtn" style="margin-top:12px">🛒 GARAGE</button>
     <a class="btn alt" href="../">🏠 ALL GAMES</a>
+    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
     <div class="sub" style="margin-top:14px;font-size:12px">
       Steer: <b>← →</b> / A D, or hold the left/right side of the screen.<br>You auto-accelerate; brake with <b>↓</b> or the bottom of the screen.
     </div>
@@ -563,6 +565,7 @@ function finishRace(){
   let unlocked=null;
   if(curLoc.idx+1<LOCS.length && f.unlocked<curLoc.idx+2){ f.unlocked=curLoc.idx+2; unlocked=LOCS[curLoc.idx+1]; }
   saveF1();
+  if (window.IGAuth) IGAuth.submitScore('f1', f.points);   // career championship points (higher is better)
   // header
   document.getElementById('finTitle').textContent = pos===1?'🏆 RACE WIN!' : pos<=3?'🏆 PODIUM!' : `P${pos} FINISH`;
   document.getElementById('finTitle').style.color = pos===1?'#ffd54a':pos<=3?'#39ff88':'#fff';
@@ -626,6 +629,9 @@ document.getElementById('againBtn').addEventListener('click',()=>{ const f=caree
 buildTrack(curLoc.track);
 renderMenu();
 
+/* ---- shared online account button label ---- */
+if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in'; });
+
 /* PWA: register the service worker for offline play */
 if('serviceWorker' in navigator){
   let _ref=false;
@@ -633,6 +639,8 @@ if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); });
 }
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

@@ -110,6 +110,8 @@
     <button class="btn" onclick="show('scr-modes')" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 CAREER &amp; MANAGER<br><span style="font-size:12px;font-weight:normal">be a player or a manager</span></button>
     <button class="btn alt" onclick="startTutorial()">🎓 HOW TO PLAY</button>
     <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
+    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('cricket','Super Over Cricket')">🏆 Leaderboard</button>
     <a href="../" class="btn alt" style="display:inline-block;text-decoration:none">🏠 ALL GAMES</a>
   </div>
 
@@ -545,6 +547,7 @@ function recordProfile(fmtKey){
   else if(me.runs>=50) st.fifties=(st.fifties||0)+1;
   if(careerMode && CS){ CS.matches++; CS.runs+=me.runs; CS.balls+=me.balls; }
   saveProfile();
+  if (window.IGAuth) IGAuth.submitScore('cricket', (profile.ipl.runs||0) + (profile.odi.runs||0));
 }
 
 /* ============================================================
@@ -2089,8 +2092,11 @@ if('serviceWorker' in navigator){
   else if(store.accounts.length){ showAccounts(); }
   else { document.getElementById('enterBack').style.display='none';
     if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }
+  if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent = p ? ('👤 '+IGAuth.displayName()) : '👤 Log in'; });
 })();
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

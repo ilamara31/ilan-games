@@ -99,6 +99,10 @@
       <button class="btn sm" id="contBtn" style="display:none"></button>
       <button class="btn sm" id="resetBtn">Reset progress</button>
     </div>
+    <div class="row">
+      <button class="btn sm" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn sm" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('try','One More Try')">🏆 Leaderboard</button>
+    </div>
     <div id="ach"></div>
     <div class="hint">Tap / Space to act • one mistake = restart</div>
   </div>
@@ -329,6 +333,7 @@ function reachFinish(){
   player.coins += bonus;
   SV.coins += bonus; SV.wins++;
   if(L.n+1 > SV.best) SV.best = L.n+1;
+  if(window.IGAuth) IGAuth.submitScore('try', SV.best);
   if(flawless){ SV.ach.flaw = true; }
   if(L.tw.flip){ SV.ach.flip = true; }
   save();
@@ -730,7 +735,10 @@ function showHome(){
   const d = document.getElementById('daily');
   d.style.display = (SV.daily!==today) ? 'inline-block':'none';
   renderBadges();
+  if(window.IGAuth) IGAuth.submitScore('try', SV.best);
 }
+
+if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in'; });
 
 /* ---------- input ---------- */
 function onTap(e){
@@ -769,6 +777,8 @@ setInterval(()=>{ if(state==='home'){ parts.push({x:Math.random()*cv.width, y:cv
 showHome();
 checkAch();
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>
