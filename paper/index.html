@@ -34,6 +34,7 @@
   <button class="btn" id="start">CLAIM ▶</button>
   <div class="sub" id="best" style="margin-top:14px"></div>
   <div class="row">
+    <a class="ghost" id="tutBtn">📖 Tutorial</a>
     <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
     <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('paper','Paper Territory')">🏆 Leaderboard</a>
     <a class="ghost" href="../">🏠 All Games</a>
@@ -61,6 +62,41 @@ let owner, trail, players, state='menu', mvT, msg, msgT, parts, milestone;
 function stamp(id,cx,cy){ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const x=cx+dx,y=cy+dy; if(x>=0&&x<GW&&y>=0&&y<GH) owner[idx(x,y)]=id; } }
 function spawnPlayer(id,cx,cy,dir){ return {id,x:cx,y:cy,dir,ndir:dir,onTrail:false,alive:true,respT:0,human:id===1}; }
 
+/* ---------- coach-guided tutorial (tap to continue, like Fruit Arena) ---------- */
+let tutMode=false, tutStep=0, tutPhase='brief', coachMsg='', tutClaimed=false;
+const TSTEPS=[
+  { brief:"👋 Hi! I'm your coach. This green block is YOUR base — you always start here." },
+  { brief:"Move with the ARROW KEYS — or SWIPE on a phone. Try moving OUT of your base!", act:true, hint:"move out of your base", done:()=>players[0]&&players[0].onTrail },
+  { brief:"Nice — see the bright trail you leave behind? Now head BACK into your base to claim everything inside the loop!", act:true, hint:"return to your base", done:()=>tutClaimed },
+  { brief:"🎉 You claimed new land! But careful: if a rival crosses your trail — or you cross your OWN trail — you POP." },
+  { brief:"That's it! Claim as much land as you can. Tap to start playing!", end:true },
+];
+function startTut(){ document.getElementById('ov').classList.add('hidden'); state='play'; tutMode=true; tutStep=0; tutPhase='brief'; tutClaimed=false; coachMsg='';
+  owner=new Int8Array(GW*GH); trail=new Int8Array(GW*GH); parts=[]; msg=''; msgT=0; mvT=0; milestone=999;
+  players=[ spawnPlayer(1, GW>>1, GH-7, 3) ]; stamp(1,players[0].x,players[0].y); tutBrief(); }
+function tutBrief(){ tutPhase='brief'; coachMsg=TSTEPS[tutStep].brief; }
+function tutContinue(){ if(tutPhase!=='brief')return; const s=TSTEPS[tutStep]; if(s.end){ tutFinish(); return; } if(s.act){ tutPhase='act'; } else tutAdvance(); }
+function tutAdvance(){ tutStep++; if(tutStep>=TSTEPS.length){ tutFinish(); return; } tutBrief(); }
+function tutTick(){ if(tutPhase==='act'){ const s=TSTEPS[tutStep]; if(s.done&&s.done()) tutAdvance(); } }
+function tutFinish(){ tutMode=false; coachMsg=''; state='menu'; try{localStorage.setItem('paperTut','1');}catch(e){}
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='🟩 PAPER TERRITORY';
+  ov.querySelector('.sub').innerHTML="You're ready! Hit CLAIM to play."; ov.querySelector('#start').textContent='CLAIM ▶';
+  ov.querySelector('#best').innerHTML = best?('Best: '+best+'%'):''; ov.classList.remove('hidden'); }
+function rrect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function drawCoach(){ if(!coachMsg)return; ctx.setTransform(DPR,0,0,DPR,0,0);
+  const maxw=Math.min(W*0.92,520), pad=14, x=W/2, tx0=x-maxw/2+pad+40;
+  ctx.font='600 17px Trebuchet MS'; ctx.textAlign='left'; ctx.textBaseline='top';
+  const words=coachMsg.split(' '); const lines=[]; let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxw-pad*2-44 && line){lines.push(line);line=w;} else line=t; }
+  if(line)lines.push(line);
+  const extra = tutPhase==='brief' ? '👉 Tap / press any key to continue' : ('▶ '+(TSTEPS[tutStep].hint||'do the action to continue…'));
+  const lh=23, bh=(lines.length+1)*lh+pad*2, by=Math.max(12,H*0.05), bx=x-maxw/2;
+  ctx.fillStyle='rgba(8,12,8,.9)'; rrect(bx,by,maxw,bh,14); ctx.fill(); ctx.strokeStyle='rgba(125,255,155,.75)'; ctx.lineWidth=2; rrect(bx,by,maxw,bh,14); ctx.stroke();
+  ctx.font='26px serif'; ctx.fillText('🧑', bx+10, by+pad+4);
+  ctx.fillStyle='#fff'; ctx.font='600 17px Trebuchet MS'; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], tx0, by+pad+i*lh);
+  ctx.fillStyle='#7dff9b'; ctx.font='700 14px Trebuchet MS'; ctx.fillText(extra, tx0, by+pad+lines.length*lh+2);
+}
+
 function start(){ document.getElementById('ov').classList.add('hidden'); state='play';
   owner=new Int8Array(GW*GH); trail=new Int8Array(GW*GH); parts=[]; msg=''; msgT=0; mvT=0; milestone=0;
   players=[];
@@ -83,9 +119,9 @@ function step(){
     if(!p.alive){ p.respT-=mvStep; if(p.respT<=0) respawn(p); continue; }
     if(p.human){ if(!opposite(p.ndir,p.dir)) p.dir=p.ndir; } else botThink(p);
     const nx=p.x+DIRS[p.dir][0], ny=p.y+DIRS[p.dir][1];
-    if(nx<0||nx>=GW||ny<0||ny>=GH){ kill(p); continue; }
+    if(nx<0||nx>=GW||ny<0||ny>=GH){ if(tutMode&&p.human){continue;} kill(p); continue; }
     const ti=trail[idx(nx,ny)];
-    if(ti!==0){ if(ti===p.id){ kill(p); continue; } else { kill(players.find(q=>q.id===ti)); } }
+    if(ti!==0){ if(ti===p.id){ if(tutMode&&p.human){continue;} kill(p); continue; } else { kill(players.find(q=>q.id===ti)); } }
     p.x=nx; p.y=ny;
     const o=owner[idx(nx,ny)];
     if(o===p.id){ if(p.onTrail) closeTrail(p); }
@@ -97,7 +133,7 @@ function step(){
 }
 function opposite(a,b){ return (a+2)%4===b; }
 function closeTrail(p){ for(let i=0;i<trail.length;i++) if(trail[i]===p.id){ owner[i]=p.id; trail[i]=0; } fill(p); p.onTrail=false;
-  if(p.human){ sfx(620,.08,'square'); } }
+  if(p.human){ if(tutMode)tutClaimed=true; sfx(620,.08,'square'); } }
 function fill(p){ const vis=new Uint8Array(GW*GH), st=[];
   for(let x=0;x<GW;x++){ pushIf(x,0,p,vis,st); pushIf(x,GH-1,p,vis,st); }
   for(let y=0;y<GH;y++){ pushIf(0,y,p,vis,st); pushIf(GW-1,y,p,vis,st); }
@@ -122,7 +158,7 @@ function gameOver(){ state='over'; const mp=Math.round(pct(1)); if(mp>best){ bes
 
 const mvStep=0.062; let last=0;
 function loop(now){ requestAnimationFrame(loop); const dt=Math.min(.05,(now-last)/1000||0); last=now;
-  if(state==='play'){ mvT+=dt; while(mvT>=mvStep){ mvT-=mvStep; step(); if(state!=='play')break; } }
+  if(state==='play'){ if(!tutMode || tutPhase==='act'){ mvT+=dt; while(mvT>=mvStep){ mvT-=mvStep; step(); if(state!=='play')break; } } if(tutMode) tutTick(); }
   if(msgT>0)msgT-=dt;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#11131f'; ctx.fillRect(0,0,W,H);
@@ -138,18 +174,21 @@ function loop(now){ requestAnimationFrame(loop); const dt=Math.min(.05,(now-last
   if(state!=='menu'){ const mp=pct(1); ctx.fillStyle='#fff';ctx.font='900 30px Trebuchet MS';ctx.textAlign='left';ctx.fillText('🟩 '+mp.toFixed(1)+'%',12,34);
     ctx.textAlign='right';ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#bcc6e6';ctx.fillText('best '+best+'%',W-12,30); ctx.textAlign='left'; }
   if(msgT>0){ctx.globalAlpha=Math.min(1,msgT*1.6);ctx.fillStyle='#7dff9b';ctx.font='900 28px Trebuchet MS';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.5);ctx.globalAlpha=1;}
+  if(tutMode) drawCoach();
 }
 let AC=null; function sfx(f,d,t){ try{ if(!AC)AC=new (AudioContext||webkitAudioContext)(); const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d+.02);}catch(e){} }
 
 function setDir(d){ if(!players)return; const me=players[0]; if(me&&me.alive&&!opposite(d,me.dir)) me.ndir=d; }
-addEventListener('keydown',e=>{ const m={ArrowRight:0,ArrowDown:1,ArrowLeft:2,ArrowUp:3}; if(e.code in m){e.preventDefault(); setDir(m[e.code]);} });
+addEventListener('keydown',e=>{ if(tutMode&&tutPhase==='brief'){ e.preventDefault(); tutContinue(); return; } const m={ArrowRight:0,ArrowDown:1,ArrowLeft:2,ArrowUp:3}; if(e.code in m){e.preventDefault(); setDir(m[e.code]);} });
 let tsx=0,tsy=0;
 cv.addEventListener('pointerdown',e=>{tsx=e.clientX;tsy=e.clientY;});
-cv.addEventListener('pointerup',e=>{ const dx=e.clientX-tsx, dy=e.clientY-tsy; if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
+cv.addEventListener('pointerup',e=>{ if(tutMode&&tutPhase==='brief'){ tutContinue(); return; } const dx=e.clientX-tsx, dy=e.clientY-tsy; if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
   if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?0:2); else setDir(dy>0?1:3); });
 document.getElementById('start').onclick=start;
+document.getElementById('tutBtn').onclick=startTut;
 document.getElementById('best').innerHTML = best?('Best: '+best+'%'):'';
 requestAnimationFrame(loop);
+try{ if(!localStorage.getItem('paperTut')) startTut(); }catch(e){}   // first visit -> coach tutorial
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
