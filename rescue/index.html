@@ -293,12 +293,11 @@ function loseLife(x,y,msg){ lives--; cleared++; combo=0; shake=12; Sound.miss();
 
 /* ---------- update ---------- */
 function update(dt){
-  // trampoline move + velocity (velocity flings survivors)
+  // trampoline follows the finger/mouse EXACTLY — no easing/auto-glide to the middle
   if(keyL) tramp.target-=KEYV*dt;
   if(keyR) tramp.target+=KEYV*dt;
   tramp.target=Math.max(tramp.w/2, Math.min(W-tramp.w/2, tramp.target));
-  tramp.px=tramp.x; tramp.x+=(tramp.target-tramp.x)*Math.min(1,dt*FOLLOW);
-  tramp.vx=(tramp.x-tramp.px)/Math.max(0.001,dt);
+  tramp.x=tramp.target;
   tramp.squash=Math.max(0,tramp.squash-dt*4);
 
   level=Math.floor(cleared/10)+1;
@@ -313,8 +312,8 @@ function update(dt){
   //    as you go (faster), but it's always one arrival at a time.
   spawnCD-=dt;
   if(!tutorial){
-    const ready = (cleared<6) ? (inPlay()===0) : (fallers.length===0);   // overlap now starts after 6 rescues
-    if(ready && spawnCD<=0){ spawnFaller(); spawnCD = (cleared<6) ? 0.6 : Math.max(0.5, 1.5-(cleared-6)*0.045); }
+    const ready = (score<5) ? (inPlay()===0) : (fallers.length===0);   // overlap starts after 5 points (the on-screen "Rescued" count)
+    if(ready && spawnCD<=0){ spawnFaller(); spawnCD = (score<5) ? 0.6 : Math.max(0.5, 1.5-(score-5)*0.045); }
   }
 
   const ty=trampY(), gy=groundY(), zx=zoneX();
@@ -491,7 +490,7 @@ requestAnimationFrame(frame);
 /* ---------- start / game over ---------- */
 function start(){ Sound.unlock(); Sound.click(); reset(); tutorial=false; tutWinT=0; running=true; $('overlay').classList.add('hidden'); $('tut').classList.add('hidden'); hideBanner(); if(window.track) track('game_start',{game:'rescue'}); }
 function gameOver(){
-  running=false;
+  running=false; shake=0;   // stop the screen shake on the game-over screen
   const bonus=Math.floor(comboMax*1.5), earned=score+bonus; data.coins+=earned;
   const isHigh=score>data.best; if(isHigh) data.best=score; saveData();
   if(window.track) track('game_over',{game:'rescue',score:score});
