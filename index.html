@@ -343,13 +343,14 @@
 
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
-      'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'obby/':'both',
-      'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both', 'pptour/':'both', 'karate/':'both',
-      'fruit-arena/':'both', 'rescue/':'both', 'paper/':'both', 'stack/':'both', 'archer/':'both',
+      'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'pptour/':'both',
+      'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
+      'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
+      'stack/':'both', 'archer/':'both',
     };
     (function(){
       const LABEL = {
-        both:     { t:'👍 Plays great on any device',  ideal:['desktop','tablet','mobile'] },
+        both:     { t:'👍 Best on any device',         ideal:['desktop','tablet','mobile'] },
         mobile:   { t:'📱 Best on phone',              ideal:['mobile','tablet'] },
         pc:       { t:'💻 Best on PC / laptop',        ideal:['desktop'] },
         pctablet: { t:'💻📱 Best on PC / tablet',       ideal:['desktop','tablet'] },
