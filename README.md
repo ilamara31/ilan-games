@@ -13,6 +13,8 @@ Games made by Ilan!
 - 🏓 **Ping Pong Tour** — `pptour/` — first-person table tennis: tutorial, tournament ladder (Quarter-Final → World Championship), coins, and a shop of racket designs.
 - 🍉 **Fruit Arena** — `fruit-arena/` — slice fruit, dodge bombs, chain power-ups, spam the giant fruit; coach-guided tutorial, progressive missions, and a shop of blades & effects.
 - 🟩 **Paper Territory** — `paper/` — claim land with your trail, dodge rivals, own the most territory; global leaderboard.
+- 🏗️ **Stack Tower** — `stack/` — tap to drop & align blocks, build as high as you can with perfect-stack combos; global leaderboard.
+- 🏹 **Archer Duel** — `archer/` — aim, power & arc your arrows to KO tougher rivals each round; global leaderboard.
 
 ## How to play locally
 Open `index.html` in any web browser. No installation needed — they're plain HTML5 games.

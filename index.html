@@ -46,6 +46,8 @@
   .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
   .rescue  { background:linear-gradient(135deg,#4aa3ff,#13499e); }
   .paper   { background:linear-gradient(135deg,#2bbd5a,#0e3a22); }
+  .stack   { background:linear-gradient(135deg,#ffb13d,#b8005a); }
+  .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
   /* new / recently-updated badges */
   a.card { position:relative; overflow:visible; }
   .badge { position:absolute; top:-9px; right:-7px; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
@@ -170,6 +172,16 @@
       <span class="emoji">🥋</span>
       <h2>Karate Champions</h2>
       <p>Arcade fighting — punch, kick, uppercut &amp; combo your way to the World Karate Cup!</p>
+    </a>
+    <a class="card stack" href="stack/">
+      <span class="emoji">🏗️</span>
+      <h2>Stack Tower</h2>
+      <p>Tap to drop blocks and stack as high as you can — perfect stacks build a combo! Leaderboard.</p>
+    </a>
+    <a class="card archer" href="archer/">
+      <span class="emoji">🏹</span>
+      <h2>Archer Duel</h2>
+      <p>Aim, power up, and arc your arrows to KO tougher and tougher rivals. Leaderboard.</p>
     </a>
   </div>
   <div id="newBanner"></div>
@@ -296,7 +308,9 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 18h. */
     const GAMES = {
-      'paper/':        { added:   '2026-06-28T22:00:00' },   // newest -> also the bottom banner
+      'stack/':        { added:   '2026-06-29T12:10:00' },   // newest -> also the bottom banner
+      'archer/':       { added:   '2026-06-29T12:00:00' },
+      'paper/':        { added:   '2026-06-28T22:00:00' },
       'rescue/':       { added:   '2026-06-28T20:00:00' },
       'karate/':       { added:   '2026-06-28T12:00:00' },
       'pptour/':       { added:   '2026-06-27T18:00:00' },
@@ -331,7 +345,7 @@
     const REC = {
       'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'obby/':'both',
       'puzzles/':'both', 'try/':'pctablet', 'anime-tycoon/':'both', 'tennis/':'both', 'pptour/':'both', 'karate/':'both',
-      'fruit-arena/':'both', 'rescue/':'both', 'paper/':'both',
+      'fruit-arena/':'both', 'rescue/':'both', 'paper/':'both', 'stack/':'both', 'archer/':'both',
     };
     (function(){
       const LABEL = {

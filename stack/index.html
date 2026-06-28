@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Stack Tower</title>
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#0b1226" />
+<meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Stack Tower" />
+<link rel="apple-touch-icon" href="../icon-180.png" /><link rel="icon" href="../icon-192.png" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{height:100%;overflow:hidden;background:#0b1226;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
+  #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:5;padding:20px;background:rgba(8,10,26,.55)}
+  #ov.hidden{display:none}
+  h1{font-size:clamp(34px,9vw,60px);background:linear-gradient(90deg,#ffd54a,#ff7bd5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:#c7d2f0;margin:8px 0 18px;font-size:16px;line-height:1.5;max-width:420px}
+  .big{font-size:50px;font-weight:900;color:#ffd54a}
+  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:15px 44px;font-size:20px;font-weight:900;border-radius:30px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(180,180,255,.3);color:#dfe4ff;border-radius:24px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
+</style></head>
+<body>
+<canvas id="g"></canvas>
+<div id="ov">
+  <h1>🏗️ STACK TOWER</h1>
+  <div class="sub">Tap / click / SPACE to drop the moving block.<br>Line it up — overhang gets sliced off and the block shrinks. <b>Perfect stacks</b> keep full width and build a combo!</div>
+  <button class="btn" id="start">STACK ▶</button>
+  <div class="sub" id="best"></div>
+  <div class="row">
+    <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
+    <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('stack','Stack Tower')">🏆 Leaderboard</a>
+    <a class="ghost" href="../">🏠 All Games</a>
+  </div>
+</div>
+<script>
+"use strict";
+const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);}
+addEventListener('resize',resize);resize();
+let best=(()=>{try{return(+JSON.parse(localStorage.getItem('stackTower_v1')).best)||0;}catch(e){return 0;}})();
+function saveBest(){try{localStorage.setItem('stackTower_v1',JSON.stringify({best}));}catch(e){}}
+const BH=34;
+let state='menu',stack,cur,camY,score,combo,parts,speed,shake,flash;
+function hue(i){return (i*9+200)%360;}
+function start(){document.getElementById('ov').classList.add('hidden');state='play';
+  const w=Math.min(W*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=3.0;parts=[];shake=0;flash=0;spawn();}
+function spawn(){const top=stack[stack.length-1];cur={x:0,w:top.w,y:(stack.length)*BH,dir:1};speed=3.0+score*0.06;}
+function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=Math.min(cur.x+cur.w,top.x+top.w),ov=R-L;
+  if(ov<=0){ // miss
+    parts.push({x:cur.x,y:cur.y,w:cur.w,vy:0,vx:cur.dir*40,life:1.4,c:'hsl('+hue(stack.length)+',70%,60%)'});
+    gameOver();return;}
+  const off=Math.abs(cur.x-top.x);
+  if(off<7){ // perfect
+    combo++;score++;flash=.4;sfx(500+Math.min(12,combo)*60,.07,'square');
+    const nw=Math.min(top.w+ (combo>=3?6:0), W*0.6);const nx=top.x-(nw-top.w)/2;
+    stack.push({x:nx,w:nw,y:cur.y});
+    parts.push({x:cur.x,y:cur.y,w:cur.w,perfect:true,life:.5});
+  } else { combo=0;score++;sfx(320,.06,'sine');
+    // slice overhang
+    if(cur.x<top.x){ parts.push({x:cur.x,y:cur.y,w:top.x-cur.x,vx:-60,vy:0,life:1.4,c:'hsl('+hue(stack.length)+',70%,60%)'}); }
+    else { parts.push({x:R,y:cur.y,w:(cur.x+cur.w)-R,vx:60,vy:0,life:1.4,c:'hsl('+hue(stack.length)+',70%,60%)'}); }
+    stack.push({x:L,w:ov,y:cur.y});
+  }
+  spawn();
+}
+function gameOver(){state='over';if(score>best){best=score;saveBest();}try{if(window.IGAuth)IGAuth.submitScore('stack',best);}catch(e){}shake=.5;
+  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ TOPPLED!';ov.querySelector('.sub').innerHTML='You missed the stack.';
+  ov.querySelector('#start').textContent='STACK AGAIN ▶';ov.querySelector('#best').innerHTML='<div class="big">'+score+'</div>blocks • Best: '+best;
+  setTimeout(()=>ov.classList.remove('hidden'),650);}
+let last=0;
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;
+  if(shake>0)shake=Math.max(0,shake-dt*1.5);if(flash>0)flash=Math.max(0,flash-dt*2.5);
+  const sx=shake>0?(Math.random()*2-1)*shake*10:0,sy=shake>0?(Math.random()*2-1)*shake*10:0;ctx.setTransform(DPR,0,0,DPR,sx*DPR,sy*DPR);
+  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#10204a');bg.addColorStop(1,'#0a0f24');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  if(state==='play'){ cur.x+=cur.dir*speed*60*dt; if(cur.x<10){cur.x=10;cur.dir=1;} if(cur.x+cur.w>W-10){cur.x=W-10-cur.w;cur.dir=-1;} }
+  const targetCam=Math.max(0,(stack.length)*BH - H*0.55);camY+=(targetCam-camY)*Math.min(1,dt*6);
+  function sy2(y){return H-60 - (y-camY);}
+  if(stack)for(let i=0;i<stack.length;i++){const b=stack[i];const yy=sy2(b.y);if(yy>H+40||yy<-40)continue;
+    ctx.fillStyle='hsl('+hue(i)+',62%,58%)';ctx.fillRect(b.x,yy-BH,b.w,BH);ctx.fillStyle='rgba(255,255,255,.14)';ctx.fillRect(b.x,yy-BH,b.w,4);ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(b.x,yy-5,b.w,5);}
+  if(state==='play'){const yy=sy2(cur.y);ctx.fillStyle='hsl('+hue(stack.length)+',70%,62%)';ctx.fillRect(cur.x,yy-BH,cur.w,BH);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(cur.x,yy-BH,cur.w,4);}
+  for(const p of parts){ if(p.perfect){p.life-=dt;continue;} p.x+=(p.vx||0)*dt;p.vy=(p.vy||0)+900*dt;p.y-=0;p.fall=(p.fall||0)+p.vy*dt;p.life-=dt; const yy=sy2(p.y)+(p.fall||0);ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.fillRect(p.x,yy-BH,p.w,BH);ctx.globalAlpha=1;}
+  parts=parts.filter(p=>p.life>0);
+  // perfect flashes
+  for(const p of parts){if(p.perfect){const yy=sy2(p.y);ctx.globalAlpha=Math.max(0,p.life*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(stack[stack.length-1].x-4,yy-BH-4,stack[stack.length-1].w+8,BH+8);ctx.globalAlpha=1;}}
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px Trebuchet MS';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,90);ctx.globalAlpha=1;
+    if(combo>=2){ctx.fillStyle='#ffd54a';ctx.font='900 22px Trebuchet MS';ctx.fillText('PERFECT x'+combo+'!',W/2,120);}
+    ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#c7d2f0';ctx.fillText('best '+best,W/2,H-16);}
+  if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash*0.25+')';ctx.fillRect(0,0,W,H);}
+}
+let AC=null;function sfx(f,d,t){try{if(!AC)AC=new(AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.2;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d+.02);}catch(e){}}
+function act(){if(state==='play')drop();}
+addEventListener('pointerdown',()=>{if(state==='play')act();});
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();act();}});
+document.getElementById('start').onclick=start;
+document.getElementById('best').innerHTML=best?('Best: '+best):'';
+requestAnimationFrame(loop);
+</script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
+  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
+    try{ var s=JSON.parse(localStorage.getItem('stackTower_v1')); if(s&&+s.best>0) IGAuth.submitScore('stack',+s.best); }catch(e){} }); });</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+</body></html>
