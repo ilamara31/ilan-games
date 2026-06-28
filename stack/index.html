@@ -27,6 +27,7 @@
   <button class="btn" id="start">STACK ▶</button>
   <div class="sub" id="best"></div>
   <div class="row">
+    <a class="ghost" id="tutBtn">📖 Tutorial</a>
     <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
     <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('stack','Stack Tower')">🏆 Leaderboard</a>
     <a class="ghost" href="../">🏠 All Games</a>
@@ -41,13 +42,28 @@ let best=(()=>{try{return(+JSON.parse(localStorage.getItem('stackTower_v1')).bes
 function saveBest(){try{localStorage.setItem('stackTower_v1',JSON.stringify({best}));}catch(e){}}
 const BH=34;
 let state='menu',stack,cur,camY,score,combo,parts,speed,shake,flash;
+let tutMode=false,tutCount=0,coachMsg='';
 function hue(i){return (i*9+200)%360;}
+function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutCount=0;
+  const w=Math.min(W*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=2.6;parts=[];shake=0;flash=0;
+  coachMsg='Tap / SPACE to drop the block right over the one below. Line up 3 to finish!';spawn();}
+function tutFinish(){tutMode=false;coachMsg='';state='menu';try{localStorage.setItem('stackTut','1');}catch(e){}
+  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ STACK TOWER';ov.querySelector('.sub').innerHTML="You're ready! Hit STACK to play.";ov.querySelector('#start').textContent='STACK ▶';ov.querySelector('#best').innerHTML=best?('Best: '+best):'';ov.classList.remove('hidden');}
+function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=14,x=W/2,tx0=x-maxw/2+pad+40;
+  ctx.font='600 17px Trebuchet MS';ctx.textAlign='left';ctx.textBaseline='top';
+  const words=coachMsg.split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxw-pad*2-44&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);
+  const lh=23,bh=lines.length*lh+pad*2,by=Math.max(12,H*0.06),bx=x-maxw/2;
+  ctx.fillStyle='rgba(8,12,30,.92)';rrect(bx,by,maxw,bh,14);ctx.fill();ctx.strokeStyle='rgba(255,213,74,.75)';ctx.lineWidth=2;rrect(bx,by,maxw,bh,14);ctx.stroke();
+  ctx.font='26px serif';ctx.fillText('🧑',bx+10,by+pad+4);
+  ctx.fillStyle='#fff';ctx.font='600 17px Trebuchet MS';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);}
 function start(){document.getElementById('ov').classList.add('hidden');state='play';
   const w=Math.min(W*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=3.0;parts=[];shake=0;flash=0;spawn();}
 function spawn(){const top=stack[stack.length-1];cur={x:0,w:top.w,y:(stack.length)*BH,dir:1};speed=3.0+score*0.06;}
 function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=Math.min(cur.x+cur.w,top.x+top.w),ov=R-L;
   if(ov<=0){ // miss
     parts.push({x:cur.x,y:cur.y,w:cur.w,vy:0,vx:cur.dir*40,life:1.4,c:'hsl('+hue(stack.length)+',70%,60%)'});
+    if(tutMode){ coachMsg='Oops! Drop it right OVER the block below — try again.'; spawn(); return; }
     gameOver();return;}
   const off=Math.abs(cur.x-top.x);
   if(off<7){ // perfect
@@ -62,8 +78,9 @@ function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=
     stack.push({x:L,w:ov,y:cur.y});
   }
   spawn();
+  if(tutMode){ tutCount++; coachMsg='Nice! '+tutCount+' / 3 — keep stacking!'; if(tutCount>=3){ coachMsg='Perfect — you’re ready!'; setTimeout(tutFinish,700); } }
 }
-function gameOver(){state='over';if(score>best){best=score;saveBest();}try{if(window.IGAuth)IGAuth.submitScore('stack',best);}catch(e){}shake=.5;
+function gameOver(){if(tutMode)return;state='over';if(score>best){best=score;saveBest();}try{if(window.IGAuth)IGAuth.submitScore('stack',best);}catch(e){}shake=.5;
   const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ TOPPLED!';ov.querySelector('.sub').innerHTML='You missed the stack.';
   ov.querySelector('#start').textContent='STACK AGAIN ▶';ov.querySelector('#best').innerHTML='<div class="big">'+score+'</div>blocks • Best: '+best;
   setTimeout(()=>ov.classList.remove('hidden'),650);}
@@ -86,6 +103,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px Trebuchet MS';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,90);ctx.globalAlpha=1;
     if(combo>=2){ctx.fillStyle='#ffd54a';ctx.font='900 22px Trebuchet MS';ctx.fillText('PERFECT x'+combo+'!',W/2,120);}
     ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#c7d2f0';ctx.fillText('best '+best,W/2,H-16);}
+  if(tutMode)drawCoach();
   if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash*0.25+')';ctx.fillRect(0,0,W,H);}
 }
 let AC=null;function sfx(f,d,t){try{if(!AC)AC=new(AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.2;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d+.02);}catch(e){}}
@@ -93,8 +111,10 @@ function act(){if(state==='play')drop();}
 addEventListener('pointerdown',()=>{if(state==='play')act();});
 addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();act();}});
 document.getElementById('start').onclick=start;
+document.getElementById('tutBtn').onclick=startTut;
 document.getElementById('best').innerHTML=best?('Best: '+best):'';
 requestAnimationFrame(loop);
+try{ if(!localStorage.getItem('stackTut')) startTut(); }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>

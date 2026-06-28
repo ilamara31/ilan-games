@@ -28,7 +28,7 @@
     catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won",
-    paper: "Territory %", stack: "Tallest stack", archer: "KOs"
+    paper: "Territory %", stack: "Tallest stack", archer: "Best level"
   };
   // Read a game's best straight from its own localStorage save (every game on
   // this origin shares storage), so we can re-post high scores on each load.
