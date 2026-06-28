@@ -445,10 +445,9 @@ const TUTSTEPS=[
   {msg:()=>"🥋 Sensei: Let's learn the moves! First, "+KB('L','👊 PUNCH')+" to punch.", check:t=>t.did_punch, hide:true},
   {msg:()=>"🥋 Sensei: Good! Now "+KB('K','🦵 KICK')+" to kick.", check:t=>t.did_kick, hide:true},
   {msg:()=>"🥋 Sensei: Nice! Now "+KB('J','⬆️ UPPERCUT')+" to uppercut.", check:t=>t.did_uppercut, hide:true},
-  {msg:()=>"🥋 Sensei: Here comes your opponent — now HIT HIM and knock his health down!", check:()=>O.hp<=80, reveal:true},
-  {msg:()=>"🥋 Sensei: Great! Now "+KB('I','🌀 COMBO')+" for your combo move!", check:t=>t.did_combo},
-  {msg:()=>"🥋 Sensei: Defence! "+(TOUCH?'hold the <b>🛡️ BLOCK</b> button (left)':'hold <b>SPACE</b>')+" to block — no damage! You can still Kick &amp; Combo while blocking, but not Punch. I'll attack — block me!", check:t=>t.blocked, opp:'attack'},
-  {msg:()=>"🥋 Sensei: Perfect! Now finish me off — beat me! 🥊", check:()=>false, opp:'easy'},
+  {msg:()=>"🥋 Sensei: Great! Now "+KB('I','🌀 COMBO')+" for your combo move!", check:t=>t.did_combo, hide:true},
+  {msg:()=>"🥋 Sensei: Last lesson — DEFENCE! "+(TOUCH?'hold the <b>🛡️ BLOCK</b> button (left)':'hold <b>SPACE</b>')+" to block (no damage). You can still Kick &amp; Combo while blocking, but not Punch. I'll attack — block me!", check:t=>t.blocked, opp:'attack'},
+  {msg:()=>"🥋 Sensei: Perfect! Now the real fight — beat me! 🥊", check:()=>false, opp:'easy'},
 ];
 function tutStep(i){ if(!M.tut) return; if(i>=TUTSTEPS.length){ tutorialDone(); return; } M.tut.step=i; M.tut.oppT=0.9; const s=TUTSTEPS[i];
   $('coach').innerHTML=s.msg(); sfx('bell');
@@ -569,16 +568,18 @@ function aiChain(f){ setTimeout(()=>{ if(M.active&&canAct(f)) startAttack(f,'kic
 
 /* ============================================================ INPUT ============================================================ */
 const keys={};
-addEventListener('keydown',e=>{ keys[e.code]=true;
+const typing=e=>{ const el=e.target; return el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA'); };
+addEventListener('keydown',e=>{ if(typing(e)) return;     // don't capture keys while typing a name
+  keys[e.code]=true;
+  if(!M.active||M.state!=='fight') return;                 // only intercept keys during an actual fight
   if(['KeyA','KeyD','KeyW','KeyJ','KeyK','KeyL','KeyI','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
-  if(!M.active||M.state!=='fight') return;
   if((e.code==='KeyW'||e.code==='ArrowUp') && P.y<=0 && canAct(P)) P.vy=11;
   if(e.code==='KeyL') startAttack(P,'punch');
   if(e.code==='KeyK') startAttack(P,'kick');
   if(e.code==='KeyJ') startAttack(P,'uppercut');
   if(e.code==='KeyI') startCombo(P);
 });
-addEventListener('keyup',e=>{ keys[e.code]=false; });
+addEventListener('keyup',e=>{ if(typing(e)) return; keys[e.code]=false; });
 // touch
 let stickX=0, stickId=-1, stOrig=0;
 const stickEl=$('stick'), nub=$('nub');
