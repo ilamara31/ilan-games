@@ -447,7 +447,7 @@ plotEdge.position.copy(PLOT); plotEdge.position.y=1.05; scene.add(plotEdge);
 const baseGroup=new THREE.Group(); scene.add(baseGroup); // holds bought items
 
 // mansion footprint & build constants
-const MX=PLOT.x, MZ=PLOT.z+2, HW=15, HD=13, Y0=1.0, FT=0.45, WH=4.4;     // half-width/depth, floor-top, floor-thickness, wall-height
+const MX=PLOT.x, MZ=PLOT.z+2, HW=15, HD=13, Y0=1.0, FT=0.45, WH=5.8;     // half-width/depth, floor-top, floor-thickness, wall-height (taller = more vast)
 const L1=Y0+FT, L2=L1+WH+FT, L3=L2+WH+FT, ROOFY=L3+WH;                     // three floor levels
 // five money droppers stand in a row across the front yard (always producing)
 const DROP_POS=[-11,-5.5,0,5.5,11].map(x=>new THREE.Vector3(MX+x,Y0,MZ-HD-4));
@@ -662,7 +662,7 @@ function makeItemMesh(it){ const g=new THREE.Group(); const acc=PATHS[S.path].ac
   function glassAt(base){ const y=base+WH/2; const gm=glassM();
     for(const z of [MZ-7,MZ,MZ+7]) for(const sx of [-1,1]){ const p=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.4),gm); p.position.set(MX+sx*(HW-0.2),y,z); p.rotation.y=sx*Math.PI/2; g.add(p);}
     for(const x of [MX-6,MX+6]){ const p=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.4),gm); p.position.set(x,y,MZ-HD+0.2); g.add(p);} }
-  function stairsFrom(base){ const sm=mat(0x7a5636,{roughness:.6}); const steps=11; for(let s=0;s<steps;s++) box(3.6,0.4,1.2,MX+HW-4,base+0.2+s*(WH+FT)/steps,MZ+HD-3-s*1.2,sm);
+  function stairsFrom(base){ const sm=mat(0x7a5636,{roughness:.6}); const steps=15; const span=12; for(let s=0;s<steps;s++) box(3.6,0.4,span/steps+0.5,MX+HW-4,base+0.2+s*(WH+FT)/steps,MZ+HD-3-s*(span/steps),sm);
     box(0.18,1.1,13,MX+HW-2.2,base+(WH+FT)/2,MZ+HD-9,mat(0x4a3018)); }
   switch(it.id){
     case 'floor1': floorSlab(L1); break;
@@ -720,6 +720,28 @@ function rebuildColliders(){ colliders=[]; const TH=0.45, y0=L1, y1=L1+WH;
     colliders.push({minX:MX+2,maxX:MX+HW,minZ:MZ-HD-TH,maxZ:MZ-HD+TH,y0,y1});         // front-right
   }
   if(S.bought.includes('door')) colliders.push({minX:MX-2,maxX:MX+2,minZ:MZ-HD-TH,maxZ:MZ-HD+TH,y0,y1,door:true});
+  // upper-floor walls so you can't walk off the second/third floor through the walls
+  function perim(a,b){ colliders.push({minX:MX-HW-TH,maxX:MX-HW+TH,minZ:MZ-HD,maxZ:MZ+HD,y0:a,y1:b});
+    colliders.push({minX:MX+HW-TH,maxX:MX+HW+TH,minZ:MZ-HD,maxZ:MZ+HD,y0:a,y1:b});
+    colliders.push({minX:MX-HW,maxX:MX+HW,minZ:MZ+HD-TH,maxZ:MZ+HD+TH,y0:a,y1:b});
+    colliders.push({minX:MX-HW,maxX:MX+HW,minZ:MZ-HD-TH,maxZ:MZ-HD+TH,y0:a,y1:b}); }
+  if(S.bought.includes('walls2')) perim(L2,L2+WH);
+  if(S.bought.includes('walls3')) perim(L3,L3+WH);
+}
+/* ---------- floor / staircase support: which solid surface is under the player ---------- */
+function rampY(x,z,base){ const cx=MX+HW-4, zBot=MZ+HD-3, zTop=zBot-12;        // staircase footprint
+  if(Math.abs(x-cx)>2.3) return null; if(z>zBot+0.7 || z<zTop-0.7) return null;
+  let p=(zBot-z)/(zBot-zTop); p=p<0?0:p>1?1:p; return base + p*(WH+FT); }
+function inStairHole(x,z){ return Math.abs(x-(MX+HW-4))<2.6 && z<MZ+HD-2 && z>MZ-3.2; }  // open stairwell in the slab
+function standHeight(x,z,curY){
+  let y = onPlot(player.position)?1.0:(inArena(player.position)?1.2:1.0);   // floor-1 / ground stand height (=Y0)
+  const tol=0.8, within=(Math.abs(x-MX)<=HW-0.4 && Math.abs(z-MZ)<=HD-0.4);
+  const F2=L2-FT, F3=L3-FT;                                                  // floor-2 / floor-3 stand heights
+  if(S.bought.includes('stairs')){ const ry=rampY(x,z,Y0); if(ry!=null && ry<=curY+tol && ry>y) y=ry; }   // ramp Y0 -> F2
+  if(S.bought.includes('stairs2')){ const ry=rampY(x,z,F2); if(ry!=null && ry<=curY+tol && ry>y) y=ry; }  // ramp F2 -> F3
+  if(S.bought.includes('ceil1') && within && !inStairHole(x,z) && F2<=curY+tol && F2>y) y=F2;
+  if(S.bought.includes('ceil2') && within && !inStairHole(x,z) && F3<=curY+tol && F3>y) y=F3;
+  return y;
 }
 function collide(){ const r=0.55;
   for(const c of colliders){ if(c.door && doorOpenNow) continue;
@@ -1032,8 +1054,8 @@ function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-las
   if(keys['Space']) jump();
 
   // gravity / ground
-  P.vy-=26*dt; player.position.y+=P.vy*dt; const groundY=onPlot(player.position)?1.0:(inArena(player.position)?1.2:1.0);
-  if(player.position.y<=groundY){ player.position.y=groundY; P.vy=0; P.onGround=true; }
+  P.vy-=26*dt; player.position.y+=P.vy*dt; const groundY=standHeight(player.position.x,player.position.z,player.position.y);
+  if(player.position.y<=groundY){ player.position.y=groundY; P.vy=0; P.onGround=true; } else { P.onGround=false; }
   // keep in world
   const dC=Math.hypot(player.position.x,player.position.z); if(dC>210){ player.position.x*=210/dC; player.position.z*=210/dC; }
   // solid walls / door / board
