@@ -137,10 +137,18 @@
   /* ---------- auth actions ---------- */
   async function signUp(email, password, name) {
     if (!sb) return { error: "Not ready" };
-    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name } } });
+    // emailRedirectTo sends the verification link back to THIS page (which exists),
+    // not the bare domain — fixes the 404 on the confirm link.
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: location.href } });
     if (error) return { error: error.message };
     // with email confirmations on, no session is returned until they verify
     return { needsVerify: !data.session, user: data.user };
+  }
+  async function signInGitHub() {
+    if (!sb) return { error: "Not ready" };
+    const { error } = await sb.auth.signInWithOAuth({ provider: "github", options: { redirectTo: location.href } });
+    if (error) return { error: error.message };
+    return { ok: true };
   }
   async function signIn(email, password) {
     if (!sb) return { error: "Not ready" };
@@ -149,7 +157,7 @@
     await ensureMigrated(data.user);
     return { ok: true };
   }
-  async function resend(email) { if (sb) await sb.auth.resend({ type: "signup", email }); }
+  async function resend(email) { if (sb) await sb.auth.resend({ type: "signup", email, options: { emailRedirectTo: location.href } }); }
   async function signOut() { if (sb) await sb.auth.signOut(); setActiveToLocal(); location.reload(); }
 
   /* ================= UI (self-contained modal) ================= */
@@ -166,6 +174,7 @@
     .iga-p{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f}
     .iga-s{background:linear-gradient(135deg,#3a5fcd,#28408f);color:#fff}
     .iga-g{background:#26344f;color:#cfe0ff}
+    .iga-gh{background:#24292e;color:#fff}
     .iga-x{background:transparent;color:#7e90b5;font-weight:700}
     .iga-link{color:#7cc0ff;cursor:pointer;font-size:13px;text-decoration:underline}
     .iga-msg{font-size:13px;margin:8px 0;min-height:16px}
@@ -190,6 +199,8 @@
     const ov = modal(`
       <h2>Sign in / Sign up</h2>
       <p>Save your scores online and join the leaderboard. Or just play as a guest.</p>
+      ${window.GITHUB_SSO ? `<button class="iga-btn iga-gh" id="iga-github"> Continue with GitHub</button>
+      <div style="color:#7e90b5;font-size:12px;margin:6px 0">— or use email —</div>` : ``}
       <input id="iga-email" type="email" placeholder="Email" autocomplete="email">
       <input id="iga-pwd" type="password" placeholder="Password" autocomplete="current-password">
       <input id="iga-name" type="text" placeholder="Display name (for a new account)" maxlength="16" autocomplete="nickname">
@@ -218,6 +229,7 @@
       else { await ensureMigrated(r.user); location.reload(); }
     };
     $("#iga-guest").onclick = () => ov.remove();
+    if ($("#iga-github")) $("#iga-github").onclick = async () => { msg("Opening GitHub…", true); const r = await signInGitHub(); if (r && r.error) msg(r.error); };
     $("#iga-resend").onclick = async () => { if (!email()) return msg("Enter your email above first."); await resend(email()); msg("Verification email sent.", true); };
   }
 
@@ -249,7 +261,7 @@
     onChange: cb => { changeCbs.push(cb); if (ready) cb(user); },
     getUser: () => user,
     isReady: () => ready,
-    openAuth, openAccount, signOut, submitScore, topScores, showLeaderboard,
+    openAuth, openAccount, signOut, signInGitHub, submitScore, topScores, showLeaderboard,
     displayName: () => user ? displayName(user) : null,
   };
   init();
