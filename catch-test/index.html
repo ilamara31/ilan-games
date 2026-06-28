@@ -152,6 +152,10 @@
       <button class="pill green" id="startBtn">▶ Play</button>
       <button class="pill blue" id="shopBtn">🧺 Baskets</button>
     </div>
+    <div class="row">
+      <button class="pill sm" id="lbBtn">🏆 Leaderboard</button>
+      <button class="pill sm blue" id="acctBtn">👤 Log in</button>
+    </div>
     <p class="small" id="ovWho"></p>
   </div>
 
@@ -651,6 +655,9 @@ function gameOver(byBomb){
   saveData();
   Sound.coinSfx();
 
+  // post your best to the cross-player leaderboard (only if signed in)
+  if (window.IGAuth) IGAuth.submitScore('catch', data.best);
+
   $('overlay').classList.remove('hidden');
   $('overlay').innerHTML = `
     <h1>${byBomb ? '💥 Boom!' : 'Game Over'}</h1>
@@ -663,9 +670,13 @@ function gameOver(byBomb){
     <div class="row">
       <button class="pill green" id="againBtn">▶ Play Again</button>
       <button class="pill blue" id="shopBtn2">🧺 Baskets</button>
+    </div>
+    <div class="row">
+      <button class="pill sm" id="lbBtn2">🏆 Leaderboard</button>
     </div>`;
   $('againBtn').addEventListener('click', start);
   $('shopBtn2').addEventListener('click', openShop);
+  $('lbBtn2').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch','Basket Catch'));
 }
 
 /* ---------- shop ---------- */
@@ -732,6 +743,10 @@ $('shopBack').addEventListener('click', closeShop);
 $('shieldBtn').addEventListener('click', tryShield);
 $('muteBtn').addEventListener('click', () => { Sound.ready(); const on = Sound.toggleMusic(); $('muteBtn').textContent = on ? '🔊' : '🔇'; });
 
+// online account + leaderboard buttons (IGAuth from ../auth.js)
+$('lbBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch','Basket Catch'));
+$('acctBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.openAuth());
+
 /* ---------- boot ---------- */
 function boot(){
   $('who').textContent = acct ? '👤 ' + acct.name : '👤 Guest';
@@ -741,7 +756,15 @@ function boot(){
   resize();
 }
 boot();
+// reflect signed-in status on the account button + "who" labels
+if (window.IGAuth) IGAuth.onChange(u => {
+  const nm = u ? (IGAuth.displayName()) : null;
+  $('acctBtn').textContent = nm ? ('👤 ' + nm) : '👤 Log in';
+  if (nm){ $('who').textContent = '👤 ' + nm; $('ovWho').innerHTML = `Signed in as <b>${nm}</b>`; }
+});
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>
