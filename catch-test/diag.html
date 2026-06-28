@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supabase Diagnostic</title>
+<style>body{font:15px/1.5 -apple-system,monospace;padding:16px;background:#0f1d36;color:#cfe0ff}
+b{color:#ffd54a}.ok{color:#7CFFB2}.err{color:#ff8088}pre{white-space:pre-wrap;word-break:break-word}</style>
+</head>
+<body>
+<h3>🔧 Supabase connection test</h3>
+<p>This checks each step on <b>your device</b>. Read me the results.</p>
+<pre id="out">starting…</pre>
+<script src="../supabase-config.js"></script>
+<script>
+const out = document.getElementById('out');
+let log = '';
+function p(s, cls){ log += (cls?`[${cls}] `:'') + s + '\n'; out.innerHTML = log
+  .replace(/\[ok\] (.*)/g,'<span class="ok">$1</span>')
+  .replace(/\[err\] (.*)/g,'<span class="err">$1</span>'); }
+
+p('URL = ' + (window.SUPABASE_URL || '(MISSING!)'));
+p('KEY present = ' + !!window.SUPABASE_KEY);
+p('online = ' + navigator.onLine);
+p('controlled by service worker = ' + !!(navigator.serviceWorker && navigator.serviceWorker.controller));
+
+(async () => {
+  try {
+    p('1) loading Supabase SDK from CDN…');
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      s.onload = res; s.onerror = () => rej(new Error('SDK <script> failed to load (CDN blocked?)'));
+      document.head.appendChild(s);
+    });
+    p('   SDK loaded, window.supabase = ' + !!window.supabase, 'ok');
+
+    p('2) raw fetch to Supabase (settings)…');
+    const f = await fetch(window.SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: window.SUPABASE_KEY } });
+    p('   raw fetch HTTP ' + f.status, f.ok ? 'ok' : 'err');
+
+    p('3) createClient + leaderboard read…');
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+    const r = await sb.from('leaderboard').select('name,score').limit(1);
+    p('   read: ' + JSON.stringify(r.error || r.data || []), r.error ? 'err' : 'ok');
+
+    p('4) auth.getSession…');
+    const s = await sb.auth.getSession();
+    p('   session = ' + (s.data.session ? 'logged in' : 'none'), 'ok');
+
+    p('ALL STEPS PASSED ✅ — login should work here.', 'ok');
+  } catch (e) {
+    p('FAILED ❌  ' + (e && e.message ? e.message : e), 'err');
+  }
+})();
+</script>
+</body>
+</html>
