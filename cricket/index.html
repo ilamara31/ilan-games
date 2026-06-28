@@ -901,7 +901,7 @@ function tutorialDone(){
   show('scr-tutdone');
 }
 function finishTutorial(){ if(profile){ profile.seenWelcome=true; saveProfile(); } show('scr-title'); refreshTitle(); }
-function exitTournament(){ if(confirm('Exit the tournament? Your stats so far are saved.')){ if(careerMode) clearSeason(); T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
+function exitTournament(){ if(confirm('Exit the tournament? Your progress is saved — pick up where you left off next time.')){ if(careerMode) saveSeason(); T=null; careerMode=false; managerManual=false; tutorialMode=false; show('scr-title'); refreshTitle(); } }
 
 function careerEnter(){
   if(!profile){ showAccounts(); return; }
