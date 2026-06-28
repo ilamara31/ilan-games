@@ -242,9 +242,9 @@
     const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if(isiOS && !standalone) iosHint.style.display='block';
 
-    /* ===== "NEW" / "RECENTLY UPDATED" badges (24h window) — no notifications =====
+    /* ===== "NEW" / "RECENTLY UPDATED" badges (18h window) — no notifications =====
        To flag a game, add its card href below with an `added` (newly added) or
-       `updated` (changed an existing game) timestamp. Badge auto-disappears after 24h. */
+       `updated` (changed an existing game) timestamp. Badge auto-disappears after 18h. */
     const GAMES = {
       'pptour/':       { added:   '2026-06-27T18:00:00' },   // newest -> also the bottom banner
       'tennis/':       { added:   '2026-06-27T12:05:00' },
@@ -252,11 +252,11 @@
       'catch/':        { updated: '2026-06-27T12:00:00' },
       'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
       'fruit-arena/':  { added:   '2026-06-28T12:00:00' },   // new game
-      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 24h.
+      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 18h.
     };
     (function(){
-      const DAY=24*60*60*1000, now=Date.now();
-      const fresh = ts => ts && (now - new Date(ts).getTime()) < DAY;
+      const WINDOW=18*60*60*1000, now=Date.now();   // badge shows for 18h from its timestamp
+      const fresh = ts => ts && (now - new Date(ts).getTime()) < WINDOW;
       let newest=null, newestT=-1;
       document.querySelectorAll('a.card').forEach(card=>{
         const g = GAMES[card.getAttribute('href')]; if(!g) return;
