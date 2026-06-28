@@ -30,7 +30,7 @@
 <canvas id="g"></canvas>
 <div id="ov">
   <h1>🟩 PAPER TERRITORY</h1>
-  <div class="sub">Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.<br>If a rival crosses your trail you pop — and don't cross your own! Own the most land.</div>
+  <div class="sub">Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.<br>If a rival crosses your trail you pop — and don't cross your own, or hit the glowing wall! Own the most land.</div>
   <button class="btn" id="start">CLAIM ▶</button>
   <div class="sub" id="best" style="margin-top:14px"></div>
   <div class="row">
@@ -69,6 +69,7 @@ const TSTEPS=[
   { brief:"Move with the ARROW KEYS — or SWIPE on a phone. Try moving OUT of your base!", act:true, hint:"move out of your base", done:()=>players[0]&&players[0].onTrail },
   { brief:"Nice — see the bright trail you leave behind? Now head BACK into your base to claim everything inside the loop!", act:true, hint:"return to your base", done:()=>tutClaimed },
   { brief:"🎉 You claimed new land! But careful: if a rival crosses your trail — or you cross your OWN trail — you POP." },
+  { brief:"⚠️ See the glowing WALL around the edge, with the yellow corners? Never run into it — you POP! Always stay INSIDE the border." },
   { brief:"That's it! Claim as much land as you can. Tap to start playing!", end:true },
 ];
 function startTut(){ document.getElementById('ov').classList.add('hidden'); state='play'; tutMode=true; tutStep=0; tutPhase='brief'; tutClaimed=false; coachMsg='';
@@ -152,20 +153,39 @@ function nearestOwn(p){ let bd=1e9,bx=null,by=null; for(let y=0;y<GH;y+=2)for(le
 
 function gameOver(){ state='over'; const mp=Math.round(pct(1)); if(mp>best){ best=mp; saveBest(); }
   try{ if(window.IGAuth) IGAuth.submitScore('paper', best); }catch(e){}
-  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='💥 POPPED!'; ov.querySelector('.sub').innerHTML='A rival crossed your trail (or you crossed your own)!';
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='💥 POPPED!'; ov.querySelector('.sub').innerHTML='A rival crossed your trail, you crossed your own — or you hit the wall!';
   ov.querySelector('#start').textContent='PLAY AGAIN ▶'; ov.querySelector('#best').innerHTML='<div class="big">'+mp+'%</div>claimed this run • Best: '+best+'%';
   setTimeout(()=>ov.classList.remove('hidden'),500); }
 
+function drawArenaBorder(){
+  const x0=offx, y0=offy, w=cell*GW, h=cell*GH, bw=Math.max(3, cell*0.55);
+  // bright wall with a danger glow so players can clearly see the edge they must not touch
+  ctx.save();
+  ctx.shadowColor='rgba(255,80,80,.75)'; ctx.shadowBlur=Math.max(6,cell);
+  ctx.strokeStyle='#eaf2ff'; ctx.lineWidth=bw; ctx.strokeRect(x0+bw/2, y0+bw/2, w-bw, h-bw);
+  ctx.restore();
+  // emphasised yellow corner brackets
+  const L=Math.max(16, cell*2.6);
+  ctx.strokeStyle='#ffd54a'; ctx.lineWidth=bw; ctx.lineCap='round';
+  const cs=[[x0,y0,1,1],[x0+w,y0,-1,1],[x0,y0+h,1,-1],[x0+w,y0+h,-1,-1]];
+  for(const k of cs){ const cx=k[0],cy=k[1],sx=k[2],sy=k[3];
+    ctx.beginPath(); ctx.moveTo(cx+sx*L, cy+sy*(bw/2)); ctx.lineTo(cx+sx*(bw/2), cy+sy*(bw/2)); ctx.lineTo(cx+sx*(bw/2), cy+sy*L); ctx.stroke(); }
+  ctx.lineCap='butt';
+}
 const mvStep=0.062; let last=0;
 function loop(now){ requestAnimationFrame(loop); const dt=Math.min(.05,(now-last)/1000||0); last=now;
   if(state==='play'){ if(!tutMode || tutPhase==='act'){ mvT+=dt; while(mvT>=mvStep){ mvT-=mvStep; step(); if(state!=='play')break; } } if(tutMode) tutTick(); }
   if(msgT>0)msgT-=dt;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#11131f'; ctx.fillRect(0,0,W,H);
+  const tlw=Math.max(1.5, cell*0.22);
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ const i=idx(x,y); const t=trail[i], o=owner[i];
-    if(t){ ctx.fillStyle=colOf(t).t; ctx.fillRect(offx+x*cell,offy+y*cell,cell,cell); }
-    else if(o){ ctx.fillStyle=colOf(o).b; ctx.fillRect(offx+x*cell,offy+y*cell,cell,cell); } }
-  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.strokeRect(offx,offy,cell*GW,cell*GH);
+    const px=offx+x*cell, py=offy+y*cell;
+    if(t){ const c=colOf(t).t;                         // TRAIL = hollow glowing outline (not filled)
+      ctx.globalAlpha=0.18; ctx.fillStyle=c; ctx.fillRect(px,py,cell,cell); ctx.globalAlpha=1;
+      ctx.strokeStyle=c; ctx.lineWidth=tlw; ctx.strokeRect(px+tlw/2,py+tlw/2,cell-tlw,cell-tlw); }
+    else if(o){ ctx.fillStyle=colOf(o).b; ctx.fillRect(px,py,cell,cell); } }   // CLAIMED land = solid fill
+  drawArenaBorder();
   if(players) for(const p of players){ if(!p.alive)continue; const c=colOf(p.id);
     ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(offx+(p.x+.5)*cell,offy+(p.y+.5)*cell,cell*0.62,0,6.28);ctx.fill();
     ctx.fillStyle=c.t; ctx.beginPath();ctx.arc(offx+(p.x+.5)*cell,offy+(p.y+.5)*cell,cell*0.45,0,6.28);ctx.fill(); }
