@@ -1,11 +1,12 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v52';
+const CACHE = 'ilan-arcade-v53';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './analytics.js',
   './announce.js',
+  './rec.js',
   './supabase-config.js',
   './auth.js',
   './icon-192.png',
