@@ -140,6 +140,10 @@
   <input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="off">
   <div class="pathgrid" id="pathGrid"></div>
   <button id="playBtn">▶ PLAY</button>
+  <div class="tabs" style="justify-content:center;margin-top:14px">
+    <button class="tab" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="tab" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('anime-tycoon','Anime Tycoon')">🏆 Leaderboard</button>
+  </div>
   <div class="startfoot">Move: WASD / Arrow keys • Jump: Space • Sprint: hold <b>R</b> (or the SPRINT button) • Powers: 1–6 • Shift-Lock: press <b>Shift</b> (toggle) • drag mouse to look. On phone use the joystick &amp; drag to look. Tap a 🟢 green pad to buy. Build a 2-storey mansion! Single-player tycoon with AI rivals (no live server).</div>
 </div>
 
@@ -347,7 +351,7 @@ let S=freshSave();
 function load(){ try{ const r=JSON.parse(localStorage.getItem(SK)); if(r&&typeof r==='object') S=Object.assign(freshSave(),r); }catch(e){}
   // unstick any save with no dropper yet and not enough cash for the first one
   if(!S.bought.some(id=>id.startsWith('drop')) && S.coins<STARTCOINS) S.coins=STARTCOINS; }
-function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
+function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} if(window.IGAuth) IGAuth.submitScore('anime-tycoon', S.lifetime); }
 
 function shopBuy(id){ const it=ALLSHOP[id]; if(!it) return 'no'; if(S.owned.includes(id)) return 'own';
   const bal=it.cur==='gems'?S.gems:S.coins; if(bal<it.price) return 'poor';
@@ -1095,6 +1099,8 @@ requestAnimationFrame(tick);
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
 } // end !TESTMODE
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

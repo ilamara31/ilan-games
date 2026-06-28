@@ -76,6 +76,8 @@
         <button id="playBtn" class="big-btn">PLAY ▶</button>
       </div>
       <button id="menuShopBtn" class="ghost-btn hidden">🛍️ Shop</button>
+      <button id="IGA_login" class="ghost-btn" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button id="IGA_lb" class="ghost-btn" onclick="window.IGAuth && IGAuth.showLeaderboard('obby','Rainbow Obby')">🏆 Leaderboard</button>
     </div>
   </div>
 
@@ -120,6 +122,28 @@
 </div>
 
 <script type="module" src="./js/main.js"></script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>
+// Submit best stage reached to the shared online leaderboard (higher is better).
+(function () {
+  function submitBest() {
+    if (!window.IGAuth) return;
+    try {
+      var raw = localStorage.getItem('ilanObbySave_v1');
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      var stage = parseInt(s && s.bestStage, 10);
+      if (stage > 0) IGAuth.submitScore('obby', stage);
+    } catch (e) {}
+  }
+  setTimeout(submitBest, 1500);
+  setInterval(submitBest, 15000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') submitBest();
+  });
+})();
+</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

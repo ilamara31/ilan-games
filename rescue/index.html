@@ -45,7 +45,7 @@
   #homeBtn {
     position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:68px;
     font-size:22px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.78);
-    display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); z-index:20;
+    display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); z-index:50;
   }
 
   #banner {
@@ -115,6 +115,8 @@
     <div id="ovExtra"></div>
     <button id="startBtn" class="pill">▶ Play</button>
     <button id="howBtn" class="pill" style="background:linear-gradient(135deg,#9bb0c8,#5e7494);box-shadow:0 5px 0 #41546e;font-size:16px;padding:11px 24px">❓ How to Play</button>
+    <button id="IGA_login" class="pill" style="background:linear-gradient(135deg,#9bb0c8,#5e7494);box-shadow:0 5px 0 #41546e;font-size:16px;padding:11px 24px" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button id="IGA_lb" class="pill" style="background:linear-gradient(135deg,#9bb0c8,#5e7494);box-shadow:0 5px 0 #41546e;font-size:16px;padding:11px 24px" onclick="window.IGAuth && IGAuth.showLeaderboard('rescue','Rescue')">🏆 Leaderboard</button>
     <p class="small" id="ctrlHint"></p>
   </div>
 
@@ -518,6 +520,7 @@ function gameOver(){
   running=false; shake=0;   // stop the screen shake on the game-over screen
   const bonus=Math.floor(comboMax*1.5), earned=score+bonus; data.coins+=earned;
   const isHigh=score>data.best; if(isHigh) data.best=score; saveData();
+  if(window.IGAuth) IGAuth.submitScore('rescue', data.best);
   if(window.track) track('game_over',{game:'rescue',score:score});
   Sound.over();
   $('overlay').querySelector('h1').textContent='🚒 Game Over';
@@ -541,6 +544,8 @@ $('muteBtn').addEventListener('click', ()=>{ Sound.unlock(); const on=Sound.togg
 
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

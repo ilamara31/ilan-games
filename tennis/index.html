@@ -114,6 +114,10 @@
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
     <button class="btn alt" id="setBtn">⚙️ Settings</button>
   </div>
+  <div class="row" style="margin-top:6px">
+    <button class="btn alt" id="IGA_login" type="button" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="btn alt" id="IGA_lb" type="button" onclick="window.IGAuth && IGAuth.showLeaderboard('tennis','Tennis')">🏆 Leaderboard</button>
+  </div>
   <div class="foot">Desktop: ◀ ▶ move • <b>Space</b> shot • <b>X</b> smash. Mobile: joystick + HIT.<br>Timing: early = lob • perfect = smash • late = weak. First to <b>5 points</b> wins!</div>
 </div>
 
@@ -573,6 +577,7 @@ function endMatch(win){ M.active=false; M.state='idle'; show('result');
   // career progression
   if(M.ctx.mode==='career' && win && M.ctx.stageIndex===S.careerStage && S.careerStage<CAREER.length-1) S.careerStage++;
   save(); sfx(win?'win':'hit');
+  if(window.IGAuth) IGAuth.submitScore('tennis', S.trophies);
   $('resTitle').textContent=win?'🏆 You Win!':'😞 You Lost'; $('resTitle').style.color=win?'#ffe14a':'#ff9a9a';
   $('resScore').textContent='Final: '+M.score.a+' – '+M.score.b;
   $('resCoins').textContent=coins; $('resXp').textContent=xp;
@@ -693,6 +698,8 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').c
   try{ if(!localStorage.getItem(KEY)) setTimeout(open,500); }catch(e){ setTimeout(open,500); }
 })();
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

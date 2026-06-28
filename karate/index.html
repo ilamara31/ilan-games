@@ -122,6 +122,10 @@
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
     <button class="btn alt" id="setBtn">⚙️ Settings</button>
   </div>
+  <div class="row" style="margin-top:6px">
+    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('karate','Karate')">🏆 Leaderboard</button>
+  </div>
   <a class="btn alt" href="../" style="display:block;text-decoration:none;margin-top:6px">🚪 Exit to Ilan Games</a>
   <div class="foot">Desktop: <b>A/D</b> or <b>← →</b> move • <b>W/↑</b> jump • <b>L</b> punch • <b>K</b> kick • <b>J</b> uppercut • <b>I</b> combo • <b>Space</b> block. Each move has a short cooldown — mix it up! Mobile: joystick + buttons (landscape).</div>
 </div>
@@ -670,6 +674,7 @@ function endMatch(win){ M.active=false; M.state='done'; show('result'); music('m
     }
   }
   save(); sfx(win?'win':'ko');
+  if(window.IGAuth) IGAuth.submitScore('karate', S.wins);   // total career wins (higher is better)
   $('resTitle').textContent=win?'🏆 VICTORY!':'💥 DEFEAT'; $('resTitle').style.color=win?'#ffd54a':'#ff6a6a';
   $('resSub').textContent = beltUp ? ('🥋 Promoted to '+BELTS[S.belt][0]+' Belt!') : (M.ctx.roundLabel||'');
   $('resCoins').textContent=coins; $('resXp').textContent=xp;
@@ -785,5 +790,7 @@ requestAnimationFrame(tick);
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
 } // end !TESTMODE
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 </body>
 </html>

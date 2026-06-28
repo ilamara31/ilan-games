@@ -135,6 +135,8 @@
       <button class="btn" id="btnMissions">🎯 MISSIONS</button>
       <button class="btn" id="btnTutorial">📖 TUTORIAL</button>
       <button class="btn alt" id="btnSettings">⚙️ SETTINGS</button>
+      <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('fruit-arena','Fruit Arena')">🏆 Leaderboard</button>
     </div>
     <a href="../" style="color:#cdb89a;font-size:13px;margin-top:6px;text-decoration:none">🏠 All Ilan Games</a>
   </div>
@@ -685,6 +687,7 @@ function endGame(byBomb){ if(state==='over')return; state='over';
   // auto-equip highest unlocked title if current locked
   if(levelOf(S.xp) < titleObj(S.title).lv) S.title=highestTitle().id;
   save();
+  if (window.IGAuth) IGAuth.submitScore('fruit-arena', S.best);
   $('goTitle').textContent=byBomb?'💥 BOOM!':'🍉 Game Over';
   $('goSub').innerHTML=(byBomb?'You sliced a bomb!':'You ran out of lives!')+'<br>Score <b>'+score+'</b> • earned <b>🪙 '+matchCoins+'</b>'+(afterLv>beforeLv?' • <b>⬆ Level '+afterLv+'!</b>':'');
   $('goStats').innerHTML = stat('🏆 Best',S.best)+stat('🎮 Plays',S.plays)+stat('💀 Lowest',S.worst==null?'—':S.worst)+stat('🔥 Max combo',comboMax)
@@ -875,6 +878,8 @@ if('serviceWorker' in navigator){ let _r=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_r)return; _r=true; location.reload(); });
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }); }
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>

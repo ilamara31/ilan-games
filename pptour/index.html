@@ -52,6 +52,7 @@
     <button class="btn green" id="btnTournament">🏆 Play Tournament</button>
     <button class="btn" id="btnQuick">⚡ Quick Match</button>
     <div class="row"><button class="btn alt" id="btnTutorial">🎓 Tutorial</button><button class="btn alt" id="btnShop">🛍️ Shop</button></div>
+    <div class="row"><button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button><button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')">🏆 Leaderboard</button></div>
     <a class="btn ghost" href="../" style="display:block;margin-top:10px;text-decoration:none">🚪 Exit to Ilan Games</a>
     <div class="sub" style="margin-top:14px">Move the mouse to move your racket — the cursor locks into the match and releases when it ends. Aim with the racket edge, click for a power shot.</div>
   </div>
@@ -106,7 +107,7 @@ const isTouch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
 
 /* ============================================================ SAVE ============================================================ */
 const SK='ppTour_v2';
-const DEF=()=>({ coins:100, owned:['classic'], equip:'classic' });
+const DEF=()=>({ coins:100, owned:['classic'], equip:'classic', wins:0 });
 let S=(()=>{ try{ const r=localStorage.getItem(SK); if(r){ const o=Object.assign(DEF(),JSON.parse(r)); if(!Array.isArray(o.owned))o.owned=['classic']; return o; } }catch(e){} return DEF(); })();
 function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
 
@@ -256,7 +257,8 @@ function scorePoint(who){ if(phase==='point')return;
   if(pPts>=5||aPts>=5){ matchEnd(pPts>aPts); return; }
   server = server==='player'?'ai':'player'; phase='point'; pointPause=1.1; }
 function matchEnd(won){ ball.active=false; coinsEarned=0;
-  if(won){ coinsEarned = (mode==='tournament')?ROUND_COINS[roundIdx]:30; S.coins+=coinsEarned; save(); }
+  if(won){ coinsEarned = (mode==='tournament')?ROUND_COINS[roundIdx]:30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
+  if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);   // total matches won (higher is better)
   if(mode==='tournament'){
     if(won && roundIdx<2){ roundIdx++; showOver(true,'round'); }
     else if(won){ showOver(true,'champion'); }
@@ -424,6 +426,8 @@ function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,
 let last=0; function loop(t){ const dt=Math.min(.05,(t-last)/1000||0); last=t; update(dt); render(); requestAnimationFrame(loop); }
 showHome(); requestAnimationFrame(loop);
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 </body>
