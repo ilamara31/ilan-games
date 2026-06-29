@@ -614,7 +614,7 @@ function makeCareerCtx(idx){ const c=CAREER[idx]; return { mode:'career', stageI
 const QMODES={
   easy:   {diff:0.30, run:0.22, courtF:1.0,  lbl:'Easy'},     // mostly comes to you; 1-2 shots make you run
   medium: {diff:0.55, run:0.60, courtF:1.0,  lbl:'Medium'},   // alternates corners — makes you run
-  hard:   {diff:0.68, run:0.85, courtF:1.16, lbl:'Hard'},     // still makes you run, but fairer; bigger-ish arena
+  hard:   {diff:0.80, run:0.90, courtF:1.22, lbl:'Hard'},     // tough & makes you run, but capped at 3 smashes/match
 };
 function makeQuickCtx(mode){ const m=QMODES[mode]||QMODES.medium; return { mode:'quick', diff:m.diff, run:m.run, courtF:m.courtF, games:2,
   oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], oppColor:[0xd23b2e,0x2fbf6a,0x8a4bff,0xff7ad9][(Math.random()*4)|0], tourName:'Quick Match — '+m.lbl, roundLabel:m.lbl }; }
