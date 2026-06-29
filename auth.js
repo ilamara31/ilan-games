@@ -110,7 +110,9 @@
     if (ok) sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
     player = loadPlayer();
     if (player) migrateAndSeed(player.name);    // re-merge device scores + (re)seed leaderboard each load
-    else autoGuestSeed();                       // not signed in? post device scores as a guest + nudge to log in
+    else if (hasAnyDeviceScore()) {             // guest who has played anything? upload ALL their on-device bests to the global board
+      ensureGuestPlayer(); seedLeaderboard(); setTimeout(nudgeLogin, 1600);
+    }
     try { seedLocalAll(); } catch (e) {}        // always populate the local fallback board (works without login/server)
     ready = true; fire();
     setTimeout(fetchBoard, 800);                // warm the leaderboard cache so it opens instantly
@@ -135,12 +137,19 @@
 
   /* ---------- local leaderboard fallback (always works, even offline / not logged in) ---------- */
   function localRows() { try { const a = JSON.parse(localStorage.getItem("iglb_local")); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-  function localName() {
-    if (player && player.name) return player.name;
+  function deviceName() {
     try { const s = storeLoad(); const a = s.accounts.find(x => x.id === s.activeId) || s.accounts[0]; if (a && a.name) return a.name; } catch (e) {}
     let n; try { n = localStorage.getItem("iglb_guestname"); } catch (e) {}
-    if (!n) { n = "You"; try { localStorage.setItem("iglb_guestname", n); } catch (e) {} }
+    if (!n || n === "You") { n = "Guest-" + Math.floor(1000 + Math.random() * 9000); try { localStorage.setItem("iglb_guestname", n); } catch (e) {} }
     return n;
+  }
+  function localName() { return (player && player.name) ? player.name : deviceName(); }
+  // make a guest identity so ANY one-time player (no login needed) gets posted to the global board
+  function ensureGuestPlayer() { if (player) return player; savePlayer({ name: deviceName(), guest: true }); return player; }
+  function hasAnyDeviceScore() {
+    try { const s = storeLoad(); const a = s.accounts.find(x => x.id === s.activeId); if (a) for (const g in GAME_BEST) { if (GAME_BEST[g](a) > 0) return true; } } catch (e) {}
+    for (const g in DEVICE_BEST) { try { if (DEVICE_BEST[g]() > 0) return true; } catch (e) {} }
+    return false;
   }
   function recordLocal(game, score, guest) {
     score = Math.round(score || 0); if (!score) return;
@@ -161,6 +170,7 @@
   async function submitScore(game, score) {
     score = Math.round(score || 0); if (!score) return;
     recordLocal(game, score, !(player && !player.guest));   // always log locally so it shows up no matter what
+    if (!player && sb) ensureGuestPlayer();                 // auto guest -> one play is enough to be on the global board
     if (!sb || !player) return;
     // skip the network call if we've already posted this score (or higher) for this player
     const ck = "igsent_" + game + "_" + player.name + (player.guest ? "_g" : "");
