@@ -239,6 +239,44 @@
       'stack':'stack 15 blocks high', 'archer':'KO 3 rivals' };
     function goalFor(s){ return GOALS[s] || 'beat your best score'; }
 
+    // ---- WEEKLY goals: HARD grind targets, actually verified against your saved best / career stat ----
+    const WEEK_EXCLUDE={ 'puzzles':1, 'anime-tycoon':1 };   // no Puzzle Pad / Anime Tycoon as Game of the Week
+    const WEEK_GOALS={
+      cricket:{t:1000,txt:g=>'score '+g+' career runs (across matches)'},
+      catch:{t:300,txt:g=>'reach a best score of '+g},
+      f1:{t:90,txt:g=>'earn '+g+' championship points'},
+      football:{t:10,txt:g=>'win '+g+' shootout matches'},
+      'fruit-arena':{t:200,txt:g=>'score '+g+' in a single run'},
+      pptour:{t:12,txt:g=>'win '+g+' matches'},
+      paper:{t:45,txt:g=>'claim '+g+'% of the map'},
+      rescue:{t:60,txt:g=>'rescue '+g+' people in one run'},
+      obby:{t:30,txt:g=>'reach stage '+g},
+      try:{t:15,txt:g=>'reach level '+g},
+      tennis:{t:6,txt:g=>'win '+g+' trophies'},
+      karate:{t:15,txt:g=>'win '+g+' fights'},
+      stack:{t:55,txt:g=>'stack '+g+' blocks high'},
+      archer:{t:8,txt:g=>'reach level '+g}
+    };
+    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return s&&Array.isArray(s.accounts)?(s.accounts.find(a=>a.id===s.activeId)||s.accounts[0]):null; }catch(e){ return null; } }
+    function lsNum(key,field){ try{ const o=JSON.parse(localStorage.getItem(key)); return (o&&+o[field])||0; }catch(e){ return 0; } }
+    function bestOf(slug){ const a=acctActive();
+      switch(slug){
+        case 'catch': return Math.max((a&&a.basket&&+a.basket.best)||0, lsNum('basketCatchV2_guest','best'));
+        case 'cricket': return ((a&&a.ipl&&+a.ipl.runs)||0)+((a&&a.odi&&+a.odi.runs)||0);
+        case 'f1': return (a&&a.f1&&+a.f1.points)||0;
+        case 'football': return (a&&a.pk&&+a.pk.won)||0;
+        case 'fruit-arena': return lsNum('fruitArena_v1','best');
+        case 'tennis': return lsNum('tennisTour_v1','trophies');
+        case 'pptour': return lsNum('ppTour_v2','wins');
+        case 'karate': return lsNum('karateChamp_v1','wins');
+        case 'obby': return lsNum('ilanObbySave_v1','bestStage');
+        case 'try': return lsNum('omt_save_v1','best');
+        case 'rescue': return Math.max(lsNum('rescueBounce_guest','best'), (a&&a.rescue&&+a.rescue.best)||0);
+        case 'paper': return lsNum('paperTerritory_v1','best');
+        case 'stack': return lsNum('stackTower_v1','best');
+        case 'archer': return lsNum('archerDuel_v1','best');
+      } return 0; }
+
     function rd(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
     function wr(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
@@ -266,11 +304,26 @@
 
     // ---- featured cards with goals ----
     const gotd=games[((today%N)+N)%N];
-    let gotw=games[(((Math.floor(week)*3+5)%N)+N)%N];
-    if(gotw.slug===gotd.slug) gotw=games[(games.indexOf(gotd)+1)%N];   // keep day & week different
+    const wpArr=(function(){ const p=games.filter(function(g){ return !WEEK_EXCLUDE[g.slug]; }); return p.length?p:games; })();
+    const WP=wpArr.length;
+    let gotw=wpArr[(((week*3+5)%WP)+WP)%WP];
+    if(gotw.slug===gotd.slug) gotw=wpArr[(wpArr.indexOf(gotw)+1)%WP];   // keep day & week different
 
     function cardHTML(kind,g){
       const isWeek=kind==='week';
+      if(isWeek && WEEK_GOALS[g.slug]){
+        const wg=WEEK_GOALS[g.slug], cur=bestOf(g.slug), met=cur>=wg.t;
+        const claimed = rd('ig_claim_week',-1)===week;
+        let action;
+        if(claimed) action='<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>';
+        else if(met) action='<button class="fclaim" data-claim="week">Claim ⭐⭐⭐</button>';
+        else action='<span class="flock">Progress: <b>'+Math.min(cur,wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
+        return '<div class="feature week">'
+          +'<div class="flabel">⭐ GAME OF THE WEEK</div>'
+          +'<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+          +'<div class="fgoal">🎯 Weekly goal: <b>'+wg.txt(wg.t)+'</b> — earn 3 stars!</div>'
+          +'<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
+      }
       const lp=rd('ig_lastplay',{}), playedT = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today);
       const claimedAt = rd(isWeek?'ig_claim_week':'ig_claim_day', -1);
       const claimed = claimedAt === (isWeek?week:today);
@@ -291,7 +344,9 @@
       f.querySelectorAll('[data-play]').forEach(function(a){ a.addEventListener('click',function(){ markPlay(a.getAttribute('data-play')); }); });
       f.querySelectorAll('[data-claim]').forEach(function(b){ b.addEventListener('click',function(){
         const kind=b.getAttribute('data-claim'), isWeek=kind==='week', g=isWeek?gotw:gotd;
-        const lp=rd('ig_lastplay',{}), ok = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today);
+        let ok;
+        if(isWeek && WEEK_GOALS[g.slug]) ok = bestOf(g.slug) >= WEEK_GOALS[g.slug].t;   // weekly = verified grind
+        else { const lp=rd('ig_lastplay',{}); ok = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today); }
         if(!ok) return;
         wr('ig_stars', stars() + (isWeek?3:1));
         wr(isWeek?'ig_claim_week':'ig_claim_day', isWeek?week:today);
