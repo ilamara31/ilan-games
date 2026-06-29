@@ -390,7 +390,7 @@ const M={ active:false, ctx:null, score:{a:0,b:0}, server:'a', state:'idle',
   oppArmed:false };
 let px=0, oppx=0, ovx=0;
 
-function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0;
+function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0; M.oppSmashes=0;
   setCourt(ctx.courtF||1);   // Hard = bigger arena
   M.stats={rallies:0,smashes:0,aces:0}; makePlayers(ctx.oppColor, ctx.oppName); px=0; oppx=0;
   show('hud'); document.getElementById('sNmA').textContent=S.name||'You'; document.getElementById('sNmB').textContent=ctx.oppName;
@@ -471,7 +471,7 @@ function updateAI(dt){ const d=M.ctx.diff;
         if(Math.random() < 0.5+d*0.46){ M.oppArmed=true;   // higher diff = rarely misses
           let q='normal'; const r=Math.random();
           const easy = ball.position.y>1.6 || ball.position.z > OZ+4.2;   // high or short = punishable
-          if(easy && r<0.45+d*0.45) q='smash';            // he smashes weak/short balls
+          if(easy && r<0.45+d*0.45 && (M.oppSmashes||0)<3){ q='smash'; M.oppSmashes=(M.oppSmashes||0)+1; }   // max 3 smashes per match
           else if(r>0.9-d*0.15) q='lob'; else if(r<0.05) q='weak';
           M.lastHitter='b'; M.bounce=0; M.rallyHits++; shotFor(q,'b'); swing(opp); sfx(q==='smash'?'smash':'hit');
           burst(ball.position.clone(), q==='smash'?0xff5a3c:0xeaff8a, q==='smash'?18:8, q==='smash'?7:4);
@@ -614,7 +614,7 @@ function makeCareerCtx(idx){ const c=CAREER[idx]; return { mode:'career', stageI
 const QMODES={
   easy:   {diff:0.30, run:0.22, courtF:1.0,  lbl:'Easy'},     // mostly comes to you; 1-2 shots make you run
   medium: {diff:0.55, run:0.60, courtF:1.0,  lbl:'Medium'},   // alternates corners — makes you run
-  hard:   {diff:0.85, run:0.92, courtF:1.28, lbl:'Hard'},     // pinpoint corners + a bigger arena
+  hard:   {diff:0.68, run:0.85, courtF:1.16, lbl:'Hard'},     // still makes you run, but fairer; bigger-ish arena
 };
 function makeQuickCtx(mode){ const m=QMODES[mode]||QMODES.medium; return { mode:'quick', diff:m.diff, run:m.run, courtF:m.courtF, games:2,
   oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], oppColor:[0xd23b2e,0x2fbf6a,0x8a4bff,0xff7ad9][(Math.random()*4)|0], tourName:'Quick Match — '+m.lbl, roundLabel:m.lbl }; }
