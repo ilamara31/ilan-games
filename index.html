@@ -49,21 +49,28 @@
   .stack   { background:linear-gradient(135deg,#ffb13d,#b8005a); }
   .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
   /* ===== Game of the Day / Week + Passport ===== */
-  #gotd, #passport { width:100%; max-width:900px; }
-  #gotd { margin-bottom:12px; }
-  .feature { display:block; text-decoration:none; color:#fff; text-align:left;
+  #feats { width:100%; max-width:900px; display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  #passport { width:100%; max-width:900px; margin-bottom:18px; }
+  .feature { flex:1; min-width:260px; color:#fff; text-align:left;
     background:linear-gradient(135deg,#1d6fd0,#0b2f6b); border:2px solid rgba(255,255,255,.18);
-    border-radius:18px; padding:13px 18px; box-shadow:0 8px 22px rgba(0,0,0,.4); transition:transform .12s; }
-  .feature:active { transform:scale(.98); }
-  .flabel { font-size:12px; font-weight:900; letter-spacing:1px; color:#ffd54a; margin-bottom:6px; }
+    border-radius:18px; padding:14px 18px; box-shadow:0 8px 22px rgba(0,0,0,.4); }
+  .feature.week { background:linear-gradient(135deg,#a25bff,#3a1d7a); }
+  .flabel { font-size:12px; font-weight:900; letter-spacing:1px; color:#ffe14a; margin-bottom:8px; }
   .frow { display:flex; align-items:center; gap:14px; }
   .femoji { font-size:46px; line-height:1; }
   .fname { font-size:20px; font-weight:900; }
-  .fcta { font-size:13px; color:#cfe0ff; }
-  .gotw { display:inline-block; margin-top:10px; text-decoration:none; color:#ffe0b0; font-size:13px; font-weight:bold;
-    background:rgba(0,0,0,.25); border:1px solid rgba(255,200,120,.35); border-radius:20px; padding:6px 14px; }
-  #passport { margin-bottom:18px; }
-  .pptop { font-size:14px; color:#dbe6fb; margin-bottom:6px; text-align:left; }
+  .fgoal { font-size:13.5px; color:#eaf2ff; margin-top:10px; line-height:1.4; }
+  .fgoal b { color:#ffe14a; }
+  .factions { display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .fplay { text-decoration:none; font-weight:900; font-size:15px; color:#04220f; padding:9px 20px; border-radius:22px;
+    background:linear-gradient(135deg,#7dff9b,#22c55e); box-shadow:0 4px 0 #1a8f47; }
+  .fplay:active { transform:translateY(2px); box-shadow:0 2px 0 #1a8f47; }
+  .fclaim { border:none; cursor:pointer; font-weight:900; font-size:14px; color:#241600; padding:9px 18px; border-radius:22px;
+    background:linear-gradient(135deg,#ffd54a,#ff9b3d); box-shadow:0 4px 0 #b5700f; }
+  .fclaim:active { transform:translateY(2px); box-shadow:0 2px 0 #b5700f; }
+  .fdone { font-size:14px; font-weight:800; color:#9bffba; }
+  .flock { font-size:12.5px; color:#cfe0ff; opacity:.85; }
+  #passport .pptop { font-size:14px; color:#dbe6fb; margin-bottom:6px; text-align:left; }
   .passbar { height:10px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden; }
   .passbar > span { display:block; height:100%; background:linear-gradient(90deg,#7dff9b,#22c55e); transition:width .6s; }
   .champ { font-size:16px; font-weight:900; color:#04220f; text-align:center;
@@ -124,7 +131,7 @@
     margin-bottom:22px;max-width:420px;font-size:14px;line-height:1.5">
     📲 <b>Install on iPhone:</b> tap the <b>Share</b> button below, then <b>Add to Home Screen</b>.
     It becomes a real app and remembers you forever.</div>
-  <div id="gotd"></div>
+  <div id="feats"></div>
   <div id="passport"></div>
   <div class="cards">
     <a class="card cricket" href="cricket/">
@@ -215,7 +222,7 @@
   <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
 
   <script>
-  /* ===== Game Passport + Game of the Day / Week (drives playing ALL games) ===== */
+  /* ===== Game Passport + Game of the Day / Week with goals (drives playing ALL games) ===== */
   (function(){
     const cards=[].slice.call(document.querySelectorAll('a.card'));
     const games=cards.map(function(c){ return {
@@ -224,38 +231,74 @@
       emoji:(c.querySelector('.emoji')||{}).textContent||'🎮' }; }).filter(function(g){ return g.slug; });
     const N=games.length; if(!N) return;
 
-    function readPlayed(){ try{ return JSON.parse(localStorage.getItem('ig_played')||'[]')||[]; }catch(e){ return []; } }
-    function markPlayed(slug){ try{ const a=readPlayed(); if(a.indexOf(slug)<0){ a.push(slug); localStorage.setItem('ig_played',JSON.stringify(a)); } }catch(e){} }
-    // count a game as "played" the moment its tile is tapped (works even if a game lacks analytics)
-    cards.forEach(function(c){ c.addEventListener('click',function(){ markPlayed((c.getAttribute('href')||'').replace(/\/+$/,'')); }); });
+    // per-game goal challenge (falls back to "beat your best")
+    const GOALS={ 'cricket':'chase down the target and win', 'catch':'catch 25 without missing', 'f1':'finish on the podium (top 3)',
+      'football':'win the penalty shootout', 'pptour':'win a tournament match', 'fruit-arena':'slice 40 fruit, no bombs',
+      'paper':'claim 30% of the map', 'rescue':'rescue 15 people', 'obby':'reach stage 10', 'puzzles':'finish any puzzle',
+      'try':'survive 5 rule-flips', 'anime-tycoon':'win a battle in the arena', 'tennis':'win a match', 'karate':'land a KO',
+      'stack':'stack 15 blocks high', 'archer':'KO 3 rivals' };
+    function goalFor(s){ return GOALS[s] || 'beat your best score'; }
 
-    const played=readPlayed(), pset={}; played.forEach(function(s){ pset[s]=1; });
-    const playedCount=games.filter(function(g){ return pset[g.slug]; }).length;
+    function rd(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+    function wr(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
-    // ✓ stamp on every played tile
-    games.forEach(function(g){ if(pset[g.slug]){ const s=document.createElement('span'); s.className='stamp'; s.textContent='✓'; g.el.appendChild(s); } });
+    const today=Math.floor(Date.now()/86400000), week=Math.floor(today/7);
+    // record a play (for the passport AND for goal verification — "played today")
+    function markPlay(slug){ const a=rd('ig_played',[]); if(a.indexOf(slug)<0){ a.push(slug); wr('ig_played',a); }
+      const lp=rd('ig_lastplay',{}); lp[slug]=today; wr('ig_lastplay',lp); }
+    cards.forEach(function(c){ c.addEventListener('click',function(){ markPlay((c.getAttribute('href')||'').replace(/\/+$/,'')); }); });
 
-    // passport widget
-    const done=playedCount>=N, pct=Math.round(playedCount/N*100), pp=document.getElementById('passport');
-    if(done){ try{ localStorage.setItem('ig_champion','1'); }catch(e){} }
-    if(pp) pp.innerHTML = done
-      ? '<div class="champ">🏆 CHAMPION! You\'ve played all '+N+' games — legend! 👑</div>'
-      : '<div class="pptop">🎟️ Your Game Passport — <b>'+playedCount+'/'+N+'</b> played'
-        + (playedCount? ' • '+(N-playedCount)+' more to collect!' : ' • try them all!')
-        + '</div><div class="passbar"><span style="width:'+pct+'%"></span></div>';
+    function stars(){ return rd('ig_stars',0)|0; }
 
-    // game of the day / week — deterministic by date, rotates through every game
-    const day=Math.floor(Date.now()/86400000);
-    const gotd=games[((day%N)+N)%N];
-    let gotw=games[(((Math.floor(day/7)*3+5)%N)+N)%N];
-    if(gotw.slug===gotd.slug) gotw=games[(games.indexOf(gotd)+1)%N];   // keep them different
-    const g=document.getElementById('gotd');
-    if(g) g.innerHTML =
-      '<a class="feature" href="'+gotd.slug+'/">'
-      + '<div class="flabel">🎯 GAME OF THE DAY</div>'
-      + '<div class="frow"><span class="femoji">'+gotd.emoji+'</span>'
-      + '<div><div class="fname">'+gotd.name+'</div><div class="fcta">Tap to play ▶</div></div></div></a>'
-      + '<a class="gotw" href="'+gotw.slug+'/">⭐ This week\'s pick: <b>'+gotw.name+'</b> →</a>';
+    // ---- passport ----
+    function renderPassport(){
+      const played=rd('ig_played',[]), pset={}; played.forEach(function(s){ pset[s]=1; });
+      const cnt=games.filter(function(g){ return pset[g.slug]; }).length;
+      const done=cnt>=N, pct=Math.round(cnt/N*100), pp=document.getElementById('passport');
+      if(done) wr('ig_champion',1);
+      games.forEach(function(g){ if(pset[g.slug] && !g.el.querySelector('.stamp')){ const s=document.createElement('span'); s.className='stamp'; s.textContent='✓'; g.el.appendChild(s); } });
+      if(pp) pp.innerHTML = (done
+        ? '<div class="champ">🏆 CHAMPION! You\'ve played all '+N+' games — legend! 👑</div>'
+        : '<div class="pptop">🎟️ Your Game Passport — <b>'+cnt+'/'+N+'</b> played'+(cnt?' • '+(N-cnt)+' more to collect!':' • try them all!')+'</div>'
+          + '<div class="passbar"><span style="width:'+pct+'%"></span></div>')
+        + '<div class="pptop" style="margin-top:8px">⭐ Stars earned: <b>'+stars()+'</b></div>';
+    }
+
+    // ---- featured cards with goals ----
+    const gotd=games[((today%N)+N)%N];
+    let gotw=games[(((Math.floor(week)*3+5)%N)+N)%N];
+    if(gotw.slug===gotd.slug) gotw=games[(games.indexOf(gotd)+1)%N];   // keep day & week different
+
+    function cardHTML(kind,g){
+      const isWeek=kind==='week';
+      const lp=rd('ig_lastplay',{}), playedT = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today);
+      const claimedAt = rd(isWeek?'ig_claim_week':'ig_claim_day', -1);
+      const claimed = claimedAt === (isWeek?week:today);
+      const reward = isWeek?3:1;
+      let action;
+      if(claimed) action='<span class="fdone">✅ Goal done — ⭐ earned!</span>';
+      else if(playedT) action='<button class="fclaim" data-claim="'+kind+'">Claim '+(isWeek?'⭐⭐⭐':'⭐')+'</button>';
+      else action='<span class="flock">▶ Play it '+(isWeek?'this week':'today')+' to earn your '+(isWeek?'⭐⭐⭐':'⭐')+'</span>';
+      return '<div class="feature'+(isWeek?' week':'')+'">'
+        + '<div class="flabel">'+(isWeek?'⭐ GAME OF THE WEEK':'🎯 GAME OF THE DAY')+'</div>'
+        + '<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+        + '<div class="fgoal">🎯 Goal: <b>'+goalFor(g.slug)+'</b> — earn '+(isWeek?'3 stars':'a star')+'!</div>'
+        + '<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
+    }
+    function renderFeats(){
+      const f=document.getElementById('feats'); if(!f) return;
+      f.innerHTML = cardHTML('day',gotd) + cardHTML('week',gotw);
+      f.querySelectorAll('[data-play]').forEach(function(a){ a.addEventListener('click',function(){ markPlay(a.getAttribute('data-play')); }); });
+      f.querySelectorAll('[data-claim]').forEach(function(b){ b.addEventListener('click',function(){
+        const kind=b.getAttribute('data-claim'), isWeek=kind==='week', g=isWeek?gotw:gotd;
+        const lp=rd('ig_lastplay',{}), ok = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today);
+        if(!ok) return;
+        wr('ig_stars', stars() + (isWeek?3:1));
+        wr(isWeek?'ig_claim_week':'ig_claim_day', isWeek?week:today);
+        renderFeats(); renderPassport();
+      }); });
+    }
+    renderFeats(); renderPassport();
   })();
   </script>
 
