@@ -416,9 +416,9 @@
     const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if(isiOS && !standalone) iosHint.style.display='block';
 
-    /* ===== "NEW" / "RECENTLY UPDATED" badges (18h window) — no notifications =====
+    /* ===== "NEW" / "RECENTLY UPDATED" badges (16h window) — no notifications =====
        To flag a game, add its card href below with an `added` (newly added) or
-       `updated` (changed an existing game) timestamp. Badge auto-disappears after 18h. */
+       `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
       'stack/':        { added:   '2026-06-29T12:10:00' },   // newest -> also the bottom banner
       'archer/':       { added:   '2026-06-29T12:00:00' },
@@ -426,15 +426,15 @@
       'rescue/':       { added:   '2026-06-28T20:00:00' },
       'karate/':       { added:   '2026-06-28T12:00:00' },
       'pptour/':       { added:   '2026-06-27T18:00:00' },
-      'tennis/':       { updated: '2026-06-29T12:00:00' },
+      'tennis/':       { updated: '2026-06-29T22:37:26' },
       'anime-tycoon/': { updated: '2026-06-27T19:00:00' },
       'catch/':        { updated: '2026-06-27T12:00:00' },
       'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
       'fruit-arena/':  { added:   '2026-06-28T12:00:00' },   // new game
-      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 18h.
+      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
     };
     (function(){
-      const WINDOW=18*60*60*1000, now=Date.now();   // badge shows for 18h from its timestamp
+      const WINDOW=16*60*60*1000, now=Date.now();   // badge shows for 16h from its timestamp
       const fresh = ts => ts && (now - new Date(ts).getTime()) < WINDOW;
       let newest=null, newestT=-1;
       document.querySelectorAll('a.card').forEach(card=>{
