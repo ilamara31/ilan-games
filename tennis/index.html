@@ -106,8 +106,13 @@
     <input id="numIn" maxlength="2" placeholder="#" inputmode="numeric" autocomplete="off" style="width:64px;text-align:center;padding:12px 8px;border-radius:14px;border:2px solid #2f5f9e;background:#0e2240;color:#fff;font-size:17px;outline:none">
   </div>
   <div class="sub" style="margin:6px 0 12px;font-size:12px">↑ your name &amp; jersey number (shown on your shirt)</div>
-  <button class="btn green" data-mode="quick">⚡ Quick Match</button>
-  <button class="btn" data-mode="tournament">🏆 Tournament</button>
+  <div class="sub" style="margin:2px 0 4px;font-size:13px;color:#bcd4ee">⚡ Quick Match — choose difficulty:</div>
+  <div class="row">
+    <button class="btn green" data-mode="quick" data-diff="easy" style="flex:1">😀 Easy</button>
+    <button class="btn" data-mode="quick" data-diff="medium" style="flex:1">😅 Medium</button>
+    <button class="btn" data-mode="quick" data-diff="hard" style="flex:1;background:linear-gradient(135deg,#ff7a7a,#d11f3a);color:#fff">😈 Hard</button>
+  </div>
+  <button class="btn" data-mode="tournament" style="margin-top:8px">🏆 Tournament</button>
   <button class="btn gold" data-mode="career">🎓 Career Mode</button>
   <div class="row" style="margin-top:6px">
     <button class="btn alt" id="howBtn" type="button">❓ How to Play</button>
@@ -263,25 +268,25 @@ scene.add(new THREE.AmbientLight(0xbfe0ff,0.4));
 const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c},o));
 
 /* ---------- court ---------- */
-const HW=5, HL=11, NETH=1.0;     // half width, half length (baseline at ±HL), net height
+let HW=5; const BASE_HW=5, HL=11, NETH=1.0;     // HW is logical half-width; scales per match (bigger court on Hard)
 const PZ=HL-0.6, OZ=-(HL-0.6);   // player & opponent baseline z
 // surrounding ground
-const surround=new THREE.Mesh(new THREE.CircleGeometry(120,48), mat(0x2b6f3a,{roughness:1})); surround.rotation.x=-Math.PI/2; surround.position.y=-0.02; surround.receiveShadow=true; scene.add(surround);
-// court slab
-const court=new THREE.Mesh(new THREE.BoxGeometry(HW*2+3, 0.3, HL*2+3), mat(0x2f7fd0,{roughness:.9})); court.position.y=-0.15; court.receiveShadow=true; scene.add(court);
-const inField=new THREE.Mesh(new THREE.PlaneGeometry(HW*2, HL*2), mat(0x3f93e0,{roughness:.9})); inField.rotation.x=-Math.PI/2; inField.position.y=0.001; inField.receiveShadow=true; scene.add(inField);
-// court lines
+const surround=new THREE.Mesh(new THREE.CircleGeometry(150,48), mat(0x2b6f3a,{roughness:1})); surround.rotation.x=-Math.PI/2; surround.position.y=-0.02; surround.receiveShadow=true; scene.add(surround);
+// all court visuals live in courtGroup so we can widen the whole arena on Hard
+const courtGroup=new THREE.Group(); scene.add(courtGroup);
+const court=new THREE.Mesh(new THREE.BoxGeometry(BASE_HW*2+3, 0.3, HL*2+3), mat(0x2f7fd0,{roughness:.9})); court.position.y=-0.15; court.receiveShadow=true; courtGroup.add(court);
+const inField=new THREE.Mesh(new THREE.PlaneGeometry(BASE_HW*2, HL*2), mat(0x3f93e0,{roughness:.9})); inField.rotation.x=-Math.PI/2; inField.position.y=0.001; inField.receiveShadow=true; courtGroup.add(inField);
 const lineMat=new THREE.MeshBasicMaterial({color:0xffffff});
-function line(w,l,x,z){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,l),lineMat); m.rotation.x=-Math.PI/2; m.position.set(x,0.01,z); scene.add(m); }
-line(HW*2+0.3,0.16,0,HL); line(HW*2+0.3,0.16,0,-HL);                 // baselines
-line(0.16,HL*2,-HW,0); line(0.16,HL*2,HW,0);                          // singles sidelines
-line(HW*2,0.12,0,0);                                                  // center (under net)
-line(HW*1.4,0.14,0,HL*0.46); line(HW*1.4,0.14,0,-HL*0.46);            // service lines
-line(0.14,HL*0.92,0,HL*0.23); line(0.14,HL*0.92,0,-HL*0.23);          // center service line
-// net
-const net=new THREE.Mesh(new THREE.BoxGeometry(HW*2+1.4,NETH,0.12), new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.5})); net.position.set(0,NETH/2,0); scene.add(net);
-const netTop=new THREE.Mesh(new THREE.BoxGeometry(HW*2+1.5,0.12,0.16), mat(0xffffff)); netTop.position.set(0,NETH,0); scene.add(netTop);
-for(const sx of [-1,1]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,NETH+0.3,8),mat(0x223)); post.position.set(sx*(HW+0.7),(NETH+0.3)/2,0); scene.add(post); }
+function line(w,l,x,z){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,l),lineMat); m.rotation.x=-Math.PI/2; m.position.set(x,0.01,z); courtGroup.add(m); }
+line(BASE_HW*2+0.3,0.16,0,HL); line(BASE_HW*2+0.3,0.16,0,-HL);                 // baselines
+line(0.16,HL*2,-BASE_HW,0); line(0.16,HL*2,BASE_HW,0);                          // singles sidelines
+line(BASE_HW*2,0.12,0,0);                                                       // center (under net)
+line(BASE_HW*1.4,0.14,0,HL*0.46); line(BASE_HW*1.4,0.14,0,-HL*0.46);            // service lines
+line(0.14,HL*0.92,0,HL*0.23); line(0.14,HL*0.92,0,-HL*0.23);                    // center service line
+const net=new THREE.Mesh(new THREE.BoxGeometry(BASE_HW*2+1.4,NETH,0.12), new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.5})); net.position.set(0,NETH/2,0); courtGroup.add(net);
+const netTop=new THREE.Mesh(new THREE.BoxGeometry(BASE_HW*2+1.5,0.12,0.16), mat(0xffffff)); netTop.position.set(0,NETH,0); courtGroup.add(netTop);
+for(const sx of [-1,1]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,NETH+0.3,8),mat(0x223)); post.position.set(sx*(BASE_HW+0.7),(NETH+0.3)/2,0); courtGroup.add(post); }
+function setCourt(f){ HW=BASE_HW*f; courtGroup.scale.x=f; }   // f=1 normal, >1 = bigger arena (Hard)
 // stands + crowd dots
 const cols=[0xff6b6b,0xffd54a,0x6ad0ff,0x9bff8e,0xff9bd0,0xffffff,0xff8b2d,0x8a4bff];
 const bodyGeo=new THREE.BoxGeometry(0.46,0.62,0.4), headGeo=new THREE.SphereGeometry(0.24,8,8), skinM=mat(0xf0c79a,{roughness:.7});
@@ -290,11 +295,11 @@ function spectator(x,y,z,col,faceIn){ const g=new THREE.Group();
   const head=new THREE.Mesh(headGeo, skinM); head.position.y=0.76; g.add(head);
   g.position.set(x,y,z); if(faceIn) g.rotation.y=Math.PI; g.userData.baseY=y; return g; }
 function stand(z, faceIn){ // tiered stand with rows of seated spectators
-  const s=new THREE.Mesh(new THREE.BoxGeometry(HW*2+12,0.4,5.5), mat(0x9aa6b6,{roughness:1})); s.position.set(0,1.2,z); s.receiveShadow=true; scene.add(s);
-  for(let r=0;r<3;r++){ const step=new THREE.Mesh(new THREE.BoxGeometry(HW*2+12,1.0,1.7), mat(0x808d9e,{roughness:1})); step.position.set(0,1.0+r*0.7, z + (faceIn? -1 : 1)*(r*1.6-1.4)); step.receiveShadow=true; scene.add(step); }
+  const s=new THREE.Mesh(new THREE.BoxGeometry(BASE_HW*2+12,0.4,5.5), mat(0x9aa6b6,{roughness:1})); s.position.set(0,1.2,z); s.receiveShadow=true; courtGroup.add(s);
+  for(let r=0;r<3;r++){ const step=new THREE.Mesh(new THREE.BoxGeometry(BASE_HW*2+12,1.0,1.7), mat(0x808d9e,{roughness:1})); step.position.set(0,1.0+r*0.7, z + (faceIn? -1 : 1)*(r*1.6-1.4)); step.receiveShadow=true; courtGroup.add(step); }
   const people=[];
   for(let r=0;r<3;r++){ const rz=z + (faceIn? -1 : 1)*(r*1.6-1.0); const ry=1.9+r*0.7;
-    for(let x=-HW-5; x<=HW+5; x+=1.15){ const p=spectator(x+(Math.random()-.5)*0.3, ry, rz, cols[(Math.random()*cols.length)|0], faceIn); scene.add(p); people.push(p); } }
+    for(let x=-BASE_HW-5; x<=BASE_HW+5; x+=1.15){ const p=spectator(x+(Math.random()-.5)*0.3, ry, rz, cols[(Math.random()*cols.length)|0], faceIn); courtGroup.add(p); people.push(p); } }
   return people; }
 const crowdA=stand(HL+5,false), crowdB=stand(-HL-5,true);
 function bobCrowd(t){ const cy=Math.abs(Math.sin(t*16)); for(const p of crowdA){ p.position.y=p.userData.baseY+cy*0.35; } for(const p of crowdB){ p.position.y=p.userData.baseY+cy*0.3; } }
@@ -386,6 +391,7 @@ const M={ active:false, ctx:null, score:{a:0,b:0}, server:'a', state:'idle',
 let px=0, oppx=0, ovx=0;
 
 function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0;
+  setCourt(ctx.courtF||1);   // Hard = bigger arena
   M.stats={rallies:0,smashes:0,aces:0}; makePlayers(ctx.oppColor, ctx.oppName); px=0; oppx=0;
   show('hud'); document.getElementById('sNmA').textContent=S.name||'You'; document.getElementById('sNmB').textContent=ctx.oppName;
   document.getElementById('smashBtn').style.display='flex'; updateSmashUI();   // smash/cooldown badge always visible
@@ -404,8 +410,17 @@ function swing(p){ if(p) p.userData.swing=1; }
 function shotFor(kind, hitter){ // kind: lob/normal/smash/weak  hitter:'a'|'b'
   const toOpp = hitter==='a'? -1 : 1;            // direction along z
   const opObj = hitter==='a'? opp : player;
-  // aim away from the receiver
-  let tx = -(opObj.position.x)*0.6 + (Math.random()-0.5)*HW*0.7; tx=Math.max(-HW+0.5,Math.min(HW-0.5,tx));
+  let tx;
+  if(hitter==='b'){
+    // AI placement: aim to the corner AWAY from where the player is standing.
+    // run = how hard it makes you run (Easy small, Hard large). Low run -> often near the player.
+    const run = (M.ctx.run!=null) ? M.ctx.run : Math.min(0.9, M.ctx.diff*0.9);
+    const away = (player.position.x>=0 ? -1 : 1);                 // opposite side from the player
+    tx = away*HW*(0.45+run*0.5) + (Math.random()-0.5)*HW*(1-run)*0.9;
+  } else {
+    tx = -(opObj.position.x)*0.6 + (Math.random()-0.5)*HW*0.7;     // player's shot aims away from opponent
+  }
+  tx=Math.max(-HW+0.5,Math.min(HW-0.5,tx));
   let tz, T;
   if(kind==='lob'){ tz=toOpp*HL*0.8; T=1.7; }
   else if(kind==='smash'){ tz=toOpp*HL*(0.55+Math.random()*0.3); T=0.6; M.stats.smashes++; }
@@ -592,11 +607,17 @@ function endMatch(win){ M.active=false; M.state='idle'; show('result');
 let resultNext=()=>show('menu');
 $('resNext').onclick=()=>resultNext();
 
-function makeTournCtx(round){ const r=TOUR_ROUNDS[round]; return { mode:'tournament', round, diff:r.diff, games:r.games,
+function makeTournCtx(round){ const r=TOUR_ROUNDS[round]; return { mode:'tournament', round, diff:r.diff, games:r.games, run:Math.min(0.9,r.diff*0.95),
   oppName:OPP_NAMES[(round*3+2)%OPP_NAMES.length], oppColor:[0xd23b2e,0x8a4bff,0x2fbf6a][round%3], tourName:'City Open • '+r.lbl, roundLabel:r.lbl }; }
-function makeCareerCtx(idx){ const c=CAREER[idx]; return { mode:'career', stageIndex:idx, diff:c.diff, games:c.games,
+function makeCareerCtx(idx){ const c=CAREER[idx]; return { mode:'career', stageIndex:idx, diff:c.diff, games:c.games, run:Math.min(0.92,c.diff*0.95), courtF:c.diff>=0.82?1.15:1,
   oppName:OPP_NAMES[(idx*2+1)%OPP_NAMES.length], oppColor:[0x2a6df0,0xd23b2e,0x8a4bff,0x2fbf6a,0xff7ad9,0xffd54a][idx%6], tourName:c.name, roundLabel:c.name }; }
-function makeQuickCtx(){ const d=0.35+Math.random()*0.25; return { mode:'quick', diff:d, games:2, oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], oppColor:[0xd23b2e,0x2fbf6a,0x8a4bff,0xff7ad9][(Math.random()*4)|0], tourName:'Quick Match', roundLabel:'Exhibition' }; }
+const QMODES={
+  easy:   {diff:0.30, run:0.22, courtF:1.0,  lbl:'Easy'},     // mostly comes to you; 1-2 shots make you run
+  medium: {diff:0.55, run:0.60, courtF:1.0,  lbl:'Medium'},   // alternates corners — makes you run
+  hard:   {diff:0.85, run:0.92, courtF:1.28, lbl:'Hard'},     // pinpoint corners + a bigger arena
+};
+function makeQuickCtx(mode){ const m=QMODES[mode]||QMODES.medium; return { mode:'quick', diff:m.diff, run:m.run, courtF:m.courtF, games:2,
+  oppName:OPP_NAMES[(Math.random()*OPP_NAMES.length)|0], oppColor:[0xd23b2e,0x2fbf6a,0x8a4bff,0xff7ad9][(Math.random()*4)|0], tourName:'Quick Match — '+m.lbl, roundLabel:m.lbl }; }
 
 /* ---------- career screen ---------- */
 function openCareer(){ show('career'); const list=$('stageList'); list.innerHTML='';
@@ -620,7 +641,7 @@ function feedShop(){ alert('Not enough coins!'); }
 /* ---------- menu wiring ---------- */
 function refreshMenu(){ $('nameIn').value=S.name||''; $('numIn').value=S.jerseyNum||''; }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('nameIn').value.trim()||'You'); S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||'10')).slice(0,2); save();
-  const m=b.dataset.mode; if(m==='quick') toCards(makeQuickCtx()); else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
+  const m=b.dataset.mode; if(m==='quick') toCards(makeQuickCtx(b.dataset.diff)); else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
 $('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden');
@@ -648,9 +669,9 @@ function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-las
     $('hintbar').textContent = M.state==='serve' ? 'Serving…' : (M.lastHitter==='b' ? '◀ ▶ line up • Space = shot • X = smash' : '');
     if(cheerT>0){ cheerT-=dt; bobCrowd(t); }
   }
-  // camera: behind player, whole court visible
-  const camX=(M.active?px:0)*0.25;
-  camera.position.set(camX, 9.5, PZ+8.5); camera.lookAt(camX*0.4,1.2,-2);
+  // camera: behind player, whole court visible (pull back for a bigger arena)
+  const cf=(M.active&&M.ctx)?(M.ctx.courtF||1):1; const camX=(M.active?px:0)*0.25;
+  camera.position.set(camX, 9.5+(cf-1)*4, PZ+8.5+(cf-1)*9); camera.lookAt(camX*0.4,1.2,-2);
   if(shake>0){ camera.position.x+=(Math.random()-.5)*shake; camera.position.y+=(Math.random()-.5)*shake; shake=Math.max(0,shake-dt*1.5); }
   renderer.render(scene,camera);
 }
