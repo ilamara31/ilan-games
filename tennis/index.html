@@ -387,7 +387,7 @@ function makePlayers(oppCol, oppName){
 /* ============================================================ MATCH STATE ============================================================ */
 const M={ active:false, ctx:null, score:{a:0,b:0}, server:'a', state:'idle',
   lastHitter:null, bounce:0, prevZ:0, hitCool:0, serveT:0, smashCD:0, stats:{rallies:0,smashes:0,aces:0}, rallyHits:0,
-  oppArmed:false };
+  oppArmed:false, oppWill:null };
 let px=0, oppx=0, ovx=0;
 
 function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0; M.oppSmashes=0;
@@ -397,7 +397,7 @@ function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server=
   document.getElementById('smashBtn').style.display='flex'; updateSmashUI();   // smash/cooldown badge always visible
   if('ontouchstart' in window){ document.getElementById('stick').style.display='block'; document.getElementById('hitBtn').style.display='flex'; }
   syncScore(); initAudio(); newPoint(); feed('Match start! 🎾','#9bff8e'); }
-function newPoint(){ M.state='serve'; M.lastHitter=null; M.bounce=0; M.rallyHits=0; M.serveT=0.9; M.oppArmed=false;
+function newPoint(){ M.state='serve'; M.lastHitter=null; M.bounce=0; M.rallyHits=0; M.serveT=0.9; M.oppArmed=false; M.oppWill=null;
   const srv=M.server; const sz= srv==='a'?PZ:OZ; const sx=(srv==='a'?px:oppx)*0.4;
   ball.position.set(sx,2.0,sz - (srv==='a'?0.5:-0.5)); BV.set(0,0,0); M.prevZ=ball.position.z; }
 function serveBall(){ const srv=M.server; M.lastHitter=srv; M.bounce=0;
@@ -442,7 +442,7 @@ function playerHit(useSmash){ if(M.state!=='play'||M.hitCool>0) return;
   let kind;
   if(useSmash && M.smashCD<=0){ kind=(q==='smash')?'smash':q; if(kind==='smash') M.smashCD=5; }  // X smashes only on perfect timing, then 5s cooldown
   else { kind=(q==='smash')?'power':q; }                                                          // Space, or X on cooldown -> no smash
-  M.lastHitter='a'; M.bounce=0; M.hitCool=0.35; M.rallyHits++; M.oppArmed=false;   // let the opponent swing again -> longer rallies
+  M.lastHitter='a'; M.bounce=0; M.hitCool=0.35; M.rallyHits++; M.oppArmed=false; M.oppWill=null;   // opponent decides fresh for this return
   shotFor(kind,'a'); swing(player); sfx(kind==='smash'?'smash':'hit');
   const col = kind==='smash'?0xff5a3c : kind==='power'?0x9bff8e : 0xeaff8a;
   burst(ball.position.clone(), col, kind==='smash'?22:10, kind==='smash'?7:4);
@@ -465,20 +465,20 @@ function updateAI(dt){ const d=M.ctx.diff;
   const sp=(4.8+d*4.2);                                  // can chase a few balls, but not everything
   const move=Math.max(-sp*dt,Math.min(sp*dt, (targetX-oppx)));
   oppx+=move; oppx=Math.max(-HW+0.3,Math.min(HW-0.3,oppx));
-  if(M.state==='play' && M.lastHitter==='a' && !M.oppArmed){
-    if(ball.position.z < OZ+5 && ball.position.z > OZ-2){
-      if(Math.abs(ball.position.x-oppx)<2.45+d*0.55){
-        if(Math.random() < 0.58+d*0.18){ M.oppArmed=true;  // returns enough for a rally, but MISSES sometimes -> points end
-          let q='normal'; const r=Math.random();
-          const punish = ball.position.y>1.6 || ball.position.z > OZ+4.2;   // high or short = punishable
-          if(punish && d>=0.45 && r<0.30+d*0.4 && (M.oppSmashes||0)<3){ q='smash'; M.oppSmashes=(M.oppSmashes||0)+1; }   // NO smash on Easy; max 3/match
-          else if(r>0.9-d*0.15) q='lob'; else if(r<0.05) q='weak';
-          M.lastHitter='b'; M.bounce=0; M.rallyHits++; shotFor(q,'b'); swing(opp); sfx(q==='smash'?'smash':'hit');
-          burst(ball.position.clone(), q==='smash'?0xff5a3c:0xeaff8a, q==='smash'?18:8, q==='smash'?7:4);
-          if(q==='smash') feed(M.ctx.oppName+' smashes! 💥','#ff9a9a');
-        }
-        // else: AI fails to reach -> double-bounce -> player wins the point
-      }
+  if(M.state==='play' && M.lastHitter==='a'){
+    const inZone = ball.position.z < OZ+5 && ball.position.z > OZ-2;
+    // decide ONCE per incoming ball whether she even goes for it (so she misses some -> rallies end)
+    if(inZone && M.oppWill===null) M.oppWill = (Math.random() < 0.6+d*0.18);
+    if(M.oppWill && !M.oppArmed && inZone && Math.abs(ball.position.x-oppx) < 2.45+d*0.55){
+      M.oppArmed=true;
+      let q='normal'; const r=Math.random();
+      const punish = ball.position.y>1.6 || ball.position.z > OZ+4.2;   // high or short = punishable
+      if(punish && d>=0.45 && r<0.30+d*0.4 && (M.oppSmashes||0)<3){ q='smash'; M.oppSmashes=(M.oppSmashes||0)+1; }   // NO smash on Easy; max 3/match
+      else if(r>0.9-d*0.15) q='lob'; else if(r<0.05) q='weak';
+      M.lastHitter='b'; M.bounce=0; M.rallyHits++; shotFor(q,'b'); swing(opp); sfx(q==='smash'?'smash':'hit');
+      burst(ball.position.clone(), q==='smash'?0xff5a3c:0xeaff8a, q==='smash'?18:8, q==='smash'?7:4);
+      if(q==='smash') feed(M.ctx.oppName+' smashes! 💥','#ff9a9a');
+      // if oppWill is false, or she can't reach -> she misses and you win the point
     }
   }
 }
