@@ -304,8 +304,7 @@
 
   <script>
     if('serviceWorker' in navigator){
-      let _ref=false;
-      navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_ref) return; _ref=true; location.reload(); });
+      // register only — no auto location.reload() on update (that caused a full double-load every visit)
       window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
     }
 

@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v53';
+const CACHE = 'ilan-arcade-v54';
 const ASSETS = [
   './',
   './index.html',
@@ -105,15 +105,20 @@ self.addEventListener('fetch', e => {
   }
   const isHTML = req.mode === 'navigate' || accept.includes('text/html');
   if (isHTML) {
+    // network-first, but don't wait forever: if a cached copy exists and the network
+    // takes >2.5s, serve the cache instantly (the network still updates it in the background).
     e.respondWith((async () => {
-      try {
-        const res = await fetch(req);
-        const cache = await caches.open(CACHE);
-        cache.put(req, res.clone());
-        return res;
-      } catch (err) {
-        return (await caches.match(req)) || (await caches.match('./index.html'));
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match(req);
+      const network = fetch(req).then(res => { cache.put(req, res.clone()); return res; });
+      network.catch(() => {});                       // avoid unhandled rejection when we fall back
+      if (!cached) {
+        try { return await network; } catch (err) { return (await caches.match('./index.html')); }
       }
+      let timer;
+      const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(0), 2500); });
+      try { const r = await Promise.race([network, timeout]); clearTimeout(timer); return r; }
+      catch (err) { return cached; }                 // slow/offline → instant cached copy
     })());
     return;
   }
