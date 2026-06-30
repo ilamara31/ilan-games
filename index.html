@@ -136,6 +136,7 @@
     📲 <b>Install on iPhone:</b> tap the <b>Share</b> button below, then <b>Add to Home Screen</b>.
     It becomes a real app and remembers you forever.</div>
   <div id="feats"></div>
+  <div id="uotw"></div>
   <div id="passport"></div>
   <div class="cards">
     <a class="card thisorthat" href="thisorthat/">
@@ -458,6 +459,21 @@
     /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
     function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }
     document.getElementById('overallLbBtn').onclick=openOverall;
+    /* User of the Week (most game-opens this week; excludes the creator) */
+    (function uotw(){
+      function escu(s){ return String(s).replace(/[<>&]/g,''); }
+      function show(info){ const e=document.getElementById('uotw'); if(!e||!info) return;
+        let h='<div style="max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#2a1d4a,#14102e);border:1px solid rgba(180,140,255,.3);border-radius:16px;padding:13px 16px;text-align:left">';
+        h+='<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#c9a6ff">🏅 USER OF THE WEEK</div>';
+        if(info.prev) h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:3px">👑 '+escu(info.prev)+'</div>';
+        if(info.leader) h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">🔥 Leading now: <b>'+escu(info.leader)+'</b> ('+info.leaderPlays+' plays) — <b>'+info.daysLeft+' day'+(info.daysLeft===1?'':'s')+' left</b> to be crowned!</div>';
+        else h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">Play the most games this week to win the title — <b>'+info.daysLeft+' days left</b> to be crowned!</div>';
+        h+='<div style="font-size:11px;color:#9a8cc0;margin-top:6px">Whoever opens the most games this week takes the crown. Keep playing!</div></div>';
+        e.innerHTML=h;
+      }
+      function go(){ if(window.IGFriends && IGFriends.weeklyInfo){ IGFriends.weeklyInfo().then(show); } else setTimeout(go,500); }
+      go();
+    })();
     /* friends panel + incoming-request badge */
     (function friendsBtn(){ const b=document.getElementById('friendsBtn'); if(!b) return;
       b.onclick=function(){ if(window.IGFriends) IGFriends.openPanel(); else alert('Friends are loading… try again in a second.'); };

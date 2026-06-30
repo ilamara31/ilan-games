@@ -80,6 +80,24 @@
   async function doUnfriend(name, key) { const s = await ensureSb(); if (!s) return;
     try { await s.from("ig_friend").delete().or("and(akey.eq." + myKey + ",bkey.eq." + key + "),and(akey.eq." + key + ",bkey.eq." + myKey + ")"); } catch (e) {} await dbLoad(); }
 
+  /* ---------- User of the Week: count game-opens per player per week ---------- */
+  async function bumpPlay() {
+    try {
+      if (gameSlug() === "home") return;                 // only count actually opening a game
+      const now = Date.now(); if (now - (+rd("ig_lastbump", 0)) < 60000) return; wr("ig_lastbump", now);  // throttle refresh-spam
+      const s = await ensureSb(); if (!s || !myKey) return;
+      await s.rpc("ig_play_bump", { p_name: myName, p_key: myKey, p_week: Math.floor(now / 86400000 / 7) });
+    } catch (e) {}
+  }
+  async function weeklyInfo() {
+    const s = await ensureSb(); if (!s) return null;
+    const days = Math.floor(Date.now() / 86400000), wk = Math.floor(days / 7), daysLeft = 7 - (days % 7);
+    const info = { daysLeft: daysLeft, leader: null, leaderPlays: 0, prev: null };
+    try { const r = await s.from("ig_weekly").select("user_name,plays").eq("week", wk).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!r.error && r.data && r.data.length) { info.leader = r.data[0].user_name; info.leaderPlays = r.data[0].plays; } } catch (e) {}
+    try { const p = await s.from("ig_weekly").select("user_name,plays").eq("week", wk - 1).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!p.error && p.data && p.data.length) info.prev = p.data[0].user_name; } catch (e) {}
+    return info;
+  }
+
   /* ---------- init: presence + load + live request feed ---------- */
   async function init() {
     if (started) return; myName = myDisplayName();
@@ -100,6 +118,7 @@
     } catch (e) {}
     dbLoad();
     setInterval(dbLoad, 15000);   // catch anything missed / requests that arrived while offline
+    bumpPlay();                   // count this game-open toward User of the Week
   }
 
   /* ---------- public API ---------- */
@@ -188,6 +207,6 @@
     render(); onUpdate(function () { if (document.body.contains(ov)) render(); });
   }
 
-  window.IGFriends = { openPanel: openPanel, list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return _in.length; }, ready: function () { return started; } };
+  window.IGFriends = { openPanel: openPanel, list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return _in.length; }, weeklyInfo: weeklyInfo, ready: function () { return started; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
