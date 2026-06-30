@@ -356,7 +356,8 @@
       if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
       box.innerHTML = list.map((r, i) => {
         const me = player && r.name === player.name;
-        const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+        const fr = (window.IGFriends && IGFriends.isFriend && IGFriends.isFriend(r.name)) ? "👥 " : "";
+        const nm = fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
         return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
       }).join("");
     };
@@ -394,7 +395,8 @@
         metric.textContent = GAME_METRIC[g] ? (GAME_METRIC[g] + " — higher is better") : "";
         box.innerHTML = byGame[g].slice(0, 20).map((r, i) => {
           const me = player && r.name === player.name;
-          const nm = (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+          const fr = (window.IGFriends && IGFriends.isFriend && IGFriends.isFriend(r.name)) ? "👥 " : "";
+        const nm = fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
           return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
         }).join("");
       }

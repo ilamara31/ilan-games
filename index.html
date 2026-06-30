@@ -124,6 +124,9 @@
   <button id="overallLbBtn" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#241600;border:none;
     padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(255,170,60,.4)">🏆 Leaderboard</button>
+  <button id="friendsBtn" style="background:linear-gradient(135deg,#7dc4ff,#3a6cf0);color:#06122a;border:none;
+    padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(60,120,255,.4)">👥 Friends<span id="friendsBadge" style="display:none;background:#ff4d6d;color:#fff;border-radius:10px;padding:1px 7px;margin-left:6px;font-size:12px">0</span></button>
   <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
     border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
@@ -449,6 +452,12 @@
     /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
     function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }
     document.getElementById('overallLbBtn').onclick=openOverall;
+    /* friends panel + incoming-request badge */
+    (function friendsBtn(){ const b=document.getElementById('friendsBtn'); if(!b) return;
+      b.onclick=function(){ if(window.IGFriends) IGFriends.openPanel(); else alert('Friends are loading… try again in a second.'); };
+      function badge(){ try{ const n=window.IGFriends?IGFriends.reqInCount():0; const e=document.getElementById('friendsBadge'); if(e){ e.textContent=n; e.style.display=n>0?'inline-block':'none'; } }catch(e){} }
+      function wire(){ if(window.IGFriends){ IGFriends.onUpdate(badge); badge(); } else setTimeout(wire,400); } wire();
+    })();
     function maybeHashLB(){ if(location.hash==='#leaderboard') openOverall(); }
     window.addEventListener('hashchange', maybeHashLB);
     maybeHashLB();
@@ -541,5 +550,6 @@
 <script src="auth.js" defer></script>
 <script src="analytics.js" defer></script>
 <script src="announce.js" defer></script>
+<script src="friends.js" defer></script>
 </body>
 </html>

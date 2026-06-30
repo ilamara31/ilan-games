@@ -1,11 +1,12 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v55';
+const CACHE = 'ilan-arcade-v56';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './analytics.js',
   './announce.js',
+  './friends.js',
   './rec.js',
   './supabase-config.js',
   './auth.js',
@@ -99,7 +100,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   // auth/config scripts change often — always try the network first (fall back to cache offline)
-  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js')) {
+  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js') || path.endsWith('/friends.js')) {
     e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; }).catch(() => caches.match(req)));
     return;
   }
