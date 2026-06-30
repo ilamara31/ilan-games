@@ -110,6 +110,7 @@
     if (!myName) return { ok: false, msg: "Set your player name first (top of the home page)." };
     if (nameKey(name) === myKey) return { ok: false, msg: "That's you! 😄" };
     if (isFriend(name)) return { ok: false, msg: "You're already friends with " + name + "." };
+    if (_out.some(function (o) { return o.key === nameKey(name); })) return { ok: false, msg: "⏳ Request already pending to " + name + "." };
     dbRequest(name).then(function (ok) { if (ok) { _out.push({ name: name, key: nameKey(name) }); fire(); } });
     return { ok: true, msg: "Request sent to " + name + "! They'll see it whenever they're online. ✉️" };
   }
@@ -162,7 +163,7 @@
       if (!_friends.length) h += '<div class="s">No friends yet — add someone above!</div>';
       _friends.forEach(function (f) { const p = presenceOf(f.name); const sub = p.online ? (p.game === "home" ? "Online • in the menu" : "Online • playing " + gname(p.game)) : "Offline";
         h += '<div class="igf-row"><span class="igf-dot ' + (p.online ? "on" : "off") + '"></span><span class="n">' + esc(f.name) + '<small>' + sub + '</small></span><button class="igf-btn igf-g" data-unf="' + esc(f.name) + '" data-k="' + esc(f.key) + '">✕</button></div>'; });
-      if (_out.length) { h += '<div class="igf-sec">Sent (waiting)</div>'; _out.forEach(function (r) { h += '<div class="igf-row"><span class="n">' + esc(r.name) + '<small>pending…</small></span></div>'; }); }
+      if (_out.length) { h += '<div class="igf-sec">Sent requests</div>'; _out.forEach(function (r) { h += '<div class="igf-row"><span class="n">' + esc(r.name) + '<small>waiting for them to accept</small></span><span class="igf-btn igf-g" style="opacity:.85;cursor:default">⏳ Request pending</span></div>'; }); }
       const body = ov.querySelector("#igf-body"); body.innerHTML = h;
       body.querySelectorAll("[data-acc]").forEach(function (b) { b.onclick = function () { accept(b.getAttribute("data-acc"), b.getAttribute("data-k")); }; });
       body.querySelectorAll("[data-den]").forEach(function (b) { b.onclick = function () { deny(b.getAttribute("data-den"), b.getAttribute("data-k")); }; });
