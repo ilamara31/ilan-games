@@ -1,11 +1,13 @@
-/* Ilan's Arcade — Friends (presence + friend requests over Supabase Realtime).
-   Backend-free: requests are delivered live to ONLINE users; the friend list is
-   stored per-device in localStorage. Everything is wrapped so it can never break a page. */
+/* Ilan's Arcade — Friends (persistent, offline-capable) over Supabase.
+   - Friend requests + friendships are stored in the DB, so a request reaches the
+     other player WHENEVER they next come online (no need to be online together).
+   - Online status + "what they're playing" come from Supabase Realtime presence.
+   Requires two tables (ig_friend_req, ig_friend) — see the SQL Ilan was given.
+   Fully guarded: if the DB/Realtime is unavailable it just does nothing. */
 (function () {
   "use strict";
   function S(fn, d) { try { return fn(); } catch (e) { return d; } }
 
-  /* ---------- identity (same name the leaderboard uses) ---------- */
   function myDisplayName() {
     let n = S(function () { return window.IGAuth && IGAuth.displayName && IGAuth.displayName(); });
     if (n) return n;
@@ -16,7 +18,6 @@
   }
   function nameKey(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40); }
 
-  /* ---------- current game (for "what is my friend playing") ---------- */
   const GN = { home: "the menu", stack: "Stack Tower", archer: "Archer Duel", paper: "Paper Territory", cricket: "Super Over Cricket",
     catch: "Basket Catch", f1: "Grand Prix", football: "Penalty Kings", obby: "Rainbow Obby", puzzles: "Puzzle Pad",
     try: "One More Try", "anime-tycoon": "Anime Tycoon", tennis: "Tennis Tour", pptour: "Ping Pong Tour", karate: "Karate", "fruit-arena": "Fruit Arena", rescue: "Rescue Bounce" };
@@ -27,23 +28,13 @@
     return g || "home";
   }
   function gname(slug) { return GN[slug] || slug; }
-
-  /* ---------- localStorage ---------- */
   function rd(k, d) { return S(function () { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }, d); }
   function wr(k, v) { S(function () { localStorage.setItem(k, JSON.stringify(v)); }); }
-  function friends() { const a = rd("ig_friends", []); return Array.isArray(a) ? a : []; }
-  function reqIn() { const a = rd("ig_freq_in", []); return Array.isArray(a) ? a : []; }
-  function reqOut() { const a = rd("ig_freq_out", []); return Array.isArray(a) ? a : []; }
-  function hasName(arr, name) { const k = nameKey(name); return arr.some(function (x) { return nameKey(x) === k; }); }
-  function addUniq(k, name) { const a = rd(k, []); if (!hasName(a, name)) { a.push(name); wr(k, a); } }
-  function rmName(k, name) { const a = rd(k, []).filter(function (x) { return nameKey(x) !== nameKey(name); }); wr(k, a); }
 
-  let myName = null, sb = null, presCh = null, inboxCh = null, presState = {}, sendChans = {};
-  const listeners = [];
-  function onUpdate(cb) { listeners.push(cb); }
-  function fireUpdate() { listeners.forEach(function (cb) { S(function () { cb(); }); }); }
+  let myName = null, myKey = "", sb = null, presCh = null, presState = {}, started = false;
+  let _friends = rd("ig_friends_cache", []) || [], _in = [], _out = [];
+  const listeners = []; function onUpdate(cb) { listeners.push(cb); } function fire() { listeners.forEach(function (cb) { S(function () { cb(); }); }); }
 
-  /* ---------- supabase ---------- */
   function loadSDK() { return new Promise(function (res) {
     if (window.supabase && window.supabase.createClient) return res(true);
     const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -53,74 +44,79 @@
     if (sb) return sb;
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return null;
     const ok = await loadSDK(); if (!ok) return null;
-    try { sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, { realtime: { params: { eventsPerSecond: 10 } } }); } catch (e) { sb = null; }
+    try { sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, { realtime: { params: { eventsPerSecond: 8 } } }); } catch (e) { sb = null; }
     return sb;
   }
-  async function sendTo(name, payload) {
-    const s = await ensureSb(); if (!s) return false;
-    const key = nameKey(name);
-    let ch = sendChans[key];
-    if (!ch) {
-      ch = s.channel("ig-dm-" + key, { config: { broadcast: { self: false } } });
-      sendChans[key] = ch;
-      await new Promise(function (res) { let done = false; ch.subscribe(function (st) { if (!done && st === "SUBSCRIBED") { done = true; res(); } }); setTimeout(res, 2500); });
-    }
-    return S(function () { ch.send({ type: "broadcast", event: "msg", payload: payload }); return true; }, false);
-  }
 
-  /* ---------- inbox handling ---------- */
-  function handleInbox(p) {
-    if (!p || !p.from) return; const from = p.from;
-    if (p.type === "freq") {
-      if (hasName(friends(), from)) { sendTo(from, { type: "facc", from: myName }); return; } // already friends -> auto-accept
-      addUniq("ig_freq_in", from); toast("👋 " + from + " sent you a friend request!"); fireUpdate();
-    } else if (p.type === "facc") {
-      addUniq("ig_friends", from); rmName("ig_freq_out", from); rmName("ig_freq_in", from); toast("✅ " + from + " accepted your friend request!"); fireUpdate();
-    } else if (p.type === "fden") {
-      rmName("ig_freq_out", from); toast("🙁 " + from + " declined your request."); fireUpdate();
-    } else if (p.type === "funf") {
-      rmName("ig_friends", from); fireUpdate();
-    }
+  /* ---------- DB ops ---------- */
+  async function dbLoad() {
+    const s = await ensureSb(); if (!s || !myKey) return;
+    try {
+      const fr = await s.from("ig_friend").select("bname,bkey").eq("akey", myKey);
+      if (!fr.error && fr.data) { _friends = fr.data.map(function (r) { return { name: r.bname, key: r.bkey }; }); wr("ig_friends_cache", _friends); wr("ig_friend_keys", _friends.map(function (f) { return f.key; })); }
+      const ins = await s.from("ig_friend_req").select("from_name,from_key").eq("to_key", myKey);
+      if (!ins.error && ins.data) _in = ins.data.map(function (r) { return { name: r.from_name, key: r.from_key }; });
+      const outs = await s.from("ig_friend_req").select("to_name,to_key").eq("from_key", myKey);
+      if (!outs.error && outs.data) _out = outs.data.map(function (r) { return { name: r.to_name, key: r.to_key }; });
+      // auto-accept any pair where both have requested each other
+      for (const r of _in.slice()) { if (_out.some(function (o) { return o.key === r.key; })) { await doAccept(r.name, r.key, true); } }
+      fire();
+    } catch (e) {}
   }
+  async function dbRequest(name) {
+    const s = await ensureSb(); if (!s) return false; const k = nameKey(name);
+    try { const r = await s.from("ig_friend_req").upsert({ from_key: myKey, from_name: myName, to_key: k, to_name: name }, { onConflict: "from_key,to_key" }); return !r.error; } catch (e) { return false; }
+  }
+  async function doAccept(name, key, silent) {
+    const s = await ensureSb(); if (!s) return;
+    try {
+      await s.from("ig_friend").upsert([{ akey: myKey, aname: myName, bkey: key, bname: name }, { akey: key, aname: name, bkey: myKey, bname: myName }], { onConflict: "akey,bkey" });
+      await s.from("ig_friend_req").delete().or("and(from_key.eq." + key + ",to_key.eq." + myKey + "),and(from_key.eq." + myKey + ",to_key.eq." + key + ")");
+      if (!silent) toast("🤝 You and " + name + " are now friends!");
+    } catch (e) {}
+    await dbLoad();
+  }
+  async function doDeny(name, key) { const s = await ensureSb(); if (!s) return; try { await s.from("ig_friend_req").delete().eq("from_key", key).eq("to_key", myKey); } catch (e) {} await dbLoad(); }
+  async function doUnfriend(name, key) { const s = await ensureSb(); if (!s) return;
+    try { await s.from("ig_friend").delete().or("and(akey.eq." + myKey + ",bkey.eq." + key + "),and(akey.eq." + key + ",bkey.eq." + myKey + ")"); } catch (e) {} await dbLoad(); }
 
-  /* ---------- init: presence + inbox ---------- */
-  let started = false;
+  /* ---------- init: presence + load + live request feed ---------- */
   async function init() {
     if (started) return; myName = myDisplayName();
-    if (!myName) { setTimeout(init, 1500); return; }            // wait until the player has a name
-    started = true;
+    if (!myName) { setTimeout(init, 1500); return; }
+    started = true; myKey = nameKey(myName);
     const s = await ensureSb(); if (!s) return;
-    const key = nameKey(myName), game = gameSlug();
     try {
-      presCh = s.channel("ig-presence", { config: { presence: { key: key } } });
-      presCh.on("presence", { event: "sync" }, function () { presState = S(function () { return presCh.presenceState(); }, {}) || {}; fireUpdate(); });
-      presCh.subscribe(function (st) { if (st === "SUBSCRIBED") S(function () { presCh.track({ name: myName, game: game, ts: Date.now() }); }); });
+      presCh = s.channel("ig-presence", { config: { presence: { key: myKey } } });
+      presCh.on("presence", { event: "sync" }, function () { presState = S(function () { return presCh.presenceState(); }, {}) || {}; fire(); });
+      presCh.subscribe(function (st) { if (st === "SUBSCRIBED") S(function () { presCh.track({ name: myName, game: gameSlug(), ts: Date.now() }); }); });
     } catch (e) {}
+    // instant request delivery while online (if the table is in the realtime publication)
     try {
-      inboxCh = s.channel("ig-dm-" + key, { config: { broadcast: { self: false } } });
-      inboxCh.on("broadcast", { event: "msg" }, function (m) { handleInbox(m && m.payload); });
-      inboxCh.subscribe();
+      const fc = s.channel("igfr-" + myKey);
+      fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_friend_req", filter: "to_key=eq." + myKey }, function () { dbLoad().then(function () { toast("👋 New friend request!"); }); });
+      fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_friend", filter: "akey=eq." + myKey }, function () { dbLoad(); });
+      fc.subscribe();
     } catch (e) {}
+    dbLoad();
+    setInterval(dbLoad, 15000);   // catch anything missed / requests that arrived while offline
   }
 
   /* ---------- public API ---------- */
   function presenceOf(name) { const v = presState && presState[nameKey(name)]; if (v && v.length) return { online: true, game: v[0].game }; return { online: false }; }
-  function isFriend(name) { return hasName(friends(), name); }
+  function isFriend(name) { const k = nameKey(name); const keys = rd("ig_friend_keys", []); return (keys || []).indexOf(k) >= 0; }
   function sendRequest(name) {
     name = (name || "").trim(); if (!name) return { ok: false, msg: "Enter a username." };
     if (!myName) return { ok: false, msg: "Set your player name first (top of the home page)." };
-    if (nameKey(name) === nameKey(myName)) return { ok: false, msg: "That's you! 😄" };
+    if (nameKey(name) === myKey) return { ok: false, msg: "That's you! 😄" };
     if (isFriend(name)) return { ok: false, msg: "You're already friends with " + name + "." };
-    const online = presenceOf(name).online;
-    sendTo(name, { type: "freq", from: myName }); addUniq("ig_freq_out", name); fireUpdate();
-    return online ? { ok: true, msg: "Request sent to " + name + "! ✉️" }
-                  : { ok: true, offline: true, msg: name + " looks offline — ask them to open the arcade (online in ~10s), then it'll reach them. Request queued." };
+    dbRequest(name).then(function (ok) { if (ok) { _out.push({ name: name, key: nameKey(name) }); fire(); } });
+    return { ok: true, msg: "Request sent to " + name + "! They'll see it whenever they're online. ✉️" };
   }
-  function accept(name) { addUniq("ig_friends", name); rmName("ig_freq_in", name); sendTo(name, { type: "facc", from: myName }); toast("🤝 You and " + name + " are now friends!"); fireUpdate(); }
-  function deny(name) { rmName("ig_freq_in", name); sendTo(name, { type: "fden", from: myName }); fireUpdate(); }
-  function unfriend(name) { rmName("ig_friends", name); sendTo(name, { type: "funf", from: myName }); fireUpdate(); }
+  function accept(name, key) { doAccept(name, key || nameKey(name)); }
+  function deny(name, key) { doDeny(name, key || nameKey(name)); }
+  function unfriend(name, key) { doUnfriend(name, key || nameKey(name)); }
 
-  /* ---------- toast ---------- */
   function toast(msg) {
     S(function () {
       const t = document.createElement("div");
@@ -129,7 +125,6 @@
     });
   }
 
-  /* ---------- UI panel (used by the home page) ---------- */
   function injectCSS() {
     if (document.getElementById("igf-css")) return;
     const c = document.createElement("style"); c.id = "igf-css";
@@ -145,8 +140,9 @@
       + ".igf-x{background:transparent;color:#7e90b5;border:none;font-weight:700;cursor:pointer;width:100%;padding:12px;font-size:15px}";
     document.head.appendChild(c);
   }
+  function esc(s) { return String(s).replace(/[<>&]/g, ""); }
   function openPanel() {
-    injectCSS();
+    injectCSS(); dbLoad();
     const ov = document.createElement("div"); ov.className = "igf-ov";
     ov.innerHTML = '<div class="igf-box"><h2>👥 Friends</h2><div class="s" id="igf-me"></div>'
       + '<div class="igf-add"><input id="igf-name" maxlength="16" placeholder="username to add" autocomplete="off"><button class="igf-btn igf-p" id="igf-send">Add</button></div>'
@@ -158,29 +154,23 @@
     ov.querySelector("#igf-send").onclick = function () { const r = sendRequest(nameI.value); toast(r.msg); if (r.ok) nameI.value = ""; render(); };
     nameI.addEventListener("keydown", function (e) { if (e.key === "Enter") ov.querySelector("#igf-send").click(); });
     function render() {
-      const me = myName || "(no name yet)";
-      ov.querySelector("#igf-me").textContent = "You're " + me + ". Add players by their exact username — they must be online to receive it.";
+      ov.querySelector("#igf-me").textContent = "You're " + (myName || "(no name yet)") + ". Add players by their exact username — the request waits for them to come online.";
       let h = "";
-      const ins = reqIn();
-      if (ins.length) { h += '<div class="igf-sec">Requests for you</div>';
-        ins.forEach(function (n) { h += '<div class="igf-row"><span class="n">' + esc(n) + '</span><button class="igf-btn igf-p" data-acc="' + esc(n) + '">Accept</button><button class="igf-btn igf-d" data-den="' + esc(n) + '">Deny</button></div>'; }); }
-      const fr = friends();
-      h += '<div class="igf-sec">Your friends (' + fr.length + ')</div>';
-      if (!fr.length) h += '<div class="s">No friends yet — add someone above!</div>';
-      fr.forEach(function (n) { const p = presenceOf(n); const sub = p.online ? ("Online" + (p.game && p.game !== "home" ? " • playing " + gname(p.game) : (p.game === "home" ? " • in the menu" : ""))) : "Offline";
-        h += '<div class="igf-row"><span class="igf-dot ' + (p.online ? "on" : "off") + '"></span><span class="n">' + esc(n) + '<small>' + sub + '</small></span><button class="igf-btn igf-g" data-unf="' + esc(n) + '">✕</button></div>'; });
-      const outs = reqOut();
-      if (outs.length) { h += '<div class="igf-sec">Sent (waiting)</div>'; outs.forEach(function (n) { h += '<div class="igf-row"><span class="n">' + esc(n) + '<small>pending…</small></span></div>'; }); }
+      if (_in.length) { h += '<div class="igf-sec">Requests for you</div>';
+        _in.forEach(function (r) { h += '<div class="igf-row"><span class="n">' + esc(r.name) + '</span><button class="igf-btn igf-p" data-acc="' + esc(r.name) + '" data-k="' + esc(r.key) + '">Accept</button><button class="igf-btn igf-d" data-den="' + esc(r.name) + '" data-k="' + esc(r.key) + '">Deny</button></div>'; }); }
+      h += '<div class="igf-sec">Your friends (' + _friends.length + ')</div>';
+      if (!_friends.length) h += '<div class="s">No friends yet — add someone above!</div>';
+      _friends.forEach(function (f) { const p = presenceOf(f.name); const sub = p.online ? (p.game === "home" ? "Online • in the menu" : "Online • playing " + gname(p.game)) : "Offline";
+        h += '<div class="igf-row"><span class="igf-dot ' + (p.online ? "on" : "off") + '"></span><span class="n">' + esc(f.name) + '<small>' + sub + '</small></span><button class="igf-btn igf-g" data-unf="' + esc(f.name) + '" data-k="' + esc(f.key) + '">✕</button></div>'; });
+      if (_out.length) { h += '<div class="igf-sec">Sent (waiting)</div>'; _out.forEach(function (r) { h += '<div class="igf-row"><span class="n">' + esc(r.name) + '<small>pending…</small></span></div>'; }); }
       const body = ov.querySelector("#igf-body"); body.innerHTML = h;
-      body.querySelectorAll("[data-acc]").forEach(function (b) { b.onclick = function () { accept(b.getAttribute("data-acc")); render(); }; });
-      body.querySelectorAll("[data-den]").forEach(function (b) { b.onclick = function () { deny(b.getAttribute("data-den")); render(); }; });
-      body.querySelectorAll("[data-unf]").forEach(function (b) { b.onclick = function () { if (confirm("Remove this friend?")) { unfriend(b.getAttribute("data-unf")); render(); } }; });
+      body.querySelectorAll("[data-acc]").forEach(function (b) { b.onclick = function () { accept(b.getAttribute("data-acc"), b.getAttribute("data-k")); }; });
+      body.querySelectorAll("[data-den]").forEach(function (b) { b.onclick = function () { deny(b.getAttribute("data-den"), b.getAttribute("data-k")); }; });
+      body.querySelectorAll("[data-unf]").forEach(function (b) { b.onclick = function () { if (confirm("Remove this friend?")) unfriend(b.getAttribute("data-unf"), b.getAttribute("data-k")); }; });
     }
-    function esc(s) { return String(s).replace(/[<>&]/g, ""); }
     render(); onUpdate(function () { if (document.body.contains(ov)) render(); });
   }
 
-  window.IGFriends = { openPanel: openPanel, list: friends, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return reqIn().length; }, ready: function () { return started; } };
-  // boot
+  window.IGFriends = { openPanel: openPanel, list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return _in.length; }, ready: function () { return started; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
