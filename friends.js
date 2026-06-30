@@ -105,14 +105,28 @@
   /* ---------- public API ---------- */
   function presenceOf(name) { const v = presState && presState[nameKey(name)]; if (v && v.length) return { online: true, game: v[0].game }; return { online: false }; }
   function isFriend(name) { const k = nameKey(name); const keys = rd("ig_friend_keys", []); return (keys || []).indexOf(k) >= 0; }
-  function sendRequest(name) {
+  // resolve a typed username to the REAL player (case-insensitive), or null if no such player exists
+  async function lookupUser(name) {
+    const s = await ensureSb(); if (!s) return null; const key = nameKey(name);
+    try { const v = presState && presState[key]; if (v && v.length) return v[0].name || name; } catch (e) {}            // online right now
+    try { const r = await s.from("leaderboard").select("name").ilike("name", name).limit(8); if (!r.error && r.data) { for (const row of r.data) if (nameKey(row.name) === key) return row.name; } } catch (e) {}  // has played
+    try { const r2 = await s.from("ig_friend").select("aname").ilike("aname", name).limit(8); if (!r2.error && r2.data) { for (const row of r2.data) if (nameKey(row.aname) === key) return row.aname; } } catch (e) {} // known player
+    return null;
+  }
+  async function sendRequest(name) {
     name = (name || "").trim(); if (!name) return { ok: false, msg: "Enter a username." };
     if (!myName) return { ok: false, msg: "Set your player name first (top of the home page)." };
-    if (nameKey(name) === myKey) return { ok: false, msg: "That's you! 😄" };
+    if (nameKey(name) === myKey) return { ok: false, msg: "You can't add yourself! 😄" };
     if (isFriend(name)) return { ok: false, msg: "You're already friends with " + name + "." };
-    if (_out.some(function (o) { return o.key === nameKey(name); })) return { ok: false, msg: "⏳ Request already pending to " + name + "." };
-    dbRequest(name).then(function (ok) { if (ok) { _out.push({ name: name, key: nameKey(name) }); fire(); } });
-    return { ok: true, msg: "Request sent to " + name + "! They'll see it whenever they're online. ✉️" };
+    if (_out.some(function (o) { return o.key === nameKey(name); })) return { ok: false, msg: "⏳ You already sent " + name + " a request — it's pending." };
+    const canon = await lookupUser(name);
+    if (!canon) return { ok: false, msg: 'No player named "' + name + '" found. Capitals don’t matter, but the spelling must match someone who has played.' };
+    if (nameKey(canon) === myKey) return { ok: false, msg: "You can't add yourself! 😄" };
+    if (isFriend(canon)) return { ok: false, msg: "You're already friends with " + canon + "." };
+    if (_out.some(function (o) { return o.key === nameKey(canon); })) return { ok: false, msg: "⏳ You already sent " + canon + " a request — it's pending." };
+    const ok = await dbRequest(canon); if (!ok) return { ok: false, msg: "Couldn't reach the server — try again." };
+    _out.push({ name: canon, key: nameKey(canon) }); fire();
+    return { ok: true, msg: "✅ Request sent to " + canon + " — pending until they accept." };
   }
   function accept(name, key) { doAccept(name, key || nameKey(name)); }
   function deny(name, key) { doDeny(name, key || nameKey(name)); }
@@ -152,8 +166,10 @@
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     ov.querySelector("#igf-close").onclick = function () { ov.remove(); };
     const nameI = ov.querySelector("#igf-name");
-    ov.querySelector("#igf-send").onclick = function () { const r = sendRequest(nameI.value); toast(r.msg); if (r.ok) nameI.value = ""; render(); };
-    nameI.addEventListener("keydown", function (e) { if (e.key === "Enter") ov.querySelector("#igf-send").click(); });
+    const sendB = ov.querySelector("#igf-send");
+    sendB.onclick = function () { const val = nameI.value; sendB.disabled = true; sendB.textContent = "…";
+      Promise.resolve(sendRequest(val)).then(function (r) { toast(r.msg); if (r.ok) { nameI.value = ""; render(); } sendB.disabled = false; sendB.textContent = "Add"; }); };
+    nameI.addEventListener("keydown", function (e) { if (e.key === "Enter") sendB.click(); });
     function render() {
       ov.querySelector("#igf-me").textContent = "You're " + (myName || "(no name yet)") + ". Add players by their exact username — the request waits for them to come online.";
       let h = "";
