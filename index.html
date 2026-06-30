@@ -43,6 +43,7 @@
   .tennis  { background:linear-gradient(135deg,#9bff8e,#1e7a3a); }
   .pptour  { background:linear-gradient(135deg,#3a6cf0,#0c1430); }
   .karate  { background:linear-gradient(135deg,#ff8b3d,#7a1f12); }
+  .thisorthat { background:linear-gradient(135deg,#ff7ad9,#7a2dff); }
   .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
   .rescue  { background:linear-gradient(135deg,#4aa3ff,#13499e); }
   .paper   { background:linear-gradient(135deg,#2bbd5a,#0e3a22); }
@@ -137,6 +138,11 @@
   <div id="feats"></div>
   <div id="passport"></div>
   <div class="cards">
+    <a class="card thisorthat" href="thisorthat/">
+      <span class="emoji">🆚</span>
+      <h2>This or That</h2>
+      <p>Tap the one you like more — Messi or Ronaldo? — then see what % of real players agree!</p>
+    </a>
     <a class="card cricket" href="cricket/">
       <span class="emoji">🏏</span>
       <h2>Super Over Cricket</h2>
@@ -484,7 +490,8 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
-      'stack/':        { added:   '2026-06-29T12:10:00' },   // newest -> also the bottom banner
+      'thisorthat/':   { added:   '2026-06-30T20:06:00' },   // newest -> also the bottom banner
+      'stack/':        { added:   '2026-06-29T12:10:00' },
       'archer/':       { added:   '2026-06-29T12:00:00' },
       'paper/':        { added:   '2026-06-28T22:00:00' },
       'rescue/':       { added:   '2026-06-28T20:00:00' },
@@ -522,7 +529,7 @@
       'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'pptour/':'both',
       'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
-      'stack/':'both', 'archer/':'both',
+      'stack/':'both', 'archer/':'both', 'thisorthat/':'both',
     };
     (function(){
       const LABEL = {

@@ -7,7 +7,8 @@
   var REC = {
     cricket: 'both', 'catch': 'mobile', f1: 'pc', football: 'both', pptour: 'both',
     'fruit-arena': 'both', paper: 'pc', rescue: 'both', obby: 'both', puzzles: 'both',
-    'try': 'pc', 'anime-tycoon': 'both', tennis: 'both', karate: 'both', stack: 'both', archer: 'both'
+    'try': 'pc', 'anime-tycoon': 'both', tennis: 'both', karate: 'both', stack: 'both', archer: 'both',
+    thisorthat: 'both'
   };
   var LABEL = { both: '👍 Best on any device', mobile: '📱 Best on phone', pc: '💻 Best on PC / laptop' };
 

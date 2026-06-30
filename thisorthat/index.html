@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>This or That</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{ height:100%; overflow:hidden; font-family:'Trebuchet MS',system-ui,Segoe UI,Roboto,sans-serif; color:#fff; user-select:none; -webkit-user-select:none; background:#0b0e1a; }
+  .hidden{ display:none !important; }
+  #top{ position:fixed; top:0; left:0; right:0; z-index:30; display:flex; align-items:center; justify-content:space-between;
+    padding:max(8px,env(safe-area-inset-top)) 12px 6px; font-weight:bold; font-size:13px; pointer-events:none; }
+  #top .pill{ background:rgba(0,0,0,.45); border-radius:20px; padding:6px 12px; backdrop-filter:blur(6px); pointer-events:auto; text-decoration:none; color:#fff; }
+  /* arena — panels inset so it reads as a versus card, not full-bleed */
+  #arena{ position:fixed; inset:0; display:flex; gap:14px; padding:54px 14px max(84px,calc(env(safe-area-inset-bottom) + 78px)); }
+  @media (max-aspect-ratio:1/1){ #arena{ flex-direction:column; } }
+  .side{ flex:1; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; border-radius:24px;
+    cursor:pointer; overflow:hidden; transition:flex .35s ease, filter .35s ease, opacity .35s ease; padding:18px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  .side .emoji{ font-size:clamp(54px,12vw,116px); line-height:1; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4)); transition:transform .3s; }
+  .side .name{ font-size:clamp(22px,5.2vw,44px); font-weight:900; text-shadow:0 3px 12px rgba(0,0,0,.45); letter-spacing:.3px; }
+  .side .pct{ font-size:clamp(26px,7vw,56px); font-weight:900; opacity:0; transform:scale(.6); transition:opacity .3s, transform .3s; text-shadow:0 3px 14px rgba(0,0,0,.5); }
+  .side .barwrap{ width:min(72%,300px); height:11px; background:rgba(0,0,0,.3); border-radius:8px; overflow:hidden; opacity:0; transition:opacity .3s; }
+  .side .bar{ height:100%; width:0; transition:width .7s cubic-bezier(.2,.8,.2,1); border-radius:8px; background:rgba(255,255,255,.9); }
+  .side:active .emoji{ transform:scale(.9); }
+  .side.chosen{ flex:1.7; } .side.chosen .emoji{ transform:scale(1.1); }
+  .side.faded{ flex:.7; filter:grayscale(.6) brightness(.6); opacity:.85; }
+  .side.reveal .pct{ opacity:1; transform:scale(1); } .side.reveal .barwrap{ opacity:1; }
+  .side .tag{ position:absolute; top:12px; font-size:11px; font-weight:bold; opacity:.7; letter-spacing:1px; }
+  #vs{ position:fixed; top:calc(54px + (100vh - 138px)/2); left:50%; transform:translate(-50%,-50%); z-index:20; width:58px; height:58px; border-radius:50%;
+    background:#0b0e1a; border:3px solid #fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; box-shadow:0 8px 24px rgba(0,0,0,.5); transition:transform .3s; }
+  #vs.go{ transform:translate(-50%,-50%) scale(0); }
+  #react{ position:fixed; top:46px; left:50%; transform:translateX(-50%); z-index:25; font-size:clamp(17px,4.4vw,28px); font-weight:900;
+    text-shadow:0 3px 14px #000; opacity:0; transition:opacity .3s; pointer-events:none; text-align:center; width:92%;
+    background:rgba(0,0,0,.5); border-radius:16px; padding:8px 14px; }
+  #react.show{ opacity:1; }
+  #nextBtn{ position:fixed; bottom:max(18px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:30;
+    border:none; border-radius:30px; padding:14px 38px; font-size:19px; font-weight:900; cursor:pointer; color:#10122a;
+    background:linear-gradient(135deg,#ffe14a,#ff9b3d); box-shadow:0 8px 22px rgba(255,170,60,.45); opacity:0; pointer-events:none; transition:opacity .25s, transform .1s; }
+  #nextBtn.show{ opacity:1; pointer-events:auto; } #nextBtn:active{ transform:translateX(-50%) scale(.96); }
+  .scr{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:22px; overflow:auto;
+    background:radial-gradient(1000px 560px at 50% -8%,#5a2da8 0%,transparent 60%),linear-gradient(160deg,#1a1140,#0b0e1a 65%); }
+  h1{ font-size:clamp(38px,10vw,76px); line-height:1; margin-bottom:4px; font-weight:900;
+    background:linear-gradient(90deg,#ff7ad9,#ffe14a,#7ee0ff); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
+  h1 small{ display:block; font-size:.27em; letter-spacing:6px; color:#cbb6ff; -webkit-text-fill-color:#cbb6ff; margin-top:6px; }
+  .sub{ color:#cbb6ff; margin:6px 0 14px; font-size:clamp(13px,3.6vw,17px); max-width:460px; }
+  .btn{ display:block; width:min(320px,86vw); margin:7px auto; padding:15px; border:none; border-radius:16px; font-size:19px; font-weight:900; cursor:pointer; color:#1a0b30;
+    background:linear-gradient(135deg,#ffe14a,#ff9b3d); box-shadow:0 8px 22px rgba(255,170,60,.4); } .btn:active{ transform:scale(.97); }
+  .btn.purple{ background:linear-gradient(135deg,#b96bff,#7a2dff); color:#fff; }
+  .btn.alt{ background:linear-gradient(135deg,#b9a6e6,#7a5fc0); color:#10081f; }
+  .cats{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; width:min(540px,94vw); margin-bottom:12px; }
+  .cat{ padding:9px 14px; border-radius:14px; border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); cursor:pointer; font-size:14px; font-weight:bold; }
+  .cat.on{ background:#ffe14a; color:#1a0b30; border-color:#ffe14a; }
+  .foot{ margin-top:12px; font-size:12px; opacity:.55; }
+  /* profile */
+  #profGrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; width:min(540px,94vw); max-height:48vh; overflow:auto; padding:4px; }
+  .pcell{ background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.14); border-radius:14px; padding:10px 6px; }
+  .pcell .pe{ font-size:30px; } .pcell .pn{ font-size:12px; font-weight:bold; margin-top:3px; } .pcell .px{ font-size:12px; color:#ffe14a; font-weight:bold; }
+  .statrow{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; }
+  .stat{ background:rgba(255,255,255,.07); border-radius:14px; padding:9px 14px; font-size:14px; } .stat b{ color:#ffe14a; font-size:18px; display:block; }
+  .resbig{ font-size:54px; margin:4px 0; } .resline{ font-size:17px; margin:5px 0; }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div id="start" class="scr">
+  <h1>THIS<small>OR THAT</small></h1>
+  <div class="sub">Tap the one you like more — then see how many people agree! Pick a topic:</div>
+  <div class="cats" id="catList"></div>
+  <button class="btn" id="playBtn">▶ PLAY TOPIC</button>
+  <button class="btn purple" id="unlBtn">♾️ UNLIMITED — all topics, endless</button>
+  <button class="btn alt" id="profBtn">👤 My Profile</button>
+  <div class="foot">Made with ❤️ for Ilan Games</div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="hidden">
+  <div id="top">
+    <a class="pill" id="homeT" href="../">🏠</a>
+    <div class="pill" id="modeLbl">Mixed</div>
+    <div class="pill">🔥 <b id="streakN">0</b> &nbsp; 🤝 <b id="matchN">—</b></div>
+  </div>
+  <div id="arena">
+    <div class="side" id="sideA"><div class="tag" id="tagA"></div><div class="emoji" id="emA">⚽</div><div class="name" id="nmA">A</div><div class="pct" id="pcA">0%</div><div class="barwrap"><div class="bar" id="brA"></div></div></div>
+    <div class="side" id="sideB"><div class="tag" id="tagB"></div><div class="emoji" id="emB">🏏</div><div class="name" id="nmB">B</div><div class="pct" id="pcB">0%</div><div class="barwrap"><div class="bar" id="brB"></div></div></div>
+  </div>
+  <div id="vs">VS</div>
+  <div id="react"></div>
+  <button id="nextBtn">Next ▶</button>
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="scr hidden">
+  <h1 style="font-size:clamp(30px,8vw,52px)">👤 My Profile</h1>
+  <div class="sub" id="profSub">The choices you've made (Unlimited rounds don't count here).</div>
+  <div class="statrow" id="profStats"></div>
+  <div id="profGrid"></div>
+  <div style="margin-top:14px">
+    <button class="btn" id="profBack">← Back</button>
+    <button class="btn alt" id="profReset" style="font-size:14px;padding:10px">🗑️ Reset profile</button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div id="summary" class="scr hidden">
+  <div class="resbig" id="sumIcon">🎉</div>
+  <h1 style="font-size:clamp(28px,8vw,50px)" id="sumTitle">Round 10!</h1>
+  <div class="resline" id="sumLine"></div>
+  <div class="resline" id="sumLine2" style="opacity:.85"></div>
+  <button class="btn" id="contBtn">▶ Keep Going</button>
+  <button class="btn alt" id="menuBtn">Change Topic</button>
+</div>
+
+<script src="../supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const SK='thisOrThat_v2';
+let S=(()=>{ try{ return Object.assign({rounds:0,bestStreak:0,agree:0,total:0,picks:{}},JSON.parse(localStorage.getItem(SK))||{}); }catch(e){ return {rounds:0,bestStreak:0,agree:0,total:0,picks:{}}; } })();
+if(!S.picks) S.picks={};
+function save(){ try{ localStorage.setItem(SK,JSON.stringify(S)); }catch(e){} }
+
+/* ---------- real crowd voting (shared Supabase tally) ----------
+   Each pick records a vote and reads back the live count, so the % becomes
+   REAL crowd data as people play. Until enough real votes exist (or if the
+   backend is unreachable) it falls back to the estimate baked into each pair. */
+let sb=null;
+try{ if(window.supabase&&window.SUPABASE_URL) sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}}); }catch(e){}
+function qid(p){ return (p.a[0]+'__'+p.b[0]).toLowerCase().replace(/[^a-z0-9]+/g,'_'); }
+function withTimeout(pr,ms){ return Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))]); }
+async function castVote(id,side){ if(!sb) return null;
+  try{ const {data,error}=await sb.rpc('tot_vote',{p_qid:id,p_side:side}); if(error||!data) return null;
+    const row=Array.isArray(data)?data[0]:data; return {a:+row.a||0,b:+row.b||0}; }catch(e){ return null; } }
+
+/* pairs: {a:[name,emoji], b:[name,emoji], cat, pop}  pop = % who pick A (estimate, used until real votes build up) */
+const PAIRS=[
+  // sports
+  {a:['Messi','🐐'],b:['Ronaldo','⚽'],cat:'sports',pop:50},{a:['Cricket','🏏'],b:['Football','⚽'],cat:'sports',pop:52},
+  {a:['Virat Kohli','🏏'],b:['Rohit Sharma','🏏'],cat:'sports',pop:58},{a:['Ronaldo','⚽'],b:['Virat Kohli','🏏'],cat:'sports',pop:47},
+  {a:['Dhoni','🧤'],b:['Virat Kohli','🏏'],cat:'sports',pop:55},{a:['Sachin','🏏'],b:['Virat Kohli','🏏'],cat:'sports',pop:57},
+  {a:['CSK','🦁'],b:['RCB','🔴'],cat:'sports',pop:53},{a:['Mumbai Indians','🔵'],b:['CSK','🦁'],cat:'sports',pop:48},
+  {a:['India','🇮🇳'],b:['Australia','🇦🇺'],cat:'sports',pop:64},{a:['Real Madrid','⚪'],b:['Barcelona','🔵'],cat:'sports',pop:52},
+  {a:['Brazil','🇧🇷'],b:['Argentina','🇦🇷'],cat:'sports',pop:50},{a:['Federer','🎾'],b:['Nadal','🎾'],cat:'sports',pop:53},
+  {a:['Basketball','🏀'],b:['Football','⚽'],cat:'sports',pop:45},{a:['Tennis','🎾'],b:['Badminton','🏸'],cat:'sports',pop:55},
+  {a:['F1 Racing','🏎️'],b:['Bike Racing','🏍️'],cat:'sports',pop:60},{a:['Boxing','🥊'],b:['Karate','🥋'],cat:'sports',pop:50},
+  {a:['Test cricket','⚪'],b:['T20','🎆'],cat:'sports',pop:38},{a:['Bat first','🏏'],b:['Bowl first','🎯'],cat:'sports',pop:55},
+  // food
+  {a:['Pizza','🍕'],b:['Burger','🍔'],cat:'food',pop:58},{a:['Coffee','☕'],b:['Tea','🍵'],cat:'food',pop:52},
+  {a:['Chocolate','🍫'],b:['Ice cream','🍦'],cat:'food',pop:55},{a:['Veg','🥦'],b:['Non-veg','🍗'],cat:'food',pop:40},
+  {a:['Sweet','🍬'],b:['Spicy','🌶️'],cat:'food',pop:53},{a:['Noodles','🍜'],b:['Pasta','🍝'],cat:'food',pop:57},
+  {a:['Fries','🍟'],b:['Chips','🥔'],cat:'food',pop:54},{a:['Mango','🥭'],b:['Banana','🍌'],cat:'food',pop:66},
+  {a:['Biryani','🍛'],b:['Pizza','🍕'],cat:'food',pop:61},{a:['Pizza','🍕'],b:['Tacos','🌮'],cat:'food',pop:60},
+  {a:['Dosa','🥞'],b:['Sandwich','🥪'],cat:'food',pop:59},{a:['Juice','🧃'],b:['Milkshake','🥤'],cat:'food',pop:46},
+  // tech
+  {a:['iPhone','🍎'],b:['Android','🤖'],cat:'tech',pop:50},{a:['PlayStation','🎮'],b:['Xbox','🟢'],cat:'tech',pop:53},
+  {a:['YouTube','▶️'],b:['Netflix','🎬'],cat:'tech',pop:57},{a:['WhatsApp','💬'],b:['Instagram','📸'],cat:'tech',pop:54},
+  {a:['Gaming PC','💻'],b:['Console','🎮'],cat:'tech',pop:51},{a:['Tesla','🚗'],b:['Lamborghini','🏎️'],cat:'tech',pop:45},
+  {a:['Google','🔍'],b:['Apple','🍎'],cat:'tech',pop:54},{a:['Electric car','🔋'],b:['Petrol car','⛽'],cat:'tech',pop:52},
+  {a:['Robots','🤖'],b:['Aliens','👽'],cat:'tech',pop:52},
+  // life
+  {a:['Beach','🏖️'],b:['Mountains','⛰️'],cat:'life',pop:53},{a:['Day','🌞'],b:['Night','🌙'],cat:'life',pop:49},
+  {a:['Cats','🐱'],b:['Dogs','🐶'],cat:'life',pop:42},{a:['City','🏙️'],b:['Village','🌾'],cat:'life',pop:55},
+  {a:['Books','📚'],b:['Movies','🎬'],cat:'life',pop:44},{a:['Early bird','🌅'],b:['Night owl','🦉'],cat:'life',pop:40},
+  {a:['Save money','🏦'],b:['Spend money','🛍️'],cat:'life',pop:58},{a:['Gold','🥇'],b:['Diamond','💎'],cat:'life',pop:48},
+  {a:['Rain','🌧️'],b:['Snow','❄️'],cat:'life',pop:51},{a:['Cold weather','🥶'],b:['Hot weather','🥵'],cat:'life',pop:45},
+  // music
+  {a:['Pop','🎤'],b:['Rock','🎸'],cat:'music',pop:52},{a:['Rap','🎙️'],b:['EDM','🎧'],cat:'music',pop:50},
+  {a:['Old songs','📻'],b:['New songs','🔊'],cat:'music',pop:48},{a:['Headphones','🎧'],b:['Speakers','🔈'],cat:'music',pop:58},
+  {a:['Hindi songs','🎵'],b:['English songs','🎶'],cat:'music',pop:54},{a:['Singing','🎤'],b:['Dancing','💃'],cat:'music',pop:50},
+  {a:['Guitar','🎸'],b:['Piano','🎹'],cat:'music',pop:51},
+  // movies
+  {a:['Marvel','🦸'],b:['DC','🦇'],cat:'movies',pop:63},{a:['Spider-Man','🕷️'],b:['Batman','🦇'],cat:'movies',pop:55},
+  {a:['Bollywood','🎬'],b:['Hollywood','🎞️'],cat:'movies',pop:55},{a:['Shah Rukh Khan','👑'],b:['Salman Khan','💪'],cat:'movies',pop:58},
+  {a:['Action','💥'],b:['Romance','❤️'],cat:'movies',pop:60},{a:['Comedy','😂'],b:['Horror','👻'],cat:'movies',pop:60},
+  {a:['Anime','🎌'],b:['Cartoons','📺'],cat:'movies',pop:54},{a:['Series','📺'],b:['Movies','🎬'],cat:'movies',pop:52},
+  {a:['Superhero','🦸'],b:['Villain','😈'],cat:'movies',pop:70},
+  // geography
+  {a:['Mountains','⛰️'],b:['Ocean','🌊'],cat:'geo',pop:50},{a:['Desert','🏜️'],b:['Forest','🌲'],cat:'geo',pop:42},
+  {a:['Asia','🌏'],b:['Europe','🌍'],cat:'geo',pop:54},{a:['Big city','🏙️'],b:['Small town','🏘️'],cat:'geo',pop:52},
+  {a:['North Pole','🧊'],b:['Equator','🌴'],cat:'geo',pop:38},{a:['River','🏞️'],b:['Sea','🌊'],cat:'geo',pop:45},
+  {a:['Volcano','🌋'],b:['Glacier','🏔️'],cat:'geo',pop:50},{a:['Live in India','🇮🇳'],b:['Live abroad','✈️'],cat:'geo',pop:55},
+  // weird / would-you-rather
+  {a:['Fly','🕊️'],b:['Be invisible','👻'],cat:'weird',pop:62},{a:['Talk to animals','🐶'],b:['Read minds','🧠'],cat:'weird',pop:58},
+  {a:['Super strength','💪'],b:['Super speed','⚡'],cat:'weird',pop:47},{a:['Time travel','⏳'],b:['Teleport','🌀'],cat:'weird',pop:55},
+  {a:['Always summer','☀️'],b:['Always winter','❄️'],cat:'weird',pop:60},{a:['Be rich','💰'],b:['Be famous','🌟'],cat:'weird',pop:64},
+  {a:['Live in space','🛸'],b:['Live underwater','🌊'],cat:'weird',pop:52},{a:['Pet dragon','🐉'],b:['Pet unicorn','🦄'],cat:'weird',pop:63},
+  {a:['No phone','📵'],b:['No music','🎵'],cat:'weird',pop:35},{a:['Tiny as an ant','🐜'],b:['Tall as a building','🏢'],cat:'weird',pop:44},
+  {a:['Pizza for life','🍕'],b:["Mom's cooking",'👩‍🍳'],cat:'weird',pop:33},{a:['Win the lottery','🎰'],b:['Have a superpower','💥'],cat:'weird',pop:42},
+  {a:['Pause time','⏸️'],b:['Rewind time','⏪'],cat:'weird',pop:55},{a:['Be a kid forever','🧒'],b:['Grow up fast','🧑'],cat:'weird',pop:56},
+];
+PAIRS.forEach(p=>{ p.id=qid(p); });   // stable id per question for vote tally
+const CATS=[['all','Mixed 🎲'],['sports','Sports ⚽'],['food','Food 🍕'],['tech','Tech 📱'],['life','Life ✨'],['music','Music 🎵'],['movies','Movies 🎬'],['geo','Geography 🌍'],['weird','Weird 🤪']];
+const GRADS=[['#ff5a5a','#7a1f3a'],['#ffae3a','#7a3a10'],['#3a9bff','#102f6e'],['#3ad67a','#0e5a36'],['#b96bff','#3a1a6e'],['#ff7ad9','#7a1f5a'],['#42d6ff','#0e4a6e'],['#ffd23f','#7a5a10']];
+function catLbl(k){ return (CATS.find(c=>c[0]===k)||['','?'])[1]; }
+
+let cat='all', mode='all', deck=[], cur=null, picked=false, streak=0;
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function buildDeck(){ deck=shuffle(PAIRS.filter(p=>cat==='all'||p.cat===cat)); }
+
+let actx=null;
+function ac(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function beep(t){ const a=ac(); if(!a) return; const o=a.createOscillator(),g=a.createGain(); o.connect(g); g.connect(a.destination); const n=a.currentTime; let d=.12;
+  if(t==='pick'){ o.type='triangle'; o.frequency.setValueAtTime(420,n); o.frequency.exponentialRampToValueAtTime(720,n+.1); }
+  else if(t==='reveal'){ o.type='sine'; o.frequency.setValueAtTime(660,n); o.frequency.setValueAtTime(880,n+.08); d=.18; }
+  else { o.type='square'; o.frequency.setValueAtTime(520,n); o.frequency.exponentialRampToValueAtTime(300,n+.08); }
+  g.gain.setValueAtTime(.0001,n); g.gain.exponentialRampToValueAtTime(.25,n+.01); g.gain.exponentialRampToValueAtTime(.0001,n+d); o.start(n); o.stop(n+d+.02); }
+
+function nextPair(){
+  if(!deck.length) buildDeck();
+  cur=deck.pop(); picked=false;
+  const ga=GRADS[(Math.random()*GRADS.length)|0], gb=GRADS[(Math.random()*GRADS.length)|0];
+  $('sideA').className='side'; $('sideB').className='side';
+  $('sideA').style.background=`linear-gradient(160deg,${ga[0]},${ga[1]})`;
+  $('sideB').style.background=`linear-gradient(160deg,${gb[0]},${gb[1]})`;
+  $('emA').textContent=cur.a[1]; $('nmA').textContent=cur.a[0]; $('emB').textContent=cur.b[1]; $('nmB').textContent=cur.b[0];
+  $('tagA').textContent=$('tagB').textContent=catLbl(cur.cat).toUpperCase();
+  $('brA').style.width=$('brB').style.width='0';
+  $('vs').classList.remove('go'); $('react').classList.remove('show'); $('nextBtn').classList.remove('show');
+  $('streakN').textContent=streak; $('matchN').textContent = S.total? Math.round(S.agree/S.total*100)+'%':'—';
+}
+async function choose(side){
+  if(picked||!cur) return; picked=true; beep('pick');
+  const chosen=side==='a'?cur.a:cur.b;
+  $('sideA').classList.add(side==='a'?'chosen':'faded'); $('sideB').classList.add(side==='b'?'chosen':'faded'); $('vs').classList.add('go');
+  // record a real vote + read the live tally (animate for ~260ms meanwhile)
+  let popA=cur.pop, live=false;
+  const [real]=await Promise.all([ withTimeout(castVote(cur.id,side),1400), new Promise(r=>setTimeout(r,260)) ]);
+  if(real){ const tot=real.a+real.b;
+    if(tot>=2){ popA=Math.round(real.a/tot*100); live=true; }   // pure ratio of REAL votes once 2+ people have voted
+    /* tot<=1: the very first voter ever on this question sees the baseline estimate, not 100% */
+  }
+  popA=Math.max(0,Math.min(100,popA));
+  const popB=100-popA, myPop=side==='a'?popA:popB, agreed=myPop>=50;
+  S.rounds++; S.total++; if(agreed){ S.agree++; streak++; if(streak>S.bestStreak)S.bestStreak=streak; } else streak=0;
+  if(mode!=='unlimited'){ const k=chosen[0]; const p=S.picks[k]||{e:chosen[1],c:0}; p.c++; p.e=chosen[1]; S.picks[k]=p; }   // profile only outside Unlimited
+  save();
+  $('pcA').textContent=popA+'%'; $('pcB').textContent=popB+'%';
+  $('sideA').classList.add('reveal'); $('sideB').classList.add('reveal'); $('brA').style.width=popA+'%'; $('brB').style.width=popB+'%'; beep('reveal');
+  const react = myPop>=60?'🔥 Crowd favourite!' : myPop>=50?'👍 Most people agree!' : myPop>=43?'⚖️ So close — split decision!' : myPop>=35?'😎 Rebel pick!' : '🦄 Bold! Hardly anyone agrees!';
+  $('react').textContent = react+'   '+myPop+(live?'% picked this 🌐 (live votes)':'% agree'); $('react').classList.add('show'); $('nextBtn').classList.add('show');
+  $('streakN').textContent=streak; $('matchN').textContent=Math.round(S.agree/S.total*100)+'%';
+}
+function advance(){ beep('next'); if(mode!=='unlimited' && S.rounds>0 && S.rounds%10===0){ showSummary(); return; } nextPair(); }
+function showSummary(){ $('game').classList.add('hidden'); $('summary').classList.remove('hidden');
+  const m=Math.round(S.agree/S.total*100);
+  $('sumIcon').textContent = m>=60?'🤝':'😎'; $('sumTitle').textContent='Round '+S.rounds+'!';
+  $('sumLine').innerHTML=`You agreed with the crowd <b>${m}%</b> of the time.`;
+  $('sumLine2').innerHTML=`🔥 Best streak: <b>${S.bestStreak}</b> &nbsp;•&nbsp; ${m>=60?'You think like everyone else! 😄':'You\'re your own person! 😎'}`;
+}
+
+/* ---------- profile ---------- */
+function showProfile(){ $('start').classList.add('hidden'); $('profile').classList.remove('hidden');
+  const m=S.total?Math.round(S.agree/S.total*100):0;
+  $('profStats').innerHTML=`<div class="stat"><b>${S.rounds}</b>rounds</div><div class="stat"><b>${m}%</b>match crowd</div><div class="stat"><b>${S.bestStreak}</b>best streak</div>`;
+  const g=$('profGrid'); g.innerHTML='';
+  const items=Object.entries(S.picks).sort((a,b)=>b[1].c-a[1].c);
+  if(!items.length){ $('profSub').textContent='No picks yet — play a topic and your favourites appear here! (Unlimited rounds don\'t count.)'; return; }
+  $('profSub').textContent='The choices you make most (Unlimited rounds don\'t count here).';
+  items.slice(0,40).forEach(([name,p])=>{ const c=document.createElement('div'); c.className='pcell';
+    c.innerHTML=`<div class="pe">${p.e}</div><div class="pn">${name}</div><div class="px">×${p.c}</div>`; g.appendChild(c); });
+}
+
+/* ---------- wiring ---------- */
+function renderCats(){ const l=$('catList'); l.innerHTML=''; CATS.forEach(([k,lbl])=>{ const b=document.createElement('div'); b.className='cat'+(k===cat?' on':''); b.textContent=lbl; b.onclick=()=>{cat=k; renderCats();}; l.appendChild(b); }); }
+function play(unlimited){ mode= unlimited?'unlimited':cat; if(unlimited) cat='all'; buildDeck();
+  $('modeLbl').textContent = unlimited?'♾️ Unlimited':catLbl(cat).replace(/[^A-Za-z ]/g,'').trim();
+  $('start').classList.add('hidden'); $('summary').classList.add('hidden'); $('profile').classList.add('hidden'); $('game').classList.remove('hidden'); nextPair(); ac(); }
+$('sideA').onclick=()=>choose('a'); $('sideB').onclick=()=>choose('b'); $('nextBtn').onclick=advance;
+$('playBtn').onclick=()=>play(false); $('unlBtn').onclick=()=>play(true);
+$('profBtn').onclick=showProfile; $('profBack').onclick=()=>{ $('profile').classList.add('hidden'); $('start').classList.remove('hidden'); renderCats(); };
+$('profReset').onclick=()=>{ if(confirm('Reset your profile picks & stats?')){ S={rounds:0,bestStreak:0,agree:0,total:0,picks:{}}; save(); showProfile(); } };
+$('contBtn').onclick=()=>{ $('summary').classList.add('hidden'); $('game').classList.remove('hidden'); nextPair(); };
+$('menuBtn').onclick=()=>{ $('summary').classList.add('hidden'); $('start').classList.remove('hidden'); renderCats(); };
+renderCats();
+['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
+</script>
+<script src="../rec.js" defer></script>
+</body>
+</html>

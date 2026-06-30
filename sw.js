@@ -64,7 +64,9 @@ const ASSETS = [
   './tennis/',
   './tennis/index.html',
   './karate/',
-  './karate/index.html'
+  './karate/index.html',
+  './thisorthat/',
+  './thisorthat/index.html'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
