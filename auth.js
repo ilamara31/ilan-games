@@ -62,7 +62,8 @@
 
   /* ---------- player persistence ---------- */
   function loadPlayer() { try { const p = JSON.parse(localStorage.getItem(PKEY)); if (p && p.name) return p; } catch (e) {} return null; }
-  function savePlayer(p) { player = p; try { p ? localStorage.setItem(PKEY, JSON.stringify(p)) : localStorage.removeItem(PKEY); } catch (e) {} fire(); }
+  function loggedOut() { try { return localStorage.getItem("iga_out") === "1"; } catch (e) { return false; } }
+  function savePlayer(p) { player = p; try { if (p) { localStorage.setItem(PKEY, JSON.stringify(p)); localStorage.removeItem("iga_out"); } else localStorage.removeItem(PKEY); } catch (e) {} fire(); }
 
   /* ---------- soc_store_v1 bridge (so every game shows this player) ---------- */
   function storeLoad() { try { const s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && Array.isArray(s.accounts)) return s; } catch (e) {} return { activeId: null, accounts: [] }; }
@@ -80,8 +81,8 @@
     const s = storeLoad();
     let acct = s.accounts.find(a => a.name === name);
     if (!acct) { acct = { id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name }; s.accounts.push(acct); }
-    // pull in scores from EVERY other on-device account (highest per field) so nothing is lost
-    for (const a of s.accounts) { if (a.id !== acct.id) mergeGameData(acct, a); }
+    // NOTE: we deliberately do NOT merge scores from other on-device accounts.
+    // Each account keeps its own progress + leaderboard — switching must never copy scores.
     // fold Basket Catch guest + legacy saves
     try {
       const g = JSON.parse(localStorage.getItem("basketCatchV2_guest"));
@@ -105,12 +106,22 @@
     });
   }
   async function init() {
+    // one-time cleanup: earlier builds bulk-seeded on-device scores under the active
+    // account, so a shared device could show one player's scores under another. Wipe
+    // the local board + cache once; it repopulates cleanly from the server + real plays.
+    try {
+      if (localStorage.getItem("iglb_reset_v2") !== "1") {
+        localStorage.removeItem("iglb_local");
+        localStorage.removeItem("iglb_cache");
+        localStorage.setItem("iglb_reset_v2", "1");
+      }
+    } catch (e) {}
     if (!SUPA_URL || !SUPA_KEY) { console.warn("[IGAuth] missing Supabase config"); ready = true; return; }
     const ok = await loadSDK();
     if (ok) sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
     player = loadPlayer();
     if (player) migrateAndSeed(player.name);    // re-merge device scores + (re)seed leaderboard each load
-    else if (hasAnyDeviceScore()) {             // guest who has played anything? upload ALL their on-device bests to the global board
+    else if (hasAnyDeviceScore() && !loggedOut()) {   // played but not logged in? seed as guest — but NOT right after an explicit log out
       ensureGuestPlayer(); seedLeaderboard(); setTimeout(nudgeLogin, 1600);
     }
     try { seedLocalAll(); } catch (e) {}        // always populate the local fallback board (works without login/server)
@@ -159,12 +170,11 @@
     try { localStorage.setItem("iglb_local", JSON.stringify(a)); } catch (e) {}
   }
   function mergeLocal(rows) { return (rows || []).concat(localRows()); }
-  // record every game's on-device best locally, so the leaderboard lists every game even with no server/login
-  function seedLocalAll() {
-    const guest = !(player && !player.guest);
-    try { const s = storeLoad(); const acct = s.accounts.find(a => a.id === s.activeId); if (acct) for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) recordLocal(g, v, guest); } } catch (e) {}
-    for (const g in DEVICE_BEST) { try { const v = DEVICE_BEST[g](); if (v > 0) recordLocal(g, v, guest); } catch (e) {} }
-  }
+  // Intentionally a no-op. We used to bulk-record every on-device best under the
+  // active account — but on a shared device that pinned one player's scores onto
+  // whoever was logged in (and leaked them across an account switch). Each game
+  // now records its own score under the current account on play (see submitScore).
+  function seedLocalAll() { /* no-op — scores are recorded per play, not bulk-seeded */ }
 
   /* ---------- leaderboard ---------- */
   async function submitScore(game, score) {
@@ -180,14 +190,12 @@
       try { localStorage.setItem(ck, score); } catch (e) {}   // remember success so we don't re-post; if it threw, we'll retry next load
     } catch (e) {}
   }
-  // Post the player's best for every game from on-device saves (self-healing:
-  // any high score that didn't make it earlier gets posted on the next load).
-  function seedLeaderboard() {
-    if (!player) return;
-    const s = storeLoad(); const acct = s.accounts.find(a => a.id === s.activeId);
-    if (acct) for (const g in GAME_BEST) { const v = GAME_BEST[g](acct); if (v > 0) submitScore(g, v); }
-    for (const g in DEVICE_BEST) { const v = DEVICE_BEST[g](); if (v > 0) submitScore(g, v); }
-  }
+  // Intentionally a no-op now. Re-posting on-device saves under whoever is logged
+  // in is what leaked one account's scores onto another after an account switch
+  // (device-wide game saves have no account owner). A score reaches the board ONLY
+  // when a game is actually played — every game calls submitScore under the current
+  // account — so switching accounts can never copy scores again.
+  function seedLeaderboard() { /* no-op — see submitScore (per-play, correctly attributed) */ }
   // ---- leaderboard cache: load is instant from cache, then refreshed in the background ----
   let boardRows = null;
   function cachedBoard() {
@@ -244,7 +252,30 @@
     migrateAndSeed(name);
     return { ok: true };
   }
-  function signOut() { savePlayer(null); location.reload(); }
+  function signOut() {
+    try { localStorage.setItem("iga_out", "1"); } catch (e) {}               // remember it was an explicit log out
+    try { const s = storeLoad(); s.activeId = null; storeSave(s); } catch (e) {}  // drop active account so we don't pop back in as that name's guest
+    savePlayer(null); location.reload();
+  }
+  // Switch to a DIFFERENT existing account (name + password). Loads that
+  // account's own scores/leaderboard — never copies the current player's.
+  async function switchAccount(name, pw) {
+    if (!sb) return { error: "Connecting… try again in a moment." };
+    name = (name || "").trim().slice(0, 16);
+    if (!name) return { error: "Enter the account name." };
+    if (!pw) return { error: "Enter the password." };
+    if (player && !player.guest && player.name && name.toLowerCase() === player.name.toLowerCase())
+      return { error: "You're already logged in as " + name + "." };
+    try {
+      const { data, error } = await callRpc("account_auth", { p_name: name, p_password: pw, p_recovery: null });
+      if (error) return { error: error.message };
+      if (data === "invalid") return { error: "Enter a name and password." };
+      if (data === "wrong") return { error: "Wrong password for “" + name + "”." };
+      if (data === "created") return { error: "No account named “" + name + "” exists. Check the spelling — or make a new account from Log out." };
+      savePlayer({ name, pw, guest: false });   // data === "ok" → existing account, correct password
+      return { ok: true };
+    } catch (e) { return { error: netMsg(e) }; }
+  }
 
   /* ================= UI ================= */
   function injectStyles() {
@@ -330,13 +361,37 @@
     const tag = player.guest ? " <small style='color:#8aa0c6'>(guest)</small>" : "";
     const ov = modal(`
       <h2>👤 ${(player.name || "").replace(/[<>]/g, "")}${tag}</h2>
-      <p>${player.guest ? "You're playing as a guest. Save a name + password to keep your scores." : "Your scores are saved to this name."}</p>
+      <p>${player.guest ? "You're playing as a guest. Save a name + password to keep your scores." : "Signed in — your scores are saved to this name."}</p>
       ${player.guest ? `<button class="iga-btn iga-p" id="iga-upgrade">Save a name &amp; password</button>` : ``}
-      <button class="iga-btn iga-g" id="iga-out">Log out / switch</button>
+      <button class="iga-btn iga-g" id="iga-switch">🔄 Switch account</button>
+      <button class="iga-btn iga-g" id="iga-logout">🚪 Log out</button>
       <button class="iga-btn iga-x" id="iga-close">Close</button>`);
     if (ov.querySelector("#iga-upgrade")) ov.querySelector("#iga-upgrade").onclick = () => { ov.remove(); savePlayer(null); openAuth(); };
-    ov.querySelector("#iga-out").onclick = () => signOut();
+    ov.querySelector("#iga-switch").onclick = () => { ov.remove(); openSwitch(); };
+    ov.querySelector("#iga-logout").onclick = () => signOut();
     ov.querySelector("#iga-close").onclick = () => ov.remove();
+  }
+
+  // Switch to another existing account (asks name + password of THAT account).
+  function openSwitch() {
+    const ov = modal(`
+      <h2>🔄 Switch account</h2>
+      <p>Enter the name &amp; password of the account you want to switch to. You'll get that account's own scores &amp; leaderboard spot.</p>
+      <input id="iga-sname" type="text" placeholder="Account name" maxlength="16" autocomplete="off">
+      <input id="iga-spwd" type="password" placeholder="Password" autocomplete="off">
+      <div class="iga-msg" id="iga-sm"></div>
+      <button class="iga-btn iga-p" id="iga-sgo">Switch</button>
+      <button class="iga-btn iga-x" id="iga-sback">Back</button>`);
+    const $ = id => ov.querySelector(id);
+    const msg = (t, ok) => { const m = $("#iga-sm"); m.textContent = t; m.className = "iga-msg " + (ok ? "iga-ok" : "iga-err"); };
+    $("#iga-sgo").onclick = async () => {
+      msg("Checking…", true);
+      const r = await switchAccount($("#iga-sname").value, $("#iga-spwd").value);
+      if (r.error) msg(r.error); else location.reload();
+    };
+    $("#iga-sname").addEventListener("keydown", e => { if (e.key === "Enter") $("#iga-spwd").focus(); });
+    $("#iga-spwd").addEventListener("keydown", e => { if (e.key === "Enter") $("#iga-sgo").click(); });
+    $("#iga-sback").onclick = () => { ov.remove(); openAccount(); };
   }
 
   async function showLeaderboard(game, title) {
@@ -448,7 +503,7 @@
     getUser: () => player,
     isGuest: () => !!(player && player.guest),
     isReady: () => ready,
-    openAuth, openAccount, signOut, submitScore, topScores, showLeaderboard, showOverall,
+    openAuth, openAccount, openSwitch, switchAccount, signOut, submitScore, topScores, showLeaderboard, showOverall,
     displayName: () => player ? player.name : null,
   };
   init();
