@@ -99,12 +99,18 @@
       await s.rpc("ig_play_bump", { p_name: myName, p_key: myKey, p_week: weekMeta().week });
     } catch (e) {}
   }
+  var _weekWinnerKey = rd("ig_week_winner", "") || "";   // who currently holds the 🏅 title
+  function isWeekWinner(n) { return !!_weekWinnerKey && nameKey(n) === _weekWinnerKey; }
   async function weeklyInfo() {
     const s = await ensureSb(); if (!s) return null;
     const wm = weekMeta(), wk = wm.week, daysLeft = wm.daysLeft;
     const info = { daysLeft: daysLeft, leader: null, leaderPlays: 0, prev: null };
     try { const r = await s.from("ig_weekly").select("user_name,plays").eq("week", wk).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!r.error && r.data && r.data.length) { info.leader = r.data[0].user_name; info.leaderPlays = r.data[0].plays; } } catch (e) {}
     try { const p = await s.from("ig_weekly").select("user_name,plays").eq("week", wk - 7).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!p.error && p.data && p.data.length) info.prev = p.data[0].user_name; } catch (e) {}
+    // Title holder = last week's crowned winner; before the first Friday, the live leader.
+    const holder = info.prev || info.leader;
+    _weekWinnerKey = holder ? nameKey(holder) : "";
+    wr("ig_week_winner", _weekWinnerKey);
     return info;
   }
 
@@ -129,6 +135,7 @@
     dbLoad();
     setInterval(dbLoad, 15000);   // catch anything missed / requests that arrived while offline
     bumpPlay();                   // count this game-open toward User of the Week
+    weeklyInfo();                 // warm the 🏅 title-holder cache (for leaderboard badges)
   }
 
   /* ---------- public API ---------- */
@@ -217,6 +224,6 @@
     render(); onUpdate(function () { if (document.body.contains(ov)) render(); });
   }
 
-  window.IGFriends = { openPanel: openPanel, list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return _in.length; }, weeklyInfo: weeklyInfo, ready: function () { return started; } };
+  window.IGFriends = { openPanel: openPanel, list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest, accept: accept, deny: deny, presenceOf: presenceOf, onUpdate: onUpdate, reqInCount: function () { return _in.length; }, weeklyInfo: weeklyInfo, isWeekWinner: isWeekWinner, ready: function () { return started; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

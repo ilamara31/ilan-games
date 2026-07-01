@@ -357,7 +357,8 @@
       box.innerHTML = list.map((r, i) => {
         const me = player && r.name === player.name;
         const fr = (window.IGFriends && IGFriends.isFriend && IGFriends.isFriend(r.name)) ? "👥 " : "";
-        const nm = fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+        const wk = (window.IGFriends && IGFriends.isWeekWinner && IGFriends.isWeekWinner(r.name)) ? `<span title="User of the Week">🏅</span> ` : "";
+        const nm = wk + fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
         return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
       }).join("");
     };
@@ -396,7 +397,8 @@
         box.innerHTML = byGame[g].slice(0, 20).map((r, i) => {
           const me = player && r.name === player.name;
           const fr = (window.IGFriends && IGFriends.isFriend && IGFriends.isFriend(r.name)) ? "👥 " : "";
-        const nm = fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
+          const wk = (window.IGFriends && IGFriends.isWeekWinner && IGFriends.isWeekWinner(r.name)) ? `<span title="User of the Week">🏅</span> ` : "";
+        const nm = wk + fr + (r.name || "Player").replace(/[<>]/g, "") + (r.is_guest ? ` <small>(guest)</small>` : "");
           return `<div class="iga-row ${me ? "me" : ""}"><span class="r">${i + 1}</span><span class="n">${nm}</span><span class="sc">${r.score}</span></div>`;
         }).join("");
       }
