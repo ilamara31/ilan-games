@@ -465,10 +465,11 @@
       function show(info){ const e=document.getElementById('uotw'); if(!e||!info) return;
         let h='<div style="max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#2a1d4a,#14102e);border:1px solid rgba(180,140,255,.3);border-radius:16px;padding:13px 16px;text-align:left">';
         h+='<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#c9a6ff">🏅 USER OF THE WEEK</div>';
-        if(info.prev) h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:3px">👑 '+escu(info.prev)+'</div>';
-        if(info.leader) h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">🔥 Leading now: <b>'+escu(info.leader)+'</b> ('+info.leaderPlays+' plays) — <b>'+info.daysLeft+' day'+(info.daysLeft===1?'':'s')+' left</b> to be crowned!</div>';
-        else h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">Play the most games this week to win the title — <b>'+info.daysLeft+' days left</b> to be crowned!</div>';
-        h+='<div style="font-size:11px;color:#9a8cc0;margin-top:6px">Whoever opens the most games this week takes the crown. Keep playing!</div></div>';
+        if(info.prev) h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:3px">👑 '+escu(info.prev)+' <span style="font-size:12px;font-weight:700;color:#c9a6ff">— last week’s winner</span></div>';
+        var when = info.daysLeft===1 ? 'announced <b>tomorrow (Friday)!</b>' : 'announced <b>this Friday</b> — '+info.daysLeft+' days left';
+        if(info.leader) h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">🔥 Leading now: <b>'+escu(info.leader)+'</b> ('+info.leaderPlays+' plays). Winner '+when+'!</div>';
+        else h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">Play the most games to win the title — winner '+when+'!</div>';
+        h+='<div style="font-size:11px;color:#9a8cc0;margin-top:6px">Whoever opens the most games each week is crowned every Friday. Keep playing!</div></div>';
         e.innerHTML=h;
       }
       function go(){ if(window.IGFriends && IGFriends.weeklyInfo){ IGFriends.weeklyInfo().then(show); } else setTimeout(go,500); }

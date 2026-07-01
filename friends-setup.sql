@@ -42,6 +42,8 @@ end $$;
 
 -- ============================================================================
 --  User of the Week — counts how many games each player opens per week.
+--  The week runs Friday→Thursday; the winner is announced every Friday.
+--  (The "week" value is the Friday's day-index, computed client-side.)
 -- ============================================================================
 create table if not exists public.ig_weekly (
   user_key  text not null,
