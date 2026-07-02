@@ -39,8 +39,14 @@ const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1;
 function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H*0.82;}
 addEventListener('resize',resize);
 const rand=(a,b)=>a+Math.random()*(b-a);
-let best=(()=>{try{return(+JSON.parse(localStorage.getItem('archerDuel_v1')).best)||0;}catch(e){return 0;}})();
-function saveBest(){try{localStorage.setItem('archerDuel_v1',JSON.stringify({best}));}catch(e){}}
+/* per-account save: each logged-in account keeps its own progress.
+   The device's existing save is inherited once, by the primary (first) account. */
+function acctKey(){try{var p=JSON.parse(localStorage.getItem('ig_player'));if(p&&p.name)return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}catch(e){}try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(s&&s.accounts){var a=s.accounts.find(function(x){return x.id===s.activeId;});if(a&&a.name)return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}}catch(e){}return 'guest';}
+function _claimOK(){try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(!s||!s.accounts||s.accounts.length<=1)return true;var a=s.accounts.find(function(x){return x.id===s.activeId;});return !!(a&&a.id===s.accounts[0].id);}catch(e){return true;}}
+function acctSaveKey(base){var k=base+'__'+acctKey();try{if(!localStorage.getItem(k)&&localStorage.getItem(base+'__claimed')!=='1'){var old=localStorage.getItem(base);if(old&&_claimOK()){localStorage.setItem(k,old);localStorage.setItem(base+'__claimed','1');}}}catch(e){}return k;}
+const SKEY=acctSaveKey('archerDuel_v1');
+let best=(()=>{try{return(+JSON.parse(localStorage.getItem(SKEY)).best)||0;}catch(e){return 0;}})();
+function saveBest(){try{localStorage.setItem(SKEY,JSON.stringify({best}));}catch(e){}}
 const G=900;let groundY;resize();
 const BODY=30,HEAD=60,FOE_BODY=15,FOE_HEAD=25,HEAL=22;
 let state='menu',level,me,foes,pArrow,pReload,hearts,heartT,aim,parts,floats,shake,msg,msgT,leveling=false;
@@ -186,7 +192,7 @@ try{ if(!localStorage.getItem('archerTut')) startTut(); }catch(e){}
 <script src="../auth.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
   IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
-    try{ var s=JSON.parse(localStorage.getItem('archerDuel_v1')); if(s&&+s.best>0) IGAuth.submitScore('archer',+s.best); }catch(e){} }); });</script>
+    try{ var s=JSON.parse(localStorage.getItem(SKEY)); if(s&&+s.best>0) IGAuth.submitScore('archer',+s.best); }catch(e){} }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 <script src="../friends.js" defer></script>

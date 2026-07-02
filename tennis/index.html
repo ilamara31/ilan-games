@@ -193,7 +193,12 @@
 import * as THREE from '../obby/libs/three.module.js';
 
 /* ============================================================ DATA / PURE LOGIC ============================================================ */
-const SK='tennisTour_v1';
+/* per-account save: each logged-in account keeps its own progress.
+   The device's existing save is inherited once, by the primary (first) account. */
+function acctKey(){try{var p=JSON.parse(localStorage.getItem('ig_player'));if(p&&p.name)return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}catch(e){}try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(s&&s.accounts){var a=s.accounts.find(function(x){return x.id===s.activeId;});if(a&&a.name)return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}}catch(e){}return 'guest';}
+function _claimOK(){try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(!s||!s.accounts||s.accounts.length<=1)return true;var a=s.accounts.find(function(x){return x.id===s.activeId;});return !!(a&&a.id===s.accounts[0].id);}catch(e){return true;}}
+function acctSaveKey(base){var k=base+'__'+acctKey();try{if(!localStorage.getItem(k)&&localStorage.getItem(base+'__claimed')!=='1'){var old=localStorage.getItem(base);if(old&&_claimOK()){localStorage.setItem(k,old);localStorage.setItem(base+'__claimed','1');}}}catch(e){}return k;}
+const SK=acctSaveKey('tennisTour_v1');
 
 const CAREER=[
   {id:'school', name:'School Tournament',      ic:'🏫', diff:0.30, games:2, coins:120, xp:60},
