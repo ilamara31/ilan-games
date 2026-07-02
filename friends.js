@@ -111,7 +111,31 @@
     const holder = info.prev || info.leader;
     _weekWinnerKey = holder ? nameKey(holder) : "";
     wr("ig_week_winner", _weekWinnerKey);
+    // Celebrate: if I'm the just-crowned winner, show the popup once for this cycle.
+    if (info.prev && myKey && nameKey(info.prev) === myKey && (+rd("ig_uotw_shown", 0)) !== wk) {
+      wr("ig_uotw_shown", wk); winnerPopup();
+    }
     return info;
+  }
+  function winnerPopup() {
+    try {
+      if (document.getElementById("ig-uotw-pop")) return;
+      const css = "position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(6,4,20,.72);backdrop-filter:blur(4px);animation:igPopFade .3s ease";
+      const card = "max-width:340px;margin:18px;background:linear-gradient(150deg,#3a2470,#160f34);border:1px solid rgba(200,160,255,.4);border-radius:22px;padding:26px 24px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:igPopIn .45s cubic-bezier(.2,1.3,.4,1)";
+      const o = document.createElement("div"); o.id = "ig-uotw-pop"; o.setAttribute("style", css);
+      o.innerHTML =
+        '<style>@keyframes igPopFade{from{opacity:0}to{opacity:1}}@keyframes igPopIn{from{opacity:0;transform:scale(.7) translateY(20px)}to{opacity:1;transform:none}}@keyframes igMedal{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}</style>' +
+        '<div style="' + card + '">' +
+        '<div style="font-size:64px;line-height:1;animation:igMedal 1.2s ease-in-out infinite">🏅</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#fff;margin-top:12px">You’re the User of the Week!</div>' +
+        '<div style="font-size:14px;color:#d7c9ff;margin-top:8px">You played the most games last week. Your crown 👑 now shows on every leaderboard — enjoy it, champion!</div>' +
+        '<button id="ig-uotw-ok" style="margin-top:18px;width:100%;padding:12px;border:0;border-radius:12px;font-size:15px;font-weight:800;color:#fff;background:linear-gradient(90deg,#8b5cf6,#c026d3);cursor:pointer">Awesome! 🎉</button>' +
+        '</div>';
+      document.body.appendChild(o);
+      function close() { o.remove(); }
+      o.querySelector("#ig-uotw-ok").onclick = close;
+      o.addEventListener("click", function (e) { if (e.target === o) close(); });
+    } catch (e) {}
   }
 
   /* ---------- init: presence + load + live request feed ---------- */
