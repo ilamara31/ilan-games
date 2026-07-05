@@ -466,14 +466,26 @@
     /* User of the Week (most game-opens this week; excludes the creator) */
     (function uotw(){
       function escu(s){ return String(s).replace(/[<>&]/g,''); }
+      function rainbow(s){ var c=['#ffe14a','#7dff9b'], o='', i=0, a=String(s);   // alternating yellow / green letters
+        for(var k=0;k<a.length;k++){ var ch=a[k]; if(ch===' '){ o+=' '; continue; } o+='<span style="color:'+c[i%2]+'">'+ch+'</span>'; i++; } return o; }
       function show(info){ const e=document.getElementById('uotw'); if(!e||!info) return;
-        let h='<div style="max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#2a1d4a,#14102e);border:1px solid rgba(180,140,255,.3);border-radius:16px;padding:13px 16px;text-align:left">';
+        const isFri = new Date().getDay()===5;   // Friday = announcement day → celebrate the winner only
+        let h='<div style="max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#2a1d4a,#14102e);border:1px solid rgba(180,140,255,.3);border-radius:16px;padding:14px 16px;text-align:'+(isFri?'center':'left')+'">';
         h+='<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#c9a6ff">🏅 USER OF THE WEEK</div>';
-        if(info.prev) h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:3px">👑 '+escu(info.prev)+' <span style="font-size:12px;font-weight:700;color:#c9a6ff">— last week’s winner</span></div>';
-        var when = info.daysLeft===1 ? 'announced <b>tomorrow (Friday)!</b>' : 'announced <b>this Friday</b> — '+info.daysLeft+' days left';
-        if(info.leader) h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">🔥 Leading now: <b>'+escu(info.leader)+'</b> ('+info.leaderPlays+' plays). Winner '+when+'!</div>';
-        else h+='<div style="font-size:14px;color:#d7c9ff;margin-top:4px">Play the most games to win the title — winner '+when+'!</div>';
-        h+='<div style="font-size:11px;color:#9a8cc0;margin-top:6px">Whoever opens the most games each week is crowned every Friday. Keep playing!</div></div>';
+        if(isFri){
+          const champ = info.prev || info.leader;
+          if(champ){
+            h+='<div style="font-size:clamp(30px,8.5vw,52px);font-weight:900;line-height:1.06;margin-top:8px;text-shadow:0 3px 14px rgba(0,0,0,.5)">👑 '+rainbow(escu(champ))+'</div>';
+            h+='<div style="font-size:14px;font-weight:800;color:#ffe14a;margin-top:8px">🎉 Champion of the week! 🎉</div>';
+          } else h+='<div style="font-size:17px;color:#d7c9ff;margin-top:8px">No winner yet — play the most to be first!</div>';
+        } else {
+          const when = info.daysLeft===1 ? 'crowned <b>tomorrow (Friday)!</b>' : 'crowned <b>this Friday</b> — '+info.daysLeft+' days left';
+          if(info.leader) h+='<div style="font-size:21px;font-weight:900;color:#fff;margin-top:4px">🔥 Leading now: '+rainbow(escu(info.leader))+' <span style="font-size:12px;font-weight:700;color:#c9a6ff">('+info.leaderPlays+' plays)</span></div>';
+          else h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:4px">🔥 Play the most games to lead!</div>';
+          h+='<div style="font-size:13px;color:#d7c9ff;margin-top:5px">Winner '+when+'</div>';
+          if(info.prev) h+='<div style="font-size:12px;color:#9a8cc0;margin-top:9px">👑 Last week’s winner: <b style="color:#b0a0d0">'+escu(info.prev)+'</b></div>';
+        }
+        h+='</div>';
         e.innerHTML=h;
       }
       function go(){ if(window.IGFriends && IGFriends.weeklyInfo){ IGFriends.weeklyInfo().then(show); } else setTimeout(go,500); }
