@@ -95,6 +95,10 @@
   .rec { display:none; margin-top:12px; font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px;
     background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.18); color:#eaf2ff; }
   .rec.warn { background:rgba(255,170,40,.16); border-color:rgba(255,180,60,.6); color:#ffd9a0; }
+  /* play count + trending fire */
+  .plays { margin-top:8px; font-size:11px; font-weight:800; color:#ffe0b0; background:rgba(0,0,0,.32);
+    border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:3px 9px; letter-spacing:.3px; }
+  .badge.fire { left:-7px; right:auto; background:linear-gradient(135deg,#ff5a2b,#ffb02e); color:#3a1400; animation:badgepulse 1.4s infinite; }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
   /* account bar + modal */
   #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
@@ -569,6 +573,51 @@
         card.appendChild(chip);
       });
     })();
+  </script>
+<script>
+  /* ===== 🔥 Trending + play counts =====
+     Shows how many plays each game has, and puts a 🔥 TRENDING badge on the
+     most-played one. Uses the live play counter (game_plays) if it's set up;
+     otherwise falls back to real distinct players from the leaderboard, so it
+     shows real numbers immediately either way. */
+  (function () {
+    var API = 'https://xanrofecdpoljnerpsow.supabase.co/rest/v1';
+    var KEY = 'sb_publishable_jff4Q2OLVzIf0Cr1FILZyQ_vgy8xRrT';
+    var H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+    function slugOf(card) { return (card.getAttribute('href') || '').replace(/\/+$/, '').split('/').pop(); }
+    function decorate(counts) {
+      var cards = [].slice.call(document.querySelectorAll('a.card'));
+      var max = 0, maxCard = null;
+      cards.forEach(function (c) { var n = counts[slugOf(c)] || 0; if (n > max) { max = n; maxCard = c; } });
+      cards.forEach(function (c) {
+        if (c.querySelector('.plays')) return;
+        var n = counts[slugOf(c)] || 0;
+        var el = document.createElement('div'); el.className = 'plays';
+        el.textContent = '▶ ' + n.toLocaleString() + ' play' + (n === 1 ? '' : 's');
+        c.appendChild(el);
+      });
+      if (maxCard && max > 0 && !maxCard.querySelector('.badge.fire')) {
+        var f = document.createElement('span'); f.className = 'badge fire'; f.textContent = '🔥 TRENDING';
+        maxCard.appendChild(f);
+      }
+    }
+    function fromLeaderboard() {
+      fetch(API + '/leaderboard?select=name,game&limit=5000', { headers: H })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) {
+          var m = {};
+          (rows || []).forEach(function (r) { (m[r.game] = m[r.game] || {})[String(r.name || '').toLowerCase()] = 1; });
+          var c = {}; Object.keys(m).forEach(function (g) { c[g] = Object.keys(m[g]).length; });
+          decorate(c);
+        }).catch(function () {});
+    }
+    fetch(API + '/game_plays?select=game,plays', { headers: H })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (rows && rows.length) { var c = {}; rows.forEach(function (r) { c[r.game] = r.plays; }); decorate(c); }
+        else fromLeaderboard();
+      }).catch(fromLeaderboard);
+  })();
   </script>
 <script src="supabase-config.js"></script>
 <script src="auth.js" defer></script>

@@ -96,6 +96,24 @@
   } else {
     // funnel: a game page actually opened
     window.track('game_open', { game: GAME_ID });
+
+    // ---- global play counter (powers the home page 🔥 trending + play counts) ----
+    // Counted once per game per browser session so a refresh doesn't inflate it.
+    // Uses the browser-safe publishable Supabase key (falls back if config isn't loaded).
+    (function () {
+      try {
+        var pk = 'igplay_' + GAME_ID;
+        if (sessionStorage.getItem(pk)) return;
+        sessionStorage.setItem(pk, '1');
+        var url = window.SUPABASE_URL || 'https://xanrofecdpoljnerpsow.supabase.co';
+        var key = window.SUPABASE_KEY || 'sb_publishable_jff4Q2OLVzIf0Cr1FILZyQ_vgy8xRrT';
+        fetch(url + '/rest/v1/rpc/bump_play', {
+          method: 'POST',
+          headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_game: GAME_ID })
+        }).catch(function () {});
+      } catch (e) {}
+    })();
   }
 
   // ---- safety net: guarantee a way back to the arcade ----------------------
