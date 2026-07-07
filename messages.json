@@ -1,6 +1,16 @@
 {
   "messages": [
     {
+      "id": "new-game-catch2-2026-07",
+      "title": "🍔 New game: Basket Catch 2!",
+      "body": "Catch the fruit, dodge the junk food, and feast on Cheat Day! Try the sequel to Basket Catch.",
+      "target": "all",
+      "cta": { "label": "Play Basket Catch 2", "href": "catch2/" },
+      "start": "2026-07-07",
+      "end": "2026-09-30",
+      "level": "success"
+    },
+    {
       "id": "leaderboard-live-2026-06",
       "title": "🏆 Leaderboards are live!",
       "body": "Log in, beat the high scores, and climb to the top across every game!",

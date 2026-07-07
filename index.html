@@ -34,6 +34,7 @@
     background:rgba(0,0,0,.3); border:1px solid rgba(255,200,120,.4); border-radius:10px; padding:2px 8px; }
   .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
   .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
+  .catch2  { background:linear-gradient(135deg,#ffd23d,#e0552b); }
   .f1      { background:linear-gradient(135deg,#e10600,#7a0400); }
   .football{ background:linear-gradient(135deg,#1ea85a,#0a5a2e); }
   .obby    { background:linear-gradient(135deg,#8a4bff,#3a1d8a); }
@@ -157,6 +158,11 @@
       <span class="emoji">🧺</span>
       <h2>Basket Catch</h2>
       <p>Move the basket and catch everything before it falls!</p>
+    </a>
+    <a class="card catch2" href="catch2/">
+      <span class="emoji">🍔</span>
+      <h2>Basket Catch 2</h2>
+      <p>Catch the fruit, dodge the junk food — then feast on Cheat Day!</p>
     </a>
     <a class="card f1" href="f1/">
       <span class="emoji">🏎️</span>
@@ -523,7 +529,8 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
-      'thisorthat/':   { added:   '2026-06-30T20:06:00' },   // newest -> also the bottom banner
+      'catch2/':       { added:   '2026-07-07T21:00:00' },   // newest -> also the bottom banner
+      'thisorthat/':   { added:   '2026-06-30T20:06:00' },
       'stack/':        { added:   '2026-06-29T12:10:00' },
       'archer/':       { added:   '2026-06-29T12:00:00' },
       'paper/':        { added:   '2026-06-28T22:00:00' },
@@ -559,7 +566,7 @@
 
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
-      'cricket/':'both', 'catch/':'mobile', 'f1/':'pc', 'football/':'both', 'pptour/':'both',
+      'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'f1/':'pc', 'football/':'both', 'pptour/':'both',
       'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both',

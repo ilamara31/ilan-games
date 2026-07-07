@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Basket Catch 2 — Junk Food Rush</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#ffe6a8" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Basket Catch 2" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+  html, body {
+    height:100%; width:100%;
+    /* BC2 theme: a light sunny yellow→peach — bright so the junk's red ring pops
+       (and still clearly different from BC1's blue sky) */
+    background:linear-gradient(#fff7d6, #ffe6a8 55%, #ffcf87);
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    overflow:hidden; overscroll-behavior:none;
+  }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  canvas { background:transparent; display:block; touch-action:none; }
+
+  /* ---- HUD ---- */
+  #hud {
+    position:absolute; top:max(10px,env(safe-area-inset-top)); left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:0 16px; font-size:18px; font-weight:800; color:#5a3d00;
+    text-shadow:0 1px 0 rgba(255,255,255,.55); pointer-events:none;
+  }
+  #hud .col { display:flex; flex-direction:column; gap:2px; }
+  #hud .col.right { align-items:flex-end; }
+  #coins { color:#a86a00; }
+  #best  { font-size:14px; color:#8a5a00; }
+  #who   { font-size:12px; font-weight:700; opacity:.85; }
+  #level { font-size:15px; }
+
+  /* tummy meter (the death condition) */
+  #tummyWrap { display:flex; flex-direction:column; align-items:flex-end; gap:3px; margin-top:2px; }
+  #tummyWrap .lbl { font-size:12px; opacity:.9; }
+  #tummyBar { width:120px; height:14px; border-radius:8px; background:rgba(0,0,0,.14);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.25); overflow:hidden; }
+  #tummyFill { height:100%; width:0%; border-radius:8px;
+    background:linear-gradient(90deg,#6dd36d,#e8d84a 55%,#e05a5a);
+    transition:width .12s linear; }
+
+  #muteBtn {
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:14px;
+    font-size:22px; width:46px; height:46px; border:none; border-radius:50%;
+    background:rgba(255,255,255,.75); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.2); z-index:50;
+  }
+  #homeBtn {
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 16px); left:68px;
+    font-size:22px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.75);
+    display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.2); z-index:50;
+  }
+
+  /* ---- banner ---- */
+  #banner {
+    position:absolute; top:calc(env(safe-area-inset-top) + 78px); left:50%; transform:translateX(-50%);
+    padding:11px 20px; border-radius:16px; background:rgba(88,200,120,.95); color:#fff;
+    font-size:20px; font-weight:800; text-align:center; line-height:1.35; pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.25); max-width:92vw;
+    animation:pop .35s ease, glow 1s ease-in-out infinite alternate;
+  }
+  #banner span { font-size:17px; }
+  #banner.warn { background:rgba(205,60,30,.95); }
+  @keyframes pop { from { transform:translateX(-50%) scale(.6); opacity:0; } }
+  @keyframes glow { to { box-shadow:0 4px 24px rgba(255,180,120,.9); } }
+
+  /* ---- overlays ---- */
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:max(20px,env(safe-area-inset-top)) 20px calc(env(safe-area-inset-bottom) + 24px);
+    background:rgba(30,10,45,.66); color:#fff; text-align:center;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .screen h1 { font-size:clamp(26px,7vw,42px); letter-spacing:.5px; max-width:100%; overflow-wrap:anywhere; }
+  .screen p  { font-size:16px; max-width:min(440px,100%); line-height:1.5; opacity:.95; overflow-wrap:anywhere; }
+  .small { font-size:14px; opacity:.85; }
+  .pill {
+    font-size:20px; font-weight:800; padding:13px 30px; border:none; border-radius:999px;
+    background:#ff5a9e; color:#fff; cursor:pointer; box-shadow:0 4px 0 #d13b7c; transition:transform .05s; touch-action:manipulation;
+  }
+  .pill:active { transform:translateY(3px); box-shadow:0 1px 0 #d13b7c; }
+  .pill.blue  { background:#7b57d9; box-shadow:0 4px 0 #5a3ba8; }
+  .pill.green { background:#37b34a; box-shadow:0 4px 0 #2a8a39; }
+  .pill.sm { font-size:16px; padding:10px 22px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .hidden { display:none !important; }
+  .coinbig { font-size:22px; font-weight:900; color:#ffd34d; }
+  .testtag { position:absolute; top:6px; left:8px; font-size:11px; font-weight:800; color:#fff; background:#c0392b; padding:2px 8px; border-radius:8px; opacity:.85; z-index:30; }
+
+  /* ---- tutorial ---- */
+  .tutico { font-size:clamp(52px,15vw,84px); line-height:1.1; animation:pop .35s ease; }
+  .dots { display:flex; gap:9px; margin:2px 0; }
+  .dots i { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.35); }
+  .dots i.on { background:#ffd34d; transform:scale(1.15); }
+
+  /* ---- shop ---- */
+  #shopList { display:flex; flex-direction:column; gap:12px; width:100%; max-width:min(460px,100%); }
+  .bcard {
+    display:flex; align-items:center; gap:14px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.15);
+    border-radius:16px; padding:12px 14px; text-align:left;
+  }
+  .bcard.sel { border-color:#ffd34d; background:rgba(255,211,77,.18); }
+  .bcard .ico { font-size:38px; width:46px; text-align:center; }
+  .bcard .info { flex:1; min-width:0; }
+  .bcard .info b { font-size:17px; }
+  .bcard .info .d { font-size:13px; opacity:.85; line-height:1.35; }
+  .bcard .bars { display:flex; gap:10px; font-size:11px; margin-top:4px; opacity:.9; }
+  .bcard .act { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .bcard .price { font-size:14px; font-weight:800; color:#ffd34d; white-space:nowrap; }
+  .bcard button {
+    border:none; border-radius:999px; padding:8px 16px; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap;
+  }
+  .buyBtn { background:#37b34a; color:#fff; }
+  .buyBtn:disabled { background:#5a6b72; color:#c8d2d6; cursor:not-allowed; }
+  .selBtn { background:#7b57d9; color:#fff; }
+  .selBtn.on { background:#ffd34d; color:#5a3d00; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="col">
+      <div id="score">Score: 0</div>
+      <div id="best">🏆 Best: 0</div>
+      <div id="who"></div>
+    </div>
+    <div class="col right">
+      <div id="coins">🪙 0</div>
+      <div id="level">Level 1</div>
+      <div id="lives">❤️❤️❤️❤️❤️</div>
+      <div id="tummyWrap">
+        <div class="lbl">🤢 Tummy</div>
+        <div id="tummyBar"><div id="tummyFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="muteBtn" title="Sound">🔊</button>
+  <a id="homeBtn" href="../" title="Back">🏠</a>
+
+  <div id="banner" class="hidden"></div>
+
+  <!-- START / GAME OVER -->
+  <div id="overlay" class="screen">
+    <h1>🍔 Basket Catch 2</h1>
+    <p>Drag (or <b>← →</b>) to move the tray. <b>Catch fruit</b> 🍎🍓🍌 for points — but <b>dodge the junk food</b> 🍔🍟🍩!</p>
+    <p class="small">You have <b>5 lives ❤️</b> — miss a fruit, lose one. Junk food fills your <b>🤢 Tummy meter</b> (which <b>never goes down!</b>) and costs points. Run out of lives <i>or</i> fill the tummy and it's <b>game over</b>. Watch for <b>🎉 Cheat Day</b>, when junk is free points!</p>
+    <p class="small">Faster than the original. Your score becomes <b>coins</b> 🪙 — spend them on better trays.</p>
+    <div class="coinbig">🪙 <span id="ovCoins">0</span> coins</div>
+    <p class="small" id="ovBest"></p>
+    <div class="row">
+      <button class="pill green" id="startBtn">▶ Play</button>
+      <button class="pill blue" id="shopBtn">🍽️ Trays</button>
+    </div>
+    <div class="row">
+      <button class="pill sm" id="howBtn">❓ How to Play</button>
+      <button class="pill sm" id="lbBtn">🏆 Leaderboard</button>
+      <button class="pill sm blue" id="acctBtn">👤 Log in</button>
+    </div>
+    <p class="small" id="ovWho"></p>
+  </div>
+
+  <!-- TUTORIAL -->
+  <div id="tut" class="screen hidden">
+    <div class="tutico" id="tutIco">🍎</div>
+    <h1 id="tutTitle">How to Play</h1>
+    <p id="tutText"></p>
+    <div class="dots" id="tutDots"></div>
+    <div class="row">
+      <button class="pill green" id="tutNext">Next →</button>
+    </div>
+    <button class="pill sm blue" id="tutSkip">Skip</button>
+  </div>
+
+  <!-- SHOP -->
+  <div id="shop" class="screen hidden">
+    <h1>🍽️ Tray Shop</h1>
+    <div class="coinbig">🪙 <span id="shopCoins">0</span> coins</div>
+    <p class="small">Better trays move faster (+ handy perks) — never wider, so you can always dodge the junk!</p>
+    <div id="shopList"></div>
+    <button class="pill sm" id="shopBack" style="margin-top:6px">← Back</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   BASKET CATCH 2 — JUNK FOOD RUSH
+   Sequel to Basket Catch. Catch fruit (+points, settles tummy), dodge junk
+   food (−points, fills the Tummy meter). Fill the tummy = game over.
+   Faster fall, purple-dusk theme, funkier music. Reuses BC1's audio engine,
+   controls, coins + shop, and account/leaderboard hooks.
+   ========================================================================= */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let W, H;
+function resize() {
+  W = canvas.width  = Math.min(window.innerWidth, 760);
+  H = canvas.height = window.innerHeight;
+  if (basket) basket.y = H - 96;
+}
+window.addEventListener('resize', resize);
+
+/* ---------- trays catalog (faster = better, never wider) ---------- */
+const BASKETS = [
+  {id:'starter', name:'Classic Tray',   ico:'🍽️', price:0,    w:94, depth:50, speed:10, color:'#c9c9d6', rim:'#eef0f6', tease:'The trusty original.'},
+  {id:'quick',   name:'Quick Tray',     ico:'🥄', price:300,  w:90, depth:50, speed:14, color:'#6fa8dc', rim:'#9cc6f5', tease:'Lighter & quicker — dodge junk more easily.'},
+  {id:'magnet',  name:'Magnet Tray',    ico:'🧲', price:800,  w:94, depth:50, speed:12, color:'#b13a3a', rim:'#e06a6a', tease:'Gently pulls FRUIT toward you (junk is on its own!).', perk:'magnet', perkTxt:'🧲 Fruit magnet'},
+  {id:'lucky',   name:'Lucky Tray',     ico:'🍀', price:1500, w:94, depth:50, speed:13, color:'#3a9d5d', rim:'#62c585', tease:'Earns extra coins every game.', perk:'coin', perkV:1.25, perkTxt:'💰 +25% coins'},
+  {id:'iron',    name:'Iron Tummy',     ico:'🛡️', price:2800, w:92, depth:50, speed:16, color:'#e0a000', rim:'#ffd84d', tease:'Pro speed + junk fills your tummy 40% slower.', perk:'tummy', perkV:0.6, perkTxt:'🛡️ −40% tummy from junk'},
+];
+function getBasket(id){ return BASKETS.find(b=>b.id===id) || BASKETS[0]; }
+
+/* ---------- save / account layer (local; syncs via account if signed in) ---------- */
+const STORE_KEY = 'soc_store_v1';
+function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
+function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
+const acctStore = igLoad();
+const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
+
+const GUEST_KEY = 'basketCatch2_guest';
+function defData(){ return { best:0, coins:0, owned:['starter'], sel:'starter' }; }
+function loadData(){
+  let d;
+  if (acct){
+    if (!acct.basket2 || typeof acct.basket2 !== 'object') acct.basket2 = {};
+    d = acct.basket2;
+  } else {
+    try{ d = JSON.parse(localStorage.getItem(GUEST_KEY)); }catch(e){}
+    if (!d || typeof d !== 'object') d = {};
+  }
+  const def = defData();
+  if (typeof d.best  !== 'number') d.best  = def.best;
+  if (typeof d.coins !== 'number') d.coins = def.coins;
+  if (!Array.isArray(d.owned) || !d.owned.length) d.owned = def.owned.slice();
+  if (!d.owned.includes('starter')) d.owned.unshift('starter');
+  if (!d.sel || !d.owned.includes(d.sel)) d.sel = 'starter';
+  return d;
+}
+let data = loadData();
+function saveData(){
+  if (acct){ acct.basket2 = data; igSave(); }
+  else { try{ localStorage.setItem(GUEST_KEY, JSON.stringify(data)); }catch(e){} }
+}
+
+/* ============================================================
+   AUDIO — synthesized (BC1 engine), with a funkier BC2 track
+   ============================================================ */
+const Sound = (() => {
+  let ac=null, master=null, musicGain=null, musicTimer=null, musicOn=true, unlocked=false;
+
+  function init(){
+    if (ac) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+    musicGain = ac.createGain(); musicGain.gain.value = 0.16; musicGain.connect(master);
+  }
+  function unlock(){
+    init();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    if (!unlocked){
+      try{
+        const b = ac.createBuffer(1, 1, 22050);
+        const s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start(0);
+        unlocked = true;
+      }catch(e){}
+    }
+  }
+  function ready(){ init(); if (ac && ac.state === 'suspended') ac.resume(); return !!ac; }
+
+  function note(freq, t, dur, type='sine', gain=0.5, dest=master, glideTo=null){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t+dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t+dur+0.05);
+  }
+  function noise(t, dur, gain=0.8){
+    const n = Math.floor(ac.sampleRate*dur), buf = ac.createBuffer(1,n,ac.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const g = ac.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    const lp = ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(1800,t); lp.frequency.exponentialRampToValueAtTime(120,t+dur);
+    src.connect(lp); lp.connect(g); g.connect(master); src.start(t); src.stop(t+dur);
+  }
+
+  function sfx(fn){ if (!ready()) return; fn(ac.currentTime); }
+  const catchSfx  = () => sfx(t=>{ note(880,t,0.10,'triangle',0.4); note(1320,t+0.05,0.13,'triangle',0.3); });
+  const junkSfx   = () => sfx(t=>{ noise(t,0.22,0.6); note(200,t,0.22,'sawtooth',0.5,master,70); }); // comedic "splat/burp"
+  const lifeSfx   = () => sfx(t=>{ note(392,t,0.16,'sine',0.4,master,260); note(262,t+0.14,0.2,'sine',0.4,master,180); }); // missed-fruit "aww"
+  const goldenSfx = () => sfx(t=>{ [659.25,880,1108.7,1318.5,1760].forEach((f,i)=>note(f,t+i*0.07,0.25,'triangle',0.55)); note(1760,t+0.36,0.5,'sine',0.3); });
+  const cheatSfx  = () => sfx(t=>{ note(1046.5,t,0.09,'square',0.35); note(1568,t+0.06,0.12,'square',0.3); }); // bright chomp
+  const frenzySfx = () => sfx(t=>{ [523.25,659.25,784,1046.5,1318.5].forEach((f,i)=>note(f,t+i*0.08,0.3,'triangle',0.5)); });
+  const stormSfx  = () => sfx(t=>{ noise(t,0.5,0.7); [220,196,174.61].forEach((f,i)=>note(f,t+i*0.12,0.4,'sawtooth',0.45,master,f*0.7)); });
+  const sadSfx    = () => sfx(t=>{ [523.25,466.16,392,311.13].forEach((f,i)=>note(f,t+i*0.28,0.4,'sine',0.45)); });
+  const coinSfx   = () => sfx(t=>{ note(988,t,0.08,'square',0.3); note(1319,t+0.06,0.12,'square',0.28); });
+  const warnSfx   = () => sfx(t=>{ note(330,t,0.14,'square',0.4); note(247,t+0.12,0.18,'square',0.4); });
+
+  /* --- catchy BC2 groove: singable lead hook over an Am–F–C–G loop,
+         warm triangle+sub lead, walking bass, soft kick & hats --- */
+  const LEAD = [440,523.25,659.25,0, 440,349.23,440,0, 392,523.25,659.25,0, 587.33,493.88,392,0];
+  const BASS = [110,0,164.81,0,  87.31,0,130.81,0,  65.41,0,98,0,  98,0,146.83,0];
+  let step = 0;
+  function tickMusic(){
+    if (!musicOn || !ac) return;
+    const t = ac.currentTime + 0.02;
+    const lf = LEAD[step % LEAD.length];
+    if (lf){ note(lf, t, 0.24, 'triangle', 0.34, musicGain); note(lf/2, t, 0.28, 'sine', 0.16, musicGain); }
+    const bf = BASS[step % BASS.length];
+    if (bf) note(bf, t, 0.26, 'sawtooth', 0.30, musicGain);
+    if (step % 2 === 1) noise(t, 0.05, 0.14);                          // off-beat hat
+    if (step % 4 === 0) note(55, t, 0.26, 'sine', 0.32, musicGain);    // kick
+    step++;
+  }
+  function startMusic(){ if (!ready()) return; if (musicTimer) return; step=0; musicTimer=setInterval(tickMusic,200); tickMusic(); }
+  function stopMusic(){ clearInterval(musicTimer); musicTimer=null; }
+  function toggleMusic(){ musicOn=!musicOn; if(musicOn) startMusic(); else stopMusic(); return musicOn; }
+
+  return { unlock, ready, startMusic, stopMusic, toggleMusic,
+           catchSfx, junkSfx, lifeSfx, goldenSfx, cheatSfx, frenzySfx, stormSfx, sadSfx, coinSfx, warnSfx,
+           get musicOn(){ return musicOn; } };
+})();
+
+function primeAudio(){ Sound.unlock(); }
+['pointerdown','touchstart','keydown','click'].forEach(ev =>
+  window.addEventListener(ev, primeAudio, { passive:true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) Sound.ready(); });
+
+/* ============================================================
+   GAME
+   ============================================================ */
+const FRUIT = ['🍎','🍊','🍌','🍓','🍇','🍑','🍐','🍉','🥝','🍒','🥭'];
+const JUNK  = ['🍔','🍟','🌭','🍕','🍩','🍪','🧁','🍫','🥤','🍰','🍬','🍦'];
+
+const CHEAT_MS = 10000, STORM_MS = 6000;
+const JUNK_HIT = 3;        // points lost per junk food
+const CHEAT_PTS = 2;       // points gained per junk food on Cheat Day
+const TUMMY_GAIN = 14;     // tummy % added per junk food (before tray perk); ~7 hits = game over
+/* NOTE: the tummy meter only ever goes UP — junk fills it, nothing lowers it.
+   It's a one-way ratchet, so every run ends when you've eaten too much junk. */
+
+const START_LIVES = 5;   // more than BC1's 3 — fruit often falls right next to junk, so misses happen
+let basket, items, particles, floats;
+let score, tummy, lives, level, running, lastSpawn, spawnGap, raf;
+let leftHeld, rightHeld, dragX;
+let ev, evEnd, nextEvent, evGap, evToggle, clearing, lastEv;   // ev: null | 'cheat' | 'storm'
+let nextGolden, warned;
+let baseSpeed, junkChance;
+let lastT = 0;
+let tutStep = 0;
+
+function newBasket(){
+  const b = getBasket(data.sel);
+  return { x:(W||400)/2, y:(H||600)-96, w:b.w, depth:b.depth, speed:b.speed, def:b };
+}
+
+function reset(){
+  basket = newBasket();
+  items = []; particles = []; floats = [];
+  score = 0; tummy = 0; lives = START_LIVES; level = 1;
+  baseSpeed = 2.5;                        // BC2 starts noticeably faster than BC1 (1.7)
+  junkChance = 0.34;                      // grows as you level up
+  spawnGap = 820; lastSpawn = 0; lastT = 0;
+  leftHeld = rightHeld = false; dragX = null;
+  ev = null; evEnd = 0; nextEvent = 26; evGap = 26; evToggle = 0; clearing = false; lastEv = null;
+  nextGolden = 60; warned = false;
+  updateHud();
+}
+
+/* ---------- spawning ---------- */
+function spawnItem(opts={}){
+  const golden = !!opts.golden;
+  const isJunk = golden ? false : (opts.junk !== undefined ? opts.junk : Math.random() < junkChance);
+  const emoji = golden ? '🍎' : (isJunk ? JUNK[(Math.random()*JUNK.length)|0] : FRUIT[(Math.random()*FRUIT.length)|0]);
+  const size = golden ? 50 : 40;
+  const x = opts.x !== undefined ? opts.x : size + Math.random()*(W - size*2);
+  items.push({
+    x, y:-size, size, junk:isJunk, golden, emoji,
+    vy: opts.vy !== undefined ? opts.vy : baseSpeed * (0.92 + Math.random()*0.16),
+  });
+}
+function spawnGolden(){ nextGolden *= 2; spawnItem({golden:true, vy:baseSpeed*1.15}); Sound.goldenSfx(); }
+
+/* ---------- special events (mirror of BC1's showers) ----------
+   Alternates: 🎉 Cheat Day (catch junk for FREE points, no tummy) and
+   🌪️ Junk Storm (junk rains — dodge it, catching it hurts). */
+function startEvent(now){
+  const type = (evToggle % 2 === 0) ? 'cheat' : 'storm';
+  evToggle++;
+  ev = type; evEnd = now + (type==='cheat' ? CHEAT_MS : STORM_MS);
+  evGap += 8; nextEvent += evGap;
+  if (type==='cheat'){ Sound.frenzySfx(); showBanner('🎉 CHEAT DAY! 🍔🍟🍩<br>Catch the junk — free points for <span id="bt"></span>s!'); }
+  else { Sound.stormSfx(); showBanner('🌪️ JUNK STORM! 🍔<br>Dodge the junk for <span id="bt"></span>s!','warn'); }
+}
+function endEvent(){
+  // BC1-style wind-down: stop spawning, but let whatever's on screen fall / be caught
+  // naturally (that's the gap). lastEv keeps Cheat-Day leftovers SAFE during the
+  // clear-out, so you can't suddenly get sick on food that was already mid-air.
+  lastEv = ev; ev = null; hideBanner(); clearing = true;
+}
+
+/* junk-storm bombs-equivalent: leave at least one clear lane to dodge into */
+function spawnJunkSafe(){
+  const lanes = 4, lane = (Math.random()*lanes)|0, laneW = W/lanes;
+  spawnItem({junk:true, x:laneW*lane + laneW*0.5, vy:baseSpeed});
+}
+
+/* ---------- tummy meter (the one-way death condition) ---------- */
+function junkGain(){ return TUMMY_GAIN * (basket.def.perk==='tummy' ? basket.def.perkV : 1); }
+function addTummy(delta){
+  tummy = Math.max(0, Math.min(100, tummy + delta));
+  // warn once when the tummy gets dangerously full (it won't come back down)
+  if (tummy >= 72 && !warned && running){ warned = true; Sound.warnSfx(); showBanner('🤢 Feeling sick!<br><span>Careful — dodge the junk food!</span>','warn'); setTimeout(()=>{ if(running && ev==null) hideBanner(); }, 1800); }
+}
+
+/* ---------- HUD ---------- */
+function updateHud(){
+  $('score').textContent = 'Score: ' + score;
+  $('best').textContent  = '🏆 Best: ' + Math.max(data.best, score|0);
+  $('coins').textContent = '🪙 ' + data.coins;
+  $('level').textContent = 'Level ' + level;
+  $('lives').textContent = '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, START_LIVES-lives));
+  $('tummyFill').style.width = tummy + '%';
+}
+
+/* ---------- banner ---------- */
+const banner = $('banner');
+let bannerTimeEl = null;
+function showBanner(html, kind){ banner.classList.remove('hidden'); banner.innerHTML = html; banner.className = (kind==='warn'?'warn':''); bannerTimeEl = banner.querySelector('#bt'); }
+function hideBanner(){ banner.classList.add('hidden'); }
+
+/* ---------- effects ---------- */
+function burst(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*6.28,s=1+Math.random()*3.5; particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,color}); } }
+function floatText(x,y,txt,color){ floats.push({x,y,txt,color,life:1}); }
+
+/* ============================================================
+   MAIN LOOP
+   ============================================================ */
+function loop(now){
+  if (!running) return;
+  raf = requestAnimationFrame(loop);
+
+  if (!lastT) lastT = now;
+  const step = Math.max(0.2, Math.min(2.5, (now - lastT) / 16.667));
+  lastT = now;
+
+  // basket movement
+  if (leftHeld)  basket.x -= basket.speed * step;
+  if (rightHeld) basket.x += basket.speed * step;
+  if (dragX !== null){
+    const dx = dragX - basket.x;
+    basket.x += Math.max(-basket.speed*2.4, Math.min(basket.speed*2.4, dx*0.4)) * step;
+  }
+  basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
+
+  // event timer (tummy never decreases on its own — one-way ratchet)
+  if (ev){ if (now>evEnd) endEvent(); else if (bannerTimeEl) bannerTimeEl.textContent = Math.ceil((evEnd-now)/1000); }
+
+  // spawning
+  if (clearing){
+    // let the leftover event food finish falling, THEN start fresh from the top
+    if (items.length === 0){ clearing=false; lastEv=null; lastSpawn=now; }
+  } else if (ev==='cheat'){
+    // Cheat Day: nothing but junk raining down — catch it all for points
+    if (now-lastSpawn > 160){ spawnItem({junk:true}); lastSpawn=now; }
+  } else if (ev==='storm'){
+    // Junk Storm: junk in spaced lanes (dodgeable) + a stray fruit to grab
+    if (now-lastSpawn > 520){ spawnJunkSafe(); lastSpawn=now; }
+    if (!items.some(it=>!it.junk)) spawnItem({junk:false, vy:baseSpeed});
+  } else {
+    const golden = items.find(it=>it.golden);
+    const laneBusy = golden && golden.y < H*0.45;
+    if (!laneBusy && now-lastSpawn > spawnGap){ spawnItem(); lastSpawn=now; }
+  }
+
+  ctx.clearRect(0,0,W,H);
+  const rimY = basket.y - basket.depth/2;
+
+  for (let i=items.length-1; i>=0; i--){
+    const it = items[i];
+    it.y += it.vy * step;
+
+    // magnet tray: pull good fruit only
+    if (basket.def.perk==='magnet' && !it.junk){
+      const d = basket.x - it.x;
+      if (Math.abs(d) < 110) it.x += Math.sign(d)*Math.min(1.4, Math.abs(d)*0.04)*step;
+    }
+
+    const inX = it.x > basket.x - basket.w/2 && it.x < basket.x + basket.w/2;
+    const inY = it.y + it.size/2 > rimY && it.y - it.size/2 < basket.y + basket.depth/2;
+
+    if (inX && inY){
+      items.splice(i,1);
+      catchItem(it, rimY);
+      if (!running) return;   // tummy may have hit 100
+      continue;
+    }
+
+    // fell off the bottom
+    if (it.y - it.size > H){
+      items.splice(i,1);
+      // missing FRUIT costs a life (junk is meant to be dodged; events/clear-out don't count)
+      if (!it.junk && !it.golden && !ev && !clearing){ loseLife(); if (!running) return; }
+      continue;
+    }
+    drawItem(it, now);
+  }
+
+  drawBasket(now);
+  drawParticles(step);
+  drawFloats(step);
+  updateHud();
+}
+
+function catchItem(it, rimY){
+  if (it.golden){
+    score += 25; Sound.goldenSfx();
+    floatText(it.x, rimY, '+25', '#b06a00'); burst(it.x, rimY, '#e0a000', 12);
+  } else if (it.junk){
+    // Cheat Day (and its clear-out wind-down) — junk is a treat! Points, no tummy.
+    if (ev==='cheat' || (clearing && lastEv==='cheat')){
+      score += CHEAT_PTS; Sound.cheatSfx();
+      floatText(it.x, rimY, '+'+CHEAT_PTS, '#b06a00'); burst(it.x, rimY, '#e0a000', 8);
+    } else {
+      score = Math.max(0, score - JUNK_HIT); addTummy(junkGain()); Sound.junkSfx();
+      floatText(it.x, rimY, '-'+JUNK_HIT+' 🤢', '#c0392b'); burst(it.x, rimY, '#c0392b', 12);
+      if (tummy >= 100){ gameOver('junk'); return; }
+    }
+  } else {
+    score += 1; Sound.catchSfx();
+    burst(it.x, rimY, '#3aa33a', 6);
+  }
+
+  // slow -> fast, and junk gets a little more common as you climb
+  if (!ev && !clearing){
+    baseSpeed  = Math.min(7.5, baseSpeed * 1.012);
+    spawnGap   = Math.max(360, spawnGap * 0.992);
+    junkChance = Math.min(0.5, junkChance + 0.0015);
+  }
+  level = Math.floor(score/8) + 1;
+  if (score >= nextGolden) spawnGolden();
+  if (!ev && !clearing && score >= nextEvent) startEvent(performance.now());
+}
+
+function loseLife(){
+  lives--;
+  updateHud();
+  if (lives <= 0){ gameOver('lives'); return; }
+  Sound.lifeSfx();
+  floatText(basket.x, basket.y - basket.depth, '💔', '#c0392b');
+}
+
+/* ---------- drawing ---------- */
+function drawItem(it, now){
+  if (it.golden){ drawGolden(it, now); return; }
+  ctx.font = it.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(it.emoji, it.x, it.y);
+  // red warning ring under junk so it reads at a glance (strong, for the light bg)
+  if (it.junk){
+    ctx.strokeStyle='rgba(214,30,30,.85)'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(it.x, it.y, it.size*0.66, 0, 6.28); ctx.stroke();
+  }
+}
+function drawGolden(it, now){
+  const r = it.size, pulse = 0.7 + 0.3*Math.sin(now/130);
+  const halo = ctx.createRadialGradient(it.x,it.y,4,it.x,it.y,r*1.15);
+  halo.addColorStop(0,'rgba(255,240,150,'+(0.95*pulse).toFixed(2)+')'); halo.addColorStop(.55,'rgba(255,205,40,.5)'); halo.addColorStop(1,'rgba(255,190,0,0)');
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(it.x,it.y,r*1.15,0,6.28); ctx.fill();
+  const bw=r*0.74, bh=r*0.8;
+  const body = ctx.createRadialGradient(it.x-bw*0.3,it.y-bh*0.35,2,it.x,it.y,bw);
+  body.addColorStop(0,'#fff6c0'); body.addColorStop(.45,'#ffd633'); body.addColorStop(1,'#e0a000');
+  ctx.fillStyle=body; ctx.beginPath();
+  ctx.moveTo(it.x,it.y-bh*0.55);
+  ctx.bezierCurveTo(it.x-bw,it.y-bh*0.9,it.x-bw,it.y+bh*0.8,it.x,it.y+bh*0.7);
+  ctx.bezierCurveTo(it.x+bw,it.y+bh*0.8,it.x+bw,it.y-bh*0.9,it.x,it.y-bh*0.55); ctx.fill();
+  ctx.strokeStyle='#7a5200'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(it.x,it.y-bh*0.5); ctx.lineTo(it.x,it.y-bh*0.82); ctx.stroke();
+  ctx.fillStyle='#5fbf3f'; ctx.beginPath(); ctx.ellipse(it.x+bw*0.28,it.y-bh*0.72,bw*0.3,bh*0.16,-0.6,0,6.28); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,'+(0.85*pulse).toFixed(2)+')'; ctx.beginPath(); ctx.ellipse(it.x-bw*0.32,it.y-bh*0.18,bw*0.18,bh*0.28,-0.5,0,6.28); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+25', it.x, it.y+r*1.0);
+}
+
+function drawBasket(now){
+  const x=basket.x, y=basket.y, w=basket.w, h=basket.depth, d=basket.def;
+  const left=x-w/2, top=y-h/2;
+  ctx.save();
+  ctx.fillStyle=d.color; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left+w,top); ctx.lineTo(left+w-14,top+h); ctx.lineTo(left+14,top+h); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=d.rim; ctx.fillRect(left-4, top-8, w+8, 12); ctx.strokeRect(left-4, top-8, w+8, 12);
+  // subtle shine lines
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=2;
+  for (let gx=14; gx<w-10; gx+=16){ ctx.beginPath(); ctx.moveTo(left+gx, top+2); ctx.lineTo(left+gx-3, top+h-2); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawParticles(step){
+  for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx*step; p.y+=p.vy*step; p.vy+=0.18*step; p.life-=0.035*step;
+    if (p.life<=0){ particles.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,6.28); ctx.fill(); }
+  ctx.globalAlpha=1;
+}
+function drawFloats(step){
+  for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.y-=0.8*step; f.life-=0.02*step;
+    if (f.life<=0){ floats.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0,f.life); ctx.fillStyle=f.color; ctx.font='bold 18px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(f.txt, f.x, f.y); }
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   FLOW: start / game over / shop
+   ============================================================ */
+function start(){
+  resize(); reset();
+  $('overlay').classList.add('hidden'); $('shop').classList.add('hidden');
+  running = true;
+  Sound.ready(); Sound.startMusic();
+  lastSpawn = performance.now() - spawnGap;
+  lastT = performance.now();
+  raf = requestAnimationFrame(loop);
+}
+
+function gameOver(reason){
+  running = false;
+  cancelAnimationFrame(raf);
+  Sound.stopMusic();
+  hideBanner();
+  Sound.sadSfx();
+
+  const mult = basket.def.perk==='coin' ? basket.def.perkV : 1;
+  const earned = Math.round(score * mult);
+  data.coins += earned;
+  const isNewHigh = score > data.best;
+  if (isNewHigh) data.best = score;
+  saveData();
+  Sound.coinSfx();
+
+  if (window.IGAuth) IGAuth.submitScore('catch2', data.best);
+
+  const lostLives = reason === 'lives';
+  $('overlay').classList.remove('hidden');
+  $('overlay').innerHTML = `
+    <h1>${lostLives ? '💔 Out of Lives!' : '🤢 Too Much Junk!'}</h1>
+    <p>${lostLives ? 'You missed too much fruit!' : "Your tummy is full of junk food — you're too sick to play on!"}</p>
+    <p>Score: <b>${score}</b> &nbsp;•&nbsp; Level <b>${level}</b></p>
+    <div class="coinbig">🪙 +${earned} coins ${mult>1?'(✨ tray bonus!)':''}</div>
+    <p class="small">Total coins: <b>${data.coins}</b></p>
+    ${isNewHigh ? `<p style="color:#ffd34d;font-size:22px">🏆 New High Score!</p>`
+                : `<p class="small">🏆 Your best: <b>${data.best}</b> — beat it!</p>`}
+    <div class="row">
+      <button class="pill green" id="againBtn">▶ Play Again</button>
+      <button class="pill blue" id="shopBtn2">🍽️ Trays</button>
+    </div>
+    <div class="row">
+      <button class="pill sm" id="howBtn2">❓ How to Play</button>
+      <button class="pill sm" id="lbBtn2">🏆 Leaderboard</button>
+    </div>`;
+  $('againBtn').addEventListener('click', start);
+  $('shopBtn2').addEventListener('click', openShop);
+  $('howBtn2').addEventListener('click', showTut);
+  $('lbBtn2').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch2','Basket Catch 2'));
+}
+
+/* ---------- shop ---------- */
+function renderShop(){
+  $('shopCoins').textContent = data.coins;
+  const list = $('shopList'); list.innerHTML = '';
+  BASKETS.forEach(b => {
+    const owned = data.owned.includes(b.id);
+    const selected = data.sel === b.id;
+    const sBar = '▮'.repeat(Math.max(1, Math.round((b.speed-8)/2)));
+    const card = document.createElement('div');
+    card.className = 'bcard' + (selected?' sel':'');
+    card.innerHTML = `
+      <div class="ico">${b.ico}</div>
+      <div class="info">
+        <b>${b.name}</b> ${selected?'<span style="color:#ffd34d">• equipped</span>':''}
+        <div class="d">${b.tease}${b.perk ? ' <b style="color:#9be15d">('+b.perkTxt+')</b>' : ''}</div>
+        <div class="bars">Move speed ${sBar}</div>
+      </div>
+      <div class="act">
+        ${owned
+          ? `<button class="selBtn ${selected?'on':''}" data-sel="${b.id}">${selected?'Equipped':'Use'}</button>`
+          : `<div class="price">🪙 ${b.price}</div><button class="buyBtn" data-buy="${b.id}" ${data.coins<b.price?'disabled':''}>Buy</button>`}
+      </div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll('[data-buy]').forEach(btn => btn.onclick = () => {
+    const b = getBasket(btn.dataset.buy);
+    if (data.coins < b.price || data.owned.includes(b.id)) return;
+    data.coins -= b.price; data.owned.push(b.id); data.sel = b.id; saveData();
+    Sound.goldenSfx(); renderShop(); updateHud();
+  });
+  list.querySelectorAll('[data-sel]').forEach(btn => btn.onclick = () => {
+    data.sel = btn.dataset.sel; saveData(); Sound.catchSfx(); renderShop(); updateHud();
+  });
+}
+function openShop(){ $('overlay').classList.add('hidden'); $('shop').classList.remove('hidden'); renderShop(); }
+function closeShop(){ $('shop').classList.add('hidden'); $('overlay').classList.remove('hidden'); }
+
+/* ---------- tutorial ---------- */
+const TUT = [
+  {ico:'🍎🍓🍌', title:'Catch the Fruit!',
+   text:'Drag your finger (or use <b>← →</b>) to slide the tray. Catch the falling <b>fruit</b> — every piece is <b>+points</b>. You have <b>5 lives ❤️</b> — miss a fruit and you lose one!'},
+  {ico:'🍔🍟🍩', title:'Dodge the Junk!',
+   text:"<b>Don't</b> catch junk food (it has a red ring 🔴). It costs points and fills your <b>🤢 Tummy meter</b> — and the tummy <b>never goes down</b>. Fill it up and you're too sick to play — <b>game over</b>."},
+  {ico:'🎉', title:'Cheat Day!',
+   text:"Every so often it's <b>Cheat Day</b> — junk pours down and now you <b>CAN</b> catch it for <b>free points</b>, no tummy! Feast while it lasts. When it ends there's a short break, then normal fruit falls again."},
+];
+function renderTut(){
+  const s = TUT[tutStep];
+  $('tutIco').textContent = s.ico;
+  $('tutTitle').textContent = s.title;
+  $('tutText').innerHTML = s.text;
+  $('tutDots').innerHTML = TUT.map((_,i)=>`<i class="${i===tutStep?'on':''}"></i>`).join('');
+  $('tutNext').textContent = tutStep===TUT.length-1 ? 'Got it! ▶' : 'Next →';
+}
+function showTut(){ $('overlay').classList.add('hidden'); $('shop').classList.add('hidden'); $('tut').classList.remove('hidden'); tutStep=0; renderTut(); }
+function closeTut(){ data.tutSeen = true; saveData(); $('tut').classList.add('hidden'); $('overlay').classList.remove('hidden'); }
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+window.addEventListener('keydown', e => {
+  if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=true;
+  if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=true;
+  if (e.key===' '||e.key==='Enter'){ if(!running && $('overlay').classList.contains('hidden')===false) start(); }
+});
+window.addEventListener('keyup', e => {
+  if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=false;
+  if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=false;
+});
+function pointTo(clientX){ const r=canvas.getBoundingClientRect(); dragX = clientX - r.left; }
+canvas.addEventListener('pointerdown', e => { if(running) pointTo(e.clientX); });
+canvas.addEventListener('pointermove', e => { if(running && (e.buttons&1 || e.pointerType==='touch')) pointTo(e.clientX); });
+canvas.addEventListener('pointerup',   () => { dragX = null; });
+canvas.addEventListener('touchmove', e => { if(running){ pointTo(e.touches[0].clientX); e.preventDefault(); } }, {passive:false});
+canvas.addEventListener('touchstart', e => { if(running){ pointTo(e.touches[0].clientX); } }, {passive:false});
+canvas.addEventListener('touchend',  () => { dragX = null; });
+
+$('startBtn').addEventListener('click', start);
+$('shopBtn').addEventListener('click', openShop);
+$('shopBack').addEventListener('click', closeShop);
+$('howBtn').addEventListener('click', showTut);
+$('tutNext').addEventListener('click', () => { Sound.catchSfx(); if (tutStep < TUT.length-1){ tutStep++; renderTut(); } else closeTut(); });
+$('tutSkip').addEventListener('click', closeTut);
+$('muteBtn').addEventListener('click', () => { Sound.ready(); const on = Sound.toggleMusic(); $('muteBtn').textContent = on ? '🔊' : '🔇'; });
+
+$('lbBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch2','Basket Catch 2'));
+$('acctBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.openAuth());
+
+/* ---------- boot ---------- */
+function boot(){
+  $('who').textContent = acct ? '👤 ' + acct.name : '👤 Guest';
+  $('ovWho').innerHTML = acct ? `Playing as <b>${acct.name}</b>` : 'Playing as <b>Guest</b>';
+  $('ovCoins').textContent = data.coins;
+  $('ovBest').innerHTML = data.best>0 ? `🏆 Your best: <b>${data.best}</b>` : `🏆 No high score yet — set one!`;
+  resize();
+  if (!data.tutSeen) showTut();   // first-timers see the tutorial automatically
+}
+boot();
+if (window.IGAuth) IGAuth.onChange(u => {
+  const nm = u ? (IGAuth.displayName()) : null;
+  $('acctBtn').textContent = nm ? ('👤 ' + nm) : '👤 Log in';
+  if (nm){ $('who').textContent = '👤 ' + nm; $('ovWho').innerHTML = `Signed in as <b>${nm}</b>`; }
+});
+</script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+<script src="../friends.js" defer></script>
+<script src="../rec.js" defer></script>
+</body>
+</html>
