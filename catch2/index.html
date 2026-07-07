@@ -154,7 +154,7 @@
   <div id="overlay" class="screen">
     <h1>🍔 Basket Catch 2</h1>
     <p>Drag (or <b>← →</b>) to move the tray. <b>Catch fruit</b> 🍎🍓🍌 for points — but <b>dodge the junk food</b> 🍔🍟🍩!</p>
-    <p class="small">You have <b>5 lives ❤️</b> — miss a fruit, lose one. Junk food fills your <b>🤢 Tummy meter</b> (which <b>never goes down!</b>) and costs points. Run out of lives <i>or</i> fill the tummy and it's <b>game over</b>. Watch for <b>🎉 Cheat Day</b>, when junk is free points!</p>
+    <p class="small">You have <b>5 lives ❤️</b> — miss a fruit, lose one. Junk food fills your <b>🤢 Tummy meter</b> (which <b>never goes down</b> and <b>slows your tray</b>!) and costs points. Run out of lives <i>or</i> fill the tummy and it's <b>game over</b>. Watch for <b>🎉 Cheat Day</b> and the <b>🌪️ Junk Storm</b>!</p>
     <p class="small">Faster than the original. Your score becomes <b>coins</b> 🪙 — spend them on better trays.</p>
     <div class="coinbig">🪙 <span id="ovCoins">0</span> coins</div>
     <p class="small" id="ovBest"></p>
@@ -461,12 +461,14 @@ function loop(now){
   const step = Math.max(0.2, Math.min(2.5, (now - lastT) / 16.667));
   lastT = now;
 
-  // basket movement
-  if (leftHeld)  basket.x -= basket.speed * step;
-  if (rightHeld) basket.x += basket.speed * step;
+  // basket movement — a fuller tummy makes the tray sluggish (down to ~half speed)
+  const moveMul = 1 - (tummy/100) * 0.5;
+  const spd = basket.speed * moveMul;
+  if (leftHeld)  basket.x -= spd * step;
+  if (rightHeld) basket.x += spd * step;
   if (dragX !== null){
     const dx = dragX - basket.x;
-    basket.x += Math.max(-basket.speed*2.4, Math.min(basket.speed*2.4, dx*0.4)) * step;
+    basket.x += Math.max(-spd*2.4, Math.min(spd*2.4, dx*0.4)) * step;
   }
   basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
 
@@ -516,8 +518,10 @@ function loop(now){
     // fell off the bottom
     if (it.y - it.size > H){
       items.splice(i,1);
-      // missing FRUIT costs a life (junk is meant to be dodged; events/clear-out don't count)
-      if (!it.junk && !it.golden && !ev && !clearing){ loseLife(); if (!running) return; }
+      // Missing FRUIT costs a life — during normal play AND during a Junk Storm
+      // (fruit falls in the storm too, so you must grab it). Junk is meant to be
+      // dodged; Cheat Day and the clear-out wind-down don't penalize misses.
+      if (!it.junk && !it.golden && !clearing && ev!=='cheat'){ loseLife(); if (!running) return; }
       continue;
     }
     drawItem(it, now);
@@ -572,8 +576,10 @@ function drawItem(it, now){
   if (it.golden){ drawGolden(it, now); return; }
   ctx.font = it.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(it.emoji, it.x, it.y);
-  // red warning ring under junk so it reads at a glance (strong, for the light bg)
-  if (it.junk){
+  // Red warning ring under junk so it reads at a glance (strong, for the light bg).
+  // On Cheat Day the junk is a treat, so the rings vanish — they return afterwards.
+  const cheatNow = (ev==='cheat') || (clearing && lastEv==='cheat');
+  if (it.junk && !cheatNow){
     ctx.strokeStyle='rgba(214,30,30,.85)'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(it.x, it.y, it.size*0.66, 0, 6.28); ctx.stroke();
   }
@@ -717,11 +723,13 @@ function closeShop(){ $('shop').classList.add('hidden'); $('overlay').classList.
 /* ---------- tutorial ---------- */
 const TUT = [
   {ico:'🍎🍓🍌', title:'Catch the Fruit!',
-   text:'Drag your finger (or use <b>← →</b>) to slide the tray. Catch the falling <b>fruit</b> — every piece is <b>+points</b>. You have <b>5 lives ❤️</b> — miss a fruit and you lose one!'},
+   text:'Drag your finger (or use <b>← →</b>) to slide the tray. Catch the falling <b>fruit</b> — every piece is <b>+points</b>. You have <b>5 lives ❤️</b> — miss a fruit and you lose one. No lives left = game over!'},
   {ico:'🍔🍟🍩', title:'Dodge the Junk!',
-   text:"<b>Don't</b> catch junk food (it has a red ring 🔴). It costs points and fills your <b>🤢 Tummy meter</b> — and the tummy <b>never goes down</b>. Fill it up and you're too sick to play — <b>game over</b>."},
+   text:"<b>Don't</b> catch junk food — it has a <b>red ring 🔴</b>. Junk costs points and fills your <b>🤢 Tummy meter</b>, which <b>never goes down</b>. And the fuller your tummy, the <b>slower your tray moves</b>! Fill it right up and you're too sick to play — <b>game over</b>."},
   {ico:'🎉', title:'Cheat Day!',
-   text:"Every so often it's <b>Cheat Day</b> — junk pours down and now you <b>CAN</b> catch it for <b>free points</b>, no tummy! Feast while it lasts. When it ends there's a short break, then normal fruit falls again."},
+   text:"Every so often it's <b>Cheat Day</b> — only junk pours down, the <b>red rings vanish</b>, and now you <b>CAN</b> catch it all for <b>free points</b> with <b>no tummy</b>! Feast while it lasts. When it ends there's a short break, then it's back to normal (rings return)."},
+  {ico:'🌪️', title:'Junk Storm!',
+   text:"Watch out for the <b>Junk Storm</b> — junk rains down fast, so <b>dodge it</b> (catching it here still hurts!). But <b>fruit falls in the storm too</b>, right next to the junk — <b>catch that fruit or you lose a life</b>. Weave in, grab the fruit, slip back out!"},
 ];
 function renderTut(){
   const s = TUT[tutStep];
