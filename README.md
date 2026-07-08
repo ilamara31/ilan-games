@@ -8,6 +8,7 @@ Games made by Ilan!
 - 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
 - 🍔 **Basket Catch 2** — `catch2/` — catch fruit & dodge junk food; junk fills a one-way 🤢 Tummy meter, 5 lives, plus 🎉 Cheat Day / 🌪️ Junk Storm events.
+- ✋ **Hand Cricket League** — `handcricket/` — pick numbers 1–10; Normal & Crazy modes (same number = number²!), an AI that learns your patterns (Easy→Expert), real-time **online rooms** with a friend (Supabase), plus League / Tournament / World Cup with group stages & knockouts, a themes shop, and stats.
 - 🏎️ **Indian Grand Prix** — `f1/` — pseudo-3D F1 racer, beat the grid over 3 laps for the podium.
 - ⚽ **Penalty Kings** — `football/` — penalty shootout knockout tournament.
 - 🌈 **Rainbow Obby** — `obby/` — 3D obstacle course (Three.js): 50 stages across 5 worlds, coins, checkpoints, and a shop of skins, trails, auras &amp; power coils.
