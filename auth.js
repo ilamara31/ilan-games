@@ -24,6 +24,8 @@
     tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel"
   };
+  // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
+  const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat"]);  // Super Over Cricket 2 (idea dropped)
   const GAME_METRIC = {
     catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
@@ -432,6 +434,7 @@
     const tabs = ov.querySelector("#iga-tabs"), box = ov.querySelector("#iga-lb"), metric = ov.querySelector("#iga-metric");
     let activeG = null;
     function build(rows) {
+      rows = rows.filter(r => !HIDDEN_GAMES.has(r.game));   // drop retired games (e.g. Super Over Cricket 2)
       // one row per (name, game): registered beats guest, keep highest score
       const map = {};
       for (const r of rows) {
