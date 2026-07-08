@@ -279,15 +279,43 @@
     </div>
   </div>
 
-  <!-- ===================== ROOM WAITING ===================== -->
-  <div id="roomwait" class="screen">
-    <button class="iconbtn" id="roomCancel" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5">←</button>
+  <!-- ===================== ROOM LOBBY ===================== -->
+  <div id="lobby" class="screen">
+    <button class="iconbtn" id="lobbyCancel" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5">←</button>
+    <div class="wrap" style="justify-content:flex-start;margin:0;padding-top:6px">
+      <h2 class="title">Room Lobby</h2>
+      <div class="card" id="lobbyCodeCard" style="text-align:center">
+        <div class="muted">Room code — share it!</div>
+        <div id="lobbyCode" style="font-size:clamp(34px,12vw,56px);font-weight:900;letter-spacing:8px;color:var(--accent);filter:drop-shadow(0 4px 14px rgba(255,150,60,.35))">----</div>
+        <div class="row" id="shareRow" style="justify-content:center;margin-top:4px">
+          <button class="btn sm g" id="shareWA">🟢 WhatsApp</button>
+          <button class="btn sm b" id="shareMail">✉️ Email</button>
+          <button class="btn sm gray" id="shareCopy">🔗 Copy link</button>
+        </div>
+      </div>
+      <div class="label">Players (<span id="lobbyCount">1</span>/10)</div>
+      <div id="lobbyList" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn g block" id="lobbyStart" style="display:none">▶ Start Match</button>
+      <div class="muted" id="lobbyWait" style="text-align:center">Waiting for the host to start…</div>
+      <div class="muted" style="text-align:center;font-size:12px">2 players = quick match (rematch on). 3+ = tournament: everyone plays everyone → top players qualify → knockouts.</div>
+    </div>
+  </div>
+
+  <!-- ===================== TOURNAMENT WAIT ===================== -->
+  <div id="twait" class="screen">
     <div class="wrap" style="align-items:center;text-align:center;justify-content:center;height:100%">
-      <h2 class="title" id="roomWaitTitle">Room Ready</h2>
-      <div class="muted" id="roomWaitSub">Share this code with your friend:</div>
-      <div id="roomCodeBig" style="font-size:clamp(44px,16vw,80px);font-weight:900;letter-spacing:10px;color:var(--accent);filter:drop-shadow(0 4px 18px rgba(255,150,60,.4))">----</div>
-      <div class="coin spin" style="font-size:40px">🌐</div>
-      <div class="muted" id="roomWaitStatus">Waiting for your friend to join…</div>
+      <div class="coin spin" style="font-size:44px" id="twaitIco">⏳</div>
+      <h2 class="title" id="twaitTitle">Waiting…</h2>
+      <div class="muted" id="twaitMsg"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TOURNAMENT STANDINGS ===================== -->
+  <div id="tstand" class="screen">
+    <div class="wrap" style="justify-content:flex-start;margin:0;padding-top:8px">
+      <h2 class="title" id="tstandTitle">Standings</h2>
+      <div class="card" id="tstandBody"></div>
+      <div class="muted" id="tstandNext" style="text-align:center;font-weight:800"></div>
     </div>
   </div>
 
@@ -571,7 +599,8 @@ function newMatch(cfg){
     target:null, hbat:[], hbowl:[], busy:false,
     lastRuns:0, mCrazy:0, mHundred:0, ctx:cfg.ctx||null,
     online:!!cfg.online, host:!!cfg.host, myside:cfg.myside||'a', meSide:cfg.myside||'a',
-    ballIndex:0, myNum:null, oppNum:null, pendingOpp:null
+    ballIndex:0, myNum:null, oppNum:null, pendingOpp:null,
+    matchId:null, quick:false, tourney:false, koMatch:false, oppId:null, afkTimer:null
   });
 }
 
@@ -813,7 +842,9 @@ function endMatch(){
   reward += G.mHundred*20 + G.mCrazy*4;
   SV.coins+=reward; save();
   if(window.IGAuth) try{ IGAuth.submitScore('handcricket', SV.stats.high); }catch(e){}
-  // render result
+  if(G.online){ reportResult(); return; }   // networked match: report to host / show quick result
+  // render result (vs AI / competitions)
+  $('resNext').style.display='';
   const hero=$('resHero'); hero.className='result-hero '+outcome;
   hero.textContent = outcome==='win'?'YOU WIN! 🏆':(outcome==='tie'?'TIE MATCH!':'YOU LOST');
   $('resScore').innerHTML = esc(G.aName)+' <b>'+aFinal+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+bFinal+'</b>';
@@ -832,12 +863,12 @@ function endMatch(){
 }
 $('resNext').addEventListener('click',()=>{ Sound.click();
   if(G.ctx){ advanceCtx(); }
-  else if(G.online){ if(G.host){ hostStartMatch(true); } else { toast('Waiting for the host to start a rematch…'); } }
+  else if(G.online){ if(G.quick && MP.isHost){ hostQuickMatch(); } else { toast('Waiting for the host to rematch…'); } }
   else { newMatch({mode:G.mode,type:G.type,opp:G.opp,ai:G.ai,bName:G.bName,bAv:G.bAv}); beginToss(); }
 });
-$('resMenu').addEventListener('click',()=>{ Sound.click(); if(G.online)MP.leave(); show('menu'); });
-$('quitBtn').addEventListener('click',()=>{ if(confirm('Quit this match?')){ EPOCH++; G.busy=false; $('banner').classList.remove('show');
-  if(G.online){ MP.leave(); show('menu'); } else if(G.ctx){ renderStandings(); } else show('menu'); } });
+$('resMenu').addEventListener('click',()=>{ Sound.click(); $('resNext').style.display=''; if(G.online)leaveRoom(); show('menu'); });
+$('quitBtn').addEventListener('click',()=>{ if(confirm(G.tourney?'Leave the tournament?':'Quit this match?')){ EPOCH++; G.busy=false; clearAfk(); $('banner').classList.remove('show');
+  if(G.online){ leaveRoom(); show('menu'); } else if(G.ctx){ renderStandings(); } else show('menu'); } });
 $('gMute').addEventListener('click',()=>{ SV.sound=!SV.sound; save(); $('gMute').textContent=SV.sound?'🔊':'🔇'; });
 
 /* ================= SETUP SCREEN (vs AI) ================= */
@@ -870,126 +901,351 @@ function startQuick(opp){
   beginToss();
 }
 
-/* ================= ONLINE MULTIPLAYER (Supabase Realtime) =================
-   Two devices join the same broadcast channel keyed by a 4-letter room code.
-   Host is authoritative for the toss + mode; every ball, each player picks a
-   number, broadcasts it, and both resolve identically with evalBall(). */
-const MP={
-  sb:null, ch:null, code:null, isHost:false, guestInfo:null, autoStarted:false, gotChannel:false,
-  async ensure(){
-    if(!(window.supabase && window.supabase.createClient)){
-      await new Promise((res,rej)=>{ const s=document.createElement('script');
-        s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        s.onload=res; s.onerror=()=>rej(new Error('cdn failed')); document.head.appendChild(s); });
-    }
-    if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, {auth:{persistSession:false}});
-    return this.sb;
-  },
-  _wire(ch){
-    ch.on('broadcast',{event:'hello'},({payload})=>onNet('hello',payload))
-      .on('broadcast',{event:'toss'}, ({payload})=>onNet('toss',payload))
-      .on('broadcast',{event:'move'}, ({payload})=>onNet('move',payload))
-      .on('broadcast',{event:'bye'},  ()=>onNet('bye'))
-      .on('presence',{event:'sync'},  ()=>onNet('sync'))
-      .on('presence',{event:'leave'}, ()=>onNet('leave'));
-  },
-  async open(code,host){
-    await this.ensure(); this.code=code; this.isHost=host; this.gotChannel=false;
-    this.ch=this.sb.channel('hcl-room-'+code,{config:{broadcast:{self:false},presence:{key:host?'host':'guest'}}});
-    this._wire(this.ch);
-    await new Promise((res,rej)=>{
-      let done=false;
-      this.ch.subscribe(st=>{
-        if(st==='SUBSCRIBED' && !done){ done=true; this.gotChannel=true; this.ch.track({role:host?'host':'guest',name:SV.name}); res(); }
-        else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT') && !done){ done=true; rej(new Error(st)); }
-      });
-    });
-  },
-  send(event,payload){ if(this.ch){ try{ this.ch.send({type:'broadcast',event,payload:payload||{}}); }catch(e){} } },
-  members(){ try{ return Object.keys(this.ch.presenceState()).length; }catch(e){ return 0; } },
-  leave(){ if(this.ch){ try{ this.send('bye',{}); this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.autoStarted=false; this.guestInfo=null; }
+/* ================= ONLINE MULTIPLAYER — rooms & tournaments (Supabase Realtime) =========
+   Up to 10 players join one channel by room code. The HOST coordinates: a round-robin
+   group stage (everyone plays everyone) → top players qualify → knockouts. Matches run
+   peer-to-peer (deterministic evalBall) and results are reported to the host. 2 players
+   = a quick match with rematch. Disconnect = walkover; AFK 45s = you lose that match. */
+const TL={
+  qualifyCount(n){ if(n<=2)return 0; if(n<=5)return 2; if(n===6)return 3; return 4; },
+  roundRobin(ids){ const a=ids.slice(); if(a.length%2)a.push(null); const n=a.length,rounds=[];
+    for(let r=0;r<n-1;r++){ const pairs=[]; let bye=null;
+      for(let i=0;i<n/2;i++){ const x=a[i],y=a[n-1-i]; if(x===null)bye=y; else if(y===null)bye=x; else pairs.push([x,y]); }
+      rounds.push({pairs,bye}); a.splice(1,0,a.pop()); } return rounds; },
+  standings(players,results){ const t={}; players.forEach(p=>t[p.id]={id:p.id,name:p.name,av:p.av,p:0,w:0,l:0,d:0,pts:0,rf:0,ra:0});
+    results.forEach(r=>{ const A=t[r.aId],B=t[r.bId]; if(!A||!B)return; A.p++;B.p++; A.rf+=r.aScore;A.ra+=r.bScore;B.rf+=r.bScore;B.ra+=r.aScore;
+      if(r.winner===r.aId){A.w++;A.pts+=2;B.l++;} else if(r.winner===r.bId){B.w++;B.pts+=2;A.l++;} else {A.d++;B.d++;A.pts++;B.pts++;} });
+    return Object.values(t).sort((x,y)=>y.pts-x.pts||(y.rf-y.ra)-(x.rf-x.ra)||y.rf-x.rf||(x.name<y.name?-1:1)); },
+  koRound(seeds){ const q=seeds.length;
+    if(q<=1)return {name:'Champion',pairs:[],bye:seeds[0]||null,isFinal:true,champ:seeds[0]||null};
+    if(q===2)return {name:'Final',pairs:[[seeds[0],seeds[1]]],bye:null,isFinal:true};
+    if(q===3)return {name:'Semi-Final',pairs:[[seeds[1],seeds[2]]],bye:seeds[0],isFinal:false};
+    const pairs=[]; for(let i=0;i<Math.floor(q/2);i++)pairs.push([seeds[i],seeds[q-1-i]]);
+    return {name:q<=4?'Semi-Final':'Quarter-Final',pairs,bye:(q%2?seeds[Math.floor(q/2)]:null),isFinal:false}; },
 };
 
-let roomMode='normal';
-function openRoom(){ roomMode='normal'; segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]')); $('joinCode').value=''; show('room'); }
-function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
-$('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click(); roomMode=b.dataset.rmode; segOn('roomModeSeg',b); });
-$('createRoomBtn').addEventListener('click',async()=>{ Sound.click();
-  const code=genCode(); MP.autoStarted=false; MP.guestInfo=null;
-  $('roomWaitTitle').textContent='Room Ready'; $('roomWaitSub').textContent='Share this code with your friend:';
-  $('roomCodeBig').textContent=code; $('roomWaitStatus').textContent='Waiting for your friend to join…';
-  show('roomwait');
-  try{ await MP.open(code,true); }catch(e){ toast('Connection failed — check internet'); show('room'); }
-});
-$('joinRoomBtn').addEventListener('click',async()=>{ Sound.click();
-  const code=($('joinCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
-  if(code.length<4){ toast('Enter the 4-letter code'); return; }
-  $('roomWaitTitle').textContent='Joining…'; $('roomWaitSub').textContent='Room code:';
-  $('roomCodeBig').textContent=code; $('roomWaitStatus').textContent='Connecting to your friend…';
-  show('roomwait');
-  try{ await MP.open(code,false); MP.send('hello',{name:SV.name, av:SV.avatar}); }
-  catch(e){ toast('Connection failed — check internet'); show('room'); }
-});
-$('roomCancel').addEventListener('click',()=>{ Sound.click(); MP.leave(); show('room'); });
+const myId='u'+Math.random().toString(36).slice(2,9);
+const STAND_MS=8000, AFK_MS=45000, MAX_PLAYERS=10;
+let roomMode='normal', R=null, RGEN=0;
 
+const MP={
+  sb:null, ch:null, code:null, isHost:false,
+  async ensure(){
+    if(!(window.supabase&&window.supabase.createClient)){
+      await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); }); }
+    if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}});
+    return this.sb; },
+  _wire(ch){
+    ['lobby','begin','quickmatch','round','move','result','standings','done','hello','rematch'].forEach(ev=>
+      ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
+    ch.on('presence',{event:'sync'},()=>onNet('presence'));
+    ch.on('presence',{event:'join'},()=>onNet('presence'));
+    ch.on('presence',{event:'leave'},({leftPresences})=>onNet('leave',leftPresences)); },
+  async open(code,host){
+    await this.ensure(); this.code=code; this.isHost=host;
+    this.ch=this.sb.channel('hcl-room-'+code,{config:{broadcast:{self:false},presence:{key:myId}}});
+    this._wire(this.ch);
+    await new Promise((res,rej)=>{ let done=false;
+      this.ch.subscribe(st=>{
+        if(st==='SUBSCRIBED'&&!done){ done=true; this.ch.track({id:myId,name:SV.name,av:SV.avatar,t:Date.now()}); res(); }
+        else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!done){ done=true; rej(new Error(st)); } }); }); },
+  send(ev,payload){ if(this.ch){ try{ this.ch.send({type:'broadcast',event:ev,payload:payload||{}}); }catch(e){} } },
+  presenceList(){ try{ const st=this.ch.presenceState(),a=[];
+      for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.id)a.push({id:p.id,name:(p.name||'Player').slice(0,14),av:p.av||'🧑',t:p.t||0}); }
+      a.sort((x,y)=>(x.id===myId?-1:y.id===myId?1:x.t-y.t)); return a; }catch(e){ return []; } },
+  leave(){ RGEN++; if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.isHost=false; },
+};
+
+/* ---- room helpers ---- */
+function pname(id){ const p=(R&&R.players||[]).find(x=>x.id===id); return p?p.name:'Player'; }
+function pav(id){ const p=(R&&R.players||[]).find(x=>x.id===id); return p?p.av:'🧑'; }
+function shareLink(){ return location.origin+location.pathname+'?room='+(MP.code||''); }
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
+function roomTimer(fn,ms){ const g=RGEN; setTimeout(()=>{ if(g===RGEN) fn(); }, ms); }
+let HB=null;
+// Host directive: sequenced + re-broadcast on a heartbeat so a client that misses a
+// message (dropped broadcast) self-heals within seconds. Clients ignore stale seqs.
+function hostDir(ev,payload){ payload.seq=++R.seq; R.lastDir={ev,payload}; MP.send(ev,payload); startHeartbeat(); }
+function startHeartbeat(){ if(HB)return; const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!R||!R.isHost){ clearInterval(HB); HB=null; return; } if(R.lastDir) MP.send(R.lastDir.ev, R.lastDir.payload); }, 3500); }
+function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(MP.ch)MP.leave(); R=null; G.online=false; G.tourney=false; }
+
+function openRoom(){ roomMode='normal'; segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]')); $('joinCode').value=''; show('room'); }
+$('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click(); roomMode=b.dataset.rmode; segOn('roomModeSeg',b); });
+
+async function createRoomFlow(){
+  const code=genCode();
+  R={ code, isHost:true, hostId:myId, mode:roomMode, phase:'lobby', players:[], format:null,
+      schedule:[], roundIndex:0, results:{}, roundPairs:[], roundResults:{}, koSeeds:[], koBye:null, koStep:0, champion:null,
+      seq:0, lastDir:null };
+  showLobby(code,true);
+  try{ await MP.open(code,true); hostLobbyUpdate(); }catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
+}
+$('createRoomBtn').addEventListener('click',()=>{ Sound.click(); createRoomFlow(); });
+$('joinRoomBtn').addEventListener('click',()=> joinRoom(($('joinCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4)) );
+async function joinRoom(code){
+  if(!code || code.length<4){ toast('Enter the 4-letter code'); return; }
+  Sound.click();
+  R={ code, isHost:false, hostId:null, mode:roomMode, phase:'lobby', players:[], lastSeq:0 };
+  showLobby(code,false);
+  try{ await MP.open(code,false); MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }
+  catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
+}
+$('lobbyCancel').addEventListener('click',()=>{ Sound.click(); leaveRoom(); show('room'); });
+
+/* ---- share ---- */
+$('shareWA').addEventListener('click',()=>{ Sound.click(); const msg='Join my Hand Cricket match! Code: '+MP.code+'  '+shareLink();
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank'); });
+$('shareMail').addEventListener('click',()=>{ Sound.click(); const s='Hand Cricket League match', b='Join my match! Room code '+MP.code+':\n'+shareLink();
+  location.href='mailto:?subject='+encodeURIComponent(s)+'&body='+encodeURIComponent(b); });
+$('shareCopy').addEventListener('click',async()=>{ Sound.click();
+  try{ if(navigator.share){ await navigator.share({title:'Hand Cricket League',text:'Join my match — code '+MP.code,url:shareLink()}); return; } }catch(e){}
+  try{ await navigator.clipboard.writeText(shareLink()); toast('Link copied!'); }catch(e){ toast('Link: '+shareLink()); } });
+
+/* ---- lobby rendering ---- */
+function showLobby(code,host){ $('lobbyCode').textContent=code; $('shareRow').style.display=host?'flex':'none';
+  $('lobbyStart').style.display='none'; $('lobbyWait').style.display=host?'none':'block'; renderLobby(); show('lobby'); }
+function renderLobby(){
+  const ps=(R&&R.players)||[]; $('lobbyCount').textContent=ps.length;
+  $('lobbyList').innerHTML = ps.map((p,i)=>'<div class="statrow" style="border:none;background:var(--card);border-radius:12px;padding:10px 12px">'+
+    '<span>'+(i+1)+'. <span style="font-size:18px">'+p.av+'</span> <b>'+esc(p.name)+'</b>'+(p.id===R.hostId?' <span class="pill-tag">HOST</span>':'')+(p.id===myId?' <span style="color:var(--good);font-size:12px">• you</span>':'')+'</span></div>').join('');
+  if(R&&R.isHost){ const n=ps.length; const b=$('lobbyStart'); b.style.display='block'; b.disabled=n<2;
+    b.textContent = n<2?'Waiting for players…' : (n===2?'▶ Start Quick Match':'▶ Start Tournament ('+n+' players)'); }
+}
+function hostLobbyUpdate(){ if(!R||!R.isHost)return; R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId;
+  MP.send('lobby',{hostId:myId,mode:R.mode,players:R.players}); renderLobby(); }
+$('lobbyStart').addEventListener('click',()=>{ if(!R||!R.isHost)return; Sound.click(); hostStart(); });
+
+/* ---- host: start ---- */
+function hostStart(){
+  R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId; R.mode=roomMode;
+  if(R.players.length<2){ toast('Need at least 2 players'); return; }
+  R.format = R.players.length===2 ? 'quick' : 'tourney';
+  R.results={}; R.koStep=0;
+  hostDir('begin',{mode:R.mode,players:R.players,format:R.format,hostId:myId});
+  if(R.format==='quick'){ R.phase='quick'; hostQuickMatch(); }
+  else { R.phase='group'; R.schedule=TL.roundRobin(R.players.map(p=>p.id)); R.roundIndex=0; hostStartRound(); }
+}
+function hostQuickMatch(){
+  const [a,b]=R.players, matchId='q'+(R.koStep++), batFirst=Math.random()<.5?'a':'b';
+  hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode});
+  beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,quick:true});
+}
+/* ---- host: group rounds ---- */
+function hostStartRound(){
+  R._closing=false;
+  const rd=R.schedule[R.roundIndex], alive=new Set(R.players.map(p=>p.id));
+  R.roundPairs=[]; R.roundResults={}; let mi=0;
+  R.roundBye = (rd.bye && alive.has(rd.bye)) ? rd.bye : null;
+  rd.pairs.forEach(pr=>{ const aA=alive.has(pr[0]), bA=alive.has(pr[1]); const id='r'+R.roundIndex+'m'+(mi++);
+    if(aA&&bA) R.roundPairs.push({matchId:id,a:pr[0],b:pr[1],batFirst:Math.random()<.5?'a':'b'});
+    else if(aA||bA){ const w=aA?pr[0]:pr[1]; R.roundResults[id]={matchId:id,aId:pr[0],bId:pr[1],aScore:aA?1:0,bScore:bA?1:0,winner:w,reason:'walkover'}; R.results[id]=R.roundResults[id]; }
+  });
+  const pkt={stage:'group',roundName:'Round '+(R.roundIndex+1),roundNo:R.roundIndex+1,totalRounds:R.schedule.length,pairs:R.roundPairs,bye:R.roundBye,mode:R.mode,players:R.players};
+  hostDir('round',pkt); clientOnRound(pkt);
+  hostCheckRound();
+}
+function hostOnResult(res){
+  if(!R||!R.isHost) return;
+  if(R.roundResults[res.matchId]) return;               // dedup
+  R.roundResults[res.matchId]=res; R.results[res.matchId]=res;
+  hostCheckRound();
+}
+function hostCheckRound(){ if(!R||!R.isHost||R._closing)return;
+  if(Object.keys(R.roundResults).length >= R.roundPairs.length){ R._closing=true; roomTimer(hostFinishRound, 400); } }
+function hostFinishRound(){
+  if(!R||!R.isHost||R.phase==='done') return;
+  const standings=TL.standings(R.players, Object.values(R.results));
+  if(R.phase==='group'){
+    R.roundIndex++;
+    if(R.roundIndex < R.schedule.length){
+      hostBroadcastStandings(standings, 'Round '+R.roundIndex+' done — standings', false, 'group');
+      roomTimer(hostStartRound, STAND_MS);
+    } else {
+      const q=TL.qualifyCount(R.players.length);
+      R.koSeeds = standings.slice(0,q).map(s=>s.id);
+      R.phase='ko';
+      hostBroadcastStandings(standings, 'Group stage over — Top '+q+' qualify!', false, 'group', q);
+      roomTimer(hostStartKO, STAND_MS);
+    }
+  } else { // ko round finished
+    const winners=R.roundPairs.map(p=>R.roundResults[p.matchId]&&R.roundResults[p.matchId].winner).filter(Boolean);
+    const survivors=new Set((R.koBye?[R.koBye]:[]).concat(winners));
+    R.koSeeds=R.koSeeds.filter(id=>survivors.has(id));
+    if(R.koSeeds.length<=1){ R.champion=R.koSeeds[0]||winners[0]; hostBroadcastDone(R.champion, standings); }
+    else { hostBroadcastStandings(standings, R.koName+' done', false, 'ko'); roomTimer(hostStartKO, STAND_MS); }
+  }
+}
+function hostStartKO(){
+  if(!R||!R.isHost) return;
+  R._closing=false;
+  const rd=TL.koRound(R.koSeeds);
+  if(rd.champ){ R.champion=rd.champ; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); return; }
+  const alive=new Set(R.players.map(p=>p.id)); R.roundPairs=[]; R.roundResults={}; let mi=0;
+  R.koBye = (rd.bye && alive.has(rd.bye))?rd.bye:null; R.koName=rd.name;
+  rd.pairs.forEach(pr=>{ const aA=alive.has(pr[0]), bA=alive.has(pr[1]); const id='k'+R.koStep+'m'+(mi++);
+    if(aA&&bA) R.roundPairs.push({matchId:id,a:pr[0],b:pr[1],batFirst:Math.random()<.5?'a':'b',ko:true});
+    else if(aA||bA){ const w=aA?pr[0]:pr[1]; R.roundResults[id]={matchId:id,aId:pr[0],bId:pr[1],aScore:1,bScore:0,winner:w,reason:'walkover'}; }
+  });
+  R.koStep++;
+  const pkt={stage:'ko',roundName:rd.name,pairs:R.roundPairs,bye:R.koBye,mode:R.mode,players:R.players,isFinal:rd.isFinal};
+  hostDir('round',pkt); clientOnRound(pkt);
+  hostCheckRound();
+}
+function hostBroadcastStandings(rows,title,done,stage,q){ const pkt={rows,title,nextIn:STAND_MS/1000,stage,q}; hostDir('standings',pkt); clientOnStandings(pkt); }
+function hostBroadcastDone(champId,rows){ if(!R)return; R.phase='done'; const pkt={champion:champId,champName:pname(champId),champAv:pav(champId),rows}; hostDir('done',pkt); clientOnDone(pkt); }
+
+/* ---- net message router ---- */
 function onNet(kind,payload){
-  if(kind==='hello'){                       // host got the guest's name/avatar
-    if(MP.isHost){ MP.guestInfo=payload; autoStartHost(); }
-  } else if(kind==='sync'){                  // presence — both players present?
-    if(MP.isHost && MP.members()>=2) autoStartHost();
-  } else if(kind==='toss'){                   // guest gets the host's toss decision
-    if(!MP.isHost) beginOnlineMatch({host:false, firstBat:payload.firstBat, mode:payload.mode,
-      aName:payload.hostName, aAv:payload.hostAv, bName:SV.name, bAv:SV.avatar});
-  } else if(kind==='move'){
-    if(!G.online) return;
-    if(payload.ball===G.ballIndex){ G.oppNum=payload.num; tryResolveOnline(); }
-    else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
-  } else if(kind==='bye' || kind==='leave'){ opponentLeft(); }
+  if(!R) return;                                        // ignore stray messages after leaving
+  // sequenced directives (self-heal via heartbeat): ignore stale/duplicate on clients
+  if(!R.isHost && payload && payload.seq!=null && ['begin','quickmatch','round','standings','done'].indexOf(kind)>=0){
+    if(R.lastSeq!=null && payload.seq<=R.lastSeq) return; R.lastSeq=payload.seq;
+  }
+  if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
+  if(kind==='leave'){ onLeave(payload); return; }
+  if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
+  if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.players=payload.players||[]; renderLobby(); } return; }
+  if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
+  if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,quick:true}); return; }
+  if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
+  if(kind==='move'){ if(G.online && payload.matchId===G.matchId){
+      if(payload.ball===G.ballIndex){ G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
+      else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; } } return; }
+  if(kind==='result'){ hostOnResult(payload); return; }
+  if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
+  if(kind==='done'){ if(!R.isHost) clientOnDone(payload); return; }
 }
-function autoStartHost(){ if(!MP.isHost || cur!=='roomwait' || MP.autoStarted) return; MP.autoStarted=true; hostStartMatch(); }
-function hostStartMatch(){
-  const gi=MP.guestInfo||{name:'Friend',av:'🧑'};
-  const firstBat=Math.random()<0.5?'a':'b';
-  MP.send('toss',{firstBat, mode:roomMode, hostName:SV.name, hostAv:SV.avatar, guestName:gi.name, guestAv:gi.av});
-  beginOnlineMatch({host:true, firstBat, mode:roomMode, aName:SV.name, aAv:SV.avatar, bName:gi.name, bAv:gi.av});
+
+/* ---- client: play a round ---- */
+function clientOnRound(pkt){
+  if(!R) return; if(pkt.players)R.players=pkt.players; R.roundNameNow=pkt.roundName;
+  const mine=(pkt.pairs||[]).find(p=>p.a===myId||p.b===myId);
+  if(mine){ beginNetMatch({matchId:mine.matchId,a:mine.a,b:mine.b,batFirst:mine.batFirst,mode:pkt.mode,ko:pkt.stage==='ko'}); }
+  else { showTwait('🍿', pkt.bye===myId?'You have a bye this round':'Spectating', pkt.roundName+' — waiting for the matches to finish…'); }
 }
-function beginOnlineMatch(o){
-  newMatch({mode:o.mode, type:'quick', opp:'friend', online:true, host:o.host, myside:o.host?'a':'b'});
-  G.aName=o.aName; G.aAv=o.aAv; G.bName=o.bName; G.bAv=o.bAv; G.firstBat=o.firstBat;
-  $('gameTag').textContent='🌐 Online · '+(o.mode==='crazy'?'Crazy':'Normal');
+function showTwait(ico,title,msg){ $('twaitIco').textContent=ico; $('twaitTitle').textContent=title; $('twaitMsg').textContent=msg||''; show('twait'); }
+
+/* ---- client: standings between rounds ---- */
+function clientOnStandings(pkt){
+  $('tstandTitle').textContent=pkt.title||'Standings';
+  const rows=pkt.rows||[];
+  $('tstandBody').innerHTML='<div class="statrow" style="color:var(--muted);font-size:12px"><span>#  Player</span><span>P&nbsp;&nbsp;W-L&nbsp;&nbsp;Pts</span></div>'+
+    rows.map((r,i)=>{ const q=pkt.q&&i<pkt.q; return '<div class="statrow"'+(q?' style="color:var(--good)"':'')+'><span>'+(i+1)+'. <span style="font-size:16px">'+r.av+'</span> '+(r.id===myId?'<b>'+esc(r.name)+'</b>':esc(r.name))+(q?' <span class="pill-tag" style="background:rgba(61,220,132,.2);color:var(--good)">Q</span>':'')+'</span><span>'+r.p+'&nbsp;&nbsp;'+r.w+'-'+r.l+'&nbsp;&nbsp;<b>'+r.pts+'</b></span></div>'; }).join('');
+  show('tstand'); let left=Math.round(pkt.nextIn||8); $('tstandNext').textContent='Next round in '+left+'s…';
+  const g=RGEN; const iv=setInterval(()=>{ if(g!==RGEN||cur!=='tstand'){ clearInterval(iv); return; } left--; $('tstandNext').textContent = left>0?('Next round in '+left+'s…'):'Starting…'; if(left<=0)clearInterval(iv); },1000);
+}
+/* ---- client: champion ---- */
+function clientOnDone(pkt){
+  R&&(R.phase='done');
+  const win = pkt.champion===myId;
+  const hero=$('resHero'); hero.className='result-hero '+(win?'win':'lose');
+  hero.textContent = win?'🏆 CHAMPION!':'Tournament Over';
+  $('resScore').innerHTML = '🏆 Winner: <b>'+pkt.champAv+' '+esc(pkt.champName)+'</b>';
+  const rows=pkt.rows||[];
+  $('resExtra').innerHTML = rows.map((r,i)=>'<div class="statrow" style="border:none;padding:5px 2px"><span>'+(i+1)+'. '+r.av+' '+esc(r.name)+'</span><span>'+r.w+'W '+r.l+'L</span></div>').join('');
+  $('resReward').innerHTML=''; if(win){ Sound.win(); Sound.crowd(); confetti(150); fxStart(); } else Sound.lose();
+  $('resNext').style.display='none'; $('resMenu').textContent='Back to Menu';
+  show('result');
+}
+
+/* ---- a single networked match (reuses the match engine) ---- */
+function beginNetMatch(m){
+  const myside = (myId===m.a)?'a':'b';
+  newMatch({mode:m.mode, type:'quick', opp:'friend', online:true, host:MP.isHost, myside});
+  G.matchId=m.matchId; G.matchAId=m.a; G.matchBId=m.b; G.oppId=(myside==='a'?m.b:m.a);
+  G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko;
+  G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
+  G.firstBat=m.batFirst;
+  $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+(m.mode==='crazy'?'Crazy':'Normal');
   startInnings();
 }
 function onlineNextBall(){
-  G.myNum=null; G.oppNum=null;
+  G.myNum=null; G.oppNum=null; clearAfk();
   const iBat=(G.myside===G.batting);
   padEnableAll(); padLock(false);
   $('numBat').textContent='–'; $('numBowl').textContent='–';
   $('prompt').innerHTML = iBat ? 'You <span class="hl">bat</span> — pick your number' : 'You <span class="hl">bowl</span> — pick your number';
-  if(G.pendingOpp && G.pendingOpp.ball===G.ballIndex){ G.oppNum=G.pendingOpp.num; G.pendingOpp=null; tryResolveOnline(); }
+  startAfk();
+  if(G.pendingOpp && G.pendingOpp.ball===G.ballIndex){ G.oppNum=G.pendingOpp.num; G.pendingOpp=null; clearAfk(); tryResolveOnline(); }
 }
 function onlinePick(n){
   if(G.busy || G.myNum!=null) return;
   Sound.pick(); G.myNum=n;
   const chosen=$('pad').querySelector('.num[data-n="'+n+'"]'); if(chosen)chosen.classList.add('chosen');
   padLock(true);
-  MP.send('move',{ball:G.ballIndex, num:n});
+  MP.send('move',{matchId:G.matchId, ball:G.ballIndex, num:n});
   $('prompt').textContent='Waiting for opponent…';
   tryResolveOnline();
 }
 function tryResolveOnline(){
   if(G.busy || G.myNum==null || G.oppNum==null) return;
-  G.busy=true;
+  clearAfk(); G.busy=true;
   const iBat=(G.myside===G.batting);
-  const batNum = iBat? G.myNum : G.oppNum;
-  const bowlNum = iBat? G.oppNum : G.myNum;
+  const batNum = iBat? G.myNum : G.oppNum, bowlNum = iBat? G.oppNum : G.myNum;
   G.ballIndex++;
   revealAndResolve(batNum,bowlNum);
 }
-function opponentLeft(){
-  if(!G.online) return;
-  if(cur!=='game' && cur!=='roomwait' && cur!=='brk' && cur!=='result') return;
-  EPOCH++; G.busy=false; G.online=false; MP.leave();
-  toast('Opponent left'); Sound.lose(); show('menu');
+/* ---- AFK: waiting for opponent 45s -> you win the match ---- */
+function startAfk(){ clearAfk(); const g=EPOCH; G.afkTimer=setTimeout(()=>{ if(g!==EPOCH||!G.online||cur!=='game')return;
+  if(G.myNum!=null && G.oppNum==null){ afkWin(); }        // I acted, opponent didn't -> I win
+  else if(G.myNum==null){ afkForfeit(); }                 // I went AFK -> I forfeit (prevents hangs)
+}, AFK_MS); }
+function clearAfk(){ if(G.afkTimer){ clearTimeout(G.afkTimer); G.afkTimer=null; } }
+function afkWin(){ clearAfk(); toast('Opponent AFK — you win!'); finishNetMatch(G.myside, 'afk'); }
+function afkForfeit(){ clearAfk(); toast('You didn\'t play in time'); finishNetMatch(G.myside==='a'?'b':'a', 'afk'); }
+/* opponent disconnected mid-match -> you win */
+function netMatchWalkover(){ if(!G.online||cur!=='game')return; clearAfk(); toast('Opponent disconnected — you win!'); Sound.win(); finishNetMatch(G.myside,'walkover'); }
+/* force a net match to end with a given winning side (afk/walkover) */
+function finishNetMatch(winSide, reason){
+  EPOCH++; G.busy=false; $('banner').classList.remove('show');
+  const winnerId = winSide==='a'?G.matchAId:G.matchBId;
+  const res={matchId:G.matchId, aId:G.matchAId, bId:G.matchBId, aScore:G.a, bScore:G.b, winner:winnerId, reason};
+  reportOrRematch(res, winnerId===myId);
+}
+function reportResult(){
+  let winner = G.a>G.b ? G.matchAId : G.b>G.a ? G.matchBId : (G.koMatch ? (G.firstBat==='a'?G.matchAId:G.matchBId) : null);
+  const res={matchId:G.matchId, aId:G.matchAId, bId:G.matchBId, aScore:G.a, bScore:G.b, winner, reason:'played'};
+  reportOrRematch(res, winner===myId);
+}
+function reportOrRematch(res, iWon){
+  if(G.quick){ showQuickResult(res, iWon); return; }
+  // tournament: report to host, then wait
+  MP.send('result', res); if(MP.isHost) hostOnResult(res);
+  const oppN=esc(pname(G.oppId));
+  showTwait(iWon?'✅':'❌', iWon?'You won!':'You lost', 'vs '+oppN+' — waiting for the other matches…');
+}
+function showQuickResult(res, iWon){
+  const hero=$('resHero'); const tie=res.winner==null;
+  hero.className='result-hero '+(tie?'tie':iWon?'win':'lose');
+  hero.textContent = tie?'TIE MATCH!':(iWon?'YOU WIN! 🏆':'YOU LOST');
+  $('resScore').innerHTML = esc(G.aName)+' <b>'+G.a+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+G.b+'</b>';
+  $('resExtra').innerHTML=''; $('resReward').innerHTML='';
+  if(iWon){ Sound.win(); confetti(120); fxStart(); } else if(!tie) Sound.lose();
+  $('resNext').style.display=''; $('resNext').textContent = MP.isHost?'🔁 Rematch':'⏳ Host may rematch';
+  $('resMenu').textContent='Leave Room';
+  show('result');
+}
+
+/* ---- disconnects ---- */
+function onLeave(left){
+  if(!R) return;
+  const gone=(left||[]).map(p=>p&&(p.id||(p.metas&&p.metas[0]&&p.metas[0].id))).filter(Boolean);
+  if(!gone.length) return;
+  if(!R.isHost && R.hostId && gone.includes(R.hostId)){ toast('Host left — room closed'); leaveRoom(); show('menu'); return; }
+  // my current opponent left mid-match -> I win by walkover
+  if(G.online && G.oppId && gone.includes(G.oppId) && cur==='game'){ netMatchWalkover(); }
+  if(R.isHost){
+    gone.forEach(id=>{
+      R.players=R.players.filter(p=>p.id!==id);
+      if(R.roundPairs){ R.roundPairs.forEach(pr=>{ if((pr.a===id||pr.b===id)&&!R.roundResults[pr.matchId]){
+        const opp=pr.a===id?pr.b:pr.a; R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:pr.a===opp?1:0,bScore:pr.b===opp?1:0,winner:opp,reason:'walkover'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; } }); }
+      if(R.koSeeds) R.koSeeds=R.koSeeds.filter(s=>s!==id);
+    });
+    if(R.phase==='lobby'){ hostLobbyUpdate(); return; }
+    if(R.players.length<=1 && R.phase!=='done'){ if(R.players.length===1){ R.champion=R.players[0].id; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); } return; }
+    if(R.phase==='group'||R.phase==='ko') hostCheckRound();
+  }
 }
 
 /* ================= COMPETITIONS (league / tournament / world cup) =================
@@ -1201,6 +1457,10 @@ window.addEventListener('keydown',e=>{
 /* ================= boot ================= */
 buildPad(); syncMenu(); show('menu');
 if(window.IGAuth)IGAuth.onChange&&IGAuth.onChange(()=>{});
+// auto-join from a shared link:  …/handcricket/?room=CODE
+(function(){ try{ const rc=new URLSearchParams(location.search).get('room');
+  if(rc){ const code=rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+    if(code.length===4){ openRoom(); setTimeout(()=>joinRoom(code), 300); } } }catch(e){} })();
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
