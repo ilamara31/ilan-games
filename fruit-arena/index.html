@@ -386,7 +386,7 @@ function spawnWave(){
   for(let i=0;i<n;i++){
     const r=Math.random();
     let special=null;
-    if(r < (0.025+d*0.12)) special='bomb';
+    if(stormT<=0 && r < (0.025+d*0.12)) special='bomb';   // no bombs during a fruit storm
     else if(r < 0.045) special='treasure';                // rare lone treasure
     else if(r < 0.075) special='poison';                  // lone poison (avoid it)
     makeFruit(special);
@@ -491,7 +491,7 @@ function hitBoss(){ if(!boss) return; boss.hp--; Sfx.hit(); shakeT=Math.max(shak
 const EVENTS=[
   { id:'dcoin', text:'💰 DOUBLE COINS!', dur:15, on(){coinMul=2;}, off(){coinMul=1;} },
   { id:'dpts',  text:'⭐ DOUBLE POINTS!', dur:15, on(){pointMul=2;}, off(){pointMul=1;} },
-  { id:'storm', text:'🌪️ FRUIT STORM!', dur:10, on(){stormT=10;}, off(){stormT=0;} },
+  { id:'storm', text:'🌪️ FRUIT STORM!', dur:10, on(){ stormT=10; for(const o of objects){ if(o.kind==='bomb'){ o.sliced=true; juiceBurst(o,'#333',10); } } }, off(){stormT=0;} },
   { id:'slow',  text:'🐢 SLOW MOTION!', dur:6, on(){slowT=6;}, off(){} },
   { id:'giant', text:'🍈 GIANT FRUIT!', dur:10, on(){giantT=10;}, off(){giantT=0;} },
   { id:'treas', text:'💎 TREASURE TIME!', dur:1, on(){ makeFruit('treasure'); makeFruit('treasure'); }, off(){} },
@@ -564,7 +564,7 @@ function loop(now){
     if(o.sliced){ objects.splice(i,1); continue; }   // sliced fruit is gone — only its halves + juice remain
     if(playing){ o.vy+=curGrav()*tdt; o.x+=o.vx*tdt; o.y+=o.vy*tdt; o.rot+=o.vrot*tdt; }
     if(o.y>H+o.r+70){ objects.splice(i,1);
-      if(playing && !o.sliced && o.kind!=='bomb' && o.kind!=='coin' && o.kind!=='poison' && o.kind!=='treasure'){
+      if(playing && stormT<=0 && !o.sliced && o.kind!=='bomb' && o.kind!=='coin' && o.kind!=='poison' && o.kind!=='treasure'){
         if(tutMode){ tutOnMiss(o); } else { lives--; Sfx.miss(); updateHud(); if(lives<=0){ endGame(false); } } }
       continue; }
     drawObj(o);
