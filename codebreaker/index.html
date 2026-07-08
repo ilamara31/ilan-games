@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Codebreaker: Secret Agent</title>
+<meta name="theme-color" content="#05070e">
+<style>
+:root{
+  --bg1:#0a1020; --bg2:#05070e;
+  --accent:#37e0ff; --accent2:#7cff6b; --danger:#ff4d6d; --warn:#ffcf3d;
+  --panel:rgba(12,20,38,.72); --panel2:rgba(20,30,54,.9);
+  --key-bg:linear-gradient(180deg,#1a2740,#0e1830); --key-fg:#eaf3ff; --key-br:rgba(120,180,255,.25);
+  --ink:#eaf3ff; --dim:#8ea6cf;
+  --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
+}
+/* ---- themes ---- */
+body.t-gold{ --accent:#ffd24a; --accent2:#ffae3d; --key-bg:linear-gradient(180deg,#4a3a12,#2a1f08); --key-br:rgba(255,210,90,.5); }
+body.t-neon{ --accent:#ff43e0; --accent2:#43f7ff; --key-bg:linear-gradient(180deg,#2a1040,#140825); --key-br:rgba(255,80,220,.5); }
+body.t-hacker{ --accent:#39ff88; --accent2:#a6ff4d; --ink:#d6ffe6; --key-bg:linear-gradient(180deg,#0b2016,#04120a); --key-br:rgba(60,255,140,.5); }
+body.t-spy{ --accent:#ff5a4d; --accent2:#ffcf3d; --key-bg:linear-gradient(180deg,#3a1010,#1e0808); --key-br:rgba(255,90,70,.5); }
+body.t-future{ --accent:#6ab8ff; --accent2:#b58bff; --key-bg:linear-gradient(180deg,#132a4d,#0a1730); --key-br:rgba(140,180,255,.55); }
+body.t-space{ --accent:#8f7bff; --accent2:#43d7ff; --key-bg:linear-gradient(180deg,#1a1642,#0c0a26); --key-br:rgba(150,120,255,.55); }
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;
+  overflow:hidden;user-select:none;-webkit-user-select:none}
+#app{position:fixed;inset:0;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;
+  background:radial-gradient(130% 100% at 50% -10%,var(--bg1),var(--bg2) 70%)}
+.screen.on{display:flex;animation:sfade .35s ease}
+@keyframes sfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.wrap{width:100%;max-width:560px;margin:0 auto;padding:20px 18px 32px;display:flex;flex-direction:column;gap:14px}
+.mono{font-family:var(--mono)}
+.center{align-items:center;text-align:center}
+
+/* ---- menu ---- */
+.brand{margin-top:24px;text-align:center}
+.brand .tag{font-family:var(--mono);letter-spacing:.42em;font-size:11px;color:var(--accent);text-transform:uppercase}
+.brand h1{font-size:clamp(30px,8.5vw,52px);font-weight:900;letter-spacing:1px;line-height:.95;margin-top:6px;
+  background:linear-gradient(180deg,#fff,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px color-mix(in srgb,var(--accent) 55%,transparent))}
+.brand .sub{color:var(--dim);font-size:13px;margin-top:6px;letter-spacing:.18em;text-transform:uppercase}
+.hudrow{display:flex;gap:10px;justify-content:center;margin:14px 0 4px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid rgba(120,170,255,.16);
+  border-radius:14px;padding:9px 14px;font-weight:800;font-size:14px}
+.chip small{display:block;font-size:10px;color:var(--dim);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.chip b{color:var(--accent)}
+.menoji{font-size:18px}
+.mbtns{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.btn{border:none;cursor:pointer;font-weight:800;font-family:inherit;color:var(--ink);
+  background:var(--panel2);border:1px solid rgba(120,170,255,.18);border-radius:16px;
+  padding:16px 18px;font-size:17px;display:flex;align-items:center;gap:14px;transition:transform .1s,border-color .15s,background .15s}
+.btn:hover{border-color:var(--accent);transform:translateY(-2px)}
+.btn:active{transform:scale(.98)}
+.btn .ic{font-size:22px;width:26px;text-align:center}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#05121a;border:none;
+  box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 40%,transparent)}
+.btn.small{padding:11px 14px;font-size:14px;border-radius:13px}
+.btn.ghost{background:var(--panel);}
+.topbar{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.topbar h2{font-size:20px;font-weight:900;letter-spacing:.5px}
+.back{background:var(--panel);border:1px solid rgba(120,170,255,.2);color:var(--ink);border-radius:12px;
+  padding:10px 14px;cursor:pointer;font-weight:800;font-family:inherit;font-size:14px}
+.back:active{transform:scale(.95)}
+.exit{position:fixed;top:12px;right:12px;z-index:50;background:var(--panel);border:1px solid rgba(120,170,255,.2);
+  color:var(--dim);border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:800;font-size:12px;text-decoration:none}
+
+/* ---- missions list ---- */
+.mlist{display:flex;flex-direction:column;gap:12px}
+.mcard{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid rgba(120,170,255,.16);
+  border-radius:16px;padding:14px 16px;cursor:pointer;transition:transform .1s,border-color .15s;position:relative;overflow:hidden}
+.mcard:hover{transform:translateY(-2px);border-color:var(--accent)}
+.mcard .em{font-size:34px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+.mcard .mi{flex:1;min-width:0}
+.mcard .mn{font-weight:900;font-size:16px}
+.mcard .md{font-size:12px;color:var(--dim);margin-top:3px;letter-spacing:.03em}
+.mcard .pill{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:10px}
+.pill.easy{background:rgba(60,255,140,.16);color:#7cff9b}
+.pill.medium{background:rgba(90,180,255,.16);color:#7cc4ff}
+.pill.hard{background:rgba(255,190,60,.16);color:#ffd27a}
+.pill.expert{background:rgba(255,80,110,.16);color:#ff90a6}
+.mcard.locked{opacity:.5;cursor:not-allowed}
+.mcard .lk{font-size:22px}
+.mcard .done{color:var(--accent2);font-size:12px;font-weight:900}
+
+/* ---- game / room ---- */
+#game .gtop{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:linear-gradient(180deg,rgba(5,7,14,.92),rgba(5,7,14,.55));backdrop-filter:blur(8px);border-bottom:1px solid rgba(120,170,255,.12)}
+.gtitle{flex:1;min-width:0}
+.gtitle .n{font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gtitle .l{font-size:11px;color:var(--dim);font-family:var(--mono)}
+.timer{font-family:var(--mono);font-weight:900;font-size:20px;padding:6px 12px;border-radius:12px;
+  background:rgba(120,180,255,.1);border:1px solid rgba(120,180,255,.2);min-width:88px;text-align:center}
+.timer.warn{color:var(--warn);border-color:var(--warn)}
+.timer.crit{color:var(--danger);border-color:var(--danger);animation:pulse .6s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.gcoins{font-weight:900;font-size:14px;color:var(--accent)}
+
+.room{position:relative;min-height:210px;margin:12px;border-radius:18px;overflow:hidden;
+  border:1px solid rgba(120,170,255,.18);box-shadow:inset 0 0 60px rgba(0,0,0,.6)}
+.room .scene{position:absolute;inset:0;z-index:0}
+.room .objs{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:16px 12px}
+.obj{width:84px;background:rgba(8,14,28,.72);border:1px solid rgba(140,190,255,.22);border-radius:14px;
+  padding:10px 6px;cursor:pointer;text-align:center;transition:transform .12s,border-color .15s,background .15s;backdrop-filter:blur(3px)}
+.obj:hover{transform:translateY(-3px);border-color:var(--accent)}
+.obj:active{transform:scale(.94)}
+.obj .oe{font-size:30px;line-height:1}
+.obj .ol{font-size:10px;color:var(--dim);margin-top:5px;font-weight:800;letter-spacing:.02em}
+.obj.found{border-color:var(--accent2);background:rgba(20,40,30,.6)}
+.obj.found .ol{color:var(--accent2)}
+.obj .dot{position:absolute;margin:-6px 0 0 60px;width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger);animation:pulse 1.2s infinite}
+.obj.found .dot{display:none}
+
+.cluelog{margin:0 12px;background:var(--panel);border:1px solid rgba(120,170,255,.16);border-radius:16px;padding:12px 14px}
+.cluelog h3{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;font-family:var(--mono)}
+.clue{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed rgba(140,180,255,.14);font-size:14px;line-height:1.35}
+.clue:last-child{border-bottom:none}
+.clue .ci{font-size:15px}
+.clue.empty{color:var(--dim);font-style:italic;justify-content:center;padding:10px 0}
+.clue b{color:var(--accent2)}
+
+/* keypad */
+.entry{margin:14px 12px 0}
+.display{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.slot{cursor:pointer;width:clamp(38px,11vw,50px);height:clamp(50px,15vw,64px);border-radius:12px;background:rgba(6,10,22,.85);
+  border:2px solid var(--key-br);display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:900;font-size:clamp(24px,7vw,32px);color:var(--accent)}
+.slot.active{border-color:var(--accent);box-shadow:0 0 16px color-mix(in srgb,var(--accent) 50%,transparent)}
+.slot.filled{color:var(--ink)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:340px;margin:0 auto}
+.key{background:var(--key-bg);border:1px solid var(--key-br);border-radius:14px;color:var(--key-fg);
+  font-family:var(--mono);font-weight:900;font-size:24px;padding:15px 0;cursor:pointer;transition:transform .08s,filter .12s}
+.key:hover{filter:brightness(1.2)}
+.key:active{transform:scale(.93)}
+.key.dead{opacity:.28;pointer-events:none;text-decoration:line-through}
+.key.wide{grid-column:span 1}
+.key.confirm{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#05121a;border:none}
+.key.clr{background:rgba(255,80,110,.16);border-color:rgba(255,80,110,.35);color:#ff9fb0}
+.keypad.shake{animation:shk .4s}
+@keyframes shk{10%,90%{transform:translateX(-3px)}30%,70%{transform:translateX(6px)}50%{transform:translateX(-8px)}}
+
+.helprow{display:flex;gap:8px;justify-content:center;margin:14px 12px 0;flex-wrap:wrap}
+.help{flex:1;min-width:96px;background:var(--panel);border:1px solid rgba(120,170,255,.18);border-radius:13px;
+  padding:9px 8px;cursor:pointer;text-align:center;font-weight:800;font-size:12px;transition:transform .1s,border-color .15s}
+.help:hover{border-color:var(--accent);transform:translateY(-2px)}
+.help:active{transform:scale(.96)}
+.help.disabled{opacity:.4;pointer-events:none}
+.help .he{font-size:20px;display:block;margin-bottom:3px}
+.help .hc{color:var(--accent);font-family:var(--mono)}
+
+/* shop / stats / settings */
+.section{background:var(--panel);border:1px solid rgba(120,170,255,.14);border-radius:16px;padding:14px 16px}
+.section h3{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-family:var(--mono)}
+.srow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed rgba(140,180,255,.12)}
+.srow:last-child{border-bottom:none}
+.srow .se{font-size:26px}
+.srow .si{flex:1}
+.srow .st{font-weight:900;font-size:15px}
+.srow .sd{font-size:12px;color:var(--dim);margin-top:2px}
+.buy{border:none;cursor:pointer;font-family:inherit;font-weight:900;font-size:13px;border-radius:11px;padding:9px 15px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#05121a;white-space:nowrap}
+.buy:active{transform:scale(.95)}
+.buy.owned{background:rgba(60,255,140,.16);color:var(--accent2)}
+.buy.equipped{background:rgba(120,180,255,.16);color:var(--accent)}
+.buy.cant{background:rgba(120,140,170,.2);color:var(--dim)}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--panel);border:1px solid rgba(120,170,255,.14);border-radius:14px;padding:14px;text-align:center}
+.stat .sv{font-size:26px;font-weight:900;color:var(--accent);font-family:var(--mono)}
+.stat .sl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.toggle{margin-left:auto;width:52px;height:30px;border-radius:16px;background:rgba(120,140,170,.3);position:relative;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s}
+.toggle.on::after{left:25px}
+
+/* overlay result */
+.ov{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:22px;
+  background:rgba(2,4,10,.82);backdrop-filter:blur(6px)}
+.ov.on{display:flex;animation:sfade .3s}
+.ovcard{width:100%;max-width:400px;background:linear-gradient(180deg,var(--panel2),var(--bg2));
+  border:1px solid var(--accent);border-radius:22px;padding:26px 22px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.ovcard .big{font-size:26px;font-weight:900;margin-bottom:4px}
+.ovcard .em{font-size:52px;margin-bottom:8px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+.ovstats{display:flex;flex-direction:column;gap:8px;margin:18px 0}
+.ovstat{display:flex;justify-content:space-between;font-size:15px;background:rgba(120,180,255,.08);
+  padding:10px 14px;border-radius:11px}
+.ovstat b{color:var(--accent);font-family:var(--mono)}
+.ovbtns{display:flex;gap:10px;margin-top:6px}
+.ovbtns .btn{flex:1;justify-content:center;padding:14px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:70;background:var(--panel2);
+  border:1px solid var(--accent);color:var(--ink);padding:12px 20px;border-radius:14px;font-weight:800;font-size:14px;
+  opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+/* animated scene bits */
+.blink{position:absolute;width:7px;height:7px;border-radius:50%;animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.5;animation:scan 4s linear infinite}
+@keyframes scan{0%{top:-4%}100%{top:104%}}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(120,180,255,.06) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(120,180,255,.06) 1px,transparent 1px);background-size:28px 28px;opacity:.5}
+.orb{position:absolute;border-radius:50%;filter:blur(30px);opacity:.5}
+.cam{position:absolute;font-size:22px;animation:swivel 3.5s ease-in-out infinite;transform-origin:top center}
+@keyframes swivel{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(16deg)}}
+.disclaimer{color:var(--dim);font-size:11px;text-align:center;margin-top:8px}
+
+::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+<a class="exit" href="../">← Arcade</a>
+<div id="app"></div>
+
+<!-- MENU -->
+<div class="screen center" id="menu">
+  <div class="wrap">
+    <div class="brand">
+      <div class="tag">Classified · Level 5 Clearance</div>
+      <h1>CODEBREAKER</h1>
+      <div class="sub">Secret Agent</div>
+    </div>
+    <div class="hudrow">
+      <div class="chip"><span class="menoji">🎖️</span><div><small>Level</small><b id="mLevel">1</b></div></div>
+      <div class="chip"><span class="menoji">🪙</span><div><small>Coins</small><b id="mCoins">0</b></div></div>
+      <div class="chip"><span class="menoji">✔️</span><div><small>Missions</small><b id="mDone">0</b></div></div>
+    </div>
+    <div class="mbtns">
+      <button class="btn primary" onclick="CB.go('missions')"><span class="ic">▶</span> Play</button>
+      <button class="btn" onclick="CB.go('missions')"><span class="ic">🏆</span> Missions</button>
+      <button class="btn" onclick="CB.go('stats')"><span class="ic">📊</span> Statistics</button>
+      <button class="btn" onclick="CB.go('shop')"><span class="ic">🛒</span> Shop</button>
+      <button class="btn" onclick="CB.go('settings')"><span class="ic">⚙</span> Settings</button>
+    </div>
+    <div class="disclaimer">Crack the code. Beat the clock. Trust no one.</div>
+  </div>
+</div>
+
+<!-- MISSIONS -->
+<div class="screen" id="missions">
+  <div class="wrap">
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>🏆 Missions</h2><div style="width:56px"></div></div>
+    <div class="mlist" id="mlist"></div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="game">
+  <div class="gtop">
+    <button class="back" onclick="CB.quitToMissions()">‹</button>
+    <div class="gtitle"><div class="n" id="gName">Mission</div><div class="l" id="gDiff">3-digit code</div></div>
+    <div class="gcoins">🪙 <span id="gCoins">0</span></div>
+    <div class="timer" id="gTimer">3:00</div>
+  </div>
+  <div class="room" id="room"><div class="scene" id="scene"></div><div class="objs" id="objs"></div></div>
+  <div class="cluelog"><h3>🔎 Intel Log</h3><div id="clues"></div></div>
+  <div class="helprow" id="helprow"></div>
+  <div class="entry">
+    <div class="display" id="display"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+  <div style="height:24px"></div>
+</div>
+
+<!-- SHOP -->
+<div class="screen" id="shop">
+  <div class="wrap">
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>🛒 Shop</h2><div class="chip" style="padding:7px 12px">🪙 <b id="shopCoins" style="margin-left:5px">0</b></div></div>
+    <div class="section"><h3>🎨 Themes</h3><div id="themeList"></div></div>
+    <div class="section"><h3>🧰 Field Gadgets</h3><div id="itemList"></div></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="screen" id="stats">
+  <div class="wrap">
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>📊 Statistics</h2><div style="width:56px"></div></div>
+    <div class="statgrid" id="statgrid"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="settings">
+  <div class="wrap">
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>⚙ Settings</h2><div style="width:56px"></div></div>
+    <div class="section">
+      <div class="srow"><span class="se">🔊</span><div class="si"><div class="st">Sound Effects</div><div class="sd">Beeps, clicks, alarms</div></div><div class="toggle" id="tgSfx" onclick="CB.toggle('sfx')"></div></div>
+      <div class="srow"><span class="se">🎵</span><div class="si"><div class="st">Suspense Music</div><div class="sd">Background tension loop</div></div><div class="toggle" id="tgMusic" onclick="CB.toggle('music')"></div></div>
+    </div>
+    <button class="btn ghost" onclick="CB.resetProgress()"><span class="ic">🗑️</span> Reset all progress</button>
+    <div class="disclaimer">Codebreaker: Secret Agent — an Ilan Games original.</div>
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="ovcard" id="ovcard"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CODEBREAKER: SECRET AGENT ================= */
+const CB = (function(){
+"use strict";
+
+/* ---------- MISSIONS ---------- */
+const MISSIONS = [
+  {name:'Bank Vault',               em:'🏦', diff:'easy',   len:3, time:180, hue:210, scene:'vault'},
+  {name:'Train Control Room',       em:'🚆', diff:'easy',   len:3, time:180, hue:150, scene:'train'},
+  {name:'Museum Security Room',     em:'🏛️', diff:'medium', len:4, time:120, hue:40,  scene:'museum'},
+  {name:'Airport Control Tower',    em:'🛫', diff:'medium', len:4, time:120, hue:195, scene:'airport'},
+  {name:'Secret Laboratory',        em:'🧪', diff:'hard',   len:5, time:90,  hue:110, scene:'lab'},
+  {name:'Submarine Control Center', em:'⚓', diff:'hard',   len:5, time:90,  hue:185, scene:'sub'},
+  {name:'Space Station',            em:'🛰️', diff:'expert', len:6, time:60,  hue:265, scene:'space'},
+  {name:'Military Command Center',  em:'🎖️', diff:'expert', len:6, time:60,  hue:0,   scene:'military'}
+];
+const DIFF_LABEL={easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert'};
+const COIN_BASE={easy:60,medium:90,hard:130,expert:190};
+
+const OBJECTS=[
+  ['💻','Computer'],['📝','Sticky Note'],['📋','Security Log'],['📄','Document'],['🗄️','Drawer'],
+  ['🔐','Locker'],['🖼️','Photo'],['🖥️','Monitor'],['💳','Keycard'],['📁','Folder'],
+  ['☎️','Phone'],['📰','Report'],['🧰','Safe'],['📻','Radio']
+];
+const THEMES=[
+  {id:'default',name:'Agency Blue',em:'🔵',price:0,cls:''},
+  {id:'gold',   name:'Golden Keypad',em:'🟡',price:300,cls:'t-gold'},
+  {id:'neon',   name:'Neon Theme',   em:'🟣',price:450,cls:'t-neon'},
+  {id:'hacker', name:'Hacker Theme',  em:'🟢',price:500,cls:'t-hacker'},
+  {id:'spy',    name:'Spy Theme',     em:'🔴',price:600,cls:'t-spy'},
+  {id:'future', name:'Futuristic Theme',em:'🔷',price:750,cls:'t-future'},
+  {id:'space',  name:'Space Theme',   em:'🟪',price:900,cls:'t-space'}
+];
+const GADGETS=[
+  {id:'hint',    name:'Hint Scanner', em:'🛰️',price:40, desc:'Reveals one clue instantly'},
+  {id:'freeze',  name:'Time Freeze',  em:'❄️',price:60, desc:'Pauses the timer for 10 seconds'},
+  {id:'analyzer',name:'Code Analyzer',em:'🔬',price:50, desc:'Eliminates one wrong digit'}
+];
+
+/* ---------- SAVE ---------- */
+const KEY='cb_secret_agent_v1';
+const DEFAULT={coins:120,unlocked:0,completed:0,theme:'default',
+  themes:['default'], items:{hint:1,freeze:1,analyzer:1},
+  sfx:true, music:true,
+  stats:{completed:0,fastest:0,clues:0,solves:0,attempts:0,streak:0,bestStreak:0}};
+let S = load();
+function load(){ try{ const j=JSON.parse(localStorage.getItem(KEY));
+  if(j){ const s=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),j);
+    // deep-merge nested objects so older/partial saves never leave undefined keys (would NaN-cascade)
+    s.stats=Object.assign(JSON.parse(JSON.stringify(DEFAULT.stats)), j.stats||{});
+    s.items=Object.assign(JSON.parse(JSON.stringify(DEFAULT.items)), j.items||{});
+    if(!Array.isArray(s.themes)||!s.themes.length) s.themes=['default'];
+    return s; } }catch(e){} return JSON.parse(JSON.stringify(DEFAULT)); }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ---------- SOUND (Web Audio synth) ---------- */
+let ac=null, musicNodes=null;
+function actx(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return ac; }
+function tone(f,f2,dur,type,vol,delay){ if(!S.sfx)return; const c=actx(); if(!c)return;
+  const t=c.currentTime+(delay||0); const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f,t); if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.15,t+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.03); }
+const SFX={
+  click:()=>tone(320,180,.06,'square',.08),
+  key:()=>tone(660,880,.05,'square',.09),
+  found:()=>{tone(520,780,.12,'triangle',.14);tone(780,1040,.14,'triangle',.1,.06);},
+  error:()=>{tone(200,90,.3,'sawtooth',.16);tone(160,70,.35,'sawtooth',.12,.04);},
+  success:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,0,.18,'triangle',.16,i*.09));},
+  buy:()=>{tone(880,1320,.1,'square',.12);tone(1320,1760,.12,'square',.1,.07);},
+  fail:()=>{[330,262,196].forEach((f,i)=>tone(f,f*.6,.3,'sawtooth',.14,i*.16));}
+};
+function startMusic(){ if(!S.music)return; const c=actx(); if(!c||musicNodes)return;
+  const gain=c.createGain(); gain.gain.value=.06; gain.connect(c.destination);
+  const o1=c.createOscillator(); o1.type='sine'; o1.frequency.value=55;
+  const o2=c.createOscillator(); o2.type='sine'; o2.frequency.value=82.4;
+  const lfo=c.createOscillator(); lfo.type='sine'; lfo.frequency.value=.08;
+  const lg=c.createGain(); lg.gain.value=.03; lfo.connect(lg); lg.connect(gain.gain);
+  o1.connect(gain); o2.connect(gain); o1.start(); o2.start(); lfo.start();
+  musicNodes={gain,o1,o2,lfo}; }
+function stopMusic(){ if(musicNodes){ try{musicNodes.o1.stop();musicNodes.o2.stop();musicNodes.lfo.stop();}catch(e){} musicNodes=null; } }
+
+/* =========================================================
+   CLUE ENGINE — guarantees a unique, solvable code
+   ========================================================= */
+const ORD=['first','second','third','fourth','fifth','sixth'];
+// Predicates take a flat digit matrix `m` and a base index `b`; digit at position i is m[b+i].
+function makeCluePool(secret){
+  const n=secret.length, P=[];
+  const add=(text,pred)=>P.push({text,pred});
+  for(let i=0;i<n;i++){ const ev=secret[i]%2===0;
+    add(`The ${ORD[i]} digit is ${ev?'even':'odd'}.`, (m,b)=>(m[b+i]%2===0)===ev); }
+  for(let i=0;i<n;i++){ const v=secret[i];
+    if(v>0){ const k=v-1; add(`The ${ORD[i]} digit is greater than ${k}.`, (m,b)=>m[b+i]>k); }
+    if(v<9){ const k=v+1; add(`The ${ORD[i]} digit is less than ${k}.`, (m,b)=>m[b+i]<k); }
+    add(`The ${ORD[i]} digit is ${v>=5?'5 or more':'below 5'}.`, (m,b)=> v>=5? m[b+i]>=5 : m[b+i]<5); }
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){ if(i===j)continue;
+    if(secret[i]>secret[j]) add(`The ${ORD[i]} digit is greater than the ${ORD[j]} digit.`, (m,b)=>m[b+i]>m[b+j]);
+    if(i<j && secret[i]===secret[j]) add(`The ${ORD[i]} and ${ORD[j]} digits are the same.`, (m,b)=>m[b+i]===m[b+j]);
+    if(secret[j]>0 && secret[i]===2*secret[j]) add(`The ${ORD[i]} digit is double the ${ORD[j]} digit.`, (m,b)=>m[b+i]===2*m[b+j]); }
+  const present=new Set(secret);
+  for(let d=0;d<=9;d++) if(!present.has(d)) add(`The code does not contain a ${d}.`, (m,b)=>{ for(let p=0;p<n;p++) if(m[b+p]===d) return false; return true; });
+  const sum=secret.reduce((a,b)=>a+b,0);
+  add(`The digits add up to ${sum}.`, (m,b)=>{ let s=0; for(let p=0;p<n;p++) s+=m[b+p]; return s===sum; });
+  for(let i=0;i<n;i++) add(`The ${ORD[i]} digit is exactly ${secret[i]}.`, (m,b)=>m[b+i]===secret[i]);
+  return P;
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+// Best-clue greedy: each step picks the clue that narrows the candidate space most.
+// Always terminates with a UNIQUE code; uses ~n clues (verified over thousands of runs).
+function buildMission(n){
+  const secret=[]; for(let i=0;i<n;i++) secret.push(Math.floor(Math.random()*10));
+  const P=makeCluePool(secret);
+  const total=Math.pow(10,n);
+  const mat=new Int8Array(total*n);
+  for(let e=0;e<total;e++){ let x=e,b=e*n; for(let p=n-1;p>=0;p--){ mat[b+p]=x%10; x=(x-mat[b+p])/10; } }
+  let surv=new Int32Array(total); for(let i=0;i<total;i++) surv[i]=i; let slen=total;
+  const chosen=[], used=new Set();
+  while(slen>1 && chosen.length<n+2){
+    let best=null, bestSize=slen;
+    for(const cl of P){ if(used.has(cl.text)) continue; const pd=cl.pred; let c=0;
+      for(let k=0;k<slen;k++){ if(pd(mat,surv[k]*n)) c++; }
+      if(c<bestSize && c>0){ bestSize=c; best=cl; } }
+    if(!best) break;
+    used.add(best.text); chosen.push(best);
+    const ns=new Int32Array(bestSize); let w=0; const pd=best.pred;
+    for(let k=0;k<slen;k++){ if(pd(mat,surv[k]*n)) ns[w++]=surv[k]; }
+    surv=ns; slen=bestSize;
+  }
+  // safety net: force uniqueness with exact-digit clues if anything still varies
+  for(let i=0;i<n && slen>1;i++){
+    const f=mat[surv[0]*n+i]; let vary=false;
+    for(let k=0;k<slen;k++){ if(mat[surv[k]*n+i]!==f){ vary=true; break; } }
+    if(vary){ const v=secret[i], txt=`The ${ORD[i]} digit is exactly ${v}.`;
+      if(!used.has(txt)){ used.add(txt); chosen.push({text:txt}); }
+      const ns=[]; for(let k=0;k<slen;k++){ if(mat[surv[k]*n+i]===v) ns.push(surv[k]); }
+      surv=new Int32Array(ns); slen=ns.length; }
+  }
+  shuffle(chosen);
+  const bag=shuffle(OBJECTS.slice());
+  return { secret, clues: chosen.map((c,i)=>({text:c.text, obj:bag[i%bag.length], found:false})) };
+}
+
+/* ---------- SCENES (unique visuals per mission) ---------- */
+function buildScene(el,m){
+  const hue=m.hue;
+  el.innerHTML='';
+  el.style.background=`radial-gradient(120% 100% at 50% -10%,hsl(${hue} 55% 20%),hsl(${hue} 60% 6%) 75%)`;
+  const grid=document.createElement('div'); grid.className='grid-bg'; el.appendChild(grid);
+  const scan=document.createElement('div'); scan.className='scan'; el.appendChild(scan);
+  // ambient orbs
+  for(let i=0;i<2;i++){ const o=document.createElement('div'); o.className='orb';
+    o.style.cssText=`width:${120+i*60}px;height:${120+i*60}px;background:hsl(${hue+i*40} 80% 45%);left:${i?60:5}%;top:${i?10:40}%`; el.appendChild(o); }
+  // blinking status lights
+  const colors=['#7cff6b','#ff4d6d','#ffcf3d','#37e0ff'];
+  for(let i=0;i<6;i++){ const b=document.createElement('div'); b.className='blink';
+    b.style.cssText=`left:${8+i*15}%;top:${10+(i%2)*8}px;background:${colors[i%4]};box-shadow:0 0 8px ${colors[i%4]};animation-delay:${i*.25}s`; el.appendChild(b); }
+  // security cameras
+  for(let i=0;i<2;i++){ const c=document.createElement('div'); c.className='cam';
+    c.textContent='📹'; c.style.cssText+=`;top:6px;${i?'right:10px':'left:10px'};animation-delay:${i*.8}s`; el.appendChild(c); }
+  // scene-specific prop line at the bottom
+  const props={vault:'🔒 🏦 💰 🔒',train:'🚆 🕹️ 📶 🚦',museum:'🏛️ 🖼️ 💎 🔦',airport:'🛫 📡 🗼 🛬',
+    lab:'🧪 ⚗️ 🔬 ☢️',sub:'⚓ 🧭 📡 🌊',space:'🛰️ 🪐 🌌 🚀',military:'🎖️ 🚀 📡 🛡️'}[m.scene]||'🔒';
+  const p=document.createElement('div'); p.style.cssText='position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:20px;opacity:.5;letter-spacing:8px'; p.textContent=props; el.appendChild(p);
+}
+
+/* ---------- GAME STATE ---------- */
+let G=null, tick=null;
+function startMission(idx){
+  const m=MISSIONS[idx];
+  // show a quick "decrypting" splash so bigger codes generate without a visible freeze
+  overlay(`<div class="em">🔓</div><div class="big">Decrypting…</div><div style="color:var(--dim);font-size:13px">${m.name}</div>`);
+  actx(); if(ac&&ac.state==='suspended')ac.resume();
+  setTimeout(()=>{ _beginMission(idx,m); closeOv(); }, 60);
+}
+function _beginMission(idx,m){
+  const built=buildMission(m.len);
+  G={ idx, m, secret:built.secret, clues:built.clues, entry:new Array(m.len).fill(null), cursor:0, time:m.time, frozen:0,
+      attempts:0, cluesFound:0, dead:new Set(), started:Date.now(), over:false };
+  document.getElementById('gName').textContent=m.name;
+  document.getElementById('gDiff').textContent=m.len+'-digit code · '+DIFF_LABEL[m.diff];
+  document.getElementById('gCoins').textContent=S.coins;
+  buildScene(document.getElementById('scene'),m);
+  renderObjs(); renderClues(); renderDisplay(); renderKeypad(); renderHelp();
+  updTimer();
+  go('game');
+  actx(); startMusic();
+  clearInterval(tick);
+  tick=setInterval(()=>{ if(G.over)return; if(G.frozen>0){G.frozen--; updTimer(); return;} G.time--; updTimer();
+    if(G.time<=0){ G.time=0; failMission(); } }, 1000);
+}
+function renderObjs(){
+  const wrap=document.getElementById('objs'); wrap.innerHTML='';
+  G.clues.forEach((cl,i)=>{
+    const d=document.createElement('div'); d.className='obj'+(cl.found?' found':'');
+    d.innerHTML=`<div class="dot"></div><div class="oe">${cl.obj[0]}</div><div class="ol">${cl.obj[1]}</div>`;
+    d.onclick=()=>investigate(i,d); wrap.appendChild(d);
+  });
+}
+function investigate(i,el){
+  const cl=G.clues[i];
+  if(!cl.found){ cl.found=true; G.cluesFound++; S.stats.clues++; save(); SFX.found(); el.classList.add('found'); renderClues(); }
+  else SFX.click();
+  toast('🔎 '+cl.obj[1]+': '+cl.text.replace(/\.$/,''));
+}
+function renderClues(){
+  const c=document.getElementById('clues'); const found=G.clues.filter(x=>x.found);
+  if(!found.length){ c.innerHTML='<div class="clue empty">Tap the objects above to uncover clues…</div>'; return; }
+  c.innerHTML=found.map(x=>`<div class="clue"><span class="ci">${x.obj[0]}</span><span>${x.text}</span></div>`).join('');
+}
+function renderDisplay(){
+  const d=document.getElementById('display'); d.innerHTML='';
+  for(let i=0;i<G.m.len;i++){ const s=document.createElement('div');
+    const v=G.entry[i]; const filled=v!=null;
+    s.className='slot'+(filled?' filled':'')+(i===G.cursor?' active':'');
+    s.textContent=filled?v:'·';
+    s.onclick=()=>{ if(G.over)return; G.cursor=i; SFX.click(); renderDisplay(); }; // tap any box to edit it
+    d.appendChild(s); }
+}
+function renderKeypad(){
+  const k=document.getElementById('keypad'); k.innerHTML='';
+  for(let n=1;n<=9;n++) k.appendChild(mkKey(String(n)));
+  k.appendChild(mkKey('C','clr'));
+  k.appendChild(mkKey('0'));
+  k.appendChild(mkKey('✓','confirm'));
+}
+function mkKey(label,cls){
+  const b=document.createElement('button'); b.className='key'+(cls?' '+cls:'');
+  b.textContent= label==='C'?'⌫': label;
+  if(/[0-9]/.test(label) && G.dead.has(+label)) b.classList.add('dead');
+  b.onclick=()=>{ if(cls==='clr') back(); else if(cls==='confirm') confirmCode(); else press(+label); };
+  return b;
+}
+function press(n){ if(G.over)return; if(G.dead.has(n)){SFX.error();return;}
+  G.entry[G.cursor]=n; SFX.key();
+  // jump to the next empty box on the right; if none, stay put
+  let nx=G.cursor+1; while(nx<G.m.len && G.entry[nx]!=null) nx++;
+  if(nx<G.m.len) G.cursor=nx;
+  renderDisplay(); }
+function back(){ if(G.over)return;
+  // delete the digit in the selected box; if it's already empty, step left and clear that one
+  if(G.entry[G.cursor]!=null){ G.entry[G.cursor]=null; }
+  else if(G.cursor>0){ G.cursor--; G.entry[G.cursor]=null; }
+  SFX.click(); renderDisplay(); }
+function confirmCode(){
+  if(G.over)return;
+  if(G.entry.some(x=>x==null)){ toast('Enter all '+G.m.len+' digits'); SFX.error(); return; }
+  G.attempts++; S.stats.attempts++;
+  const ok=G.entry.every((d,i)=>d===G.secret[i]);
+  if(ok){ save(); winMission(); }
+  else{ save(); SFX.error(); const kp=document.getElementById('keypad'); kp.classList.remove('shake'); void kp.offsetWidth; kp.classList.add('shake');
+    G.time=Math.max(1,G.time-10); updTimer(); toast('❌ Access denied — 10s penalty'); G.entry=new Array(G.m.len).fill(null); G.cursor=0; renderDisplay(); }
+}
+function updTimer(){
+  const t=document.getElementById('gTimer'); const mm=Math.floor(G.time/60), ss=G.time%60;
+  t.textContent=mm+':'+String(ss).padStart(2,'0');
+  t.className='timer'+(G.time<=10?' crit':G.time<=30?' warn':'')+(G.frozen>0?' warn':'');
+  if(G.frozen>0) t.textContent='❄ '+t.textContent;
+}
+function renderHelp(){
+  const h=document.getElementById('helprow'); h.innerHTML='';
+  GADGETS.forEach(g=>{ const n=S.items[g.id]||0; const d=document.createElement('div');
+    d.className='help'+(n<=0?' disabled':''); d.innerHTML=`<span class="he">${g.em}</span>${g.name.split(' ')[0]} <span class="hc">×${n}</span>`;
+    d.onclick=()=>useGadget(g.id); h.appendChild(d); });
+}
+function useGadget(id){
+  if((S.items[id]||0)<=0){ toast('None left — buy in Shop 🛒'); SFX.error(); return; }
+  if(id==='hint'){ const un=G.clues.map((c,i)=>({c,i})).filter(x=>!x.c.found);
+    if(!un.length){ toast('All clues already found'); return; }
+    const pick=un[Math.floor(Math.random()*un.length)];
+    S.items.hint--; const el=document.getElementById('objs').children[pick.i]; investigate(pick.i,el); }
+  else if(id==='freeze'){ S.items.freeze--; G.frozen+=10; updTimer(); SFX.buy(); toast('❄️ Timer frozen for 10s'); }
+  else if(id==='analyzer'){ const cand=[]; for(let d=0;d<=9;d++) if(G.secret.indexOf(d)===-1 && !G.dead.has(d)) cand.push(d);
+    if(!cand.length){ toast('No wrong digits left to rule out'); return; }
+    const d=cand[Math.floor(Math.random()*cand.length)]; G.dead.add(d); S.items.analyzer--; renderKeypad(); SFX.buy(); toast('🔬 Digit '+d+' is NOT in the code'); }
+  save(); renderHelp();
+}
+function winMission(){
+  G.over=true; clearInterval(tick); stopMusic(); SFX.success();
+  const solveTime=G.m.time-G.time;
+  const timeBonus=G.time*2;
+  const accuracy=Math.round(100*1/G.attempts);
+  const firstClear=(G.idx>=S.completed);
+  let coins=COIN_BASE[G.m.diff]+timeBonus+(G.attempts===1?40:0);
+  if(!firstClear) coins=Math.floor(coins*0.3);   // replays give a reduced payout (no farming)
+  S.coins+=coins;
+  // stats
+  S.stats.solves++;
+  S.stats.streak++; if(S.stats.streak>S.stats.bestStreak) S.stats.bestStreak=S.stats.streak;
+  if(!S.stats.fastest || solveTime<S.stats.fastest) S.stats.fastest=solveTime;
+  if(firstClear){ S.completed=G.idx+1; S.stats.completed=Math.max(S.stats.completed,S.completed); }
+  if(G.idx+1>S.unlocked && G.idx+1<MISSIONS.length) S.unlocked=G.idx+1;
+  save(); refreshMenu();
+  overlay(`<div class="em">🔓</div><div class="big">Mission Complete</div>
+    <div style="color:var(--dim);font-size:13px">${G.m.name}</div>
+    <div class="ovstats">
+      <div class="ovstat"><span>⏱️ Time Remaining</span><b>${Math.floor(G.time/60)}:${String(G.time%60).padStart(2,'0')}</b></div>
+      <div class="ovstat"><span>🪙 Coins Earned</span><b>+${coins}</b></div>
+      <div class="ovstat"><span>🎯 Accuracy</span><b>${accuracy}%</b></div>
+      <div class="ovstat"><span>🔥 Streak</span><b>${S.stats.streak}</b></div>
+    </div>
+    <div class="ovbtns">
+      <button class="btn ghost" onclick="CB.closeOv();CB.go('missions')">Missions</button>
+      ${G.idx+1<MISSIONS.length?`<button class="btn primary" onclick="CB.closeOv();CB.startMission(${G.idx+1})">Next Mission ›</button>`:`<button class="btn primary" onclick="CB.closeOv();CB.go('menu')">Finish</button>`}
+    </div>`);
+}
+function failMission(){
+  G.over=true; clearInterval(tick); stopMusic(); SFX.fail();
+  S.stats.streak=0; save();
+  overlay(`<div class="em">🚨</div><div class="big">Time's Up!</div>
+    <div style="color:var(--dim);font-size:13px">The vault sealed. The code was <b class="mono" style="color:var(--danger)">${G.secret.join('')}</b></div>
+    <div class="ovbtns" style="margin-top:20px">
+      <button class="btn ghost" onclick="CB.closeOv();CB.go('missions')">Missions</button>
+      <button class="btn primary" onclick="CB.closeOv();CB.startMission(${G.idx})">Retry</button>
+    </div>`);
+}
+
+/* ---------- SCREENS ---------- */
+function go(id){ SFX && SFX.click&&SFX.click(); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if(id==='missions') renderMissions();
+  if(id==='shop') renderShop();
+  if(id==='stats') renderStats();
+  if(id==='settings') renderSettings();
+  if(id==='menu') refreshMenu();
+  if(id!=='game') stopMusic();
+}
+function refreshMenu(){
+  document.getElementById('mLevel').textContent=1+S.completed;
+  document.getElementById('mCoins').textContent=S.coins;
+  document.getElementById('mDone').textContent=S.completed;
+}
+function renderMissions(){
+  const l=document.getElementById('mlist'); l.innerHTML='';
+  MISSIONS.forEach((m,i)=>{
+    const locked=i>S.unlocked; const done=i<S.completed;
+    const d=document.createElement('div'); d.className='mcard'+(locked?' locked':'');
+    d.innerHTML=`<div class="em">${locked?'🔒':m.em}</div>
+      <div class="mi"><div class="mn">${i+1}. ${m.name}</div>
+        <div class="md">${m.len}-digit code · ${m.time%60===0?(m.time/60)+' min':m.time+'s'} ${done?'· <span class="done">✔ Cleared</span>':''}</div></div>
+      <div class="pill ${m.diff}">${DIFF_LABEL[m.diff]}</div>`;
+    if(!locked) d.onclick=()=>startMission(i); else d.onclick=()=>{toast('🔒 Clear the previous mission first');SFX.error();};
+    l.appendChild(d);
+  });
+}
+function renderShop(){
+  document.getElementById('shopCoins').textContent=S.coins;
+  const tl=document.getElementById('themeList'); tl.innerHTML='';
+  THEMES.forEach(t=>{ const owned=S.themes.indexOf(t.id)>=0; const eq=S.theme===t.id;
+    const r=document.createElement('div'); r.className='srow';
+    let btn = eq?`<button class="buy equipped" disabled>Equipped</button>`
+      : owned?`<button class="buy owned" onclick="CB.equip('${t.id}')">Equip</button>`
+      : `<button class="buy ${S.coins>=t.price?'':'cant'}" onclick="CB.buyTheme('${t.id}')">🪙 ${t.price}</button>`;
+    r.innerHTML=`<span class="se">${t.em}</span><div class="si"><div class="st">${t.name}</div><div class="sd">${owned?'Owned':'Theme skin'}</div></div>${btn}`;
+    tl.appendChild(r); });
+  const il=document.getElementById('itemList'); il.innerHTML='';
+  GADGETS.forEach(g=>{ const r=document.createElement('div'); r.className='srow';
+    r.innerHTML=`<span class="se">${g.em}</span><div class="si"><div class="st">${g.name} <span style="color:var(--accent);font-family:var(--mono)">×${S.items[g.id]||0}</span></div><div class="sd">${g.desc}</div></div>
+      <button class="buy ${S.coins>=g.price?'':'cant'}" onclick="CB.buyItem('${g.id}')">🪙 ${g.price}</button>`;
+    il.appendChild(r); });
+}
+function buyTheme(id){ const t=THEMES.find(x=>x.id===id); if(S.themes.indexOf(id)>=0)return;
+  if(S.coins<t.price){ toast('Not enough coins'); SFX.error(); return; }
+  S.coins-=t.price; S.themes.push(id); S.theme=id; applyTheme(); save(); SFX.buy(); toast('✅ '+t.name+' unlocked & equipped'); renderShop(); }
+function equip(id){ S.theme=id; applyTheme(); save(); SFX.click(); toast('🎨 Theme equipped'); renderShop(); }
+function buyItem(id){ const g=GADGETS.find(x=>x.id===id); if(S.coins<g.price){ toast('Not enough coins'); SFX.error(); return; }
+  S.coins-=g.price; S.items[id]=(S.items[id]||0)+1; save(); SFX.buy(); toast('✅ '+g.name+' +1'); renderShop(); }
+function applyTheme(){ const t=THEMES.find(x=>x.id===S.theme)||THEMES[0];
+  document.body.className=''; if(t.cls) document.body.classList.add(t.cls); }
+function renderStats(){
+  const st=S.stats; const rate=st.attempts? Math.round(100*st.solves/st.attempts):0;
+  const items=[['🎖️',1+S.completed,'Agent Level'],['✔️',st.completed,'Missions Cleared'],
+    ['⚡',st.fastest?st.fastest+'s':'—','Fastest Solve'],['🔎',st.clues,'Clues Found'],
+    ['🎯',rate+'%','Success Rate'],['🔥',st.bestStreak,'Highest Streak']];
+  document.getElementById('statgrid').innerHTML=items.map(x=>`<div class="stat"><div class="sv">${x[1]}</div><div class="sl">${x[2]}</div></div>`).join('');
+}
+function renderSettings(){ document.getElementById('tgSfx').classList.toggle('on',S.sfx);
+  document.getElementById('tgMusic').classList.toggle('on',S.music); }
+function toggle(k){ S[k]=!S[k]; save(); renderSettings(); if(k==='music'){ if(S.music){actx();startMusic();} else stopMusic(); } SFX.click(); }
+function resetProgress(){ if(!confirm('Reset ALL progress, coins, and unlocks?'))return; S=JSON.parse(JSON.stringify(DEFAULT)); save(); applyTheme(); refreshMenu(); go('menu'); toast('Progress reset'); }
+function quitToMissions(){ if(G && !G.over){ G.over=true; clearInterval(tick); stopMusic(); } go('missions'); }
+
+/* ---------- helpers ---------- */
+let toastT=null;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+function overlay(html){ document.getElementById('ovcard').innerHTML=html; document.getElementById('ov').classList.add('on'); }
+function closeOv(){ document.getElementById('ov').classList.remove('on'); }
+
+/* ---------- init ---------- */
+applyTheme(); refreshMenu();
+document.getElementById('menu').classList.add('on');
+// resume audio on first interaction (autoplay policy)
+document.addEventListener('pointerdown',function once(){ actx(); if(ac&&ac.state==='suspended')ac.resume(); document.removeEventListener('pointerdown',once); },{once:true});
+
+return { go, startMission, buyTheme, equip, buyItem, toggle, resetProgress, quitToMissions, closeOv,
+  // expose for tests
+  _buildMission:buildMission, _makeCluePool:makeCluePool };
+})();
+</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+</body>
+</html>

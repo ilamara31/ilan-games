@@ -51,6 +51,7 @@
   .paper   { background:linear-gradient(135deg,#2bbd5a,#0e3a22); }
   .stack   { background:linear-gradient(135deg,#ffb13d,#b8005a); }
   .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
+  .codebreaker { background:linear-gradient(135deg,#123a6b,#05081c); }
   /* ===== Game of the Day / Week + Passport ===== */
   #feats { width:100%; max-width:900px; display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   #passport { width:100%; max-width:900px; margin-bottom:18px; }
@@ -148,6 +149,12 @@
   <div id="uotw"></div>
   <div id="passport"></div>
   <div class="cards">
+    <a class="card codebreaker" href="codebreaker/">
+      <span class="badge new">NEW</span>
+      <span class="emoji">🕵️</span>
+      <h2>Codebreaker: Secret Agent</h2>
+      <p>Crack the secret code before time runs out — investigate the room, find clues, break in.</p>
+    </a>
     <a class="card thisorthat" href="thisorthat/">
       <span class="emoji">🆚</span>
       <h2>This or That</h2>
@@ -551,7 +558,7 @@
       'anime-tycoon/': { updated: '2026-06-27T19:00:00' },
       'catch/':        { updated: '2026-06-27T12:00:00' },
       'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
-      'fruit-arena/':  { added:   '2026-06-28T12:00:00' },   // new game
+      'fruit-arena/':  { updated: '2026-07-08T18:45:00' },   // fruit storm: no life loss on miss + no bombs
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
     };
     (function(){
