@@ -1111,7 +1111,9 @@ function onNet(kind,payload){
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
   if(kind==='move'){ if(G.online && payload.matchId===G.matchId){
       if(payload.ball===G.ballIndex){ G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
-      else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; } } return; }
+      else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
+      else if(G.moveHist && G.moveHist[payload.ball]!=null){ MP.send('move',{matchId:G.matchId, ball:payload.ball, num:G.moveHist[payload.ball]}); } // opponent is a ball behind → re-send my move for that ball so they catch up
+    } return; }
   if(kind==='result'){ hostOnResult(payload); return; }
   if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
   if(kind==='done'){ if(!R.isHost) clientOnDone(payload); return; }
@@ -1154,7 +1156,7 @@ function beginNetMatch(m){
   const myside = (myId===m.a)?'a':'b';
   newMatch({mode:m.mode, type:'quick', opp:'friend', online:true, host:MP.isHost, myside});
   G.matchId=m.matchId; G.matchAId=m.a; G.matchBId=m.b; G.oppId=(myside==='a'?m.b:m.a);
-  G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko;
+  G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko; G.moveHist={};
   G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
   G.firstBat=m.batFirst;
   $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+(m.mode==='crazy'?'Crazy':'Normal');
@@ -1171,13 +1173,17 @@ function onlineNextBall(){
 }
 function onlinePick(n){
   if(G.busy || G.myNum!=null) return;
-  Sound.pick(); G.myNum=n;
+  Sound.pick(); G.myNum=n; (G.moveHist=G.moveHist||{})[G.ballIndex]=n;
   const chosen=$('pad').querySelector('.num[data-n="'+n+'"]'); if(chosen)chosen.classList.add('chosen');
   padLock(true);
   MP.send('move',{matchId:G.matchId, ball:G.ballIndex, num:n});
   $('prompt').textContent='Waiting for opponent…';
   tryResolveOnline();
 }
+// resilience: while waiting for the opponent's move, keep re-broadcasting mine (dropped
+// broadcasts / a 1-ball drift no longer soft-lock the match — it self-heals in ~1s).
+setInterval(()=>{ if(G.online && cur==='game' && !G.busy && G.myNum!=null && G.oppNum==null && G.matchId){
+  MP.send('move',{matchId:G.matchId, ball:G.ballIndex, num:G.myNum}); } }, 900);
 function tryResolveOnline(){
   if(G.busy || G.myNum==null || G.oppNum==null) return;
   clearAfk(); G.busy=true;
