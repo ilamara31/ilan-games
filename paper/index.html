@@ -291,7 +291,7 @@ const MP={
         s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); }); }
     if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}});
     return this.sb; },
-  _wire(ch){ ['lobby','begin','state','dir','gameover','rematch','rematchack','ihost'].forEach(ev=>
+  _wire(ch){ ['lobby','begin','state','dir','gameover','rematch','rematchack','ihost','hello'].forEach(ev=>
       ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
     ch.on('presence',{event:'sync'},()=>onNet('presence'));
     ch.on('presence',{event:'join'},()=>onNet('presence'));
@@ -334,26 +334,45 @@ function showRoomChoice(){ const el=ovEl(); el.innerHTML=
   '<div class="card"><div class="lbl">Have a code?</div><input id="jCode" maxlength="4" placeholder="CODE" /><button class="btn" id="jRoom" style="margin-top:10px;padding:12px 30px;font-size:16px">🔑 Join</button></div>'+
   '<a class="ghost" id="mpBack">← Back</a>';
   el.classList.remove('hidden');
-  document.getElementById('mkRoom').onclick=createRoom;
-  document.getElementById('jRoom').onclick=()=>joinRoom((document.getElementById('jCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
+  document.getElementById('mkRoom').onclick=function(){ createRoom(); };   // no arg — button passes an Event
+  const jc=document.getElementById('jCode');
+  const doJoin=()=>joinRoom((jc.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
+  document.getElementById('jRoom').onclick=doJoin;
+  jc.addEventListener('keydown',e=>{ if(e.key==='Enter') doJoin(); });
   document.getElementById('mpBack').onclick=()=>{ el.classList.add('hidden'); document.getElementById('ov').classList.remove('hidden'); };
 }
-async function createRoom(code){ code=code||genCode();
-  RM={ code, isHost:true, hostId:myId, phase:'lobby', players:[], seq:0, lastDir:null }; mpToast('Creating room…');
-  try{ await MP.open(code,true); hostLobbyUpdate(); }catch(e){ mpToast('Connection failed'); leaveRoom(); }
+async function createRoom(code){ code=(typeof code==='string' && code.length>=4)?code:genCode();
+  RM={ code, isHost:true, hostId:myId, phase:'lobby', players:[{id:myId,name:PNAME}], seq:0, lastDir:null };
+  renderLobby();                                   // show the code IMMEDIATELY so you can share it
+  try{ await MP.open(code,true); hostLobbyUpdate(); }catch(e){ mpToast('Connection failed — check internet'); leaveRoom(); }
 }
 async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-letter code'); return; }
-  RM={ code, isHost:false, hostId:null, phase:'lobby', players:[], lastSeq:0 }; mpToast('Joining…');
-  try{ await MP.open(code,false); MP.send('hello',{}); renderLobby(); }catch(e){ mpToast('Connection failed'); leaveRoom(); }
+  RM={ code, isHost:false, hostId:null, phase:'joining', players:[], lastSeq:0 };
+  showJoining(code);
+  try{ await MP.open(code,false); MP.send('hello',{});
+    setTimeout(()=>{ if(RM&&RM.phase==='joining') MP.send('hello',{}); }, 1500);   // retry in case the first was missed
+    RM._jt=roomTimer(()=>{ if(RM && RM.phase==='joining') roomNotFound(code); }, 6000);  // no host answered → room doesn't exist
+  }catch(e){ mpToast('Connection failed — check internet'); leaveRoom(); }
 }
+function showJoining(code){ const el=ovEl(); el.innerHTML=
+  '<h1 style="font-size:28px">Joining…</h1><div class="big" style="letter-spacing:10px">'+esc(code)+'</div>'+
+  '<div class="sub">Looking for the room…</div><a class="ghost" id="jCancel" style="margin-top:8px">← Cancel</a>';
+  el.classList.remove('hidden'); document.getElementById('jCancel').onclick=leaveRoom; }
+function roomNotFound(code){ try{ MP.leave(); }catch(e){} RM=null; const el=ovEl(); el.innerHTML=
+  '<h1 style="font-size:26px">😕 Room not found</h1>'+
+  '<div class="sub">There\'s no room with code <b>'+esc(code)+'</b> right now. Double-check the code with your friend (rooms are case-insensitive), or start your own.</div>'+
+  '<button class="btn" id="tryAgain">🔁 Try another code</button>'+
+  '<a class="ghost" id="mkInstead" style="margin-top:10px">➕ Create a room instead</a>';
+  el.classList.remove('hidden'); document.getElementById('tryAgain').onclick=showRoomChoice; document.getElementById('mkInstead').onclick=()=>createRoom(); }
 function hostLobbyUpdate(){ if(!RM||!RM.isHost)return; RM.players=MP.presenceList().slice(0,MAXP); RM.hostId=myId;
   MP.send('lobby',{hostId:myId,players:RM.players}); renderLobby(); }
 function renderLobby(){ if(!RM)return; const el=ovEl(); const ps=RM.players||[]; const slots=[];
   for(let s=0;s<MAXP;s++){ const h=ps[s]; slots.push('<div class="prow"><span class="dot" style="background:'+COLS[s].b+'"></span>'+
     (h? ('<b>'+esc(h.name)+'</b>'+(h.id===RM.hostId?' <span class="tag">HOST</span>':'')+(h.id===myId?' <span style="color:#7dff9b;font-size:12px">• you</span>':'')) : '<span class="mini">🤖 Bot</span>')+'</div>'); }
-  el.innerHTML='<h1 style="font-size:30px">Room '+RM.code+'</h1>'+
-    '<div class="row" style="margin:2px 0 8px"><button class="ghost" id="shWA">🟢 WhatsApp</button><button class="ghost" id="shCopy">🔗 Copy link</button></div>'+
-    '<div class="lbl">Players — spots fill with bots</div><div class="plist">'+slots.join('')+'</div>'+
+  el.innerHTML='<div class="lbl" style="margin-bottom:2px">Room Code — share it 👇</div>'+
+    '<div class="big" style="font-size:clamp(46px,15vw,64px);letter-spacing:12px;color:#5ef0ff;filter:drop-shadow(0 3px 14px rgba(94,240,255,.4))">'+esc(RM.code)+'</div>'+
+    '<div class="row" style="margin:2px 0 10px"><button class="ghost" id="shWA">🟢 WhatsApp</button><button class="ghost" id="shCopy">🔗 Copy link</button></div>'+
+    '<div class="lbl">Players — empty spots fill with bots</div><div class="plist">'+slots.join('')+'</div>'+
     (RM.isHost? '<button class="btn" id="goStart" style="margin-top:14px">▶ Start Game</button>' : '<div class="sub" style="margin-top:14px">Waiting for the host to start…</div>')+
     '<a class="ghost" id="lvRoom" style="margin-top:8px">← Leave</a>';
   el.classList.remove('hidden');
@@ -478,8 +497,9 @@ function becomeHost(){ MP.isHost=true; RM.isHost=true; mp.role='host'; mp.hostId
 function onNet(kind,payload){ if(!RM)return;
   if(!RM.isHost && payload && payload.seq!=null && ['begin','gameover','rematch'].indexOf(kind)>=0){ if(RM.lastSeq!=null && payload.seq<=RM.lastSeq)return; RM.lastSeq=payload.seq; }
   if(kind==='presence'){ if(RM.isHost&&RM.phase==='lobby') hostLobbyUpdate(); return; }
+  if(kind==='hello'){ if(RM.isHost&&RM.phase==='lobby') hostLobbyUpdate(); return; }   // a joiner announced themselves → resend the lobby
   if(kind==='leave'){ onLeave(payload); return; }
-  if(kind==='lobby'){ if(!RM.isHost){ RM.hostId=payload.hostId; RM.players=payload.players||[]; if(RM.phase==='lobby') renderLobby(); } return; }
+  if(kind==='lobby'){ if(!RM.isHost){ RM.hostId=payload.hostId; RM.players=payload.players||[]; if(RM.phase==='joining')RM.phase='lobby'; renderLobby(); } return; }
   if(kind==='begin'){ RM.phase='play'; if(!RM.isHost) applyBegin(payload); return; }
   if(kind==='state'){ applyState(payload); return; }
   if(kind==='dir'){ if(mp.role==='host' && payload && payload.ctrl!=null) mp.netDirs[payload.ctrl]=payload.dir; return; }
