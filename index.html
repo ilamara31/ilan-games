@@ -148,6 +148,20 @@
   <div id="feats"></div>
   <div id="uotw"></div>
   <div id="passport"></div>
+  <div id="search">
+    <input id="searchBox" type="search" placeholder="🔍 Search games…" autocomplete="off" spellcheck="false" />
+    <div id="cats">
+      <button class="cat on" data-cat="all">All</button>
+      <button class="cat" data-cat="multiplayer">🎮 Multiplayer</button>
+      <button class="cat" data-cat="3d">🧊 3D</button>
+      <button class="cat" data-cat="sports">⚽ Sports</button>
+      <button class="cat" data-cat="arcade">🕹️ Arcade</button>
+      <button class="cat" data-cat="puzzle">🧩 Puzzle</button>
+      <button class="cat" data-cat="mobile">📱 Mobile</button>
+      <button class="cat" data-cat="pc">💻 PC</button>
+    </div>
+  </div>
+  <div id="noResults">No games match — try another search.</div>
   <div class="cards">
     <a class="card codebreaker" href="codebreaker/">
       <span class="badge new">NEW</span>
@@ -655,6 +669,40 @@
       }).catch(fromLeaderboard);
   })();
   </script>
+<style>
+  #search{width:100%;max-width:900px;margin:0 auto 14px;padding:0 2px}
+  #searchBox{width:100%;padding:13px 18px;border-radius:26px;border:2px solid rgba(150,200,255,.25);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:600;outline:none;-webkit-appearance:none}
+  #searchBox:focus{border-color:#5ef0ff;background:rgba(255,255,255,.1)}
+  #searchBox::placeholder{color:#8fa0c8}
+  #cats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .cat{background:rgba(255,255,255,.06);border:1px solid rgba(150,200,255,.22);color:#cfe0ff;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;transition:.12s}
+  .cat.on{background:linear-gradient(135deg,#5ef0ff,#3aa0e8);color:#04203a;border-color:transparent}
+  #noResults{display:none;color:#9fb3d8;margin:22px auto;font-weight:700}
+</style>
+<script>
+/* Home-page search + category filters (Poki-style) */
+(function(){
+  const CATS={ 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
+    'obby/':['3d','arcade'], 'pptour/':['3d','sports'], 'f1/':['3d','sports'],
+    'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
+    'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'rescue/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
+    'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
+  const DEV={ 'catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'pc','try/':'pc' };
+  function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
+  const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
+  let activeCat='all', q='';
+  function apply(){ let shown=0; cards.forEach(function(c){ const href=c.getAttribute('href'); const h=c.querySelector('h2');
+      const name=(h?h.textContent:'').toLowerCase(); const tg=tags(href);
+      const okCat = activeCat==='all' || tg.indexOf(activeCat)>=0;
+      const okQ = !q || name.indexOf(q)>=0 || tg.some(function(t){return t.indexOf(q)>=0;});
+      const show = okCat && okQ; c.style.display = show?'':'none'; if(show)shown++; });
+    const nr=document.getElementById('noResults'); if(nr) nr.style.display = shown?'none':'block'; }
+  const box=document.getElementById('searchBox'); if(box) box.addEventListener('input',function(e){ q=(e.target.value||'').trim().toLowerCase(); apply(); });
+  const catbar=document.getElementById('cats'); if(catbar) catbar.addEventListener('click',function(e){ const b=e.target.closest('.cat'); if(!b)return; activeCat=b.getAttribute('data-cat');
+    Array.prototype.forEach.call(document.querySelectorAll('.cat'),function(x){ x.classList.toggle('on', x===b); }); apply(); });
+  window.__search={ apply:apply, setQuery:function(v){ q=(v||'').toLowerCase(); apply(); }, setCat:function(c){ activeCat=c; apply(); }, count:function(){ return cards.filter(function(c){return c.style.display!=='none';}).length; } };
+})();
+</script>
 <script src="supabase-config.js"></script>
 <script src="auth.js" defer></script>
 <script src="analytics.js" defer></script>

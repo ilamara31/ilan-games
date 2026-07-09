@@ -50,6 +50,9 @@
   <h1>🟩 PAPER TERRITORY</h1>
   <div class="sub">Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.<br>If a rival crosses your trail you pop — and don't cross your own, or hit the glowing wall! Own the most land.</div>
   <button class="btn" id="start">CLAIM ▶</button>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="mpBtn" style="background:linear-gradient(135deg,#7dc4ff,#2a7ad6);color:#04203a;padding:13px 30px;font-size:17px">🎮 Play with Friends</button>
+  </div>
   <div class="sub" id="best" style="margin-top:14px"></div>
   <div class="row">
     <a class="ghost" id="tutBtn">📖 Tutorial</a>
@@ -57,6 +60,24 @@
     <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('paper','Paper Territory')">🏆 Leaderboard</a>
     <a class="ghost" href="../">🏠 All Games</a>
   </div>
+</div>
+
+<!-- multiplayer overlay (room / lobby / rematch) — content set from JS -->
+<div id="mpov" class="hidden" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:6;padding:20px;background:rgba(8,8,16,.8);overflow-y:auto">
+</div>
+<style>
+  #mpov.hidden{display:none !important}
+  #mpov .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;width:100%;max-width:420px;margin:8px 0}
+  #mpov input{background:rgba(0,0,0,.35);border:1px solid rgba(150,200,255,.3);border-radius:12px;padding:12px;color:#fff;font-size:22px;font-weight:900;text-align:center;letter-spacing:6px;text-transform:uppercase;width:100%}
+  #mpov .plist{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
+  #mpov .prow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;font-weight:700;text-align:left}
+  #mpov .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto}
+  #mpov .lbl{font-size:12px;font-weight:900;letter-spacing:1.5px;color:#9fb3d8;text-transform:uppercase}
+  #mpov .mini{font-size:13px;color:#bcc6e6}
+  #mpov .tag{font-size:11px;font-weight:900;padding:2px 8px;border-radius:999px;background:rgba(125,196,255,.2);color:#7dc4ff}
+</style>
+<div id="mpmsg" class="hidden" style="position:fixed;top:0;left:0;right:0;text-align:center;z-index:7;pointer-events:none;padding-top:max(10px,env(safe-area-inset-top))">
+  <span id="mpmsgt" style="display:inline-block;background:rgba(8,12,20,.85);border:1px solid rgba(150,200,255,.3);border-radius:999px;padding:8px 18px;font-weight:800;font-size:14px"></span>
 </div>
 <script>
 "use strict";
@@ -75,6 +96,10 @@ function layout(){ cell=Math.floor(Math.min(W/GW, H/GH)); offx=(W-cell*GW)/2; of
 resize();
 const idx=(x,y)=>y*GW+x;
 const COLS=[ {b:'#2bbd5a',t:'#7dff9b'}, {b:'#c0392b',t:'#ff7b6b'}, {b:'#2a7ad6',t:'#7dc4ff'}, {b:'#d98b1e',t:'#ffd07a'} ];
+let colMap=[0,1,2,3];   // player id -> colour index (shuffled in multiplayer)
+
+/* multiplayer state (see the ONLINE section far below) */
+const mp={ on:false, role:null, slot:0, netDirs:{}, tick:0, winner:0, players:null };
 
 let owner, trail, players, state='menu', mvT, msg, msgT, parts, milestone;
 function stamp(id,cx,cy){ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const x=cx+dx,y=cy+dy; if(x>=0&&x<GW&&y>=0&&y<GH) owner[idx(x,y)]=id; } }
@@ -122,33 +147,36 @@ function start(){ document.getElementById('ov').classList.add('hidden'); state='
   const me=spawnPlayer(1, GW>>1, GH-6, 0); players.push(me); stamp(1,me.x,me.y);
   const spots=[[8,8,1],[GW-8,10,3],[GW>>1,18,2]];
   for(let i=0;i<3;i++){ const id=i+2; const p=spawnPlayer(id, spots[i][0], spots[i][1], spots[i][2]); players.push(p); stamp(id,p.x,p.y); } }
-function colOf(id){ return COLS[(id-1)%COLS.length]; }
+function colOf(id){ return COLS[ colMap[(id-1)%COLS.length] % COLS.length ]; }
 function pct(id){ let c=0; for(let i=0;i<owner.length;i++) if(owner[i]===id)c++; return c/(GW*GH)*100; }
 
-function kill(p){ if(!p.alive)return; p.alive=false;
+function kill(p){ if(!p||!p.alive)return; p.alive=false;
   for(let i=0;i<trail.length;i++) if(trail[i]===p.id) trail[i]=0;
   for(let i=0;i<10;i++)parts.push({x:offx+(p.x+.5)*cell,y:offy+(p.y+.5)*cell,vx:rand(-180,180),vy:rand(-180,180),life:.6,c:colOf(p.id).t});
   sfx(160,.12,'sawtooth');
+  if(mp.on){ p.out=true; return; }                    // MP: out for good (their claimed land stays); win checked after the step
   if(p.human){ gameOver(); } else { for(let i=0;i<owner.length;i++) if(owner[i]===p.id) owner[i]=0; p.respT=2.0; } }
 function respawn(p){ let cx=ri(4,GW-4), cy=ri(4,GH-4); p.x=cx;p.y=cy;p.dir=ri(0,4);p.ndir=p.dir;p.onTrail=false;p.alive=true; stamp(p.id,cx,cy); }
 
 const DIRS=[[1,0],[0,1],[-1,0],[0,-1]];
 function step(){
   for(const p of players){
-    if(!p.alive){ p.respT-=mvStep; if(p.respT<=0) respawn(p); continue; }
-    if(p.human){ if(!opposite(p.ndir,p.dir)) p.dir=p.ndir; } else botThink(p);
+    if(!p.alive){ if(mp.on){ continue; } p.respT-=mvStep; if(p.respT<=0) respawn(p); continue; }  // MP: killed = out for good
+    if(p.human){ let nd = mp.on ? mp.netDirs[p.ctrl] : p.ndir; if(nd==null) nd=p.dir; if(!opposite(nd,p.dir)) p.dir=nd; } else botThink(p);
     const nx=p.x+DIRS[p.dir][0], ny=p.y+DIRS[p.dir][1];
     if(nx<0||nx>=GW||ny<0||ny>=GH){ if(tutMode&&p.human){continue;} kill(p); continue; }
     const ti=trail[idx(nx,ny)];
     if(ti!==0){ if(ti===p.id){ if(tutMode&&p.human){continue;} kill(p); continue; } else { kill(players.find(q=>q.id===ti)); } }
+    if(!p.alive) continue;                 // p may have been killed above (own trail / wall)
     p.x=nx; p.y=ny;
     const o=owner[idx(nx,ny)];
     if(o===p.id){ if(p.onTrail) closeTrail(p); }
     else { trail[idx(nx,ny)]=p.id; p.onTrail=true; }
   }
+  if(mp.on){ if(mp.role==='host') mpCheckWin(); return; }
   // human milestone celebration (10/20/30/50%)
-  if(players[0] && players[0].alive){ const mp=pct(1);
-    for(const m of [10,20,30,50,70]){ if(mp>=m && milestone<m){ milestone=m; msg=(m>=50?'🏆 ':'🎉 ')+m+'% claimed!'; msgT=1.0; sfx(700,.12,'square'); } } }
+  if(players[0] && players[0].alive){ const m0=pct(1);
+    for(const m of [10,20,30,50,70]){ if(m0>=m && milestone<m){ milestone=m; msg=(m>=50?'🏆 ':'🎉 ')+m+'% claimed!'; msgT=1.0; sfx(700,.12,'square'); } } }
 }
 function opposite(a,b){ return (a+2)%4===b; }
 function closeTrail(p){ for(let i=0;i<trail.length;i++) if(trail[i]===p.id){ owner[i]=p.id; trail[i]=0; } fill(p); p.onTrail=false;
@@ -169,10 +197,10 @@ function botThink(p){
   if(nx<0||nx>=GW||ny<0||ny>=GH){ for(let k=0;k<4;k++){ if(opposite(k,p.dir))continue; const ax=p.x+DIRS[k][0],ay=p.y+DIRS[k][1]; if(ax>=0&&ax<GW&&ay>=0&&ay<GH){p.dir=k;break;} } } }
 function nearestOwn(p){ let bd=1e9,bx=null,by=null; for(let y=0;y<GH;y+=2)for(let x=0;x<GW;x+=2){ if(owner[idx(x,y)]===p.id){ const d=Math.abs(x-p.x)+Math.abs(y-p.y); if(d<bd){bd=d;bx=x;by=y;} } } return bx==null?null:{x:bx,y:by}; }
 
-function gameOver(){ state='over'; showPad(false); const mp=Math.round(pct(1)); if(mp>best){ best=mp; saveBest(); }
+function gameOver(){ state='over'; showPad(false); const pv=Math.round(pct(1)); if(pv>best){ best=pv; saveBest(); }
   try{ if(window.IGAuth) IGAuth.submitScore('paper', best); }catch(e){}
   const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='💥 POPPED!'; ov.querySelector('.sub').innerHTML='A rival crossed your trail, you crossed your own — or you hit the wall!';
-  ov.querySelector('#start').textContent='PLAY AGAIN ▶'; ov.querySelector('#best').innerHTML='<div class="big">'+mp+'%</div>claimed this run • Best: '+best+'%';
+  ov.querySelector('#start').textContent='PLAY AGAIN ▶'; ov.querySelector('#best').innerHTML='<div class="big">'+pv+'%</div>claimed this run • Best: '+best+'%';
   setTimeout(()=>ov.classList.remove('hidden'),500); }
 
 function drawArenaBorder(){
@@ -190,33 +218,38 @@ function drawArenaBorder(){
     ctx.beginPath(); ctx.moveTo(cx+sx*L, cy+sy*(bw/2)); ctx.lineTo(cx+sx*(bw/2), cy+sy*(bw/2)); ctx.lineTo(cx+sx*(bw/2), cy+sy*L); ctx.stroke(); }
   ctx.lineCap='butt';
 }
-const mvStep=0.062; let last=0;
+const mvStep=0.062, mvStepMP=0.11; let last=0;
 function loop(now){ requestAnimationFrame(loop); const dt=Math.min(.05,(now-last)/1000||0); last=now;
   if(state==='play'){ if(!tutMode || tutPhase==='act'){ mvT+=dt; while(mvT>=mvStep){ mvT-=mvStep; step(); if(state!=='play')break; } } if(tutMode) tutTick(); }
+  else if(mp.on && state==='mpplay' && mp.role==='host'){ mvT+=dt; let n=0; while(mvT>=mvStepMP && n++<4){ mvT-=mvStepMP; step(); mp.tick++; if(state!=='mpplay')break; } mpBroadcastState(); }
   if(msgT>0)msgT-=dt;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#11131f'; ctx.fillRect(0,0,W,H);
   const tlw=Math.max(1.5, cell*0.22);
-  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ const i=idx(x,y); const t=trail[i], o=owner[i];
+  if(owner) for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ const i=idx(x,y); const t=trail[i], o=owner[i];
     const px=offx+x*cell, py=offy+y*cell;
     if(t){ const c=colOf(t).t;                         // TRAIL = hollow glowing outline (not filled)
       ctx.globalAlpha=0.18; ctx.fillStyle=c; ctx.fillRect(px,py,cell,cell); ctx.globalAlpha=1;
       ctx.strokeStyle=c; ctx.lineWidth=tlw; ctx.strokeRect(px+tlw/2,py+tlw/2,cell-tlw,cell-tlw); }
     else if(o){ ctx.fillStyle=colOf(o).b; ctx.fillRect(px,py,cell,cell); } }   // CLAIMED land = solid fill
-  drawArenaBorder();
-  if(players) for(const p of players){ if(!p.alive)continue; const c=colOf(p.id);
-    ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(offx+(p.x+.5)*cell,offy+(p.y+.5)*cell,cell*0.62,0,6.28);ctx.fill();
-    ctx.fillStyle=c.t; ctx.beginPath();ctx.arc(offx+(p.x+.5)*cell,offy+(p.y+.5)*cell,cell*0.45,0,6.28);ctx.fill(); }
+  if(owner) drawArenaBorder();
+  if(players) for(const p of players){ if(!p.alive)continue; const c=colOf(p.id); const cx=offx+(p.x+.5)*cell, cy=offy+(p.y+.5)*cell;
+    ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(cx,cy,cell*0.62,0,6.28);ctx.fill();
+    ctx.fillStyle=c.t; ctx.beginPath();ctx.arc(cx,cy,cell*0.45,0,6.28);ctx.fill();
+    if(mp.on && p.id===mp.slot){ ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2,cell*0.14); ctx.beginPath();ctx.arc(cx,cy,cell*0.85,0,6.28);ctx.stroke(); } }
   if(parts){ for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.6;} parts=parts.filter(p=>p.life>0);
     for(const p of parts){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,4,4);}ctx.globalAlpha=1; }
-  if(state!=='menu'){ const mp=pct(1); ctx.fillStyle='#fff';ctx.font='900 30px Trebuchet MS';ctx.textAlign='left';ctx.fillText('🟩 '+mp.toFixed(1)+'%',12,34);
-    ctx.textAlign='right';ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#bcc6e6';ctx.fillText('best '+best+'%',W-12,30); ctx.textAlign='left'; }
+  if(state!=='menu' && state!=='lobby' && owner){ const myid=mp.on?mp.slot:1; const pv=pct(myid);
+    ctx.fillStyle='#fff';ctx.font='900 30px Trebuchet MS';ctx.textAlign='left';ctx.fillText('🟩 '+pv.toFixed(1)+'%',12,34);
+    ctx.textAlign='right';ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#bcc6e6';ctx.fillText(mp.on?('alive '+players.filter(p=>p.alive).length):('best '+best+'%'),W-12,30); ctx.textAlign='left'; }
   if(msgT>0){ctx.globalAlpha=Math.min(1,msgT*1.6);ctx.fillStyle='#7dff9b';ctx.font='900 28px Trebuchet MS';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.5);ctx.globalAlpha=1;}
   if(tutMode) drawCoach();
+  if(state==='count') drawCountdown();
 }
 let AC=null; function sfx(f,d,t){ try{ if(!AC)AC=new (AudioContext||webkitAudioContext)(); const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d+.02);}catch(e){} }
 
-function setDir(d){ if(!players)return; const me=players[0]; if(me&&me.alive&&!opposite(d,me.dir)) me.ndir=d; }
+function setDir(d){ if(mp.on){ mpSetDir(d); return; }
+  if(!players)return; const me=players[0]; if(me&&me.alive&&!opposite(d,me.dir)) me.ndir=d; }
 addEventListener('keydown',e=>{ if(tutMode&&tutPhase==='brief'){ e.preventDefault(); tutContinue(); return; } const m={ArrowRight:0,ArrowDown:1,ArrowLeft:2,ArrowUp:3}; if(e.code in m){e.preventDefault(); setDir(m[e.code]);} });
 // swipe steering — sensitive & continuous (drag your thumb to steer; lower threshold = more responsive)
 let tsx=0,tsy=0,down=false,moved=false; const SW=7;
@@ -238,6 +271,226 @@ function showPad(b){ const p=document.getElementById('pad'); if(p) p.classList.t
 document.getElementById('start').onclick=start;
 document.getElementById('tutBtn').onclick=startTut;
 document.getElementById('best').innerHTML = best?('Best: '+best+'%'):'';
+
+/* ============================================================================
+   ONLINE MULTIPLAYER (Supabase Realtime, host-authoritative)
+   Up to 4 players share a room; empty slots are filled with bots. The HOST runs
+   the whole simulation and broadcasts the compressed grid state each tick; other
+   players send their direction and render the received state. If the host leaves,
+   the lowest-id remaining player takes over (the game keeps going).
+   ============================================================================ */
+const myId = 'u'+Math.random().toString(36).slice(2,9);
+const MAXP=4, COUNT_MS=3000, REMATCH_MS=15000;
+let RGEN=0, HB=null;
+
+const MP={
+  sb:null, ch:null, code:null, isHost:false,
+  async ensure(){
+    if(!(window.supabase&&window.supabase.createClient)){
+      await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); }); }
+    if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}});
+    return this.sb; },
+  _wire(ch){ ['lobby','begin','state','dir','gameover','rematch','rematchack','ihost'].forEach(ev=>
+      ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
+    ch.on('presence',{event:'sync'},()=>onNet('presence'));
+    ch.on('presence',{event:'join'},()=>onNet('presence'));
+    ch.on('presence',{event:'leave'},({leftPresences})=>onNet('leave',leftPresences)); },
+  async open(code,host){ await this.ensure(); this.code=code; this.isHost=host;
+    this.ch=this.sb.channel('paper-'+code,{config:{broadcast:{self:false},presence:{key:myId}}});
+    this._wire(this.ch);
+    await new Promise((res,rej)=>{ let done=false;
+      this.ch.subscribe(st=>{ if(st==='SUBSCRIBED'&&!done){ done=true; this.ch.track({id:myId,name:PNAME,t:Date.now()}); res(); }
+        else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!done){ done=true; rej(new Error(st)); } }); }); },
+  send(ev,payload){ if(this.ch){ try{ this.ch.send({type:'broadcast',event:ev,payload:payload||{}}); }catch(e){} } },
+  presenceList(){ try{ const st=this.ch.presenceState(),a=[];
+      for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.id)a.push({id:p.id,name:(p.name||'Player').slice(0,12),t:p.t||0}); }
+      a.sort((x,y)=>x.t-y.t||(x.id<y.id?-1:1)); return a; }catch(e){ return []; } },
+  leave(){ RGEN++; if(HB){clearInterval(HB);HB=null;} if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.isHost=false; },
+};
+let PNAME = (()=>{ try{ return (window.IGAuth&&IGAuth.displayName&&IGAuth.displayName())||('Player'+ri(10,99)); }catch(e){ return 'Player'+ri(10,99); } })();
+
+let RM=null;   // room/lobby state
+function roomTimer(fn,ms){ const g=RGEN; setTimeout(()=>{ if(g===RGEN)fn(); }, ms); }
+function hostDir(ev,payload){ if(!RM)return; payload.seq=++RM.seq; RM.lastDir={ev,payload}; MP.send(ev,payload);
+  if(!HB){ const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!RM||!RM.isHost){clearInterval(HB);HB=null;return;} if(RM.lastDir)MP.send(RM.lastDir.ev,RM.lastDir.payload); },3000); } }
+function leaveRoom(){ RGEN++; if(HB){clearInterval(HB);HB=null;} MP.leave(); mp.on=false; mp.role=null; RM=null; state='menu'; showPad(false);
+  document.getElementById('mpov').classList.add('hidden'); document.getElementById('mpmsg').classList.add('hidden');
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='🟩 PAPER TERRITORY';
+  ov.querySelector('.sub').innerHTML="Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.";
+  ov.querySelector('#start').textContent='CLAIM ▶'; ov.classList.remove('hidden'); }
+function mpToast(t){ const el=document.getElementById('mpmsg'); document.getElementById('mpmsgt').textContent=t; el.classList.remove('hidden'); clearTimeout(mpToast._t); mpToast._t=setTimeout(()=>el.classList.add('hidden'),2600); }
+function shareLink(){ return location.origin+location.pathname+'?room='+(MP.code||''); }
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
+
+/* ---------- room / lobby UI ---------- */
+const ovEl=()=>document.getElementById('mpov');
+function openRoom(){ PNAME=(()=>{ try{ return (window.IGAuth&&IGAuth.displayName&&IGAuth.displayName())||PNAME; }catch(e){ return PNAME; } })();
+  document.getElementById('ov').classList.add('hidden'); showRoomChoice(); }
+function showRoomChoice(){ const el=ovEl(); el.innerHTML=
+  '<h1 style="font-size:34px">🎮 Play with Friends</h1>'+
+  '<div class="sub">Up to 4 players — empty spots become bots. Create a room and share the code, or join with a friend\'s.</div>'+
+  '<button class="btn" id="mkRoom">➕ Create Room</button>'+
+  '<div class="card"><div class="lbl">Have a code?</div><input id="jCode" maxlength="4" placeholder="CODE" /><button class="btn" id="jRoom" style="margin-top:10px;padding:12px 30px;font-size:16px">🔑 Join</button></div>'+
+  '<a class="ghost" id="mpBack">← Back</a>';
+  el.classList.remove('hidden');
+  document.getElementById('mkRoom').onclick=createRoom;
+  document.getElementById('jRoom').onclick=()=>joinRoom((document.getElementById('jCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
+  document.getElementById('mpBack').onclick=()=>{ el.classList.add('hidden'); document.getElementById('ov').classList.remove('hidden'); };
+}
+async function createRoom(code){ code=code||genCode();
+  RM={ code, isHost:true, hostId:myId, phase:'lobby', players:[], seq:0, lastDir:null }; mpToast('Creating room…');
+  try{ await MP.open(code,true); hostLobbyUpdate(); }catch(e){ mpToast('Connection failed'); leaveRoom(); }
+}
+async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-letter code'); return; }
+  RM={ code, isHost:false, hostId:null, phase:'lobby', players:[], lastSeq:0 }; mpToast('Joining…');
+  try{ await MP.open(code,false); MP.send('hello',{}); renderLobby(); }catch(e){ mpToast('Connection failed'); leaveRoom(); }
+}
+function hostLobbyUpdate(){ if(!RM||!RM.isHost)return; RM.players=MP.presenceList().slice(0,MAXP); RM.hostId=myId;
+  MP.send('lobby',{hostId:myId,players:RM.players}); renderLobby(); }
+function renderLobby(){ if(!RM)return; const el=ovEl(); const ps=RM.players||[]; const slots=[];
+  for(let s=0;s<MAXP;s++){ const h=ps[s]; slots.push('<div class="prow"><span class="dot" style="background:'+COLS[s].b+'"></span>'+
+    (h? ('<b>'+esc(h.name)+'</b>'+(h.id===RM.hostId?' <span class="tag">HOST</span>':'')+(h.id===myId?' <span style="color:#7dff9b;font-size:12px">• you</span>':'')) : '<span class="mini">🤖 Bot</span>')+'</div>'); }
+  el.innerHTML='<h1 style="font-size:30px">Room '+RM.code+'</h1>'+
+    '<div class="row" style="margin:2px 0 8px"><button class="ghost" id="shWA">🟢 WhatsApp</button><button class="ghost" id="shCopy">🔗 Copy link</button></div>'+
+    '<div class="lbl">Players — spots fill with bots</div><div class="plist">'+slots.join('')+'</div>'+
+    (RM.isHost? '<button class="btn" id="goStart" style="margin-top:14px">▶ Start Game</button>' : '<div class="sub" style="margin-top:14px">Waiting for the host to start…</div>')+
+    '<a class="ghost" id="lvRoom" style="margin-top:8px">← Leave</a>';
+  el.classList.remove('hidden');
+  document.getElementById('shWA').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent('Join my Paper Territory game! '+shareLink()),'_blank');
+  document.getElementById('shCopy').onclick=async()=>{ try{ if(navigator.share){await navigator.share({url:shareLink(),title:'Paper Territory'});return;} }catch(e){} try{ await navigator.clipboard.writeText(shareLink()); mpToast('Link copied!'); }catch(e){ mpToast(shareLink()); } };
+  document.getElementById('lvRoom').onclick=leaveRoom;
+  const gs=document.getElementById('goStart'); if(gs) gs.onclick=hostStartGame;
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- start a game (host builds roster + colours) ---------- */
+const SPOTS=[[GW>>1,GH-6,3],[7,8,1],[GW-8,8,1],[GW>>1,17,1]];
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function hostStartGame(){ if(!RM||!RM.isHost)return; RM.players=MP.presenceList().slice(0,MAXP);
+  const humans=RM.players, roster=[];
+  for(let s=1;s<=MAXP;s++){ const h=humans[s-1]; roster.push({slot:s, ctrl:h?h.id:null, human:!!h, name:h?h.name:('Bot '+s), x:SPOTS[s-1][0], y:SPOTS[s-1][1], dir:SPOTS[s-1][2]}); }
+  RM.hostId=myId; const cm=shuffle([0,1,2,3]);
+  hostDir('begin',{roster, colMap:cm, hostId:myId});
+  applyBegin({roster, colMap:cm, hostId:myId});
+}
+function applyBegin(pkt){
+  RGEN++;                                  // cancel any stale timers from a previous game
+  mp.on=true; mp.role=RM.isHost?'host':'client'; mp.hostId=pkt.hostId; mp.roster=pkt.roster; colMap=pkt.colMap;
+  const mine=pkt.roster.find(r=>r.ctrl===myId); mp.slot=mine?mine.slot:0;
+  owner=new Int8Array(GW*GH); trail=new Int8Array(GW*GH); parts=[]; msg=''; msgT=0; mvT=0; mp.tick=0; mp.winner=0; mp.netDirs={};
+  players=pkt.roster.map(r=>{ const p={id:r.slot,x:r.x,y:r.y,dir:r.dir,ndir:r.dir,onTrail:false,alive:true,out:false,human:r.human,ctrl:r.ctrl}; stamp(r.slot,r.x,r.y); return p; });
+  pkt.roster.forEach(r=>{ if(r.human) mp.netDirs[r.ctrl]=r.dir; });
+  document.getElementById('mpov').classList.add('hidden'); document.getElementById('ov').classList.add('hidden');
+  state='count'; mp.countEnd=performance.now()+COUNT_MS; showPad(true);
+  const g=RGEN; setTimeout(()=>{ if(g===RGEN && state==='count'){ state='mpplay'; mvT=0; last=performance.now(); } }, COUNT_MS);
+}
+function drawCountdown(){ const left=Math.ceil((mp.countEnd-performance.now())/1000);
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#7dff9b'; ctx.font='900 120px Trebuchet MS'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(left>0?String(left):'GO!', W/2, H/2); ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+  ctx.font='700 18px Trebuchet MS'; ctx.fillStyle='#bcc6e6'; ctx.textAlign='center'; ctx.fillText('You are '+colName(mp.slot), W/2, H/2+90); ctx.textAlign='left'; }
+function colName(slot){ return ['Green','Red','Blue','Orange'][colMap[(slot-1)%4]]||'a colour'; }
+
+/* ---------- direction input ---------- */
+function mpSetDir(d){ const me=players&&players.find(p=>p.id===mp.slot); if(!me||!me.alive||state!=='mpplay')return; if(opposite(d,me.dir))return;
+  if(mp.role==='host'){ mp.netDirs[myId]=d; } else { MP.send('dir',{ctrl:myId,dir:d}); } }
+
+/* ---------- state encode / decode (RLE) ---------- */
+function rle(a){ const o=[]; let v=a[0],c=1; for(let i=1;i<a.length;i++){ if(a[i]===v)c++; else{o.push(v,c);v=a[i];c=1;} } o.push(v,c); return o; }
+function unrle(runs,a){ let i=0; for(let k=0;k<runs.length;k+=2){ const v=runs[k],c=runs[k+1]; for(let j=0;j<c;j++)a[i++]=v; } }
+function encodeState(){ return { t:mp.tick, o:rle(owner), r:rle(trail),
+  p:players.map(p=>[p.id,p.x,p.y,p.dir,p.alive?1:0,p.onTrail?1:0]), st:state }; }
+let lastSentTick=-1;
+function mpBroadcastState(){ if(mp.role!=='host'||state!=='mpplay')return; if(mp.tick===lastSentTick)return; lastSentTick=mp.tick; MP.send('state',encodeState()); }
+function applyState(s){ if(mp.role==='host')return; if(s.t<(mp.tick||0)-1 && state==='mpplay')return; // ignore very stale
+  if(!owner){ owner=new Int8Array(GW*GH); trail=new Int8Array(GW*GH); }
+  unrle(s.o,owner); unrle(s.r,trail); mp.tick=s.t;
+  players=s.p.map(a=>({id:a[0],x:a[1],y:a[2],dir:a[3],alive:!!a[4],onTrail:!!a[5]}));
+  if(state==='count'){ state='mpplay'; showPad(true); }
+}
+
+/* ---------- win / game over ---------- */
+function mpCheckWin(){ if(mp.role!=='host'||state!=='mpplay')return; const alive=players.filter(p=>p.alive);
+  let w=0; if(alive.length<=1){ w=alive.length?alive[0].id:(players[0]?players[0].id:0); }
+  else { for(const p of alive){ if(pct(p.id)>=100){ w=p.id; break; } } }
+  if(w) mpHostGameOver(w); }
+function mpHostGameOver(w){ if(state==='mpover')return; mp.winner=w; state='mpover'; lastSentTick=-1; MP.send('state',{t:mp.tick,o:rle(owner),r:rle(trail),p:players.map(p=>[p.id,p.x,p.y,p.dir,p.alive?1:0,p.onTrail?1:0]),st:'mpplay'});
+  hostDir('gameover',{winner:w, name:rosterName(w)}); showMpOver(w); }
+function rosterName(slot){ const r=mp.roster&&mp.roster.find(x=>x.slot===slot); return r?r.name:('Player '+slot); }
+function applyGameOver(pkt){ if(state==='mpover')return; mp.winner=pkt.winner; state='mpover'; showMpOver(pkt.winner); }
+function showMpOver(w){ showPad(false); const iWon=(w===mp.slot); sfx(iWon?740:200,.3,'square');
+  const el=ovEl(); el.innerHTML='<h1 style="font-size:38px">'+(iWon?'🏆 YOU WIN!':'🏁 Game Over')+'</h1>'+
+    '<div class="big" style="color:'+colOf(w).t+'">'+esc(rosterName(w))+' wins!</div>'+
+    '<div class="sub">Last player standing takes the crown.</div>'+
+    (RM&&RM.isHost? '<button class="btn" id="rmBtn">🔁 Rematch</button>' : '<div class="sub" id="rmWait">The host can start a rematch…</div>')+
+    '<a class="ghost" id="lvRoom2" style="margin-top:10px">← Leave Room</a>';
+  el.classList.remove('hidden');
+  const rb=document.getElementById('rmBtn'); if(rb) rb.onclick=hostRematch;
+  document.getElementById('lvRoom2').onclick=leaveRoom;
+}
+
+/* ---------- rematch (host asks; 15s accept / decline) ---------- */
+function hostRematch(){ if(!RM||!RM.isHost)return; RM.acks={}; RM.acks[myId]=true; const reqId='rm'+Date.now();
+  hostDir('rematch',{reqId, by:PNAME}); showRematchPrompt({by:PNAME, self:true});
+  roomTimer(()=>hostBeginRematch(), REMATCH_MS); }
+function showRematchPrompt(pkt){ if(pkt.self && RM&&RM.isHost){ // host waits for others
+    const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">Rematch?</h1><div class="sub">Waiting for players to accept… (15s)</div><div class="big" id="rmCd">15</div><a class="ghost" id="lvRoom3">← Leave</a>';
+    el.classList.remove('hidden'); document.getElementById('lvRoom3').onclick=leaveRoom; rematchCountdown(); return; }
+  const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">🔁 Rematch?</h1><div class="sub"><b>'+esc(pkt.by||'The host')+'</b> wants a rematch!</div><div class="big" id="rmCd">15</div>'+
+    '<div class="row"><button class="btn" id="rmYes">✅ Accept</button><button class="ghost" id="rmNo">❌ Decline</button></div>';
+  el.classList.remove('hidden'); rematchCountdown();
+  document.getElementById('rmYes').onclick=()=>{ MP.send('rematchack',{ctrl:myId,accept:true}); const e=ovEl(); e.innerHTML='<h1 style="font-size:30px">Ready!</h1><div class="sub">Waiting for the host to start…</div>'; e.classList.remove('hidden'); };
+  document.getElementById('rmNo').onclick=()=>{ MP.send('rematchack',{ctrl:myId,accept:false}); leaveRoom(); };
+}
+function rematchCountdown(){ const g=RGEN; let left=Math.ceil(REMATCH_MS/1000); const iv=setInterval(()=>{ if(g!==RGEN){clearInterval(iv);return;} left--; const e=document.getElementById('rmCd'); if(e)e.textContent=Math.max(0,left); if(left<=0)clearInterval(iv); },1000); }
+function hostOnRematchAck(pkt){ if(!RM||!RM.isHost)return; RM.acks=RM.acks||{}; RM.acks[pkt.ctrl]=!!pkt.accept;
+  const present=MP.presenceList().map(p=>p.id); const pending=present.filter(id=>RM.acks[id]===undefined);
+  if(pending.length===0) hostBeginRematch(); }
+function hostBeginRematch(){ if(!RM||!RM.isHost||mp._rematched)return; mp._rematched=true; setTimeout(()=>mp._rematched=false,1000);
+  RM.acks=RM.acks||{}; RM.acks[myId]=true;
+  const present=MP.presenceList().filter(p=>RM.acks[p.id]!==false).slice(0,MAXP);
+  RM.players=present; hostStartGame();
+}
+
+/* ---------- disconnect / host migration ---------- */
+function onLeave(left){ if(!RM)return; const gone=(left||[]).map(p=>p&&p.id).filter(Boolean); if(!gone.length)return;
+  // mark departed players out
+  if(mp.on && players){ gone.forEach(id=>{ const r=mp.roster&&mp.roster.find(x=>x.ctrl===id); if(r){ const p=players.find(q=>q.id===r.slot); if(p){ p.alive=false; p.out=true; } } }); }
+  if(gone.includes(mp.hostId)){                       // host left -> migrate
+    const presentIds=new Set(MP.presenceList().map(p=>p.id));
+    const humanCtrls=(mp.roster||[]).filter(r=>r.human && presentIds.has(r.ctrl) && !gone.includes(r.ctrl)).map(r=>r.ctrl).sort();
+    const newHost=humanCtrls[0];
+    if(newHost===myId){ becomeHost(); } else if(newHost){ mp.hostId=newHost; }
+    else { leaveRoom(); return; }                     // nobody left
+  }
+  if(RM.isHost){ if(RM.phase==='lobby') hostLobbyUpdate(); else if(mp.role==='host'&&state==='mpplay') mpCheckWin(); }
+}
+function becomeHost(){ MP.isHost=true; RM.isHost=true; mp.role='host'; mp.hostId=myId; RM.seq=(RM.seq||0)+1000; RM.hostId=myId;
+  // reconstruct full players (merge current positional state with roster ctrl/human)
+  if(players && mp.roster){ players.forEach(p=>{ const r=mp.roster.find(x=>x.slot===p.id); if(r){ p.human=r.human; p.ctrl=r.ctrl; if(p.ndir==null)p.ndir=p.dir; } }); }
+  mp.netDirs=mp.netDirs||{}; players&&players.forEach(p=>{ if(p.human&&p.ctrl && mp.netDirs[p.ctrl]==null) mp.netDirs[p.ctrl]=p.dir; });
+  MP.send('ihost',{ctrl:myId}); mpToast('You are now the host'); lastSentTick=-1;
+  if(state==='mpplay'){ mvT=0; last=performance.now(); }
+}
+
+/* ---------- net router ---------- */
+function onNet(kind,payload){ if(!RM)return;
+  if(!RM.isHost && payload && payload.seq!=null && ['begin','gameover','rematch'].indexOf(kind)>=0){ if(RM.lastSeq!=null && payload.seq<=RM.lastSeq)return; RM.lastSeq=payload.seq; }
+  if(kind==='presence'){ if(RM.isHost&&RM.phase==='lobby') hostLobbyUpdate(); return; }
+  if(kind==='leave'){ onLeave(payload); return; }
+  if(kind==='lobby'){ if(!RM.isHost){ RM.hostId=payload.hostId; RM.players=payload.players||[]; if(RM.phase==='lobby') renderLobby(); } return; }
+  if(kind==='begin'){ RM.phase='play'; if(!RM.isHost) applyBegin(payload); return; }
+  if(kind==='state'){ applyState(payload); return; }
+  if(kind==='dir'){ if(mp.role==='host' && payload && payload.ctrl!=null) mp.netDirs[payload.ctrl]=payload.dir; return; }
+  if(kind==='gameover'){ if(!RM.isHost) applyGameOver(payload); return; }
+  if(kind==='rematch'){ if(!RM.isHost){ RM.phase='play'; showRematchPrompt({by:payload.by}); } return; }
+  if(kind==='rematchack'){ hostOnRematchAck(payload); return; }
+  if(kind==='ihost'){ if(payload.ctrl!==myId){ mp.hostId=payload.ctrl; if(mp.role==='host'&&payload.ctrl<myId){ mp.role='client'; MP.isHost=false; RM.isHost=false; } } return; }
+}
+document.getElementById('mpBtn').onclick=openRoom;
+// auto-join from a shared link:  …/paper/?room=CODE
+(function(){ try{ const rc=new URLSearchParams(location.search).get('room'); if(rc){ const c=rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); if(c.length===4){ openRoom(); setTimeout(()=>joinRoom(c),400); } } }catch(e){} })();
 requestAnimationFrame(loop);
 try{ if(!localStorage.getItem('paperTut')) startTut(); }catch(e){}   // first visit -> coach tutorial
 </script>
