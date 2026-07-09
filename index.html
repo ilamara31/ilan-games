@@ -573,6 +573,7 @@
       'catch/':        { updated: '2026-06-27T12:00:00' },
       'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
       'fruit-arena/':  { updated: '2026-07-08T18:45:00' },   // fruit storm: no life loss on miss + no bombs
+      'f1/':           { updated: '2026-07-09T21:00:00' },   // new 3D mode + 2D/3D chooser, all maps, engine sound
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
     };
     (function(){
@@ -597,7 +598,7 @@
 
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
-      'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'f1/':'pc', 'football/':'both', 'pptour/':'both',
+      'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
       'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both',
@@ -687,7 +688,7 @@
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
     'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'rescue/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'pc','try/':'pc' };
+  const DEV={ 'catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';

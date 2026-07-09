@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>Grand Prix 3D — TEST</title>
+<title>Grand Prix 3D</title>
 <meta name="theme-color" content="#0a0e1a" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -80,6 +80,17 @@
     text-decoration:none; display:inline-block; }
   .btn.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
   .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .secttl { font-size:13px; font-weight:900; letter-spacing:1px; color:#cfe0ff; margin:8px 0 2px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:4px 0; }
+  .maps { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; max-width:560px; width:100%; margin:6px 0 10px; }
+  .mapcard { background:#16243f; border:2px solid #213254; border-radius:14px; padding:10px 8px; cursor:pointer; transition:transform .1s,border-color .1s; }
+  .mapcard:active { transform:scale(.95); }
+  .mapcard.sel { border-color:#ffd54a; box-shadow:0 0 0 2px rgba(255,213,74,.35); }
+  .mapcard .fl { font-size:30px; line-height:1; }
+  .mapcard .mn { font-weight:bold; font-size:13px; margin-top:4px; }
+  .mapcard .md { font-size:11px; color:#9fb3d8; margin-top:2px; }
+  #muteBtn { position:absolute; top:12px; right:12px; z-index:6; pointer-events:auto; width:44px; height:44px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.22); background:rgba(8,14,28,.6); color:#fff; font-size:20px; cursor:pointer; }
   .cars { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; max-width:560px; width:100%; margin:6px 0 10px; }
   .carcard { background:#16243f; border:2px solid #213254; border-radius:16px; padding:14px 10px; cursor:pointer; transition:transform .1s,border-color .1s; }
   .carcard:active { transform:scale(.96); }
@@ -115,6 +126,7 @@
       <button class="tbtn" id="boostBtn">⚡<br>DASH</button>
     </div>
     <div id="vignette"></div>
+    <button id="muteBtn" title="Sound on/off">🔊</button>
   </div>
   <div id="countdown"></div>
   <div class="lamps" id="lamps"><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div></div>
@@ -122,16 +134,22 @@
 
   <!-- MENU -->
   <div id="scr-menu" class="screen">
-    <div class="tag">3D TEST BUILD</div>
+    <div class="tag">3D · REAL 3D RACING</div>
     <h1>🏁 GRAND PRIX 3D</h1>
-    <div class="sub">A real 3D racer on a wide 4-lane circuit. Weave through the pack, tap <b>DASH</b> for a speed burst, and take the win over 3 laps.</div>
+    <div class="sub">Pick a country and a car, then race the pack on a wide 4-lane circuit. Tap <b>DASH</b> for a speed burst and take the win.</div>
+    <div class="secttl">🌍 CHOOSE CIRCUIT</div>
+    <div class="maps" id="mapList"></div>
+    <div class="secttl">🏎️ CHOOSE CAR</div>
     <div class="cars" id="carList"></div>
     <button class="btn green" id="startBtn">🏁 START RACE</button>
-    <a class="btn alt" href="../">🏠 ALL GAMES</a>
+    <div class="row">
+      <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
+      <a class="btn alt" href="./">⬅ 2D / 3D</a>
+    </div>
     <div class="hintbar">
-      <b>Steer:</b> ← → &nbsp;or&nbsp; A / D &nbsp;or&nbsp; hold the left/right side of the screen.<br>
-      <b>Dash:</b> Space / Shift &nbsp;or&nbsp; the ⚡ button. &nbsp;<b>Brake:</b> ↓ / S.<br>
-      You auto-accelerate. This is a test — <b>no scores are saved and nothing goes on the leaderboard.</b>
+      <b>Steer:</b> ← → or A / D (mobile: on-screen ◀ ▶). &nbsp;<b>Dash:</b> Space / Shift or ⚡. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
+      You auto-accelerate. Finishing high earns F1 championship points on the Grand Prix leaderboard.
     </div>
   </div>
 
@@ -153,7 +171,7 @@
 import * as THREE from 'three';
 
 /* ============================================================
-   GRAND PRIX 3D — test build (real 3D, Three.js).
+   GRAND PRIX 3D — real 3D racer (Three.js).
    Gameplay lives in (progress, lateral) space along a smooth
    closed circuit; that makes collision + laps robust and
    bug-resistant. World transform is derived each frame.
@@ -174,15 +192,65 @@ const CARS = [
 ];
 let chosenCar = CARS[2];   // default to a mid car (Speedster) so a first race feels fair
 
+/* ---------------- shared F1 career + leaderboard (same store the 2D game uses) ---------------- */
+const STORE_KEY = 'soc_store_v1';
+function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
+const acctStore = igLoad();
+const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
+if (acct && !acct.f1) acct.f1 = {races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0};
+const guestF1 = {races:0,wins:0,podiums:0,points:0,bestPos:99};
+function career(){ return acct ? acct.f1 : guestF1; }
+function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
+const POINTS = [25,18,15,12,10,8,6,4,2,1];   // F1 points by finishing position
+
+/* ---------------- engine sound (WebAudio, synthesised — no assets) ---------------- */
+const Engine = (function(){
+  let ctx=null, master, osc, oscG, sub, subG, noiseG, running=false, muted=false;
+  function ensure(){
+    if (ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = muted?0:0.32; master.connect(ctx.destination);
+    osc = ctx.createOscillator(); osc.type='sawtooth'; osc.frequency.value=70;
+    oscG = ctx.createGain(); oscG.gain.value=0; osc.connect(oscG); oscG.connect(master);
+    sub = ctx.createOscillator(); sub.type='square'; sub.frequency.value=42;
+    subG = ctx.createGain(); subG.gain.value=0; sub.connect(subG); subG.connect(master);
+    // tyre/wind noise
+    const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const noise = ctx.createBufferSource(); noise.buffer=buf; noise.loop=true;
+    const nf = ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=850;
+    noiseG = ctx.createGain(); noiseG.gain.value=0; noise.connect(nf); nf.connect(noiseG); noiseG.connect(master);
+    osc.start(); sub.start(); noise.start();
+  }
+  return {
+    resume(){ ensure(); if (ctx && ctx.state==='suspended') ctx.resume(); },
+    start(){ ensure(); running=true; },
+    stop(){ running=false; if (!ctx) return; const t=ctx.currentTime;
+      oscG.gain.setTargetAtTime(0,t,0.12); subG.gain.setTargetAtTime(0,t,0.12); noiseG.gain.setTargetAtTime(0,t,0.12); },
+    update(frac, boosting){
+      if (!ctx || !running) return; const t=ctx.currentTime;
+      frac = Math.max(0, Math.min(1.2, frac));
+      const rev = 58 + frac*150 + (boosting?45:0);
+      osc.frequency.setTargetAtTime(rev, t, 0.05);
+      sub.frequency.setTargetAtTime(rev*0.5, t, 0.05);
+      oscG.gain.setTargetAtTime(0.11 + frac*0.10, t, 0.05);
+      subG.gain.setTargetAtTime(0.09 + frac*0.07, t, 0.05);
+      noiseG.gain.setTargetAtTime(frac*0.05 + (boosting?0.04:0), t, 0.05);
+    },
+    rev(){ if (!ctx) return; const t=ctx.currentTime; osc.frequency.setValueAtTime(150,t); oscG.gain.setTargetAtTime(0.18,t,0.03); },
+    setMuted(m){ muted=m; if (master && ctx) master.gain.setTargetAtTime(m?0:0.32, ctx.currentTime, 0.05); },
+  };
+})();
+
 /* ---------------- renderer / scene ---------------- */
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-const SKY = 0x8fc4ff;
-scene.background = makeSkyTexture();
-scene.fog = new THREE.Fog(SKY, 120, 620);
+scene.background = new THREE.Color(0x8fc4ff);   // replaced per-country by buildTrack()
+scene.fog = new THREE.Fog(0x8fc4ff, 120, 620);
 
 const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 2000);
 const BASE_FOV = 70;
@@ -195,8 +263,9 @@ function resize(){
 }
 window.addEventListener('resize', resize);
 
-/* lights */
-scene.add(new THREE.HemisphereLight(0xbfe3ff, 0x4a5a3a, 0.95));
+/* lights (intensity/tint adjusted per country by buildTrack — e.g. night in Singapore) */
+const hemi = new THREE.HemisphereLight(0xbfe3ff, 0x4a5a3a, 0.95);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff2d8, 1.15);
 sun.position.set(120, 200, 60);
 scene.add(sun);
@@ -204,23 +273,89 @@ scene.add(sun);
 /* ---------------- circuit ---------------- */
 const LANES = 4, LANE_W = 5.2;
 const HALF_W = (LANES * LANE_W) / 2;              // 10.4 -> plenty of room
-const CTRL = [
-  [140,   0],[120, -90],[60,-150],[-30,-160],[-120,-110],
-  [-160,-20],[-130, 80],[-40, 130],[70, 120],[140,  60],
-].map(([x,z]) => new THREE.Vector3(x, 0, z));
-const curve = new THREE.CatmullRomCurve3(CTRL, true, 'catmullrom', 0.5);
-const TRACK_LEN = curve.getLength();
 const UP = new THREE.Vector3(0,1,0);
 
-// cache of sampled frames for fast lookups (arc-length parameterised)
+// Every country is a map, all free to pick. `pace` = rival cruise speed (units/s);
+// `gen` builds a star-shaped loop — R(θ) stays > 0, which guarantees the circuit
+// never self-intersects. Distinct params per country = distinct maps.
+const COUNTRIES = [
+  { id:'india', name:'India', flag:'🇮🇳', pace:86, laps:3,
+    gen:{n:12, base:150, amps:[0.18,-0.10,0.05], phase:[0.4,1.1,0.0], squash:0.86, rot:0.0},
+    theme:{ sky:['#2f6fb8','#cfe6ff'], fog:0xbfe0ff, ground:0x2f9d3a, road:0x30343c, night:false } },
+  { id:'dubai', name:'Dubai', flag:'🇦🇪', pace:92, laps:3,
+    gen:{n:10, base:158, amps:[0.22,0.08,-0.04], phase:[1.2,0.3,0.6], squash:0.70, rot:0.5},
+    theme:{ sky:['#ffcf8f','#ffe9cc'], fog:0xf0dcae, ground:0xd9b36b, road:0x33322f, night:false } },
+  { id:'england', name:'England', flag:'🇬🇧', pace:96, laps:3,
+    gen:{n:14, base:146, amps:[0.16,0.12,0.06], phase:[0.0,1.6,0.9], squash:0.95, rot:0.2},
+    theme:{ sky:['#8a97a8','#cfd6de'], fog:0xc2cad3, ground:0x2e7d4f, road:0x2e3138, night:false } },
+  { id:'japan', name:'Japan', flag:'🇯🇵', pace:100, laps:4,
+    gen:{n:13, base:140, amps:[0.24,-0.14,0.08], phase:[0.7,0.2,1.3], squash:0.80, rot:1.1},
+    theme:{ sky:['#6a8fc0','#dde9ff'], fog:0xd0deff, ground:0x1f9a4a, road:0x30343c, night:false } },
+  { id:'italy', name:'Italy', flag:'🇮🇹', pace:104, laps:3,
+    gen:{n:11, base:152, amps:[0.20,0.10,-0.06], phase:[0.9,1.4,0.2], squash:0.90, rot:0.3},
+    theme:{ sky:['#3a7fce','#dbeeff'], fog:0xcfe6ff, ground:0x3a9d3a, road:0x30343c, night:false } },
+  { id:'brazil', name:'Brazil', flag:'🇧🇷', pace:104, laps:3,
+    gen:{n:14, base:150, amps:[0.26,-0.12,0.10], phase:[1.5,0.6,0.4], squash:0.82, rot:0.8},
+    theme:{ sky:['#2f9b8f','#d8f5ef'], fog:0xbfeee6, ground:0x16a52b, road:0x2f3238, night:false } },
+  { id:'usa', name:'USA', flag:'🇺🇸', pace:104, laps:3,
+    gen:{n:12, base:160, amps:[0.14,0.14,0.05], phase:[0.2,1.0,1.5], squash:0.75, rot:0.0},
+    theme:{ sky:['#3a4f9b','#cdd6ff'], fog:0xccd6ff, ground:0x1f8a3b, road:0x30343c, night:false } },
+  { id:'singapore', name:'Singapore', flag:'🇸🇬', pace:104, laps:4,
+    gen:{n:15, base:142, amps:[0.22,0.16,0.08], phase:[1.1,0.4,0.9], squash:0.88, rot:0.6},
+    theme:{ sky:['#0a1230','#1c2748'], fog:0x101a34, ground:0x141b2c, road:0x23262e, night:true } },
+  { id:'australia', name:'Australia', flag:'🇦🇺', pace:104, laps:3,
+    gen:{n:12, base:150, amps:[0.20,-0.08,0.06], phase:[0.5,1.2,0.3], squash:0.84, rot:1.4},
+    theme:{ sky:['#9fc0e8','#eef6ff'], fog:0xdfeeff, ground:0x3aa53b, road:0x30343c, night:false } },
+  { id:'monaco', name:'Monaco', flag:'🇲🇨', pace:106, laps:4,
+    gen:{n:16, base:138, amps:[0.28,0.14,-0.10], phase:[0.8,1.7,0.5], squash:0.90, rot:0.2},
+    theme:{ sky:['#3a6fb0','#bfe0ff'], fog:0xbfe0ff, ground:0x2f7d8a, road:0x30343c, night:false } },
+  { id:'afghan', name:'Afghanistan', flag:'🇦🇫', pace:80, laps:3,
+    gen:{n:11, base:150, amps:[0.20,0.06,0.04], phase:[0.3,0.9,1.1], squash:0.80, rot:0.7},
+    theme:{ sky:['#caa46a','#f0e2c2'], fog:0xe6d3a8, ground:0xc2a15a, road:0x35322c, night:false } },
+];
+let chosenCountry = COUNTRIES[0];
+
+// star-shaped loop generator: R(θ) = base*(1 + Σ aₖ·sin(kθ+φₖ)), kept > 0
+function starTrack(g){
+  const N = g.n, pts = [];
+  for (let i=0;i<N;i++){
+    const th = (i/N)*Math.PI*2 + (g.rot||0);
+    const R = g.base*(1 + g.amps[0]*Math.sin(th+g.phase[0]) + g.amps[1]*Math.sin(2*th+g.phase[1]) + g.amps[2]*Math.sin(3*th+g.phase[2]));
+    pts.push(new THREE.Vector3(Math.cos(th)*R, 0, Math.sin(th)*R*(g.squash||1)));
+  }
+  return pts;
+}
+
+// track state — rebuilt by buildTrack() for each country
 const FRAMES = 600;
-const framePos = [], frameTan = [], frameRight = [];
-for (let i=0; i<FRAMES; i++){
-  const u = i / FRAMES;
-  const p = curve.getPointAt(u);
-  const t = curve.getTangentAt(u).normalize();
-  const r = new THREE.Vector3().crossVectors(t, UP).normalize();
-  framePos.push(p); frameTan.push(t); frameRight.push(r);
+let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [];
+let worldGroup = null;
+function buildFrames(){
+  framePos = []; frameTan = []; frameRight = [];
+  for (let i=0;i<FRAMES;i++){
+    const u = i/FRAMES;
+    const p = curve.getPointAt(u);
+    const t = curve.getTangentAt(u).normalize();
+    const r = new THREE.Vector3().crossVectors(t, UP).normalize();
+    framePos.push(p); frameTan.push(t); frameRight.push(r);
+  }
+}
+function buildTrack(country){
+  curve = new THREE.CatmullRomCurve3(starTrack(country.gen), true, 'catmullrom', 0.5);
+  TRACK_LEN = curve.getLength();
+  buildFrames();
+  const th = country.theme;
+  const oldBg = scene.background;
+  scene.background = makeSkyTexture(th.sky);
+  if (oldBg && oldBg.isTexture && oldBg.dispose) oldBg.dispose();   // free the previous sky
+  scene.fog.color.set(th.fog);
+  hemi.intensity = th.night ? 0.5 : 0.95;
+  hemi.groundColor.set(th.night ? 0x0a1020 : 0x4a5a3a);
+  sun.intensity = th.night ? 0.4 : 1.15;
+  sun.color.set(th.night ? 0x9fb4ff : 0xfff2d8);
+  if (worldGroup){ scene.remove(worldGroup); disposeObj(worldGroup); }
+  worldGroup = new THREE.Group(); scene.add(worldGroup);
+  buildWorld(worldGroup, th);
 }
 // sample the circuit at an arbitrary progress (world units, any sign) -> {pos,tan,right}
 const _p = new THREE.Vector3(), _t = new THREE.Vector3(), _r = new THREE.Vector3();
@@ -241,8 +376,8 @@ function wrapDelta(d){
   return d;
 }
 
-/* ---- build track meshes ---- */
-buildWorld();
+/* ---- build the initial track (also the menu backdrop) ---- */
+buildTrack(chosenCountry);
 function ribbonGeometry(latA, latB, yLift){
   const N = FRAMES, pos = new Float32Array(N*2*3), idx = [];
   for (let i=0; i<N; i++){
@@ -289,41 +424,38 @@ function dashGeometry(lat, dashLen, gapLen, width, yLift){
   g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
-function buildWorld(){
-  // grass
+function buildWorld(group, theme){
+  // grass / ground (themed per country)
   const grass = new THREE.Mesh(
     new THREE.PlaneGeometry(2400,2400),
-    new THREE.MeshLambertMaterial({ color:0x3f7d3a }));
-  grass.rotation.x = -Math.PI/2; grass.position.y = -0.05; scene.add(grass);
+    new THREE.MeshLambertMaterial({ color:theme.ground }));
+  grass.rotation.x = -Math.PI/2; grass.position.y = -0.05; group.add(grass);
 
   // asphalt
   const road = new THREE.Mesh(ribbonGeometry(-HALF_W, HALF_W, 0.0),
-    new THREE.MeshLambertMaterial({ color:0x30343c }));
-  scene.add(road);
+    new THREE.MeshLambertMaterial({ color:theme.road }));
+  group.add(road);
 
   // solid white edge lines
   const edgeMat = new THREE.MeshBasicMaterial({ color:0xffffff });
-  scene.add(new THREE.Mesh(ribbonGeometry(-HALF_W+0.15,-HALF_W+0.55,0.02), edgeMat));
-  scene.add(new THREE.Mesh(ribbonGeometry( HALF_W-0.55, HALF_W-0.15,0.02), edgeMat));
+  group.add(new THREE.Mesh(ribbonGeometry(-HALF_W+0.15,-HALF_W+0.55,0.02), edgeMat));
+  group.add(new THREE.Mesh(ribbonGeometry( HALF_W-0.55, HALF_W-0.15,0.02), edgeMat));
 
   // dashed lane separators (3 interior lines for 4 lanes)
   const dashMat = new THREE.MeshBasicMaterial({ color:0xdfe6f0 });
   for (let l=1; l<LANES; l++){
     const lat = -HALF_W + l*LANE_W;
-    scene.add(new THREE.Mesh(dashGeometry(lat, 4, 5, 0.32, 0.02), dashMat));
+    group.add(new THREE.Mesh(dashGeometry(lat, 4, 5, 0.32, 0.02), dashMat));
   }
 
   // red/white curbs just outside the track
-  scene.add(new THREE.Mesh(dashGeometry(-HALF_W-0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
-  scene.add(new THREE.Mesh(dashGeometry( HALF_W+0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
+  group.add(new THREE.Mesh(dashGeometry(-HALF_W-0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
+  group.add(new THREE.Mesh(dashGeometry( HALF_W+0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
 
-  // start / finish checkered line
-  makeStartLine();
-
-  // roadside barriers + stands via instancing (both sides)
-  makeRoadside();
+  makeStartLine(group);          // start / finish checkered line
+  makeRoadside(group, theme);    // instanced roadside posts + trees
 }
-function makeStartLine(){
+function makeStartLine(group){
   // checker canvas
   const cvs = document.createElement('canvas'); cvs.width=64; cvs.height=16;
   const c = cvs.getContext('2d');
@@ -341,9 +473,9 @@ function makeStartLine(){
     c0.x,c0.y,c0.z, c1.x,c1.y,c1.z, c2.x,c2.y,c2.z, c3.x,c3.y,c3.z ], 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 8,0, 8,1, 0,1], 2));
   g.setIndex([0,1,2, 0,2,3]); g.computeVertexNormals();
-  scene.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map:tex })));
+  group.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map:tex })));
 }
-function makeRoadside(){
+function makeRoadside(group, theme){
   // one draw call per object type via InstancedMesh — cheap on mobile even with
   // hundreds of roadside objects.
   const postMats=[], trunkMats=[], topMats=[];
@@ -364,19 +496,24 @@ function makeRoadside(){
     }
   }
   const inst = (geo, mat, mats) => {
+    if (!mats.length) return;
     const im = new THREE.InstancedMesh(geo, mat, mats.length);
     mats.forEach((m,k)=>im.setMatrixAt(k,m)); im.instanceMatrix.needsUpdate = true;
-    scene.add(im);
+    group.add(im);
   };
-  inst(new THREE.BoxGeometry(0.6,1.1,0.6),      new THREE.MeshLambertMaterial({color:0xdddddd}), postMats);
-  inst(new THREE.CylinderGeometry(0.4,0.5,2.2,6),new THREE.MeshLambertMaterial({color:0x6b4a2a}), trunkMats);
-  inst(new THREE.ConeGeometry(2.4,6,7),          new THREE.MeshLambertMaterial({color:0x2f7d3a}), topMats);
+  // night circuits use glowing posts (unlit) as track lights; day uses lit props
+  const postMat = theme.night
+    ? new THREE.MeshBasicMaterial({ color:0xfff2b0 })
+    : new THREE.MeshLambertMaterial({ color:0xdddddd });
+  inst(new THREE.BoxGeometry(0.6,1.1,0.6),        postMat, postMats);
+  inst(new THREE.CylinderGeometry(0.4,0.5,2.2,6), new THREE.MeshLambertMaterial({color:0x6b4a2a}), trunkMats);
+  inst(new THREE.ConeGeometry(2.4,6,7),           new THREE.MeshLambertMaterial({color: theme.night?0x1a3320:0x2f7d3a}), topMats);
 }
-function makeSkyTexture(){
+function makeSkyTexture(sky){
   const cvs = document.createElement('canvas'); cvs.width=8; cvs.height=256;
   const c = cvs.getContext('2d');
   const g = c.createLinearGradient(0,0,0,256);
-  g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.5,'#8fc4ff'); g.addColorStop(1,'#d8ecff');
+  g.addColorStop(0, sky[0]); g.addColorStop(1, sky[1]);
   c.fillStyle=g; c.fillRect(0,0,8,256);
   const t = new THREE.CanvasTexture(cvs); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
@@ -419,7 +556,7 @@ function buildCar(colorHex){
 
 /* ---------------- racers ---------------- */
 const RIVAL_COLORS = [0xff7b3d,0x39ff88,0x1e90ff,0xffd21f,0xb14bff,0xff4fd8,0x7cf0ff,0xff4d6d,0x9dff5b,0xf0f0f0,0xff9b3d,0x6d8cff];
-const TOTAL_LAPS = 3;
+let raceLaps = 3;         // set per race from the chosen country
 const CAR_LEN = 5.2;      // collision length along track
 const CAR_W   = 2.6;      // collision half-reach across track sums via both widths
 const MAX_LAT = HALF_W - 1.4;
@@ -428,7 +565,8 @@ let player, rivals = [], all = [];
 function disposeObj(o){
   o.traverse(n => {
     if (n.geometry) n.geometry.dispose();
-    if (n.material) (Array.isArray(n.material)?n.material:[n.material]).forEach(m=>m.dispose());
+    if (n.material) (Array.isArray(n.material)?n.material:[n.material]).forEach(m=>{ if (m.map) m.map.dispose(); m.dispose(); });
+    if (n.isInstancedMesh && n.dispose) n.dispose();
   });
 }
 function makeRacers(){
@@ -443,12 +581,12 @@ function makeRacers(){
   gridPlace(player, GRID);
   all.push(player);
 
+  const pace = chosenCountry.pace;              // rival cruise from the country
   for (let i=0;i<GRID;i++){
     const r = mkRacer(RIVAL_COLORS[i % RIVAL_COLORS.length], false);
     r.name = 'CPU ' + (i+1);
-    // rivals vary in pace; spread around a touch below the player's top so a clean
-    // race + a couple of dashes can win, but a lazy race won't.
-    r.top = 86 + Math.random()*20;              // 86..106
+    // rivals vary around the country's pace; harder countries pack faster grids.
+    r.top = pace - 6 + Math.random()*12;        // pace±6
     r.cruise = r.top;
     gridPlace(r, i);
     rivals.push(r); all.push(r);
@@ -516,6 +654,8 @@ let boostE = 100;           // 0..100
 const BOOST_MUL = 1.55, BOOST_DRAIN = 42, BOOST_RECHARGE = 20, BOOST_MIN = 8;
 
 function startRace(){
+  buildTrack(chosenCountry);                 // rebuild the selected country's circuit
+  raceLaps = chosenCountry.laps || 3;
   makeRacers();
   raceTime = 0; boostE = 100;
   state = 'countdown'; cdTimer = 0; cdStep = 0;
@@ -523,24 +663,43 @@ function startRace(){
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
   $('lamps').classList.add('on');
   [...$('lamps').children].forEach(l=>l.classList.remove('lit','go'));
+  Engine.resume();                           // this call is inside a user gesture (button tap)
   // pre-position camera behind player
   updateCarMesh(player); placeCamera(1);
 }
 function toMenu(){
-  state='menu';
+  state='menu'; Engine.stop();
+  resetShowcase();   // clear the race grid; leave one idling car on the menu backdrop
   $('scr-menu').classList.remove('hidden'); $('scr-finish').classList.add('hidden');
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden'); $('lamps').classList.remove('on');
 }
+// menu backdrop: a single idling car sitting on the current circuit
+function resetShowcase(){
+  all.forEach(r => { if (r.mesh){ scene.remove(r.mesh); disposeObj(r.mesh); } });
+  rivals = []; all = [];
+  player = mkRacer(chosenCar.color, true); player.name='You'; player.top=chosenCar.top;
+  player.prog = 0; player.lateral = 0; all.push(player);
+  updateCarMesh(player);
+}
 function finishRace(){
-  state='finish';
+  state='finish'; Engine.stop();
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden');
   const order = rankings();
   const myPos = order.findIndex(r=>r.isPlayer) + 1;
+  // award F1 championship points to the shared career + post to the leaderboard
+  const pts = POINTS[myPos-1] || 0;
+  const c = career();
+  c.points = (c.points||0) + pts; c.races = (c.races||0) + 1;
+  if (myPos===1) c.wins = (c.wins||0) + 1;
+  if (myPos<=3) c.podiums = (c.podiums||0) + 1;
+  if (acct) igSave();
+  if (window.IGAuth) IGAuth.submitScore('f1', c.points);   // career points (higher is better)
   const medal = myPos===1?'🥇':myPos===2?'🥈':myPos===3?'🥉':'🏁';
   $('finTitle').textContent = myPos===1 ? '🏆 YOU WON!' : (medal+' P'+myPos);
-  $('finSub').textContent = myPos===1
-    ? `Fantastic driving — you took the win in ${fmt(player.finishTime||raceTime)}.`
-    : `You finished P${myPos} of ${all.length} in ${fmt(player.finishTime||raceTime)}. Dash more and cut the corners!`;
+  const earned = `<b>+${pts}</b> pts · career <b>${c.points}</b>`;
+  $('finSub').innerHTML = (myPos===1
+    ? `Fantastic driving — you won ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`
+    : `P${myPos} of ${all.length} at ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`) + `<br>${earned}`;
   $('finBoard').innerHTML = order.slice(0,8).map((r,i)=>
     `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span><span class="nm">${r.isPlayer?'You':r.name}</span><span>${r.finished?fmt(r.finishTime):'—'}</span></div>`
   ).join('');
@@ -563,15 +722,14 @@ function updateCountdown(dt){
   cdTimer += dt;
   const lamps = [...$('lamps').children];
   if (cdStep < 5 && cdTimer >= (cdStep+1)*0.7){
-    cdStep++;
+    cdStep++; Engine.resume(); Engine.start(); Engine.rev();   // engine blips on each light
     if (cdStep <= 5) for (let i=0;i<cdStep;i++) lamps[i].classList.add('lit');
   }
   if (cdTimer >= 4.2){
     lamps.forEach(l=>{ l.classList.remove('lit'); l.classList.add('go'); });
     setTimeout(()=>$('lamps').classList.remove('on'), 500);
-    state='race'; raceTime=0;
+    state='race'; raceTime=0; Engine.start();
   }
-  // roll cars slightly forward on the last beat for feel? keep still until GO.
 }
 
 function updatePlayer(dt){
@@ -648,7 +806,7 @@ function clampLaterals(){
 
 function checkFinish(){
   for (const r of all){
-    if (!r.finished && r.prog >= TOTAL_LAPS*TRACK_LEN){
+    if (!r.finished && r.prog >= raceLaps*TRACK_LEN){
       r.finished = true; r.finishTime = raceTime; r.speed *= 0.4;
     }
   }
@@ -693,8 +851,8 @@ function placeCamera(snap){
 /* ---------------- HUD ---------------- */
 function updateHud(){
   const pos = myPosition();
-  const lap = Math.min(TOTAL_LAPS, Math.floor(player.prog / TRACK_LEN) + 1);
-  $('hudLeft').innerHTML = `P <b>${pos}</b>/${all.length}<br>Lap <b>${Math.max(1,lap)}</b>/${TOTAL_LAPS}<br><span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
+  const lap = Math.min(raceLaps, Math.floor(player.prog / TRACK_LEN) + 1);
+  $('hudLeft').innerHTML = `P <b>${pos}</b>/${all.length}<br>Lap <b>${Math.max(1,lap)}</b>/${raceLaps}<br><span style="color:#9fb3d8">⏱ ${fmt(raceTime)}</span>`;
   const kmh = Math.round(player.speed * 3.4);
   $('speedo').innerHTML = `<span class="kmh">${kmh}</span><br><span class="unit">km/h</span>`;
   const fill = $('boostFill');
@@ -724,6 +882,7 @@ function loop(now){
     placeCamera(0);
     checkFinish();
     updateHud();
+    Engine.update(player.speed/player.top, player._boosting);
   } else {
     // menu / finish: slow orbit of the scene for a lively backdrop
     const t = now*0.0002;
@@ -737,6 +896,23 @@ function loop(now){
 
 /* ---------------- menu UI ---------------- */
 function buildMenu(){
+  // country / map picker
+  const maps = $('mapList');
+  maps.innerHTML = COUNTRIES.map(c=>`
+    <div class="mapcard ${c.id===chosenCountry.id?'sel':''}" data-id="${c.id}">
+      <div class="fl">${c.flag}</div>
+      <div class="mn">${c.name}</div>
+      <div class="md">${c.laps||3} laps${c.theme.night?' · 🌙':''}</div>
+    </div>`).join('');
+  maps.querySelectorAll('.mapcard').forEach(el=>{
+    el.onclick = ()=>{
+      chosenCountry = COUNTRIES.find(c=>c.id===el.dataset.id);
+      maps.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
+      buildTrack(chosenCountry);              // refresh the menu backdrop to this country
+      if (state==='menu') resetShowcase();    // re-seat the idling car on the new circuit
+    };
+  });
+  // car picker
   const list = $('carList');
   list.innerHTML = CARS.map(c=>`
     <div class="carcard ${c.id===chosenCar.id?'sel':''}" data-id="${c.id}">
@@ -753,17 +929,31 @@ function buildMenu(){
 $('startBtn').onclick = startRace;
 $('againBtn').onclick = startRace;
 $('menuBtn').onclick  = toMenu;
+// sound on/off
+let soundOff = false;
+$('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); $('muteBtn').textContent = soundOff?'🔇':'🔊'; };
 
 /* ---------------- boot ---------------- */
 resize();
 buildMenu();
-// a showcase car idling in the menu backdrop; pushed to `all` so the first
-// race cleanly removes it (no ghost car left at the start line).
-player = mkRacer(chosenCar.color, true); player.prog = 0; all.push(player); updateCarMesh(player);
+resetShowcase();   // one idling car on the menu backdrop (cleared when a race starts)
 requestAnimationFrame(loop);
 </script>
 
-<!-- test build: intentionally NO auth.js / supabase / leaderboard so testing never
-     creates a guest player or posts a score. announcements/analytics also omitted. -->
+<!-- shared accounts + F1 leaderboard (same as the 2D game) + analytics + announcements -->
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>
+  // keep the menu's Log-in button label in sync with the account state
+  document.addEventListener('DOMContentLoaded', function(){
+    if (!window.IGAuth) return;
+    IGAuth.onChange(function(p){
+      var b = document.getElementById('IGA_login');
+      if (b) b.textContent = p ? ('👤 ' + IGAuth.displayName()) : '👤 Log in';
+    });
+  });
+</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
 </body>
 </html>
