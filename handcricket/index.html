@@ -844,7 +844,7 @@ function endMatch(){
   if(window.IGAuth) try{ IGAuth.submitScore('handcricket', SV.stats.high); }catch(e){}
   if(G.online){ reportResult(); return; }   // networked match: report to host / show quick result
   // render result (vs AI / competitions)
-  $('resNext').style.display='';
+  $('resNext').style.display=''; $('resMenu').textContent='Main Menu';
   const hero=$('resHero'); hero.className='result-hero '+outcome;
   hero.textContent = outcome==='win'?'YOU WIN! 🏆':(outcome==='tie'?'TIE MATCH!':'YOU LOST');
   $('resScore').innerHTML = esc(G.aName)+' <b>'+aFinal+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+bFinal+'</b>';
@@ -973,8 +973,8 @@ function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(MP.ch)MP.
 function openRoom(){ roomMode='normal'; segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]')); $('joinCode').value=''; show('room'); }
 $('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click(); roomMode=b.dataset.rmode; segOn('roomModeSeg',b); });
 
-async function createRoomFlow(){
-  const code=genCode();
+async function createRoomFlow(code){
+  code=(typeof code==='string' && code.length>=4)?code:genCode();
   R={ code, isHost:true, hostId:myId, mode:roomMode, phase:'lobby', players:[], format:null,
       schedule:[], roundIndex:0, results:{}, roundPairs:[], roundResults:{}, koSeeds:[], koBye:null, koStep:0, champion:null,
       seq:0, lastDir:null };
@@ -1027,6 +1027,8 @@ function hostStart(){
   else { R.phase='group'; R.schedule=TL.roundRobin(R.players.map(p=>p.id)); R.roundIndex=0; hostStartRound(); }
 }
 function hostQuickMatch(){
+  R.players=MP.presenceList().slice(0,MAX_PLAYERS);         // re-check who's actually here (esp. on rematch)
+  if(R.players.length<2){ toast('Your opponent left the room'); return; }
   const [a,b]=R.players, matchId='q'+(R.koStep++), batFirst=Math.random()<.5?'a':'b';
   hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode});
   beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,quick:true});
@@ -1047,7 +1049,11 @@ function hostStartRound(){
 }
 function hostOnResult(res){
   if(!R||!R.isHost) return;
-  if(R.roundResults[res.matchId]) return;               // dedup
+  const prev=R.roundResults[res.matchId];
+  if(prev){ // conflicting winner claims (both-idle / partition) → deterministic tiebreak, lower id wins
+    if(prev.winner!==res.winner){ prev.winner = (res.aId<res.bId)?res.aId:res.bId; R.results[res.matchId]=prev; }
+    return;
+  }
   R.roundResults[res.matchId]=res; R.results[res.matchId]=res;
   hostCheckRound();
 }
@@ -1110,7 +1116,10 @@ function onNet(kind,payload){
   if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,quick:true}); return; }
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
   if(kind==='move'){ if(G.online && payload.matchId===G.matchId){
-      if(payload.ball===G.ballIndex){ G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
+      if(payload.ball===G.ballIndex){
+        if(G.busy){ G.pendingOpp={ball:payload.ball,num:payload.num}; }   // mid-reveal: buffer it (applied when this ball opens) — fixes per-ball move loss & the resend storm
+        else { G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
+      }
       else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
       else if(G.moveHist && G.moveHist[payload.ball]!=null){ MP.send('move',{matchId:G.matchId, ball:payload.ball, num:G.moveHist[payload.ball]}); } // opponent is a ball behind → re-send my move for that ball so they catch up
     } return; }
@@ -1249,7 +1258,9 @@ function onLeave(left){
       if(R.koSeeds) R.koSeeds=R.koSeeds.filter(s=>s!==id);
     });
     if(R.phase==='lobby'){ hostLobbyUpdate(); return; }
-    if(R.players.length<=1 && R.phase!=='done'){ if(R.players.length===1){ R.champion=R.players[0].id; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); } return; }
+    // only a real tournament auto-crowns a lone survivor; a quick match just falls through
+    // to the walkover result handled above (line: netMatchWalkover).
+    if(R.players.length<=1 && (R.phase==='group'||R.phase==='ko')){ if(R.players.length===1){ R.champion=R.players[0].id; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); } return; }
     if(R.phase==='group'||R.phase==='ko') hostCheckRound();
   }
 }
