@@ -192,88 +192,136 @@ function rng(seed){ let s = seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0;
 const TWISTS = {
   spikes:    {name:'Jump the spikes',     bg:['#1b3a6b','#0a0e1a'], accent:'#ff5b6e'},
   reverse:   {name:'Gravity flipped!',    bg:['#3a1d5e','#120a22'], accent:'#c77bff', flip:true},
-  gaps:      {name:'The floor is gone',   bg:['#0a4f4a','#03201e'], accent:'#39ffd0'},
+  gaps:      {name:'The floor is gone',   bg:['#0a4f4a','#03201e'], accent:'#39ffd0', gaps:true},
   fast:      {name:'Hyper speed',         bg:['#6b2a00','#1a0a00'], accent:'#ffb04a', fast:true},
   lowgrav:   {name:'Low gravity',         bg:['#0a2a6b','#03102a'], accent:'#7cc0ff', low:true},
   upside:    {name:'Upside down',         bg:['#5e0a3a','#220312'], accent:'#ff7bd0', upside:true},
   fake:      {name:'Fake finish!',        bg:['#4a4a0a','#1a1a03'], accent:'#fff04a', fake:true},
   movers:    {name:'Moving walls',        bg:['#2a2a3e','#0c0c14'], accent:'#9fb3ff', movers:true},
+  // ---- new mechanics that start appearing from level 100 ----
+  dflip:     {name:'Double flip',         bg:['#3a1d5e','#0c0618'], accent:'#c9a0ff', dflip:true},
+  burst:     {name:'Speed burst',         bg:['#6b1a2a','#1a0006'], accent:'#ff6b8a', burst:true},
+  ghost:     {name:'Ghost spikes',        bg:['#22303a','#080e12'], accent:'#a9e6ff', ghost:true},
+  fakehz:    {name:'Fake hazard',         bg:['#3a3a12','#12120a'], accent:'#ffe07a', fakehz:true},
+  portal:    {name:'Fake portal',         bg:['#0a3a4a','#02141c'], accent:'#5fe0ff', portal:true},
 };
 /* first levels match the classic order; afterwards twists are stacked & shuffled. */
 const ORDER = ['spikes','spikes','reverse','gaps','fast','lowgrav','upside','fake','movers'];
+const BASE_POOL = ['spikes','reverse','gaps','fast','lowgrav','upside','fake','movers'];
+const NEW_POOL  = ['dflip','burst','ghost','fakehz','portal'];
+const WHEEL = { low:'Low Gravity', fast:'Hyper Speed', dark:'Darkness', heavy:'Heavy Gravity' };
 
-function levelTwist(n){
-  if(n<=ORDER.length) return ORDER[n-1];
-  // after the intro run, cycle through all twists endlessly
-  const keys = Object.keys(TWISTS);
-  return keys[(n-1) % keys.length];
+// difficulty tiers the player grows into
+function tierConfig(n){
+  return {
+    combo:  n>=25,                 // two events stacked together
+    triple: n>=50,                 // sometimes three spikes
+    newMech:n>=100,                // fake hazard, ghost, double flip, speed burst, fake portal
+    master: n>=200,                // "you've come this far" chaos
+    wheel:  n>=200 && n%10===0,    // random event wheel every 10 levels
+  };
 }
+// which twists are active this level (1 early, 2 from L25, 2-4 in master mode)
+function pickTwists(n, R, tier){
+  if(n<=ORDER.length) return [ORDER[n-1]];
+  if(n<25) return [BASE_POOL[(n-1)%BASE_POOL.length]];
+  const pool = tier.newMech ? BASE_POOL.concat(NEW_POOL) : BASE_POOL;
+  const want = tier.master ? 2 + Math.floor(R()*3) : 2;   // master: 2..4, else exactly 2
+  const bag = pool.slice(), picks = [];
+  for(let i=0;i<want && bag.length;i++) picks.push(bag.splice(Math.floor(R()*bag.length),1)[0]);
+  return picks;
+}
+// merge several twists' flags into one effective twist
+function combineTwists(keys){
+  const ps = keys.map(k=>TWISTS[k]), any = f=>ps.some(p=>p[f]);
+  return { keys, name: ps.map(p=>p.name).join(' + '), bg:ps[0].bg, accent:ps[0].accent,
+    fast:any('fast'), low:any('low'), flip:any('flip'), upside:any('upside'), fake:any('fake'),
+    movers:any('movers'), gaps:any('gaps'), dflip:any('dflip'), burst:any('burst'),
+    ghost:any('ghost'), fakehz:any('fakehz'), portal:any('portal') };
+}
+// ghost spikes blink solid<->safe as a function of position (deterministic on every retry)
+function ghostPhase(f,x){ return (((x*0.5 + f.ph*120) % 220) + 220) % 220; }
+function ghostOn(f,x){ return ghostPhase(f,x) < 130; }               // solid ~60% of the cycle
+function portalY(f){ return (f.surf>0?FLOOR:CEIL) + (f.surf>0?-1:1)*70; }
 
 /* build a fully-deterministic level layout for level n */
 function buildLevel(n){
-  const tk = levelTwist(n);
-  const tw = TWISTS[tk];
   const R = rng(n*2654435761 + 12345);
+  const tier = tierConfig(n);
+  const keys = pickTwists(n, R, tier);
+  const tw = combineTwists(keys);
+
+  // random event wheel — master mode, every 10th level, one surprise modifier
+  let wheel=null, dark=false, heavy=false;
+  if(tier.wheel){
+    wheel = ['low','fast','dark','heavy'][Math.floor(R()*4)];
+    if(wheel==='low') tw.low=true; else if(wheel==='fast') tw.fast=true;
+    else if(wheel==='dark') dark=true; else heavy=true;
+  }
+
   const diff = Math.min(1, (n-1)/26);              // 0..1 difficulty ramp
-
-  // physics tuned per twist
-  let speed = 230 + diff*60;
+  let speed = 230 + diff*60 + Math.min(130, Math.max(0,n-50)*0.7);   // creeps up deep into the run
   let g = 2000;
-  if(tw.fast) speed *= 1.55;
+  if(tw.fast) speed *= 1.5;
   if(tw.low)  g = 950;
-  const jumpV = Math.sqrt(2*g*118);                // ~118u jump height
-  const arc = speed * (2*jumpV/g);                 // horizontal reach of one jump
+  if(heavy)   g = 2600;
   const gravSign = tw.flip ? -1 : 1;               // -1 => run on the ceiling
-
-  // how many obstacles -> keeps each level ~6-12s
-  const count = Math.min(11, 5 + Math.floor(diff*7) + (n<=2?-1:0));
-
+  const jumpV = Math.sqrt(2*g*118);                // ~118u jump height
+  const arc = speed * (2*jumpV/g);                 // horizontal reach of one jump — spacing scales with it
   const surf = gravSign>0 ? FLOOR : CEIL;          // surface obstacles sit on
   const dir  = gravSign>0 ? -1 : 1;               // toward open space
 
+  const count = Math.min(13, 5 + Math.floor(diff*7) + (n>=100?2:0) + (n<=2?-1:0));
+  const tripleP = tier.triple ? (tier.master?0.30:0.20) : 0;   // chance of three spikes
+  const doubleP = diff>0.4 ? 0.30 : 0;                          // chance of two spikes
+
   const feats = [], coins = [];
   let x = 440;
-  const types = [];
-  types.push('spike');
-  if(tk==='gaps') types.length=0, types.push('gap','spike');
-  if(tk==='movers') types.push('mover');
-  if(diff>0.4 && tk!=='gaps') types.push('double');
+  const pushSpikes = (x0,k,kind)=>{ for(let s=0;s<k;s++) feats.push({type:kind, x:x0+s*34, surf:gravSign, ph:R()*6.28}); };
 
   for(let i=0;i<count;i++){
-    const t = types[Math.floor(R()*types.length)];
     const space = arc * (1.18 + R()*0.5);
-    if(t==='gap'){
-      const w = Math.min(arc*0.62, 90 + R()*70);
+    const roll = R();
+    if(tw.gaps && roll<0.4){
+      const w = Math.min(arc*0.6, 90 + R()*70);
       feats.push({type:'gap', x, w, surf:gravSign});
-      // a coin floating in the middle of the leap
       coins.push({x:x+w/2, y:surf + dir*90, got:false});
-      x += w + space;
-    } else if(t==='mover'){
-      feats.push({type:'mover', x, surf:gravSign, ph:R()*6.28});
-      x += space;
-    } else if(t==='double'){
-      feats.push({type:'spike', x, surf:gravSign});
-      feats.push({type:'spike', x:x+34, surf:gravSign});
-      coins.push({x:x+17, y:surf + dir*125, got:false});
-      x += space*1.15;
-    } else {
-      feats.push({type:'spike', x, surf:gravSign});
-      if(R()<0.6) coins.push({x, y:surf + dir*110, got:false});
-      x += space;
+      x += w + space; continue;
     }
+    if(tw.movers && roll>=0.4 && roll<0.6){
+      feats.push({type:'mover', x, surf:gravSign, ph:R()*6.28});
+      x += space; continue;
+    }
+    // spike family: single / double / triple, optionally ghosted
+    const kind = (tw.ghost && R()<0.5) ? 'ghost' : 'spike';
+    const r2 = R();
+    const k = r2<tripleP ? 3 : (r2<tripleP+doubleP ? 2 : 1);
+    pushSpikes(x, k, kind);
+    if(k>1) coins.push({x:x+(k-1)*17, y:surf + dir*125, got:false});
+    else if(R()<0.55) coins.push({x, y:surf + dir*110, got:false});
+    // fake hazard: a decoy spike a step ahead that fades away at the last second
+    if(tw.fakehz && R()<0.45) feats.push({type:'fakespike', x:x+42+R()*20, surf:gravSign});
+    x += space * (k>1?1.18:1);
     // occasional coin trio on the flat
-    if(R()<0.35){ for(let k=0;k<3;k++) coins.push({x:x - space*0.5 + k*22, y:surf + dir*46, got:false}); }
+    if(R()<0.30){ for(let c2=0;c2<3;c2++) coins.push({x:x - space*0.5 + c2*22, y:surf + dir*46, got:false}); }
   }
 
   const finishX = x + 160;
   // fake finish: a decoy ribbon partway, with a sneaky spike right after it
   let fakeX = null;
-  if(tw.fake){
-    fakeX = 440 + (finishX-440)*0.58;
-    feats.push({type:'spike', x:fakeX+70, surf:gravSign});
-  }
+  if(tw.fake){ fakeX = 440 + (finishX-440)*0.58; feats.push({type:'spike', x:fakeX+70, surf:gravSign}); }
+  // fake portal: looks like a shortcut you leap into — actually flings you backwards
+  if(tw.portal){ const px = 440 + (finishX-440)*(0.4+R()*0.2); feats.push({type:'portal', x:px, surf:gravSign, used:false, back:arc*1.3}); }
 
-  return { n, tk, tw, speed, g, jumpV, gravSign, surf, dir, feats, coins, finishX, fakeX };
+  // timed events that fire as the player passes an x
+  const events = [];
+  if(tw.dflip){ events.push({type:'flip', x:440+(finishX-440)*0.38, dur:2.4, fired:false});
+                if(tier.master) events.push({type:'flip', x:440+(finishX-440)*0.72, dur:2.2, fired:false}); }
+  if(tw.burst){ events.push({type:'burst', x:440+(finishX-440)*0.30, dur:3.0, fired:false});
+                if(tier.master) events.push({type:'burst', x:440+(finishX-440)*0.66, dur:3.0, fired:false}); }
+
+  return { n, keys, tk:keys[0], tw, tier, wheel, dark, speed, g, jumpV, gravSign, surf, dir,
+           feats, coins, finishX, fakeX, events, flipT:0, burstT:0 };
 }
 
 /* ===================================================================
@@ -297,11 +345,12 @@ function startLevel(n){
   state = 'play';
   showOnly('hud');
   document.getElementById('twistTag').style.display='block';
-  document.getElementById('twistTag').textContent = '⚡ ' + L.tw.name;
+  document.getElementById('twistTag').textContent = (L.tier.master?'🔥 ':'⚡ ') + L.tw.name + (L.wheel?(' • 🎡 '+WHEEL[L.wheel]):'');
   document.getElementById('hLvl').textContent = n;
   document.getElementById('hCoins').textContent = SV.coins;
   bannerT = 1.5;
-  showBanner('LEVEL '+n, L.tw.name.toUpperCase());
+  showBanner((L.tier.master?'MASTER ':'LEVEL ')+n, L.tw.name.toUpperCase());
+  if(L.wheel) setTimeout(()=>{ if(state==='play' && L && L.n===n) toast('🎡 Event Wheel: '+WHEEL[L.wheel]); }, 750);
 }
 
 function jump(){
@@ -382,7 +431,17 @@ function update(dt){
 
   // gravity + integrate (nothing moves or falls during the intro beat)
   if(started){
-    player.x += L.speed*dt;
+    // timed events fire as we pass their trigger x (double flip / speed burst)
+    for(const ev of L.events){
+      if(!ev.fired && player.x>=ev.x){ ev.fired=true;
+        if(ev.type==='flip') L.flipT=ev.dur; else if(ev.type==='burst') L.burstT=ev.dur;
+        shake=Math.max(shake,7);
+      }
+    }
+    if(L.flipT>0) L.flipT = Math.max(0, L.flipT - dt);
+    let spd = L.speed;
+    if(L.burstT>0){ spd *= 2; L.burstT = Math.max(0, L.burstT - dt); }   // speed burst = 2x
+    player.x += spd*dt;
     player.vy += L.g * L.gravSign * dt;
     player.y  += player.vy*dt;
   }
@@ -409,15 +468,26 @@ function update(dt){
     if(player.y < -60) return die('fell');
   }
 
-  // spike / mover collisions
+  // spike / mover / ghost / portal collisions
   for(const f of L.feats){
-    if(Math.abs(f.x - player.x) > 120) continue;
+    if(Math.abs(f.x - player.x) > 150) continue;
     if(f.type==='spike'){
-      const hit = spikeHit(f, player);
-      if(hit) return die('spike');
+      if(spikeHit(f, player)) return die('spike');
+    } else if(f.type==='ghost'){
+      if(ghostOn(f, player.x) && spikeHit(f, player)) return die('spike');   // only solid while "on"
+    } else if(f.type==='fakespike'){
+      /* harmless decoy — never collides (it fades away as you reach it) */
     } else if(f.type==='mover'){
       const m = moverRect(f);
       if(circleRect(player.x,player.y,player.r-2, m.x,m.y,m.w,m.h)) return die('wall');
+    } else if(f.type==='portal'){
+      if(!f.used && Math.hypot(f.x-player.x, portalY(f)-player.y) < player.r+22){
+        f.used=true;                                    // "shortcut" that flings you back
+        player.x = Math.max(140, player.x - f.back);
+        player.y = L.gravSign>0 ? FLOOR-player.r : CEIL+player.r; player.vy=0; player.onSurf=true;
+        cam = Math.max(0, player.x - VW*0.30);
+        burst(f.x, portalY(f), '#5fe0ff', 26, 2.2); shake = Math.max(shake, 10);
+      }
     }
   }
 
@@ -483,8 +553,9 @@ function render(){
   if(!L) return;
 
   ctx.save();
-  // upside-down twist: rotate the whole world 180° (controls stay normal = chaos)
-  if(tw.upside){ ctx.translate(cv.width/2, cv.height/2); ctx.rotate(Math.PI); ctx.translate(-cv.width/2,-cv.height/2); }
+  // upside-down twist rotates the world 180°; a "double flip" event XORs it for a few seconds
+  const upsideNow = !!tw.upside !== (!!L && L.flipT>0);
+  if(upsideNow){ ctx.translate(cv.width/2, cv.height/2); ctx.rotate(Math.PI); ctx.translate(-cv.width/2,-cv.height/2); }
   // world -> screen scale, with camera & screenshake
   const sh = shake>0 ? (Math.random()-0.5)*shake : 0;
   ctx.scale(SCALE, SCALE);
@@ -499,6 +570,23 @@ function render(){
   drawParticlesWorld();
 
   ctx.restore();
+
+  // darkness wheel modifier — a vignette closes in around the action
+  if(L && L.dark && (state==='play'||state==='dead')){
+    ctx.setTransform(1,0,0,1,0,0);
+    const g = ctx.createRadialGradient(cv.width*0.42,cv.height*0.52,cv.height*0.10, cv.width*0.42,cv.height*0.52,cv.height*0.80);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.9)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
+  }
+  // live event indicator (speed burst / flip)
+  if(state==='play' && L){
+    const msg = L.burstT>0 ? '⚡ 2× SPEED' : (L.flipT>0 ? '🔄 FLIP!' : null);
+    if(msg){
+      ctx.setTransform(1,0,0,1,0,0); ctx.textAlign='center'; ctx.font='900 '+Math.round(20*DPR)+'px Trebuchet MS';
+      ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillText(msg, cv.width/2+2, cv.height*0.30+2);
+      ctx.fillStyle='#ffe07a';         ctx.fillText(msg, cv.width/2,   cv.height*0.30);
+    }
+  }
 }
 
 function drawParallax(tw){
@@ -574,28 +662,51 @@ function drawFinish(tw){
   drawRibbon(L.finishX, false);
 }
 
+function drawSpike(f, col, alpha){
+  const surfY = f.surf>0?FLOOR:CEIL, h=50, hw=20;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  if(f.surf>0){ ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY-h); ctx.lineTo(f.x+hw,surfY); }
+  else { ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY+h); ctx.lineTo(f.x+hw,surfY); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,'+(0.35*alpha)+')';
+  ctx.beginPath();
+  if(f.surf>0){ ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY-h); ctx.lineTo(f.x-hw*0.3,surfY); }
+  else { ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY+h); ctx.lineTo(f.x-hw*0.3,surfY); }
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+function drawPortal(f){
+  const y = portalY(f), t = last*0.005;
+  ctx.save(); ctx.translate(f.x, y);
+  for(let r=0;r<3;r++){ ctx.globalAlpha = f.used?0.14:(0.55-r*0.13); ctx.strokeStyle='#5fe0ff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.ellipse(0,0,20-r*4,26-r*5, t+r, 0,6.28); ctx.stroke(); }
+  ctx.globalAlpha = f.used?0.1:0.85; ctx.fillStyle='rgba(95,224,255,.28)';
+  ctx.beginPath(); ctx.arc(0,0,12,0,6.28); ctx.fill();
+  ctx.globalAlpha = 1; ctx.restore();
+}
 function drawFeatures(tw){
+  const px = player ? player.x : cam;
   for(const f of L.feats){
     if(f.x < cam-60 || f.x > cam+VW+60) continue;
     if(f.type==='spike'){
-      const surfY = f.surf>0?FLOOR:CEIL;
-      const h=50, hw=20;
-      ctx.fillStyle = '#ff5b6e';
-      ctx.beginPath();
-      if(f.surf>0){ ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY-h); ctx.lineTo(f.x+hw,surfY); }
-      else { ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY+h); ctx.lineTo(f.x+hw,surfY); }
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,.35)';
-      ctx.beginPath();
-      if(f.surf>0){ ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY-h); ctx.lineTo(f.x-hw*0.3,surfY); }
-      else { ctx.moveTo(f.x-hw,surfY); ctx.lineTo(f.x,surfY+h); ctx.lineTo(f.x-hw*0.3,surfY); }
-      ctx.closePath(); ctx.fill();
+      drawSpike(f, '#ff5b6e', 1);
+    } else if(f.type==='ghost'){
+      const on = ghostOn(f, px);
+      drawSpike(f, '#a9e6ff', on?0.92:0.16);          // blinks solid <-> faint
+    } else if(f.type==='fakespike'){
+      const d = Math.abs(f.x - px);
+      const a = Math.max(0, Math.min(1, (d-45)/45));  // fades out as you reach it, then it's gone
+      if(a>0.03) drawSpike(f, '#ff7b8e', a);
     } else if(f.type==='mover'){
       const m = moverRect(f);
       ctx.fillStyle = '#9fb3ff';
       roundRect(m.x,m.y,m.w,m.h,6); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.25)';
       roundRect(m.x+4,m.y+4,m.w-8,10,4); ctx.fill();
+    } else if(f.type==='portal'){
+      drawPortal(f);
     }
   }
 }
