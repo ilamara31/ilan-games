@@ -51,6 +51,7 @@
     <div class="coins">🪙 <b id="homeCoins">0</b></div>
     <button class="btn green" id="btnTournament">🏆 Play Tournament</button>
     <button class="btn" id="btnQuick">⚡ Quick Match</button>
+    <button class="btn green" id="btnOnline">🌐 Play Online</button>
     <div class="row"><button class="btn alt" id="btnTutorial">🎓 Tutorial</button><button class="btn alt" id="btnShop">🛍️ Shop</button></div>
     <div class="row"><button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button><button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')">🏆 Leaderboard</button></div>
     <a class="btn ghost" href="../" style="display:block;margin-top:10px;text-decoration:none">🚪 Exit to Ilan Games</a>
@@ -90,6 +91,11 @@
     <button class="btn green" id="overBtn1">CONTINUE ▶</button>
     <button class="btn ghost" id="overBtn2">Home</button>
   </div>
+</div>
+
+<!-- MULTIPLAYER (room / lobby) — content set from JS -->
+<div id="mp" class="screen hidden">
+  <div class="card" id="mpCard"></div>
 </div>
 
 <script>
@@ -188,13 +194,14 @@ document.addEventListener('pointerlockchange',()=>{ locked=(document.pointerLock
 const SENSX=0.0150, SENSY=0.0135;
 
 /* ============================================================ SCREEN MANAGEMENT ============================================================ */
-function hideScreens(){ ['home','shop','card','over'].forEach(s=>$(s).classList.add('hidden')); }
+function hideScreens(){ ['home','shop','card','over','mp'].forEach(s=>$(s).classList.add('hidden')); }
 function showScreen(id){ hideScreens(); $(id).classList.remove('hidden'); screen=id; document.body.classList.remove('playing'); releaseLock(); }
 function goPlay(){ hideScreens(); screen=null; document.body.classList.add('playing'); requestLock(); }
 function showHome(){ $('homeCoins').textContent=S.coins; showScreen('home'); }
 
 $('btnTournament').onclick=()=>{ mode='tournament'; pickBracket(); roundIdx=0; showCard(); };
 $('btnQuick').onclick=()=>{ mode='quick'; curOpp=NAMES[Math.floor(rand(0,NAMES.length))]; showCard(); };
+$('btnOnline').onclick=()=>{ openRoom(); };
 $('btnTutorial').onclick=()=>{ mode='tutorial'; goPlay(); startTutorial(); };
 $('btnShop').onclick=()=>{ openShop(); };
 $('shopBack').onclick=()=>{ showHome(); };
@@ -248,15 +255,19 @@ function startServeMatch(){ const a = (mode==='tournament')?ROUND_AI[roundIdx]:{
 function newPoint(){ pad.x=0; pad.y=1.0; pad.tx=0; pad.ty=1.0; pad.vx=0; pad.swing=0; aiPad.x=0; aiPad.y=0.9; aiPad.swing=0;
   ball.trail.length=0; ball.bounces=0; ball.vx=ball.vy=ball.vz=0; ball.active=true; ball.last=server;
   if(server==='player'){ ball.x=0; ball.y=1.0; ball.z=PZ+0.4; } else { ball.x=0; ball.y=1.0; ball.z=AZ; }
-  phase='serve'; serveT=0.8; banner(server==='player'?'YOUR SERVE':'OPPONENT SERVE'); }
+  phase='serve'; serveT=0.8; banner(server==='player'?'YOUR SERVE':'OPPONENT SERVE'); netForceSend(); }
 function serveLaunch(by){ const dir=by==='player'?1:-1; const spd=by==='player'?7.0:ai.serve;
   ball.x=0; ball.y=1.05; ball.z=by==='player'?PZ+0.3:AZ; ball.vz=dir*spd; ball.vy=4.1; ball.vx=rand(-1.2,1.2);
-  ball.last=by; ball.bounces=0; ball.active=true; phase='rally'; if(by==='player')pad.swing=1; else aiPad.swing=1; snd('hit'); }
+  ball.last=by; ball.bounces=0; ball.active=true; phase='rally'; if(by==='player')pad.swing=1; else aiPad.swing=1; snd('hit'); netForceSend(); }
 function scorePoint(who){ if(phase==='point')return;
   if(who==='player'){ pPts++; banner('POINT!'); snd('point'); shake=Math.min(.4,shake+.2); } else { aPts++; banner('LOST'); }
   if(pPts>=5||aPts>=5){ matchEnd(pPts>aPts); return; }
-  server = server==='player'?'ai':'player'; phase='point'; pointPause=1.1; }
+  server = server==='player'?'ai':'player'; phase='point'; pointPause=1.1; netForceSend(); }
 function matchEnd(won){ ball.active=false; coinsEarned=0;
+  if(NET.on){ if(won){ coinsEarned=30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
+    if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);
+    let n=0; const rs=()=>{ if(n++<3&&NET.on){ MP.send('gameover',{pp:pPts,ap:aPts}); roomTimer(rs,500); } }; rs();
+    showOverOnline(won); return; }
   if(won){ coinsEarned = (mode==='tournament')?ROUND_COINS[roundIdx]:30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
   if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);   // total matches won (higher is better)
   if(mode==='tournament'){
@@ -277,7 +288,8 @@ function showOver(won,kind){ phase=''; let title,subt,b1,b2,b1act,b2act;
   if(kind==='round'){ b1='PLAY '+ROUND_NAMES[roundIdx]+' ▶'; b1act=()=>showCard(); b2='Home'; b2act=()=>showHome(); }
   else if(kind==='champion'||kind==='out'){ b1='Play Tournament Again'; b1act=()=>{ pickBracket(); roundIdx=0; showCard(); }; b2='Home'; b2act=()=>showHome(); }
   else { b1='Play Again'; b1act=()=>{ curOpp=NAMES[Math.floor(rand(0,NAMES.length))]; showCard(); }; b2='Home'; b2act=()=>showHome(); }
-  $('overBtn1').textContent=b1; $('overBtn1').onclick=b1act; $('overBtn2').textContent=b2; $('overBtn2').onclick=b2act;
+  $('overBtn1').textContent=b1; $('overBtn1').onclick=b1act; $('overBtn1').style.display='block';
+  $('overBtn2').textContent=b2; $('overBtn2').onclick=b2act; $('overBtn2').style.display='block';
   showScreen('over'); snd((won||kind==='round'||kind==='champion')?'win':'lose');
 }
 
@@ -291,7 +303,7 @@ function reflect(by){ const dir=by==='player'?1:-1;
     if(power){ snd('power'); shake=Math.min(.4,shake+.25); flash=.4; } else snd('hit'); }
   else { const away=pad.x>0?-1:1; const target=clamp(pad.x*0.4+away*rand(0.6,2.2)+rand(-ai.errn,ai.errn),-2.7,2.7);
     ball.vz=dir*7.2; ball.vx=clamp((target-ball.x)*1.2,-7.5,7.5); ball.vy=3.8; aiPad.swing=1; snd('hit'); }
-  ball.y=Math.max(ball.y,0.4); ball.last=by; ball.bounces=0; }
+  ball.y=Math.max(ball.y,0.4); ball.last=by; ball.bounces=0; netForceSend(); }
 function physics(dt){
   if(phase==='serve'){ if(server==='player'){ball.x=0;ball.y=1.05;ball.z=PZ+0.4;} else {ball.x=0;ball.y=1.05;ball.z=AZ;} return; }
   if(phase!=='rally'){ if(ball.active){ ball.x+=ball.vx*dt; ball.z+=ball.vz*dt; ball.vy-=GRAV*dt; ball.y+=ball.vy*dt; if(ball.y<BALLR){ball.y=BALLR;ball.vy=Math.abs(ball.vy)*0.6;} pushTrail(); if(ball.z<CAM.z-1||ball.z>TL+4)ball.active=false; } return; }
@@ -304,8 +316,13 @@ function physics(dt){
     if(ball.bounces>=2){ scorePoint(ball.last); return; } }
   if(ball.last==='ai' && ball.vz<0 && ball.z<PZ+ZWIN && ball.z>PZ-ZWIN){ if(Math.abs(ball.x-pad.x)<CATCHX) reflect('player'); }   // only your left/right needs to line up
   if(ball.last==='ai' && ball.z<PZ-ZWIN-0.25){ scorePoint('ai'); return; }
-  if(ball.last==='player' && ball.vz>0 && (prevZ-AZ)*(ball.z-AZ)<=0){ if(Math.abs(ball.x-aiPad.x)<ai.reach && Math.random()>ai.miss){ aiPad.y=clamp(ball.y,0.4,1.9); reflect('ai'); } }
-  if(ball.last==='player' && ball.z>AZ+0.8){ scorePoint('player'); return; }
+  if(mode==='online'){
+    if(ball.last==='player' && ball.vz>0 && ball.z>AZ-ZWIN && ball.z<AZ+ZWIN){ if(Math.abs(ball.x-aiPad.x)<CATCHX) reflectFar(); }   // human opponent (guest) returns
+    if(ball.last==='player' && ball.z>AZ+ZWIN+0.25){ scorePoint('player'); return; }                                                  // guest missed
+  } else {
+    if(ball.last==='player' && ball.vz>0 && (prevZ-AZ)*(ball.z-AZ)<=0){ if(Math.abs(ball.x-aiPad.x)<ai.reach && Math.random()>ai.miss){ aiPad.y=clamp(ball.y,0.4,1.9); reflect('ai'); } }
+    if(ball.last==='player' && ball.z>AZ+0.8){ scorePoint('player'); return; }
+  }
   if(ball.z<CAM.z-2 || ball.z>TL+5){ scorePoint(ball.last==='player'?'player':'ai'); }
 }
 function pushTrail(){ ball.trail.push({x:ball.x,y:ball.y,z:ball.z}); if(ball.trail.length>16)ball.trail.shift(); }
@@ -332,6 +349,17 @@ function update(dt){ timeNow+=dt; shake=Math.max(0,shake-dt*2.5); flash=Math.max
   const ox=pad.x; pad.x=lerp(pad.x,pad.tx,clamp(dt*18,0,1)); pad.y=lerp(pad.y,pad.ty,clamp(dt*18,0,1)); pad.vx=(pad.x-ox)/Math.max(dt,.001);
   pad.tilt=lerp(pad.tilt, clamp(pad.vx*0.06,-0.8,0.8), clamp(dt*10,0,1));   // racket angles in the direction you move
   pad.swing=Math.max(0,pad.swing-dt*4); aiPad.swing=Math.max(0,aiPad.swing-dt*4);
+  if(NET.on){
+    if(NET.role==='guest'){ if(screen===null){ netGuestFrame(dt); netSendPad(dt); } return; }   // guest: local paddle + dead-reckoned ball, no authority
+    // host runs the whole simulation and broadcasts it
+    if(screen===null){
+      if(phase==='serve'){ serveT-=dt; physics(dt); if(serveT<=0)serveLaunch(server); }
+      else if(phase==='point'){ pointPause-=dt; physics(dt); if(pointPause<=0)newPoint(); }
+      else physics(dt);
+      netHostSend(dt,false);
+    } else if(ball.active){ physics(dt); }
+    return;
+  }
   if(screen!==null){ if(ball.active && phase!=='tutorial')physics(dt); return; }  // overlay up -> no gameplay sim
   if(phase==='tutorial'){ tutorialUpdate(dt); return; }
   if(phase==='serve'){ serveT-=dt; physics(dt); if(serveT<=0)serveLaunch(server); return; }
@@ -421,6 +449,157 @@ function drawCoach(){ const cw=Math.min(360,W*0.8); const pop=clamp(coachPop,0,1
   ctx.fillStyle='#ffe27a'; ctx.font='800 16px Segoe UI'; ctx.fillText('Tutorial returns: '+tutReturns+' / 3', W/2, Math.max(36,H*0.07));
 }
 function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ============================================================ ONLINE MULTIPLAYER (Supabase Realtime, host-authoritative) ============================================================
+   2-player quick match with a room code. The HOST runs the ENTIRE ball
+   simulation and broadcasts a tiny ball+paddle+score snapshot ~20x/sec; the
+   GUEST integrates the ball locally every frame (dead-reckoning, same gravity +
+   velocity) so it moves at full natural speed, and softly corrects to each
+   snapshot -> smooth motion and never a second, disagreeing ball. The view is
+   first-person from each player's own end, so state is mirrored across the net
+   on the wire:  x -> -x,  z -> 12-z,  vx -> -vx,  vz -> -vz  (y & vy unchanged);
+   score & server are swapped. One authority (host) = no desync by construction. */
+const r2=v=>Math.round(v*100)/100;
+const MIRZ=NETZ*2;                       // z' = MIRZ - z  (mirror across the net, z=6 -> 12)
+let myId='u'+Math.random().toString(36).slice(2,9);
+let PNAME='Player';
+function refreshName(){ try{ if(window.IGAuth){ const u=(IGAuth.getUser&&IGAuth.getUser())||null; PNAME=(u&&u.name) || (IGAuth.displayName&&IGAuth.displayName()) || PNAME; } }catch(e){} PNAME=(''+(PNAME||'Player')).slice(0,12)||'Player'; }
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
+
+const NET={ on:false, role:null, code:null, seq:0, acc:0, padAcc:0, aiPadVx:0, aiPower:false, hostName:'', started:false, binit:false };
+let RGEN=0; function roomTimer(fn,ms){ const g=RGEN; setTimeout(()=>{ if(g===RGEN)fn(); }, ms); }
+
+const MP={ sb:null, ch:null, code:null, isHost:false,
+  async ensure(){ if(!(window.supabase&&window.supabase.createClient)){ await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); }); }
+    if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:30}}}); return this.sb; },
+  _wire(ch){ ['hello','lobby','begin','state','pad','gameover'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
+    ch.on('presence',{event:'sync'},()=>onNet('presence')); ch.on('presence',{event:'join'},()=>onNet('presence')); ch.on('presence',{event:'leave'},({leftPresences})=>onNet('leave',leftPresences)); },
+  async open(code,host){ await this.ensure(); this.code=code; this.isHost=host; NET.code=code;
+    this.ch=this.sb.channel('pong-'+code,{config:{broadcast:{self:false},presence:{key:myId}}}); this._wire(this.ch);
+    await new Promise((res,rej)=>{ let done=false; this.ch.subscribe(st=>{ if(st==='SUBSCRIBED'&&!done){ done=true; this.ch.track({id:myId,name:PNAME,host:host?1:0,t:Date.now()}); res(); } else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!done){ done=true; rej(new Error(st)); } }); }); },
+  send(ev,payload){ if(this.ch){ try{ this.ch.send({type:'broadcast',event:ev,payload:payload||{}}); }catch(e){} } },
+  presenceList(){ try{ const st=this.ch.presenceState(),a=[]; for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.id)a.push({id:p.id,name:(p.name||'Player').slice(0,12),host:p.host,t:p.t||0}); } a.sort((x,y)=>x.t-y.t||(x.id<y.id?-1:1)); return a; }catch(e){ return []; } },
+  leave(){ if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.isHost=false; } };
+
+/* ---------- room / lobby UI ---------- */
+let RM=null;
+const mpCard=()=>$('mpCard');
+function esc(s){ return (''+s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function mpToast(t){ let el=$('mpToast'); if(!el){ el=document.createElement('div'); el.id='mpToast'; el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:#0f1d36;border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90vw;text-align:center;transition:opacity .3s'; document.body.appendChild(el); } el.textContent=t; el.style.opacity='1'; clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity='0'; },2600); }
+function openRoom(){ refreshName(); RM=null; showScreen('mp'); showRoomChoice(); }
+function showRoomChoice(){ mpCard().innerHTML=
+  '<h1 class="logo" style="font-size:26px">🌐 PLAY ONLINE</h1>'+
+  '<div class="sub">Quick match • 2 players. Create a room and share the code, or join a friend\'s.</div>'+
+  '<button class="btn green" id="mkRoom">➕ Create Room</button>'+
+  '<div class="card" style="margin-top:12px;padding:14px"><div class="sub" style="margin:0 0 8px">Have a code?</div>'+
+  '<input id="jCode" maxlength="4" placeholder="CODE" autocomplete="off" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px;font-weight:800;text-transform:uppercase;padding:10px;border-radius:12px;border:1px solid rgba(150,180,255,.3);background:rgba(0,0,0,.25);color:#fff" />'+
+  '<button class="btn" id="jRoom" style="margin-top:10px">🔑 Join</button></div>'+
+  '<button class="btn ghost" id="mpBack" style="margin-top:12px">‹ Home</button>';
+  $('mkRoom').onclick=()=>createRoom();
+  const jc=$('jCode'); jc.oninput=()=>{ jc.value=jc.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); };
+  $('jRoom').onclick=()=>joinRoom((jc.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
+  $('mpBack').onclick=()=>{ RM=null; showHome(); };
+}
+async function createRoom(){ const code=genCode(); RM={code,isHost:true,phase:'lobby',guestName:''}; renderLobby();
+  try{ await MP.open(code,true); }catch(e){ mpToast('Connection failed — check internet'); leaveRoom(); return; } renderLobby(); }
+async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-letter code'); return; } RM={code,isHost:false,phase:'joining'};
+  mpCard().innerHTML='<h1 class="logo" style="font-size:24px">Joining '+esc(code)+'…</h1><div class="sub">Connecting…</div><button class="btn ghost" id="mpBack">Cancel</button>'; $('mpBack').onclick=()=>leaveRoom();
+  try{ await MP.open(code,false); }catch(e){ mpToast('Connection failed'); leaveRoom(); return; }
+  MP.send('hello',{name:PNAME}); roomTimer(()=>{ if(RM&&RM.phase==='joining')MP.send('hello',{name:PNAME}); },1200);
+  roomTimer(()=>{ if(RM&&RM.phase==='joining')roomNotFound(code); },6000); }
+function roomNotFound(code){ mpCard().innerHTML='<h1 class="logo" style="font-size:24px">Room not found</h1><div class="sub">No room with code <b>'+esc(code)+'</b>. Check it and try again.</div><button class="btn" id="mpAgain">‹ Back</button>'; $('mpAgain').onclick=()=>{ try{MP.leave();}catch(e){} RM=null; showRoomChoice(); }; }
+function renderLobby(){ if(!RM||!RM.isHost)return; const guest=MP.presenceList().find(p=>!p.host); RM.guestName=guest?guest.name:''; const share=location.origin+location.pathname+'?room='+RM.code;
+  mpCard().innerHTML='<div class="logo-sub">ROOM CODE</div><h1 class="logo" style="font-size:44px;letter-spacing:8px">'+esc(RM.code)+'</h1>'+
+    '<div class="sub">Share this code with a friend to join.</div>'+
+    '<div class="card" style="margin:10px 0;padding:12px;text-align:left">'+
+      '<div style="display:flex;justify-content:space-between;padding:6px 2px"><b>👤 '+esc(PNAME)+'</b><span style="color:#86ffc6">Host</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:6px 2px">'+(guest?('<b>👤 '+esc(guest.name)+'</b><span style="color:#86ffc6">Ready</span>'):('<span style="color:#8fa8ff">Waiting for player…</span><span>⏳</span>'))+'</div>'+
+    '</div>'+
+    '<button class="btn green" id="mpStart"'+(guest?'':' disabled style="opacity:.5"')+'>▶ Start Match</button>'+
+    '<button class="btn ghost" id="mpCopy">📋 Copy invite link</button>'+
+    '<button class="btn ghost" id="mpBack">‹ Leave</button>';
+  if(guest)$('mpStart').onclick=()=>hostBegin();
+  $('mpCopy').onclick=()=>{ try{ navigator.clipboard.writeText(share); mpToast('Link copied!'); }catch(e){ mpToast(RM.code); } };
+  $('mpBack').onclick=()=>leaveRoom();
+}
+function showJoinedWaiting(){ mpCard().innerHTML='<h1 class="logo" style="font-size:26px">Joined ✓</h1><div class="sub">Waiting for the host to start…</div><div class="sub" style="color:#8fa8ff">Room '+esc(RM&&RM.code)+'</div><button class="btn ghost" id="mpBack">‹ Leave</button>'; $('mpBack').onclick=()=>leaveRoom(); }
+
+/* ---------- start / end ---------- */
+function hostBegin(){ if(!RM||!RM.isHost)return; NET.on=true; NET.role='host'; NET.started=true; NET.binit=false; mode='online';
+  curOpp=RM.guestName||'Player'; pPts=0; aPts=0; server='player'; NET.aiPower=false; NET.aiPadVx=0;
+  let n=0; const rs=()=>{ if(n++<4 && NET.role==='host'){ MP.send('begin',{opp:PNAME}); roomTimer(rs,450); } }; rs();
+  goPlay(); newPoint(); }
+function guestBegin(payload){ if(NET.on&&NET.role==='guest')return; NET.on=true; NET.role='guest'; NET.started=true; NET.binit=false; mode='online';
+  curOpp=(payload&&payload.opp)||NET.hostName||'Opponent'; pPts=0; aPts=0; server='ai'; phase='serve'; ball.active=false;
+  goPlay(); banner('GET READY'); }
+function showOverOnline(won){ phase=''; ball.active=false; hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
+  $('overTitle').textContent=won?'VICTORY!':'DEFEAT'; $('overTitle').style.color=won?'#ffd23f':'#ff9b9b';
+  $('overSub').textContent=won?('You beat '+(curOpp||'your opponent')+'!'):((curOpp||'Your opponent')+' won this one.');
+  $('overCoins').innerHTML='🪙 +'+coinsEarned+' coins'; $('overCoins').style.display=coinsEarned>0?'inline-block':'none';
+  const b1=$('overBtn1'), b2=$('overBtn2'); b1.style.display='block'; b2.style.display='block';
+  if(NET.role==='host'){ b1.textContent='🔁 Rematch'; b1.onclick=()=>{ if(MP.presenceList().some(p=>!p.host)) hostBegin(); else mpToast('Opponent left the room'); }; }
+  else { b1.textContent='⏳ Waiting for host…'; b1.onclick=()=>{}; }
+  b2.textContent='🚪 Leave'; b2.onclick=()=>leaveRoom();
+  snd(won?'win':'lose'); }
+function guestGameOver(p){ const my=(p&&p.ap)||0, opp=(p&&p.pp)||0, won=my>opp; pPts=my; aPts=opp; coinsEarned=0;
+  if(won){ coinsEarned=30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
+  if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0); showOverOnline(won); }
+function opponentLeft(){ coinsEarned=0; ball.active=false; phase=''; NET.on=false; NET.started=false;
+  hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
+  $('overTitle').textContent='Opponent left'; $('overTitle').style.color='#ff9b9b'; $('overSub').textContent='Your opponent disconnected.'; $('overCoins').style.display='none';
+  const b1=$('overBtn1'), b2=$('overBtn2'); b1.textContent='🏠 Home'; b1.style.display='block'; b1.onclick=()=>leaveRoom(); b2.style.display='none'; }
+function leaveRoom(){ RGEN++; NET.on=false; NET.role=null; NET.started=false; RM=null; mode='quick'; ball.active=false; phase=''; try{ MP.leave(); }catch(e){} try{ history.replaceState(null,'',location.pathname); }catch(e){} showHome(); }
+
+/* ---------- net router ---------- */
+function onNet(kind,payload){
+  if(kind==='presence'){ if(RM&&RM.isHost&&RM.phase==='lobby'){ renderLobby(); } return; }
+  if(kind==='leave'){ if(NET.on){ if(screen!=='over')opponentLeft(); } else if(RM&&RM.isHost&&RM.phase==='lobby'){ RM.guestName=''; renderLobby(); } return; }
+  if(kind==='hello'){ if(RM&&RM.isHost){ if(payload&&payload.name)RM.guestName=payload.name; if(RM.phase==='lobby')renderLobby(); MP.send('lobby',{host:PNAME}); if(NET.started&&NET.role==='host')MP.send('begin',{opp:PNAME}); } return; }
+  if(kind==='lobby'){ if(RM&&!RM.isHost){ NET.hostName=(payload&&payload.host)||'Host'; if(RM.phase==='joining'){ RM.phase='lobby'; showJoinedWaiting(); } } return; }
+  if(kind==='begin'){ if(RM&&!RM.isHost) guestBegin(payload); return; }
+  if(kind==='state'){ if(NET.role==='guest') guestApplyState(payload); else if(RM&&!RM.isHost&&!NET.on){ guestBegin({opp:NET.hostName}); guestApplyState(payload); } return; }
+  if(kind==='pad'){ if(NET.role==='host') hostApplyPad(payload); return; }
+  if(kind==='gameover'){ if(NET.role==='guest') guestGameOver(payload); return; }
+}
+
+/* ---------- host: broadcast state; guest: send paddle ---------- */
+function netForceSend(){ if(NET.on&&NET.role==='host')netHostSend(0,true); }
+function netHostSend(dt,force){ if(NET.role!=='host'||!MP.ch)return; NET.acc+=dt; if(!force&&NET.acc<0.05)return; NET.acc=0;
+  MP.send('state',{ t:++NET.seq,
+    b:[r2(ball.x),r2(ball.y),r2(ball.z),r2(ball.vx),r2(ball.vy),r2(ball.vz)], a:ball.active?1:0, l:ball.last==='player'?1:0,
+    hp:[r2(pad.x),r2(pad.y)], pp:pPts, ap:aPts, sv:server==='player'?1:0,
+    ph:(phase==='serve'?1:phase==='rally'?2:phase==='point'?3:0), hn:PNAME }); }
+function hostApplyPad(p){ if(!p)return; aiPad.x=clamp(-(p.x||0),-4.5,4.5); aiPad.y=clamp(p.y||0.9,0.2,2.9); NET.aiPadVx=-(p.vx||0); NET.aiPower=!!p.pw; if(p.sw)aiPad.swing=1; }
+function netSendPad(dt){ if(NET.role!=='guest'||!MP.ch)return; NET.padAcc+=dt; if(NET.padAcc<0.05)return; NET.padAcc=0;
+  MP.send('pad',{ x:r2(pad.x), y:r2(pad.y), vx:r2(pad.vx), sw:pad.swing>0.5?1:0, pw:clickT>0?1:0 }); }
+
+/* ---------- guest: local ball integration + soft correction to host snapshots ---------- */
+function netGuestFrame(dt){ if(!ball.active)return;
+  ball.x+=ball.vx*dt; ball.z+=ball.vz*dt; ball.vy-=GRAV*dt; ball.y+=ball.vy*dt;
+  if(ball.y<=BALLR && ball.vy<0){ ball.y=BALLR; ball.vy=-ball.vy*0.72; ball.vx*=0.97; ball.vz*=0.99; }
+  pushTrail(); }
+function guestApplyState(s){ if(!s||NET.role!=='guest')return;
+  if(s.hp){ aiPad.x=clamp(-s.hp[0],-4.5,4.5); aiPad.y=clamp(s.hp[1],0.2,2.9); }
+  if(s.b){ const tx=-s.b[0], ty=s.b[1], tz=MIRZ-s.b[2], active=!!s.a, last=s.l?'ai':'player';
+    const err=Math.abs(tx-ball.x)+Math.abs(ty-ball.y)+Math.abs(tz-ball.z);
+    if(!NET.binit || !ball.active || !active || err>2.2){ ball.x=tx; ball.y=ty; ball.z=tz; NET.binit=true; }
+    else { ball.x=lerp(ball.x,tx,0.4); ball.y=lerp(ball.y,ty,0.4); ball.z=lerp(ball.z,tz,0.4); }
+    ball.vx=-s.b[3]; ball.vy=s.b[4]; ball.vz=-s.b[5]; ball.active=active; ball.last=last; }
+  const np=(s.ap||0), na=(s.pp||0);
+  if(np>pPts){ banner('POINT!'); snd('point'); shake=Math.min(.4,shake+.2); } else if(na>aPts){ banner('LOST'); }
+  pPts=np; aPts=na;
+  const gsv=s.sv?'ai':'player', gph=(s.ph===1?'serve':s.ph===2?'rally':s.ph===3?'point':'');
+  if(gph==='serve' && phase!=='serve') banner(gsv==='player'?'YOUR SERVE':'OPPONENT SERVE');
+  phase=gph; server=gsv; if(s.hn && (!curOpp||curOpp==='Opponent'||curOpp==='Player'))curOpp=s.hn; }
+
+/* ---------- host: human opponent (guest) returns the ball at the far end ---------- */
+function reflectFar(){ const power=NET.aiPower; const vz=-(power?11:7.4), vy=power?3.2:3.9; const y0=Math.max(ball.y,0.4);
+  const tb=(vy+Math.sqrt(vy*vy+2*GRAV*y0))/GRAV; const off=ball.x-aiPad.x; const aimDir=clamp(-off*2.4+NET.aiPadVx*0.35,-1,1); const targetX=aimDir*(HALFW-0.5);
+  ball.vz=vz; ball.vy=vy; ball.vx=clamp((targetX-ball.x)/tb,-10,10); ball.y=y0; aiPad.swing=1; ball.last='ai'; ball.bounces=0;
+  snd(power?'power':'hit'); netForceSend(); }
+
+/* auto-join from a shared ?room= link */
+try{ const rc=new URLSearchParams(location.search).get('room'); if(rc){ const c=rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); if(c.length===4){ refreshName(); setTimeout(()=>{ openRoom(); joinRoom(c); }, 600); } } }catch(e){}
 
 /* ============================================================ LOOP ============================================================ */
 let last=0; function loop(t){ const dt=Math.min(.05,(t-last)/1000||0); last=t; update(dt); render(); requestAnimationFrame(loop); }

@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Air Hockey Arena</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Air Hockey Arena" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; background:#070b16; color:#fff;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
+  #app{ position:relative; width:100vw; height:100vh; overflow:hidden; }
+  canvas#game{ display:block; position:absolute; inset:0; width:100%; height:100%; touch-action:none; background:#070b16; }
+
+  /* ---- screens ---- */
+  .screen{ position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; text-align:center; padding:22px 16px 28px; overflow-y:auto;
+    background:radial-gradient(circle at 50% 18%, #16305e, #070b16 74%); }
+  .screen.hidden{ display:none; }
+  h1{ font-size:clamp(28px,8vw,52px); letter-spacing:1px; margin:6px 0 2px;
+    background:linear-gradient(90deg,#38e8ff,#4d8cff 55%,#b06bff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  h2{ font-size:clamp(20px,5vw,30px); margin:8px 0; }
+  .sub{ color:#9fb3d8; font-size:clamp(13px,3vw,16px); margin-bottom:14px; max-width:560px; line-height:1.5; }
+  .wallet{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:6px 0 14px; }
+  .chip{ background:rgba(10,18,34,.7); border:1px solid #263a63; border-radius:20px; padding:7px 14px; font-size:14px; }
+  .chip b{ color:#ffd54a; }
+  .btn{ background:linear-gradient(135deg,#38e8ff,#3a7bff); color:#04121f; border:none; padding:14px 26px; font-size:17px;
+    font-weight:800; border-radius:26px; cursor:pointer; margin:5px; box-shadow:0 6px 16px rgba(50,150,255,.35);
+    text-decoration:none; display:inline-block; min-width:170px; }
+  .btn.sec{ background:linear-gradient(135deg,#2a3c63,#1b2947); color:#dbe7ff; box-shadow:none; min-width:0; }
+  .btn.green{ background:linear-gradient(135deg,#39ff9d,#1ea85a); color:#04220f; }
+  .btn.gold{ background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#241600; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .menu-btns{ display:flex; flex-direction:column; gap:4px; width:100%; max-width:340px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
+  .list{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:10px; margin:6px 0; }
+  .card2{ display:flex; align-items:center; gap:12px; background:#132444; border:1px solid #24365f; border-radius:14px; padding:12px 14px; text-align:left; }
+  .card2.locked{ opacity:.6; }
+  .card2 .ic{ font-size:30px; width:44px; text-align:center; }
+  .card2 .info{ flex:1; } .card2 .info .t{ font-weight:800; font-size:16px; } .card2 .info .d{ color:#9fb3d8; font-size:12.5px; margin-top:2px; }
+  .pill{ font-size:12px; font-weight:800; border-radius:16px; padding:5px 12px; border:none; cursor:pointer; }
+  .pill.buy{ background:#ffd54a; color:#241600; } .pill.use{ background:#39ff9d; color:#04220f; } .pill.on{ background:#2a3c63; color:#9fd1ff; }
+  .pill.lock{ background:#33436b; color:#9fb0d0; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; width:100%; max-width:560px; margin:6px 0; }
+  .tile{ background:#132444; border:2px solid #24365f; border-radius:16px; padding:12px 10px; cursor:pointer; }
+  .tile.sel{ border-color:#ffd54a; } .tile.locked{ opacity:.75; }
+  .tile .prev{ width:100%; height:64px; border-radius:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; }
+  .tile .nm{ font-weight:800; font-size:14px; } .tile .px{ font-size:12px; color:#9fb3d8; margin-top:3px; }
+  .tabs{ display:flex; gap:8px; margin:6px 0 10px; }
+  .tab{ background:#182a4d; border:1px solid #29406e; color:#cfe0ff; border-radius:20px; padding:8px 18px; cursor:pointer; font-weight:700; }
+  .tab.on{ background:#38e8ff; color:#04121f; }
+  .statgrid{ width:100%; max-width:460px; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0; }
+  .stat{ background:#132444; border:1px solid #24365f; border-radius:14px; padding:14px; }
+  .stat .v{ font-size:26px; font-weight:900; color:#38e8ff; } .stat .k{ font-size:12.5px; color:#9fb3d8; margin-top:2px; }
+  .toggle{ display:flex; align-items:center; justify-content:space-between; width:100%; max-width:360px; background:#132444;
+    border:1px solid #24365f; border-radius:14px; padding:12px 16px; margin:5px 0; font-size:16px; }
+  .sw{ width:52px; height:30px; border-radius:16px; background:#2a3c63; position:relative; cursor:pointer; transition:background .15s; }
+  .sw.on{ background:#39ff9d; } .sw i{ position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s; }
+  .sw.on i{ left:25px; }
+  .foot{ margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .foot a,.foot button{ color:#9fb3d8; font-size:14px; font-weight:700; background:rgba(10,18,34,.6); border:1px solid #263a63;
+    border-radius:22px; padding:10px 18px; cursor:pointer; text-decoration:none; }
+
+  /* ---- match HUD ---- */
+  #matchHud{ position:absolute; inset:0; z-index:9; pointer-events:none; display:none; }
+  #matchHud.on{ display:block; }
+  #pauseBtn{ position:absolute; top:12px; right:12px; pointer-events:auto; width:44px; height:44px; border-radius:12px;
+    border:1px solid #2a3c63; background:rgba(8,14,28,.65); color:#fff; font-size:18px; cursor:pointer; }
+  #matchInfo{ position:absolute; top:12px; left:12px; background:rgba(8,14,28,.6); border-radius:10px; padding:6px 12px; font-size:13px; color:#cfe0ff; }
+  #pauseOv{ position:absolute; inset:0; z-index:12; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(6,10,22,.8); }
+  #pauseOv.on{ display:flex; }
+  #resultBtns{ position:absolute; left:0; right:0; bottom:26px; z-index:12; display:none; flex-direction:column; align-items:center; gap:2px; }
+  #resultBtns.on{ display:flex; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- MAIN MENU -->
+  <div id="s-menu" class="screen">
+    <h1>🏒 AIR HOCKEY ARENA</h1>
+    <div class="sub">Fast, clean, physics-driven air hockey. First to 7 goals wins.</div>
+    <div class="wallet">
+      <span class="chip">🪙 <b id="w-coins">0</b></span>
+      <span class="chip">🏆 Wins <b id="w-wins">0</b></span>
+      <span class="chip">💔 Losses <b id="w-losses">0</b></span>
+    </div>
+    <div class="menu-btns">
+      <button class="btn" data-go="play">▶ PLAY</button>
+      <button class="btn green" data-go="career">🏅 CAREER MODE</button>
+      <button class="btn gold" data-go="shop">🛒 SHOP</button>
+      <button class="btn sec" data-go="stats">📊 STATISTICS</button>
+      <button class="btn sec" data-go="settings">⚙️ SETTINGS</button>
+    </div>
+    <div class="foot">
+      <button id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('airhockey','Air Hockey Arena')">🏆 Leaderboard</button>
+      <a href="../">🏠 All Games</a>
+    </div>
+  </div>
+
+  <!-- PLAY (difficulty) -->
+  <div id="s-play" class="screen hidden">
+    <h1>▶ QUICK PLAY</h1>
+    <div class="sub">Choose a difficulty. Score 7 to win.</div>
+    <div class="list" id="diffList"></div>
+    <button class="btn sec" data-go="menu">⬅ Back</button>
+  </div>
+
+  <!-- CAREER -->
+  <div id="s-career" class="screen hidden">
+    <h1>🏅 CAREER MODE</h1>
+    <div class="sub">Beat each opponent to unlock the next. You start as a Rookie.</div>
+    <div class="list" id="careerList"></div>
+    <button class="btn sec" data-go="menu">⬅ Back</button>
+  </div>
+
+  <!-- SHOP -->
+  <div id="s-shop" class="screen hidden">
+    <h1>🛒 SHOP</h1>
+    <div class="wallet"><span class="chip">🪙 <b id="shop-coins">0</b></span></div>
+    <div class="tabs"><div class="tab on" data-tab="paddles">Paddles</div><div class="tab" data-tab="arenas">Arenas</div></div>
+    <div class="grid" id="shopGrid"></div>
+    <button class="btn sec" data-go="menu">⬅ Back</button>
+  </div>
+
+  <!-- STATS -->
+  <div id="s-stats" class="screen hidden">
+    <h1>📊 STATISTICS</h1>
+    <div class="statgrid" id="statGrid"></div>
+    <button class="btn sec" data-go="menu">⬅ Back</button>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="s-settings" class="screen hidden">
+    <h1>⚙️ SETTINGS</h1>
+    <div class="toggle">🎵 Music <div class="sw" id="sw-music"><i></i></div></div>
+    <div class="toggle">🔊 Sound effects <div class="sw" id="sw-sfx"><i></i></div></div>
+    <div class="row" style="margin-top:12px"><button class="btn sec" id="resetBtn">♻️ Reset progress</button></div>
+    <button class="btn sec" data-go="menu" style="margin-top:8px">⬅ Back</button>
+  </div>
+
+  <!-- MATCH HUD -->
+  <div id="matchHud">
+    <div id="matchInfo"></div>
+    <button id="pauseBtn">⏸</button>
+  </div>
+  <div id="pauseOv">
+    <h2>Paused</h2>
+    <button class="btn" id="resumeBtn">▶ Resume</button>
+    <button class="btn sec" id="quitBtn">🏳️ Quit match</button>
+  </div>
+  <div id="resultBtns">
+    <div class="row" id="resultRow"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   AIR HOCKEY ARENA — top-down 2D air hockey, physics-first.
+   Fixed logical field (600x1000) scaled to fit; sub-stepped puck with
+   circle-circle paddle collisions + positional correction so the puck
+   never tunnels, never sticks, never passes through walls/paddles.
+   ===================================================================== */
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('game'), ctx = cv.getContext('2d');
+
+/* ---------------- save ---------------- */
+const SKEY = 'airHockeyArena_v1';
+const DEFAULT_SAVE = {
+  coins: 0, wins: 0, losses: 0,
+  goalsFor: 0, goalsAgainst: 0, matchesPlayed: 0,
+  careerLevel: 0,                      // index of next opponent to beat
+  ownedPaddles: ['classic'], paddle: 'classic',
+  ownedArenas: ['classic'], arena: 'classic',
+  music: true, sfx: true,
+};
+let save = load();
+function load(){
+  const base = JSON.parse(JSON.stringify(DEFAULT_SAVE));   // deep copy — never share default arrays
+  try{ const s=JSON.parse(localStorage.getItem(SKEY));
+    if(s&&typeof s==='object'){ Object.assign(base, s);
+      if(!Array.isArray(base.ownedPaddles)||!base.ownedPaddles.length) base.ownedPaddles=['classic'];
+      if(!Array.isArray(base.ownedArenas)||!base.ownedArenas.length) base.ownedArenas=['classic'];
+      if(!PADDLES[base.paddle]) base.paddle='classic';
+      if(!ARENAS[base.arena]) base.arena='classic';
+    }
+  }catch(e){}
+  return base;
+}
+function persist(){ try{ localStorage.setItem(SKEY, JSON.stringify(save)); }catch(e){} }
+
+/* ---------------- content ---------------- */
+const DIFFS = {
+  easy:     { name:'Easy',     speed:340, predict:0.15, attack:0.30, accuracy:0.40, home:120, track:0.20 },
+  medium:   { name:'Medium',   speed:470, predict:0.55, attack:0.55, accuracy:0.24, home:110, track:0.32 },
+  hard:     { name:'Hard',     speed:640, predict:0.82, attack:0.72, accuracy:0.13, home:96,  track:0.42 },
+  champion: { name:'Champion', speed:780, predict:1.00, attack:0.70, accuracy:0.06, home:80,  track:0.50 },
+};
+const DIFF_DESC = {
+  easy:'Slow reactions — a gentle warm-up.',
+  medium:'Average reactions — a fair match.',
+  hard:'Fast reactions — stays sharp.',
+  champion:'Very strong defense & shot prediction.',
+};
+const CAREER = [
+  { id:'rookie', name:'Rookie Bot',   ic:'🤖', diff:'easy',     reward:40 },
+  { id:'street', name:'Street Bot',   ic:'🥊', diff:'easy',     reward:60,  speed:400 },
+  { id:'club',   name:'Club Bot',     ic:'🎽', diff:'medium',   reward:90 },
+  { id:'arena',  name:'Arena Bot',    ic:'🏟️', diff:'medium',   reward:120, speed:560 },
+  { id:'pro',    name:'Pro Bot',      ic:'🎯', diff:'hard',     reward:170 },
+  { id:'champ',  name:'Champion Bot', ic:'👑', diff:'champion', reward:260 },
+];
+const PADDLES = {
+  classic:{ name:'Classic', price:0,    face:'#2f7bff', rim:'#cfe4ff', glow:'#2f7bff' },
+  neon:   { name:'Neon',    price:150,  face:'#12e0d0', rim:'#c9fff9', glow:'#12e0d0' },
+  fire:   { name:'Fire',    price:300,  face:'#ff6a2b', rim:'#ffd7a8', glow:'#ff7b3d' },
+  ice:    { name:'Ice',     price:300,  face:'#8fd8ff', rim:'#ffffff', glow:'#bfeaff' },
+  galaxy: { name:'Galaxy',  price:600,  face:'#8a4bff', rim:'#e6cfff', glow:'#b06bff' },
+  golden: { name:'Golden',  price:1200, face:'#ffcf3a', rim:'#fff2c2', glow:'#ffd54a' },
+};
+const ARENAS = {
+  classic:      { name:'Classic',      price:0,    felt:'#0f3f6b', line:'#eaf4ff', wall:'#dfe9f5', bg:'#08152a', accent:'#38a0ff' },
+  ice:          { name:'Ice',          price:200,  felt:'#bfe6f7', line:'#3a6b86', wall:'#ffffff', bg:'#dff1fb', accent:'#4fb0e0', dark:true },
+  neon:         { name:'Neon',         price:400,  felt:'#0b0b18', line:'#ff35c8', wall:'#28e0ff', bg:'#05050d', accent:'#ff35c8', glow:true },
+  galaxy:       { name:'Galaxy',       price:800,  felt:'#141033', line:'#9a7bff', wall:'#7a5bff', bg:'#070315', accent:'#b06bff', stars:true },
+  championship: { name:'Championship', price:1500, felt:'#1a1406', line:'#ffe08a', wall:'#ffd54a', bg:'#0a0803', accent:'#ffd54a', glow:true },
+};
+
+/* ---------------- field geometry (logical) ---------------- */
+const LW = 600, LH = 1000;
+const M = 26;                                   // wall margin
+const F = { l:M, r:LW-M, t:M, b:LH-M };
+const CX = LW/2, CY = LH/2;
+const GOALW = 210;
+const GL = CX-GOALW/2, GR = CX+GOALW/2;
+const PUCK_R = 17, PAD_R = 30;
+const WALL_E = 0.94, PAD_E = 0.95, FRIC = 0.9985;
+const MAX_SPEED = 1550, MIN_HIT = 250;
+
+/* ---------------- sound (WebAudio, synth) ---------------- */
+const Sound = (function(){
+  let ctxA=null, master=null;
+  let musicOn=false, musTimer=null, musStep=0;
+  function ensure(){ if(ctxA) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    ctxA=new AC(); master=ctxA.createGain(); master.gain.value=0.5; master.connect(ctxA.destination); }
+  function blip(freq,dur,type,vol,slideTo){ if(!ctxA||!save.sfx) return; const t=ctxA.currentTime;
+    const o=ctxA.createOscillator(), g=ctxA.createGain(); o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol||0.2,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.02); }
+  function note(freq,dur,vol){ if(!ctxA) return; const t=ctxA.currentTime; const o=ctxA.createOscillator(), g=ctxA.createGain();
+    o.type='triangle'; o.frequency.value=freq; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol||0.12,t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.02); }
+  const MEL=[0,4,7,11,7,4, 2,5,9,12,9,5];   // gentle loop (semitones from A3)
+  function musicTick(){ if(!musicOn||!save.music){ return; } const base=220;
+    const semi=MEL[musStep%MEL.length]; note(base*Math.pow(2,semi/12), 0.5, 0.06);
+    if(musStep%2===0) note(base/2*Math.pow(2,(MEL[(musStep+3)%MEL.length])/12), 0.9, 0.04);
+    musStep++; }
+  return {
+    resume(){ ensure(); if(ctxA&&ctxA.state==='suspended') ctxA.resume(); },
+    hit(v){ blip(360+220*v, 0.06, 'square', 0.18+0.12*v); },
+    wall(){ blip(150, 0.07, 'triangle', 0.16, 110); },
+    goal(){ blip(440,0.12,'square',0.2,660); setTimeout(()=>blip(660,0.16,'square',0.2,880),90); },
+    win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>note(f,0.35,0.16),i*140)); },
+    lose(){ [392,330,262].forEach((f,i)=>setTimeout(()=>note(f,0.4,0.12),i*160)); },
+    click(){ blip(520,0.04,'square',0.1); },
+    startMusic(){ ensure(); musicOn=true; if(!musTimer) musTimer=setInterval(musicTick,500); },
+    stopMusic(){ musicOn=false; },
+  };
+})();
+
+/* ---------------- game objects ---------------- */
+const puck = { x:CX, y:CY, vx:0, vy:0, r:PUCK_R };
+const player = { x:CX, y:LH*0.78, px:CX, py:LH*0.78, vx:0, vy:0, r:PAD_R };
+const ai     = { x:CX, y:LH*0.22, px:CX, py:LH*0.22, vx:0, vy:0, r:PAD_R };
+let match = null;   // { p, a, target, diff, bot, mode, phase, serveTimer, serveTo }
+const fx = { shake:0, popup:null, popupT:0, flashTop:0, flashBot:0, confetti:[], trophyT:0 };
+
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const inGoalX=x=>x>GL+2 && x<GR-2;
+
+/* ---------------- input (pointer, unified mouse+touch) ---------------- */
+let pointer = { active:false, x:CX, y:LH*0.78 };
+function toLogical(clientX, clientY){
+  const rect = cv.getBoundingClientRect();
+  const sx = LW/rect.width, sy = LH/rect.height;
+  return { x:(clientX-rect.left)*sx, y:(clientY-rect.top)*sy };
+}
+function onPointer(e){
+  if(!match || match.phase==='over') return;
+  const t = e.touches ? e.touches[0] : e;
+  if(!t) return;
+  const p = toLogical(t.clientX, t.clientY);
+  pointer.x = p.x; pointer.y = p.y; pointer.active = true;
+}
+cv.addEventListener('pointerdown', e=>{ Sound.resume(); onPointer(e); e.preventDefault(); });
+cv.addEventListener('pointermove', e=>{ onPointer(e); e.preventDefault(); });
+cv.addEventListener('pointerup',   ()=>{ pointer.active=false; });
+cv.addEventListener('pointercancel',()=>{ pointer.active=false; });
+window.addEventListener('pointerdown', ()=> Sound.resume(), { once:false });
+
+/* ---------------- match control ---------------- */
+function startMatch(diffKey, mode, bot){
+  const base = DIFFS[diffKey];
+  const diff = Object.assign({}, base);
+  if(bot && bot.speed) diff.speed = bot.speed;     // per-bot tuning override
+  match = { p:0, a:0, target:7, diff, diffKey, bot:bot||null, mode, phase:'serve', serveTimer:1.0, serveTo:0, aimX:CX, _aimT:0 };
+  player.x=CX; player.y=LH*0.78; player.sx=player.x; player.sy=player.y; player.tx=player.x; player.ty=player.y; player.vx=player.vy=0;
+  ai.x=CX; ai.y=LH*0.22; ai.sx=ai.x; ai.sy=ai.y; ai.tx=ai.x; ai.ty=ai.y; ai._tx=ai.x; ai._ty=ai.y; ai.vx=ai.vy=0;
+  pointer.x=player.x; pointer.y=player.y; pointer.active=false;
+  stuckT=0;
+  resetPuck(0);
+  fx.confetti.length=0; fx.trophyT=0; fx.shake=0; fx.popup=null;
+  showMatch();
+}
+function resetPuck(serveTo){
+  puck.x=CX; puck.y=CY; puck.vx=0; puck.vy=0;
+  match.phase='serve'; match.serveTimer=0.9; match.serveTo=serveTo; // -1 up(AI), 1 down(player), 0 random
+}
+function releasePuck(){
+  let dir = match.serveTo;
+  if(dir===0) dir = Math.random()<0.5?-1:1;
+  const ang = (Math.random()*0.7-0.35);                 // spread
+  const sp = 330;
+  puck.vx = Math.sin(ang)*sp;
+  puck.vy = dir*Math.cos(ang)*sp;
+  match.phase='play';
+}
+function goal(scorer){                                   // 'player' or 'ai'
+  if(scorer==='player'){ match.p++; fx.flashTop=1; save.goalsFor++; }
+  else { match.a++; fx.flashBot=1; save.goalsAgainst++; }
+  persist();
+  Sound.goal();
+  fx.shake=1; fx.popup='GOAL!'; fx.popupT=1.1;
+  if(match.p>=match.target || match.a>=match.target){ endMatch(match.p>match.a); return; }
+  resetPuck(scorer==='player' ? -1 : 1);                 // give puck to the side that conceded
+}
+function endMatch(playerWon){
+  match.phase='over';
+  save.matchesPlayed++;
+  let coins = 0;
+  if(playerWon){
+    save.wins++;
+    coins = match.mode==='career' && match.bot ? match.bot.reward : 30;
+    // career: unlock next opponent
+    if(match.mode==='career' && match.bot){
+      const idx = CAREER.findIndex(c=>c.id===match.bot.id);
+      if(idx===save.careerLevel && idx < CAREER.length) save.careerLevel = idx+1;
+    }
+    save.coins += coins;
+    fx.trophyT = 0; spawnConfetti();
+    Sound.win();
+    if(window.IGAuth) IGAuth.submitScore('airhockey', save.wins);
+  } else {
+    save.losses++;
+    Sound.lose();
+  }
+  persist();
+  showResult(playerWon, coins);
+}
+
+/* ---------------- physics ---------------- */
+// Set a paddle's target + frame velocity, but keep its position at the frame
+// start — stepPuck() sweeps it across the substeps so a fast flick can never
+// phase through the puck. Velocities are finite-guarded (dt can be tiny).
+function prepPaddle(p, tx, ty, dt){
+  p.sx=p.x; p.sy=p.y; p.tx=tx; p.ty=ty;
+  p.vx=(tx-p.x)/dt; p.vy=(ty-p.y)/dt;
+  if(!isFinite(p.vx)) p.vx=0; if(!isFinite(p.vy)) p.vy=0;
+}
+function updatePlayerPaddle(dt){
+  // follow pointer directly (zero lag), clamped to the player's half
+  let tx = pointer.active ? pointer.x : player.x;
+  let ty = pointer.active ? pointer.y : player.y;
+  tx = clamp(tx, F.l+player.r, F.r-player.r);
+  ty = clamp(ty, CY+player.r+2, F.b-player.r);
+  prepPaddle(player, tx, ty, dt);
+}
+function predictXAtY(px,py,vx,vy,ty){
+  if(Math.abs(vy)<1e-3) return px;
+  let t=(ty-py)/vy; if(t<0) return px;
+  let x = px + vx*t;
+  const lo=F.l+puck.r, hi=F.r-puck.r, span=hi-lo;
+  if(span<=0) return px;
+  let u = (x-lo) % (2*span); if(u<0) u+=2*span;
+  if(u>span) u = 2*span-u;
+  return lo+u;
+}
+function aiThink(dt){
+  const d = match.diff;
+  const homeY = F.t + ai.r + d.home;
+  let tx = CX, ty = homeY;
+  const inAI = puck.y < CY;
+  const movingUp = puck.vy < -20;
+  if(inAI){
+    if(movingUp){
+      // DEFEND: meet the puck on its way in, staying goal-side
+      const predX = predictXAtY(puck.x,puck.y,puck.vx,puck.vy, homeY);
+      tx = CX + (predX-CX);
+      tx = CX + (tx-CX)*1.0;
+      // blend prediction vs raw puck x by skill
+      tx = puck.x + (predX-puck.x)*d.predict;
+      ty = clamp(puck.y - ai.r*0.3, homeY, CY-ai.r);
+    } else {
+      // ATTACK: line up behind the puck to strike it toward the player's goal.
+      // Aim is sampled once per possession (not per frame) to avoid jitter.
+      match._aimT -= dt;
+      if(match._aimT<=0){ match.aimX = CX + (Math.random()*2-1)*(GOALW*0.32)*(1-d.accuracy); match._aimT=0.5; }
+      const gx = match.aimX, gy = F.b;               // aim at player's goal
+      let dx = gx-puck.x, dy = gy-puck.y; const dl=Math.hypot(dx,dy)||1; dx/=dl; dy/=dl;
+      tx = puck.x - dx*(puck.r+ai.r);
+      ty = puck.y - dy*(puck.r+ai.r);
+      // only commit to attack by aggression; otherwise hold a bit back
+      tx = CX + (tx-CX)*d.attack + (puck.x-CX)*(1-d.attack);
+      ty = clamp(ty, homeY, CY-ai.r);
+    }
+  } else {
+    // REPOSITION: return home, track puck x defensively
+    tx = CX + (puck.x-CX)*d.track;
+    ty = homeY;
+  }
+  ai._tx = clamp(tx, F.l+ai.r, F.r-ai.r);
+  ai._ty = clamp(ty, F.t+ai.r, CY-ai.r);
+}
+function updateAIPaddle(dt){
+  const d = match.diff;
+  const dx=ai._tx-ai.x, dy=ai._ty-ai.y, dl=Math.hypot(dx,dy);
+  const step = d.speed*dt;
+  let nx, ny;
+  if(dl<=step || dl<1e-4){ nx=ai._tx; ny=ai._ty; }
+  else { nx=ai.x+dx/dl*step; ny=ai.y+dy/dl*step; }
+  nx=clamp(nx, F.l+ai.r, F.r-ai.r); ny=clamp(ny, F.t+ai.r, CY-ai.r);
+  prepPaddle(ai, nx, ny, dt);          // swept across substeps, like the player
+}
+function collideWalls(){
+  // left / right walls
+  if(puck.x < F.l+puck.r){ puck.x=F.l+puck.r; puck.vx=Math.abs(puck.vx)*WALL_E; Sound.wall(); }
+  else if(puck.x > F.r-puck.r){ puck.x=F.r-puck.r; puck.vx=-Math.abs(puck.vx)*WALL_E; Sound.wall(); }
+  // top wall (AI goal) — opening in the middle
+  if(puck.y < F.t+puck.r){
+    if(inGoalX(puck.x)){ if(puck.y < F.t){ goal('player'); return true; } }
+    else { puck.y=F.t+puck.r; puck.vy=Math.abs(puck.vy)*WALL_E; Sound.wall(); }
+  }
+  // bottom wall (player goal)
+  if(puck.y > F.b-puck.r){
+    if(inGoalX(puck.x)){ if(puck.y > F.b){ goal('ai'); return true; } }
+    else { puck.y=F.b-puck.r; puck.vy=-Math.abs(puck.vy)*WALL_E; Sound.wall(); }
+  }
+  return false;
+}
+function collidePaddle(pad){
+  const dx=puck.x-pad.x, dy=puck.y-pad.y;
+  const dist=Math.hypot(dx,dy), minD=puck.r+pad.r;
+  if(dist>=minD) return;
+  let nx, ny;
+  if(dist>1e-4){ nx=dx/dist; ny=dy/dist; } else { nx=0; ny=(pad===ai?1:-1); }
+  // positional correction — push puck to the paddle surface (never overlap => never stuck/through)
+  puck.x = pad.x + nx*minD; puck.y = pad.y + ny*minD;
+  const rvx=puck.vx-pad.vx, rvy=puck.vy-pad.vy;
+  const vn = rvx*nx+rvy*ny;
+  if(vn<0){                                   // only respond to an actual approach
+    const j = -(1+PAD_E)*vn; puck.vx += j*nx; puck.vy += j*ny;
+    // guarantee a lively rebound (no dead puck kissing the paddle)
+    const sp=Math.hypot(puck.vx,puck.vy);
+    if(sp<MIN_HIT){ puck.vx=nx*MIN_HIT; puck.vy=ny*MIN_HIT; }
+    clampSpeed();
+    if(vn < -40) Sound.hit(clamp(Math.hypot(puck.vx,puck.vy)/MAX_SPEED,0,1));
+  }
+}
+function clampSpeed(){
+  const sp=Math.hypot(puck.vx,puck.vy);
+  if(sp>MAX_SPEED){ const k=MAX_SPEED/sp; puck.vx*=k; puck.vy*=k; }
+}
+let stuckT=0;
+function clampPuckField(){
+  // keep the puck in bounds after collisions — but allow it into the goal band
+  // (top/bottom middle) so a real goal can still register.
+  puck.x = clamp(puck.x, F.l+puck.r, F.r-puck.r);
+  if(!inGoalX(puck.x)) puck.y = clamp(puck.y, F.t+puck.r, F.b-puck.r);
+  else puck.y = clamp(puck.y, F.t-puck.r, F.b+puck.r);
+}
+function stepPuck(dt){
+  // step count covers BOTH puck speed and paddle sweep speed, so neither can skip
+  const padSp = Math.max(Math.hypot(player.tx-player.sx, player.ty-player.sy),
+                         Math.hypot(ai.tx-ai.sx, ai.ty-ai.sy)) / dt;
+  const sp = Math.max(Math.hypot(puck.vx,puck.vy), padSp);
+  const steps=clamp(Math.ceil(sp*dt/(puck.r*0.7)),1,16);
+  const sdt=dt/steps;
+  for(let s=0;s<steps;s++){
+    const f=(s+1)/steps;                                  // sweep paddles across the frame
+    player.x=player.sx+(player.tx-player.sx)*f; player.y=player.sy+(player.ty-player.sy)*f;
+    ai.x=ai.sx+(ai.tx-ai.sx)*f; ai.y=ai.sy+(ai.ty-ai.sy)*f;
+    puck.x += puck.vx*sdt; puck.y += puck.vy*sdt;
+    if(collideWalls()) return;        // goal scored -> puck reset already
+    collidePaddle(player);
+    collidePaddle(ai);
+    clampPuckField();
+  }
+  puck.vx*=FRIC; puck.vy*=FRIC;
+  // anti-stuck safety: if the puck idles too long, nudge it
+  if(Math.hypot(puck.vx,puck.vy) < 40){ stuckT+=dt; if(stuckT>1.6){ const a=Math.random()*6.283; puck.vx=Math.cos(a)*300; puck.vy=Math.sin(a)*300; stuckT=0; } }
+  else stuckT=0;
+}
+
+/* ---------------- effects ---------------- */
+function spawnConfetti(){
+  const cols=['#ff5f6d','#ffd54a','#39ff9d','#38e8ff','#b06bff','#ff9b3d'];
+  fx.confetti.length=0;
+  for(let i=0;i<140;i++) fx.confetti.push({ x:Math.random()*LW, y:-Math.random()*LH*0.5,
+    vx:(Math.random()*2-1)*80, vy:120+Math.random()*220, s:5+Math.random()*7, rot:Math.random()*6.28,
+    vr:(Math.random()*2-1)*8, col:cols[i%cols.length] });
+}
+function updateFx(dt){
+  if(fx.shake>0) fx.shake=Math.max(0,fx.shake-dt*2.2);
+  if(fx.popupT>0) fx.popupT-=dt;
+  if(fx.flashTop>0) fx.flashTop=Math.max(0,fx.flashTop-dt*2);
+  if(fx.flashBot>0) fx.flashBot=Math.max(0,fx.flashBot-dt*2);
+  fx.trophyT+=dt;
+  for(const c of fx.confetti){ c.vy+=200*dt; c.x+=c.vx*dt; c.y+=c.vy*dt; c.rot+=c.vr*dt; }
+}
+
+/* ---------------- rendering ---------------- */
+let VIEW = { s:1, ox:0, oy:0 };
+function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=window.innerWidth, h=window.innerHeight;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const s=Math.min(w/LW, h/LH);
+  VIEW.s=s*dpr; VIEW.ox=(w-LW*s)/2*dpr; VIEW.oy=(h-LH*s)/2*dpr;
+}
+window.addEventListener('resize', resize);
+function arena(){ return ARENAS[save.arena] || ARENAS.classic; }
+function paddleSkin(){ return PADDLES[save.paddle] || PADDLES.classic; }
+
+function draw(){
+  const A=arena();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle=A.bg; ctx.fillRect(0,0,cv.width,cv.height);
+  // shake offset
+  let sh=0, sv=0;
+  if(fx.shake>0){ sh=(Math.random()*2-1)*10*fx.shake; sv=(Math.random()*2-1)*10*fx.shake; }
+  ctx.setTransform(VIEW.s,0,0,VIEW.s, VIEW.ox+sh*VIEW.s, VIEW.oy+sv*VIEW.s);
+
+  if(A.stars) drawStars();
+  drawTable(A);
+  if(!match) return;
+
+  // goals flash
+  if(fx.flashTop>0){ ctx.fillStyle=`rgba(56,232,255,${0.5*fx.flashTop})`; ctx.fillRect(GL,F.t-4,GOALW,10); }
+  if(fx.flashBot>0){ ctx.fillStyle=`rgba(255,95,109,${0.5*fx.flashBot})`; ctx.fillRect(GL,F.b-6,GOALW,10); }
+
+  drawPuck(A);
+  drawPaddle(ai, { face:'#ff4d4d', rim:'#ffd0d0', glow:'#ff4d4d' }, A);
+  drawPaddle(player, paddleSkin(), A);
+
+  drawScore(A);
+
+  if(fx.popupT>0 && match.phase!=='over'){
+    const a=clamp(fx.popupT,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle='#fff'; ctx.font='900 66px Trebuchet MS'; ctx.textAlign='center';
+    ctx.fillText(fx.popup, CX, CY-20); ctx.globalAlpha=1;
+  }
+  if(match.phase==='serve'){
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='800 30px Trebuchet MS'; ctx.textAlign='center';
+    ctx.fillText('GET READY', CX, CY-70);
+  }
+  if(match.phase==='over') drawResult();
+  if(fx.confetti.length) drawConfetti();
+}
+function drawStars(){ ctx.fillStyle='rgba(255,255,255,.7)';
+  for(let i=0;i<70;i++){ const x=(i*137)%LW, y=(i*89)%LH; const r=(i%3)?0.8:1.6; ctx.globalAlpha=0.3+((i*7)%10)/20; ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.fill(); } ctx.globalAlpha=1; }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function drawTable(A){
+  // felt
+  ctx.fillStyle=A.felt; roundRect(F.l-8,F.t-8,(F.r-F.l)+16,(F.b-F.t)+16,26); ctx.fill();
+  // markings
+  ctx.strokeStyle=A.line; ctx.globalAlpha=0.9; ctx.lineWidth=3;
+  if(A.glow){ ctx.shadowColor=A.accent; ctx.shadowBlur=14; }
+  // center line
+  ctx.beginPath(); ctx.moveTo(F.l,CY); ctx.lineTo(F.r,CY); ctx.stroke();
+  // center circle
+  ctx.beginPath(); ctx.arc(CX,CY,70,0,6.283); ctx.stroke();
+  ctx.beginPath(); ctx.arc(CX,CY,6,0,6.283); ctx.fillStyle=A.line; ctx.fill();
+  // goal creases
+  ctx.beginPath(); ctx.arc(CX,F.t,120,0,Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(CX,F.b,120,Math.PI,2*Math.PI); ctx.stroke();
+  ctx.shadowBlur=0; ctx.globalAlpha=1;
+  // walls (leave goal openings)
+  ctx.strokeStyle=A.wall; ctx.lineWidth=8; ctx.lineCap='round';
+  if(A.glow){ ctx.shadowColor=A.accent; ctx.shadowBlur=16; }
+  // side walls
+  ctx.beginPath(); ctx.moveTo(F.l,F.t); ctx.lineTo(F.l,F.b); ctx.moveTo(F.r,F.t); ctx.lineTo(F.r,F.b); ctx.stroke();
+  // top wall halves
+  ctx.beginPath(); ctx.moveTo(F.l,F.t); ctx.lineTo(GL,F.t); ctx.moveTo(GR,F.t); ctx.lineTo(F.r,F.t); ctx.stroke();
+  // bottom wall halves
+  ctx.beginPath(); ctx.moveTo(F.l,F.b); ctx.lineTo(GL,F.b); ctx.moveTo(GR,F.b); ctx.lineTo(F.r,F.b); ctx.stroke();
+  ctx.shadowBlur=0; ctx.lineCap='butt';
+  // goal mouths
+  ctx.fillStyle='rgba(56,232,255,.16)'; ctx.fillRect(GL,F.t-14,GOALW,14);
+  ctx.fillStyle='rgba(255,95,109,.16)'; ctx.fillRect(GL,F.b,GOALW,14);
+}
+function drawPuck(A){
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=10; ctx.shadowOffsetY=4;
+  const g=ctx.createRadialGradient(puck.x-4,puck.y-4,2,puck.x,puck.y,puck.r);
+  g.addColorStop(0,'#3a3a3a'); g.addColorStop(1,'#0c0c0c');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r,0,6.283); ctx.fill();
+  ctx.restore();
+  // bright outer ring so the puck stays clearly visible on dark arenas
+  ctx.strokeStyle = A.accent || '#ffffff'; ctx.lineWidth=2.5; ctx.globalAlpha=0.9;
+  ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r,0,6.283); ctx.stroke(); ctx.globalAlpha=1;
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r-5,0,6.283); ctx.stroke();
+}
+function drawPaddle(p, skin, A){
+  ctx.save();
+  ctx.shadowColor=skin.glow; ctx.shadowBlur=18;
+  // outer rim
+  ctx.fillStyle=skin.rim; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+  ctx.shadowBlur=0;
+  // face
+  const g=ctx.createRadialGradient(p.x-6,p.y-6,3,p.x,p.y,p.r-4);
+  g.addColorStop(0, lighten(skin.face,40)); g.addColorStop(1, skin.face);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.r-5,0,6.283); ctx.fill();
+  // inner knob
+  ctx.fillStyle='rgba(255,255,255,.28)'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r-13,0,6.283); ctx.fill();
+  ctx.restore();
+}
+function lighten(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=clamp(r,0,255);g=clamp(g,0,255);b=clamp(b,0,255); return `rgb(${r},${g},${b})`; }
+function drawScore(A){
+  ctx.textAlign='center';
+  // AI (top) red, player (bottom) blue — small, unobtrusive, near center line
+  ctx.font='900 40px Trebuchet MS';
+  ctx.fillStyle='rgba(255,120,120,.9)'; ctx.fillText(match.a, CX-70, CY-16);
+  ctx.fillStyle='rgba(120,190,255,.95)'; ctx.fillText(match.p, CX+70, CY+42);
+  ctx.font='700 12px Trebuchet MS'; ctx.fillStyle='rgba(255,255,255,.5)';
+  ctx.fillText('AI', CX-70, CY-52); ctx.fillText('YOU', CX+70, CY+58);
+}
+function drawResult(){
+  ctx.fillStyle='rgba(6,10,22,.6)'; ctx.fillRect(F.l-10,F.t-10,(F.r-F.l)+20,(F.b-F.t)+20);
+  const won = match.p>match.a;
+  ctx.textAlign='center';
+  if(won){
+    const bob=Math.sin(fx.trophyT*3)*8;
+    ctx.font='96px serif'; ctx.fillText('🏆', CX, CY-40+bob);
+    ctx.font='900 46px Trebuchet MS'; ctx.fillStyle='#ffd54a'; ctx.fillText('YOU WIN!', CX, CY+50);
+  } else {
+    ctx.font='90px serif'; ctx.fillText('😞', CX, CY-40);
+    ctx.font='900 42px Trebuchet MS'; ctx.fillStyle='#ff8088'; ctx.fillText('YOU LOST', CX, CY+50);
+  }
+  ctx.font='800 26px Trebuchet MS'; ctx.fillStyle='#fff';
+  ctx.fillText(`${match.p} — ${match.a}`, CX, CY+90);
+}
+function drawConfetti(){ for(const c of fx.confetti){ ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.fillStyle=c.col; ctx.fillRect(-c.s/2,-c.s/2,c.s,c.s*0.6); ctx.restore(); } }
+
+/* ---------------- main loop ---------------- */
+let last=performance.now(), paused=false;
+function loop(now){
+  requestAnimationFrame(loop);
+  let dt=(now-last)/1000; last=now; dt=Math.max(1e-4, Math.min(dt, 0.05));   // clamp both ends (dt=0 => NaN)
+  if(match && !paused){
+    if(match.phase!=='over'){
+      updatePlayerPaddle(dt);
+      aiThink(dt); updateAIPaddle(dt);
+      if(match.phase==='serve'){
+        player.x=player.tx; player.y=player.ty; ai.x=ai.tx; ai.y=ai.ty;   // snap (no puck to hit yet)
+        puck.x=CX; puck.y=CY; puck.vx=puck.vy=0;
+        match.serveTimer-=dt; if(match.serveTimer<=0) releasePuck();
+      } else stepPuck(dt);
+    }
+    updateFx(dt);
+    $('matchInfo').textContent = `${match.diff.name||''}${match.bot? ' · '+match.bot.name:''}`;
+  }
+  if(match) draw();
+}
+
+/* ---------------- screens / UI ---------------- */
+const SCREENS=['menu','play','career','shop','stats','settings'];
+function showScreen(name){
+  SCREENS.forEach(s=> $('s-'+s).classList.toggle('hidden', s!==name));
+  $('matchHud').classList.remove('on'); $('pauseOv').classList.remove('on'); $('resultBtns').classList.remove('on');
+  match=null; paused=false;
+  if(name==='menu'){ refreshWallet(); Sound.startMusic(); }
+  else Sound.stopMusic();
+  if(name==='play') buildDiff();
+  if(name==='career') buildCareer();
+  if(name==='shop') buildShop();
+  if(name==='stats') buildStats();
+  if(name==='settings') buildSettings();
+}
+function showMatch(){
+  SCREENS.forEach(s=> $('s-'+s).classList.add('hidden'));
+  $('matchHud').classList.add('on'); $('pauseOv').classList.remove('on'); $('resultBtns').classList.remove('on');
+  Sound.stopMusic(); paused=false;
+}
+function refreshWallet(){ $('w-coins').textContent=save.coins; $('w-wins').textContent=save.wins; $('w-losses').textContent=save.losses; }
+
+function buildDiff(){
+  const el=$('diffList');
+  el.innerHTML=Object.keys(DIFFS).map(k=>`
+    <div class="card2"><div class="ic">${k==='champion'?'👑':k==='hard'?'🔥':k==='medium'?'⚡':'🌱'}</div>
+      <div class="info"><div class="t">${DIFFS[k].name}</div><div class="d">${DIFF_DESC[k]}</div></div>
+      <button class="pill use" data-diff="${k}">PLAY</button></div>`).join('');
+  el.querySelectorAll('[data-diff]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); startMatch(b.dataset.diff,'quick',null); });
+}
+function buildCareer(){
+  const el=$('careerList');
+  el.innerHTML=CAREER.map((c,i)=>{
+    const done=i<save.careerLevel, open=i<=save.careerLevel, locked=!open;
+    const badge = done?`<span class="pill on">✓ Beaten</span>` : locked?`<span class="pill lock">🔒 Locked</span>` : `<button class="pill use" data-bot="${c.id}">FIGHT</button>`;
+    return `<div class="card2 ${locked?'locked':''}"><div class="ic">${c.ic}</div>
+      <div class="info"><div class="t">${c.name}</div><div class="d">${DIFFS[c.diff].name} · reward 🪙 ${c.reward}</div></div>${badge}</div>`;
+  }).join('');
+  el.querySelectorAll('[data-bot]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); const bot=CAREER.find(c=>c.id===b.dataset.bot); startMatch(bot.diff,'career',bot); });
+}
+let shopTab='paddles';
+function buildShop(){
+  $('shop-coins').textContent=save.coins;
+  document.querySelectorAll('#s-shop .tab').forEach(t=> t.classList.toggle('on', t.dataset.tab===shopTab));
+  const grid=$('shopGrid');
+  if(shopTab==='paddles'){
+    grid.innerHTML=Object.keys(PADDLES).map(k=>{ const p=PADDLES[k], owned=save.ownedPaddles.includes(k), sel=save.paddle===k;
+      const btn= sel?`<span class="px">✓ Equipped</span>`: owned?`<button class="pill use" data-use-pad="${k}">USE</button>`:`<button class="pill buy" data-buy-pad="${k}">🪙 ${p.price}</button>`;
+      return `<div class="tile ${sel?'sel':''} ${owned?'':'locked'}"><div class="prev" style="background:radial-gradient(circle at 40% 35%, ${lighten(p.face,40)}, ${p.face})"><div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.3)"></div></div><div class="nm">${p.name}</div>${btn}</div>`; }).join('');
+  } else {
+    grid.innerHTML=Object.keys(ARENAS).map(k=>{ const a=ARENAS[k], owned=save.ownedArenas.includes(k), sel=save.arena===k;
+      const btn= sel?`<span class="px">✓ Selected</span>`: owned?`<button class="pill use" data-use-arena="${k}">USE</button>`:`<button class="pill buy" data-buy-arena="${k}">🪙 ${a.price}</button>`;
+      return `<div class="tile ${sel?'sel':''} ${owned?'':'locked'}"><div class="prev" style="background:linear-gradient(135deg,${a.felt},${a.bg})"><span style="color:${a.line};font-weight:900">${a.name}</span></div><div class="nm">${a.name}</div>${btn}</div>`; }).join('');
+  }
+  grid.querySelectorAll('[data-buy-pad]').forEach(b=> b.onclick=()=>buy('pad',b.dataset.buyPad));
+  grid.querySelectorAll('[data-use-pad]').forEach(b=> b.onclick=()=>{ save.paddle=b.dataset.usePad; persist(); Sound.click(); buildShop(); });
+  grid.querySelectorAll('[data-buy-arena]').forEach(b=> b.onclick=()=>buy('arena',b.dataset.buyArena));
+  grid.querySelectorAll('[data-use-arena]').forEach(b=> b.onclick=()=>{ save.arena=b.dataset.useArena; persist(); Sound.click(); buildShop(); });
+}
+function buy(kind,key){
+  const item = kind==='pad'?PADDLES[key]:ARENAS[key];
+  if(save.coins < item.price){ flash('Not enough coins'); return; }
+  save.coins -= item.price;
+  if(kind==='pad'){ save.ownedPaddles.push(key); save.paddle=key; } else { save.ownedArenas.push(key); save.arena=key; }
+  persist(); Sound.win(); buildShop();
+}
+function flash(msg){ const el=$('shop-coins'); if(el){ const old=el.parentElement.innerHTML; } alert(msg); }
+function buildStats(){
+  const wp = save.matchesPlayed? Math.round(save.wins/save.matchesPlayed*100):0;
+  const items=[['Goals Scored',save.goalsFor],['Goals Conceded',save.goalsAgainst],['Matches Won',save.wins],['Matches Played',save.matchesPlayed],['Win %',wp+'%'],['Coins',save.coins]];
+  $('statGrid').innerHTML=items.map(([k,v])=>`<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+}
+function buildSettings(){
+  $('sw-music').classList.toggle('on', save.music);
+  $('sw-sfx').classList.toggle('on', save.sfx);
+}
+
+/* buttons */
+document.querySelectorAll('[data-go]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); showScreen(b.dataset.go); });
+document.querySelectorAll('#s-shop .tab').forEach(t=> t.onclick=()=>{ shopTab=t.dataset.tab; Sound.click(); buildShop(); });
+$('pauseBtn').onclick=()=>{ if(match&&match.phase!=='over'){ paused=true; $('pauseOv').classList.add('on'); } };
+$('resumeBtn').onclick=()=>{ paused=false; $('pauseOv').classList.remove('on'); };
+$('quitBtn').onclick=()=>{ showScreen('menu'); };
+$('sw-music').onclick=()=>{ save.music=!save.music; persist(); buildSettings(); if(save.music){ Sound.resume(); Sound.startMusic(); } else Sound.stopMusic(); };
+$('sw-sfx').onclick=()=>{ save.sfx=!save.sfx; persist(); buildSettings(); };
+$('resetBtn').onclick=()=>{ if(confirm('Reset all progress, coins and unlocks?')){ save=JSON.parse(JSON.stringify(DEFAULT_SAVE)); persist(); showScreen('menu'); } };
+
+function showResult(won, coins){
+  const row=$('resultRow');
+  const nextBtn = (won && match.mode==='career') ? `<button class="btn green" id="r-next">Next ▶</button>` : '';
+  row.innerHTML = `${won?`<span class="chip" style="align-self:center">+🪙 ${coins}</span>`:''}
+    <button class="btn" id="r-again">🔁 Rematch</button>${nextBtn}
+    <button class="btn sec" id="r-menu">🏠 Menu</button>`;
+  $('resultBtns').classList.add('on');
+  const mode=match.mode, bot=match.bot, dk=match.diffKey;
+  $('r-again').onclick=()=>{ Sound.click(); startMatch(dk,mode,bot); };
+  $('r-menu').onclick=()=>{ Sound.click(); showScreen('menu'); };
+  const nx=$('r-next'); if(nx) nx.onclick=()=>{ Sound.click(); const i=CAREER.findIndex(c=>c.id===bot.id)+1; if(i<CAREER.length){ const b=CAREER[i]; startMatch(b.diff,'career',b); } else showScreen('career'); };
+}
+
+/* ---------------- boot ---------------- */
+resize();
+showScreen('menu');
+requestAnimationFrame(loop);
+</script>
+
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    if(!window.IGAuth) return;
+    IGAuth.onChange(function(p){
+      var b=document.getElementById('IGA_login');
+      if(b) b.textContent = p ? ('👤 '+IGAuth.displayName()) : '👤 Log in';
+      try{ var s=JSON.parse(localStorage.getItem('airHockeyArena_v1')); if(s&&+s.wins>0) IGAuth.submitScore('airhockey', +s.wins); }catch(e){}
+    });
+  });
+</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+</body>
+</html>

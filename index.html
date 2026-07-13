@@ -37,6 +37,7 @@
   .catch2  { background:linear-gradient(135deg,#ffd23d,#e0552b); }
   .hcl     { background:linear-gradient(135deg,#12c2a0,#0a5e8a); }
   .f1      { background:linear-gradient(135deg,#e10600,#7a0400); }
+  .airhockey { background:linear-gradient(135deg,#1f7be0,#0a2f6b); }
   .football{ background:linear-gradient(135deg,#1ea85a,#0a5a2e); }
   .obby    { background:linear-gradient(135deg,#8a4bff,#3a1d8a); }
   .puzzles { background:linear-gradient(135deg,#a855f7,#6d28d9); }
@@ -163,6 +164,11 @@
   </div>
   <div id="noResults">No games match — try another search.</div>
   <div class="cards">
+    <a class="card airhockey" href="airhockey/">
+      <span class="emoji">🏒</span>
+      <h2>Air Hockey Arena</h2>
+      <p>Fast, physics-driven air hockey — first to 7 wins. Career mode, paddle skins, arenas & leaderboard.</p>
+    </a>
     <a class="card codebreaker" href="codebreaker/">
       <span class="badge upd">UPDATED</span>
       <span class="emoji">🕵️</span>
@@ -559,7 +565,8 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
-      'handcricket/':  { added:   '2026-07-08T20:00:00' },   // newest -> also the bottom banner
+      'airhockey/':    { added:   '2026-07-13T20:00:00' },   // newest -> also the bottom banner
+      'handcricket/':  { added:   '2026-07-08T20:00:00' },
       'catch2/':       { added:   '2026-07-07T21:00:00' },
       'thisorthat/':   { added:   '2026-06-30T20:06:00' },
       'stack/':        { added:   '2026-06-29T12:10:00' },
@@ -598,7 +605,7 @@
 
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
-      'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
+      'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'airhockey/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
       'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both',
@@ -684,11 +691,11 @@
 /* Home-page search + category filters (Poki-style) */
 (function(){
   const CATS={ 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
-    'obby/':['3d','arcade'], 'pptour/':['3d','sports'], 'f1/':['3d','sports'],
+    'obby/':['3d','arcade'], 'pptour/':['3d','sports'], 'f1/':['3d','sports'], 'airhockey/':['arcade','sports'],
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
     'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'rescue/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc' };
+  const DEV={ 'catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';

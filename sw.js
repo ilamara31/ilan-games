@@ -21,6 +21,8 @@ const ASSETS = [
   './catch2/index.html',
   './handcricket/',
   './handcricket/index.html',
+  './airhockey/',
+  './airhockey/index.html',
   './f1/',
   './f1/index.html',
   './f1/2d.html',
