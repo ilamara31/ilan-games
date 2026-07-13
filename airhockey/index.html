@@ -74,6 +74,8 @@
   #pauseBtn{ position:absolute; top:12px; right:12px; pointer-events:auto; width:44px; height:44px; border-radius:12px;
     border:1px solid #2a3c63; background:rgba(8,14,28,.65); color:#fff; font-size:18px; cursor:pointer; }
   #matchInfo{ position:absolute; top:12px; left:12px; background:rgba(8,14,28,.6); border-radius:10px; padding:6px 12px; font-size:13px; color:#cfe0ff; }
+  #lockHint{ position:absolute; left:50%; bottom:18px; transform:translateX(-50%); background:rgba(8,14,28,.72);
+    border:1px solid #2a3c63; border-radius:20px; padding:8px 16px; font-size:13px; color:#cfe0ff; display:none; pointer-events:none; }
   #pauseOv{ position:absolute; inset:0; z-index:12; display:none; flex-direction:column; align-items:center; justify-content:center;
     background:rgba(6,10,22,.8); }
   #pauseOv.on{ display:flex; }
@@ -153,6 +155,7 @@
   <div id="matchHud">
     <div id="matchInfo"></div>
     <button id="pauseBtn">⏸</button>
+    <div id="lockHint">🖱️ Click the table to lock the cursor to your paddle · Esc to release</div>
   </div>
   <div id="pauseOv">
     <h2>Paused</h2>
@@ -291,24 +294,56 @@ const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
 const inGoalX=x=>x>GL+2 && x<GR-2;
 
 /* ---------------- input (pointer, unified mouse+touch) ---------------- */
+const isTouch = matchMedia('(pointer:coarse)').matches;
 let pointer = { active:false, x:CX, y:LH*0.78 };
+let locked = false;
+// screen<->logical: account for the LETTERBOX (the table is centred & uniformly
+// scaled, so a naive full-canvas map put the paddle offset from the cursor).
+function viewScale(rect){ return Math.min(rect.width/LW, rect.height/LH); }
 function toLogical(clientX, clientY){
   const rect = cv.getBoundingClientRect();
-  const sx = LW/rect.width, sy = LH/rect.height;
-  return { x:(clientX-rect.left)*sx, y:(clientY-rect.top)*sy };
+  const s = viewScale(rect);
+  const ox = (rect.width - LW*s)/2, oy = (rect.height - LH*s)/2;
+  return { x:(clientX-rect.left-ox)/s, y:(clientY-rect.top-oy)/s };
 }
-function onPointer(e){
-  if(!match || match.phase==='over') return;
-  const t = e.touches ? e.touches[0] : e;
-  if(!t) return;
-  const p = toLogical(t.clientX, t.clientY);
-  pointer.x = p.x; pointer.y = p.y; pointer.active = true;
+function clampPlayer(){
+  pointer.x = clamp(pointer.x, F.l+player.r, F.r-player.r);
+  pointer.y = clamp(pointer.y, CY+player.r+2, F.b-player.r);
 }
-cv.addEventListener('pointerdown', e=>{ Sound.resume(); onPointer(e); e.preventDefault(); });
+function onPointer(e){                       // absolute pointer (touch, or unlocked mouse)
+  if(locked || !match || match.phase==='over') return;
+  const p = toLogical(e.clientX, e.clientY);
+  pointer.x = p.x; pointer.y = p.y; clampPlayer(); pointer.active = true;
+}
+function requestLock(){
+  if(isTouch || locked || !cv.requestPointerLock || !match || match.phase==='over') return;
+  try{ const pr=cv.requestPointerLock(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(_){}
+}
+cv.addEventListener('pointerdown', e=>{
+  Sound.resume(); onPointer(e); e.preventDefault();
+  requestLock();   // desktop: capture the cursor so the paddle IS the mouse (Esc to release)
+});
 cv.addEventListener('pointermove', e=>{ onPointer(e); e.preventDefault(); });
-cv.addEventListener('pointerup',   ()=>{ pointer.active=false; });
-cv.addEventListener('pointercancel',()=>{ pointer.active=false; });
+cv.addEventListener('pointerup',   ()=>{ if(!locked) pointer.active=false; });
+cv.addEventListener('pointercancel',()=>{ if(!locked) pointer.active=false; });
 window.addEventListener('pointerdown', ()=> Sound.resume(), { once:false });
+// while locked: move the paddle by relative mouse motion (no OS cursor)
+document.addEventListener('mousemove', e=>{
+  if(!locked || !match || match.phase==='over') return;
+  const rect = cv.getBoundingClientRect(), s = viewScale(rect);
+  pointer.x += e.movementX / s; pointer.y += e.movementY / s;
+  clampPlayer(); pointer.active = true;
+});
+document.addEventListener('pointerlockchange', ()=>{
+  locked = (document.pointerLockElement === cv);
+  if(locked){ pointer.active = true; clampPlayer(); }
+  // Esc (or any unlock) mid-play → pause so the puck doesn't run off while the cursor is free
+  if(!locked && match && match.phase!=='over' && !paused){ paused=true; $('pauseOv').classList.add('on'); }
+  updateLockHint();
+});
+function releaseLock(){ if(document.pointerLockElement===cv && document.exitPointerLock) document.exitPointerLock(); }
+function updateLockHint(){ const h=$('lockHint'); if(!h) return;
+  h.style.display = (!isTouch && match && match.phase!=='over' && !locked && !paused) ? 'block' : 'none'; }
 
 /* ---------------- match control ---------------- */
 function startMatch(diffKey, mode, bot){
@@ -348,6 +383,7 @@ function goal(scorer){                                   // 'player' or 'ai'
 }
 function endMatch(playerWon){
   match.phase='over';
+  releaseLock();                 // free the cursor so result buttons are clickable
   save.matchesPlayed++;
   let coins = 0;
   if(playerWon){
@@ -688,6 +724,7 @@ function loop(now){
 /* ---------------- screens / UI ---------------- */
 const SCREENS=['menu','play','career','shop','stats','settings'];
 function showScreen(name){
+  releaseLock();
   SCREENS.forEach(s=> $('s-'+s).classList.toggle('hidden', s!==name));
   $('matchHud').classList.remove('on'); $('pauseOv').classList.remove('on'); $('resultBtns').classList.remove('on');
   match=null; paused=false;
@@ -702,7 +739,7 @@ function showScreen(name){
 function showMatch(){
   SCREENS.forEach(s=> $('s-'+s).classList.add('hidden'));
   $('matchHud').classList.add('on'); $('pauseOv').classList.remove('on'); $('resultBtns').classList.remove('on');
-  Sound.stopMusic(); paused=false;
+  Sound.stopMusic(); paused=false; updateLockHint();
 }
 function refreshWallet(){ $('w-coins').textContent=save.coins; $('w-wins').textContent=save.wins; $('w-losses').textContent=save.losses; }
 
@@ -764,14 +801,15 @@ function buildSettings(){
 /* buttons */
 document.querySelectorAll('[data-go]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); showScreen(b.dataset.go); });
 document.querySelectorAll('#s-shop .tab').forEach(t=> t.onclick=()=>{ shopTab=t.dataset.tab; Sound.click(); buildShop(); });
-$('pauseBtn').onclick=()=>{ if(match&&match.phase!=='over'){ paused=true; $('pauseOv').classList.add('on'); } };
-$('resumeBtn').onclick=()=>{ paused=false; $('pauseOv').classList.remove('on'); };
+$('pauseBtn').onclick=()=>{ if(match&&match.phase!=='over'){ paused=true; releaseLock(); $('pauseOv').classList.add('on'); updateLockHint(); } };
+$('resumeBtn').onclick=()=>{ paused=false; $('pauseOv').classList.remove('on'); updateLockHint(); requestLock(); };
 $('quitBtn').onclick=()=>{ showScreen('menu'); };
 $('sw-music').onclick=()=>{ save.music=!save.music; persist(); buildSettings(); if(save.music){ Sound.resume(); Sound.startMusic(); } else Sound.stopMusic(); };
 $('sw-sfx').onclick=()=>{ save.sfx=!save.sfx; persist(); buildSettings(); };
 $('resetBtn').onclick=()=>{ if(confirm('Reset all progress, coins and unlocks?')){ save=JSON.parse(JSON.stringify(DEFAULT_SAVE)); persist(); showScreen('menu'); } };
 
 function showResult(won, coins){
+  $('matchHud').classList.remove('on');   // hide the ⏸ button on the result screen
   const row=$('resultRow');
   const nextBtn = (won && match.mode==='career') ? `<button class="btn green" id="r-next">Next ▶</button>` : '';
   row.innerHTML = `${won?`<span class="chip" style="align-self:center">+🪙 ${coins}</span>`:''}

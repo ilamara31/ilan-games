@@ -188,7 +188,7 @@ const ball  ={ x:0, y:1.0, z:6, vx:0, vy:0, vz:0, active:false, last:'player', b
 /* ============================================================ POINTER LOCK ============================================================ */
 let locked=false;
 const canLock = !isTouch && ('requestPointerLock' in cv);
-function requestLock(){ if(canLock && !locked){ try{ cv.requestPointerLock(); }catch(e){} } }
+function requestLock(){ if(canLock && !locked){ try{ const p=cv.requestPointerLock(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} } }   // pointer lock may be unavailable/denied — swallow the async rejection
 function releaseLock(){ if(document.pointerLockElement){ try{ document.exitPointerLock(); }catch(e){} } }
 document.addEventListener('pointerlockchange',()=>{ locked=(document.pointerLockElement===cv); });
 const SENSX=0.0150, SENSY=0.0135;
@@ -266,7 +266,7 @@ function scorePoint(who){ if(phase==='point')return;
 function matchEnd(won){ ball.active=false; coinsEarned=0;
   if(NET.on){ if(won){ coinsEarned=30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
     if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);
-    let n=0; const rs=()=>{ if(n++<3&&NET.on){ MP.send('gameover',{pp:pPts,ap:aPts}); roomTimer(rs,500); } }; rs();
+    const mg=NET.mg; let n=0; const rs=()=>{ if(n++<3&&NET.on&&NET.mg===mg){ MP.send('gameover',{pp:pPts,ap:aPts,g:mg}); roomTimer(rs,500); } }; rs();
     showOverOnline(won); return; }
   if(won){ coinsEarned = (mode==='tournament')?ROUND_COINS[roundIdx]:30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
   if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);   // total matches won (higher is better)
@@ -466,8 +466,10 @@ let PNAME='Player';
 function refreshName(){ try{ if(window.IGAuth){ const u=(IGAuth.getUser&&IGAuth.getUser())||null; PNAME=(u&&u.name) || (IGAuth.displayName&&IGAuth.displayName()) || PNAME; } }catch(e){} PNAME=(''+(PNAME||'Player')).slice(0,12)||'Player'; }
 function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
 
-const NET={ on:false, role:null, code:null, seq:0, acc:0, padAcc:0, aiPadVx:0, aiPower:false, hostName:'', started:false, binit:false };
+const NET={ on:false, role:null, code:null, seq:0, acc:0, padAcc:0, aiPadVx:0, aiPower:false, hostName:'', started:false, binit:false, mg:0, mgSeen:0, goSeen:0, rt:0 };
 let RGEN=0; function roomTimer(fn,ms){ const g=RGEN; setTimeout(()=>{ if(g===RGEN)fn(); }, ms); }
+// wipe per-session match state so a NEW room never collides with a leftover match-gen token from a previous one
+function netResetSession(){ NET.mg=0; NET.mgSeen=0; NET.goSeen=0; NET.seq=0; NET.rt=0; NET.binit=false; NET.acc=0; NET.padAcc=0; NET.aiPower=false; NET.aiPadVx=0; }
 
 const MP={ sb:null, ch:null, code:null, isHost:false,
   async ensure(){ if(!(window.supabase&&window.supabase.createClient)){ await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); }); }
@@ -500,9 +502,9 @@ function showRoomChoice(){ mpCard().innerHTML=
   $('jRoom').onclick=()=>joinRoom((jc.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
   $('mpBack').onclick=()=>{ RM=null; showHome(); };
 }
-async function createRoom(){ const code=genCode(); RM={code,isHost:true,phase:'lobby',guestName:''}; renderLobby();
+async function createRoom(){ netResetSession(); const code=genCode(); RM={code,isHost:true,phase:'lobby',guestName:''}; renderLobby();
   try{ await MP.open(code,true); }catch(e){ mpToast('Connection failed — check internet'); leaveRoom(); return; } renderLobby(); }
-async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-letter code'); return; } RM={code,isHost:false,phase:'joining'};
+async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-letter code'); return; } netResetSession(); RM={code,isHost:false,phase:'joining'};
   mpCard().innerHTML='<h1 class="logo" style="font-size:24px">Joining '+esc(code)+'…</h1><div class="sub">Connecting…</div><button class="btn ghost" id="mpBack">Cancel</button>'; $('mpBack').onclick=()=>leaveRoom();
   try{ await MP.open(code,false); }catch(e){ mpToast('Connection failed'); leaveRoom(); return; }
   MP.send('hello',{name:PNAME}); roomTimer(()=>{ if(RM&&RM.phase==='joining')MP.send('hello',{name:PNAME}); },1200);
@@ -525,11 +527,12 @@ function renderLobby(){ if(!RM||!RM.isHost)return; const guest=MP.presenceList()
 function showJoinedWaiting(){ mpCard().innerHTML='<h1 class="logo" style="font-size:26px">Joined ✓</h1><div class="sub">Waiting for the host to start…</div><div class="sub" style="color:#8fa8ff">Room '+esc(RM&&RM.code)+'</div><button class="btn ghost" id="mpBack">‹ Leave</button>'; $('mpBack').onclick=()=>leaveRoom(); }
 
 /* ---------- start / end ---------- */
-function hostBegin(){ if(!RM||!RM.isHost)return; NET.on=true; NET.role='host'; NET.started=true; NET.binit=false; mode='online';
+function hostBegin(){ if(!RM||!RM.isHost)return; RGEN++; RM.phase='playing'; NET.mg=(NET.mg||0)+1; NET.on=true; NET.role='host'; NET.started=true; NET.binit=false; mode='online';
   curOpp=RM.guestName||'Player'; pPts=0; aPts=0; server='player'; NET.aiPower=false; NET.aiPadVx=0;
-  let n=0; const rs=()=>{ if(n++<4 && NET.role==='host'){ MP.send('begin',{opp:PNAME}); roomTimer(rs,450); } }; rs();
+  const mg=NET.mg; let n=0; const rs=()=>{ if(n++<4 && NET.role==='host' && NET.mg===mg){ MP.send('begin',{opp:PNAME,g:mg}); roomTimer(rs,450); } }; rs();
   goPlay(); newPoint(); }
-function guestBegin(payload){ if(NET.on&&NET.role==='guest')return; NET.on=true; NET.role='guest'; NET.started=true; NET.binit=false; mode='online';
+function guestBegin(payload){ const g=(payload&&payload.g)||0; if(g&&g===NET.mgSeen)return;   // dedupe the host's reliability-resends of THIS match; a new match (new g) still begins
+  NET.mgSeen=g; NET.goSeen=0; if(RM)RM.phase='playing'; NET.on=true; NET.role='guest'; NET.started=true; NET.binit=false; mode='online';
   curOpp=(payload&&payload.opp)||NET.hostName||'Opponent'; pPts=0; aPts=0; server='ai'; phase='serve'; ball.active=false;
   goPlay(); banner('GET READY'); }
 function showOverOnline(won){ phase=''; ball.active=false; hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
@@ -541,23 +544,32 @@ function showOverOnline(won){ phase=''; ball.active=false; hideScreens(); $('ove
   else { b1.textContent='⏳ Waiting for host…'; b1.onclick=()=>{}; }
   b2.textContent='🚪 Leave'; b2.onclick=()=>leaveRoom();
   snd(won?'win':'lose'); }
-function guestGameOver(p){ const my=(p&&p.ap)||0, opp=(p&&p.pp)||0, won=my>opp; pPts=my; aPts=opp; coinsEarned=0;
+function guestGameOver(p){ const g=(p&&p.g)||0; if(g!==NET.mgSeen || g===NET.goSeen)return;   // only the current match, exactly once (ignore reliability-resends)
+  NET.goSeen=g; const my=(p&&p.ap)||0, opp=(p&&p.pp)||0, won=my>opp; pPts=my; aPts=opp; coinsEarned=0;
   if(won){ coinsEarned=30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
   if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0); showOverOnline(won); }
-function opponentLeft(){ coinsEarned=0; ball.active=false; phase=''; NET.on=false; NET.started=false;
+function opponentLeft(){ coinsEarned=0; ball.active=false; phase=''; NET.on=false; NET.started=false; NET.role=null;
   hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
   $('overTitle').textContent='Opponent left'; $('overTitle').style.color='#ff9b9b'; $('overSub').textContent='Your opponent disconnected.'; $('overCoins').style.display='none';
   const b1=$('overBtn1'), b2=$('overBtn2'); b1.textContent='🏠 Home'; b1.style.display='block'; b1.onclick=()=>leaveRoom(); b2.style.display='none'; }
-function leaveRoom(){ RGEN++; NET.on=false; NET.role=null; NET.started=false; RM=null; mode='quick'; ball.active=false; phase=''; try{ MP.leave(); }catch(e){} try{ history.replaceState(null,'',location.pathname); }catch(e){} showHome(); }
+function leaveRoom(){ RGEN++; NET.on=false; NET.role=null; NET.started=false; netResetSession(); RM=null; mode='quick'; ball.active=false; phase=''; try{ MP.leave(); }catch(e){} try{ history.replaceState(null,'',location.pathname); }catch(e){} showHome(); }
 
 /* ---------- net router ---------- */
 function onNet(kind,payload){
   if(kind==='presence'){ if(RM&&RM.isHost&&RM.phase==='lobby'){ renderLobby(); } return; }
-  if(kind==='leave'){ if(NET.on){ if(screen!=='over')opponentLeft(); } else if(RM&&RM.isHost&&RM.phase==='lobby'){ RM.guestName=''; renderLobby(); } return; }
-  if(kind==='hello'){ if(RM&&RM.isHost){ if(payload&&payload.name)RM.guestName=payload.name; if(RM.phase==='lobby')renderLobby(); MP.send('lobby',{host:PNAME}); if(NET.started&&NET.role==='host')MP.send('begin',{opp:PNAME}); } return; }
+  if(kind==='leave'){
+    if(NET.on){ if(screen!=='over' && MP.presenceList().length<2) opponentLeft(); }        // the actual opponent left (not a stray link-visitor)
+    else if(RM&&RM.isHost&&RM.phase==='lobby'){ RM.guestName=''; renderLobby(); }
+    else if(RM&&!RM.isHost && !MP.presenceList().some(p=>p.host)){ mpToast('Host left the room'); try{MP.leave();}catch(e){} RM=null; showRoomChoice(); }
+    return; }
+  if(kind==='hello'){ if(RM&&RM.isHost){ if(payload&&payload.name)RM.guestName=payload.name; if(RM.phase==='lobby')renderLobby(); MP.send('lobby',{host:PNAME}); if(NET.started&&NET.role==='host')MP.send('begin',{opp:PNAME,g:NET.mg}); } return; }
   if(kind==='lobby'){ if(RM&&!RM.isHost){ NET.hostName=(payload&&payload.host)||'Host'; if(RM.phase==='joining'){ RM.phase='lobby'; showJoinedWaiting(); } } return; }
   if(kind==='begin'){ if(RM&&!RM.isHost) guestBegin(payload); return; }
-  if(kind==='state'){ if(NET.role==='guest') guestApplyState(payload); else if(RM&&!RM.isHost&&!NET.on){ guestBegin({opp:NET.hostName}); guestApplyState(payload); } return; }
+  if(kind==='state'){
+    if(NET.role==='guest'){ if(payload&&payload.g&&payload.g>NET.mgSeen) guestBegin({opp:NET.hostName,g:payload.g});   // a new match started (rematch) — re-enter even if 'begin' was lost
+      guestApplyState(payload); }
+    else if(RM&&!RM.isHost&&!NET.on){ guestBegin({opp:NET.hostName,g:payload&&payload.g}); guestApplyState(payload); }
+    return; }
   if(kind==='pad'){ if(NET.role==='host') hostApplyPad(payload); return; }
   if(kind==='gameover'){ if(NET.role==='guest') guestGameOver(payload); return; }
 }
@@ -568,7 +580,7 @@ function netHostSend(dt,force){ if(NET.role!=='host'||!MP.ch)return; NET.acc+=dt
   MP.send('state',{ t:++NET.seq,
     b:[r2(ball.x),r2(ball.y),r2(ball.z),r2(ball.vx),r2(ball.vy),r2(ball.vz)], a:ball.active?1:0, l:ball.last==='player'?1:0,
     hp:[r2(pad.x),r2(pad.y)], pp:pPts, ap:aPts, sv:server==='player'?1:0,
-    ph:(phase==='serve'?1:phase==='rally'?2:phase==='point'?3:0), hn:PNAME }); }
+    ph:(phase==='serve'?1:phase==='rally'?2:phase==='point'?3:0), hn:PNAME, g:NET.mg }); }
 function hostApplyPad(p){ if(!p)return; aiPad.x=clamp(-(p.x||0),-4.5,4.5); aiPad.y=clamp(p.y||0.9,0.2,2.9); NET.aiPadVx=-(p.vx||0); NET.aiPower=!!p.pw; if(p.sw)aiPad.swing=1; }
 function netSendPad(dt){ if(NET.role!=='guest'||!MP.ch)return; NET.padAcc+=dt; if(NET.padAcc<0.05)return; NET.padAcc=0;
   MP.send('pad',{ x:r2(pad.x), y:r2(pad.y), vx:r2(pad.vx), sw:pad.swing>0.5?1:0, pw:clickT>0?1:0 }); }
@@ -579,6 +591,7 @@ function netGuestFrame(dt){ if(!ball.active)return;
   if(ball.y<=BALLR && ball.vy<0){ ball.y=BALLR; ball.vy=-ball.vy*0.72; ball.vx*=0.97; ball.vz*=0.99; }
   pushTrail(); }
 function guestApplyState(s){ if(!s||NET.role!=='guest')return;
+  if(s.t){ if(NET.rt && s.t<NET.rt) return; NET.rt=s.t; }   // drop out-of-order snapshots (t is monotonic across the whole session)
   if(s.hp){ aiPad.x=clamp(-s.hp[0],-4.5,4.5); aiPad.y=clamp(s.hp[1],0.2,2.9); }
   if(s.b){ const tx=-s.b[0], ty=s.b[1], tz=MIRZ-s.b[2], active=!!s.a, last=s.l?'ai':'player';
     const err=Math.abs(tx-ball.x)+Math.abs(ty-ball.y)+Math.abs(tz-ball.z);
