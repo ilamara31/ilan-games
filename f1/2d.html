@@ -62,6 +62,18 @@
     background:rgba(255,255,255,.75); color:#111; display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   .steerhint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:6; color:#9fb3d8; font-size:12px;
     background:rgba(8,14,28,.6); padding:6px 14px; border-radius:20px; pointer-events:none; }
+  /* on-screen D-pad for phones — shown only on touch devices during a race */
+  #touchpad { display:none; position:absolute; inset:0; z-index:6; pointer-events:none; }
+  body.touch #touchpad:not(.hidden) { display:block; }
+  .dbtn { position:absolute; bottom:20px; width:80px; height:80px; border:none; border-radius:50%; font-size:32px;
+    display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff; pointer-events:auto;
+    background:rgba(20,32,56,.55); border:1px solid rgba(255,255,255,.22); backdrop-filter:blur(3px);
+    box-shadow:0 4px 14px rgba(0,0,0,.35); touch-action:none; user-select:none; -webkit-user-select:none; }
+  .dbtn:active { transform:scale(.92); background:rgba(40,60,100,.75); }
+  #btnLeft { left:18px; }
+  #btnRight { left:110px; }
+  #btnUp { right:18px; bottom:112px; }
+  #btnDown { right:18px; background:rgba(120,30,40,.55); }
   .board { max-width:480px; width:100%; text-align:left; }
   .brow { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; border-radius:8px; margin:3px 0; background:#16243f; font-size:15px; }
   .brow.me { background:rgba(255,213,74,.18); }
@@ -89,12 +101,21 @@
     <div class="lamps"><div class="lamp" id="lampR"></div><div class="lamp" id="lampY"></div><div class="lamp" id="lampG"></div></div>
     <div id="lightsTxt"></div>
   </div>
-  <div class="steerhint hidden" id="steerhint">Hold LEFT / RIGHT side to steer • brake = ↓ / bottom</div>
+  <div class="steerhint hidden" id="steerhint">Phone: on-screen buttons • Desktop: ← → / A D to steer, ↓ to brake</div>
   <a id="homeBtn" href="../" title="Back to games">🏠</a>
+
+  <!-- on-screen D-pad (touch phones only). ◀ ▶ cluster left, ▲ ▼ stacked right -->
+  <div id="touchpad" class="hidden">
+    <button class="dbtn" id="btnLeft">◀</button>
+    <button class="dbtn" id="btnRight">▶</button>
+    <button class="dbtn" id="btnUp">▲</button>
+    <button class="dbtn" id="btnDown">▼</button>
+  </div>
 
   <!-- MENU / WORLD TOUR -->
   <div id="scr-menu" class="screen">
     <h1>🏁 GRAND PRIX WORLD TOUR</h1>
+    <div style="display:inline-block;font-size:12px;font-weight:900;letter-spacing:2px;color:#7cf;background:rgba(120,200,255,.12);border:1px solid rgba(120,200,255,.4);border-radius:20px;padding:4px 14px;margin-bottom:10px">🆕 UPDATED · v2.0</div>
     <div class="sub">Pay the entry fee, beat the grid, win prize money — then buy faster cars and unlock new countries.</div>
     <div class="sub" id="menuWho" style="color:#ffd54a;margin-top:-6px"></div>
     <div id="wallet"></div>
@@ -104,7 +125,7 @@
     <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
     <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
     <div class="sub" style="margin-top:14px;font-size:12px">
-      Steer: <b>← →</b> / A D, or hold the left/right side of the screen.<br>You auto-accelerate; brake with <b>↓</b> or the bottom of the screen.
+      Steer: <b>← →</b> / A D on desktop, or the on-screen buttons on your phone.<br>You auto-accelerate; brake with <b>↓</b> or the ▼ button.
     </div>
   </div>
 
@@ -458,7 +479,7 @@ function updateHud(){
 
 /* ---- screens ---- */
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden');
-  document.getElementById('hud').classList.add('hidden'); document.getElementById('steerhint').classList.add('hidden'); document.getElementById('lights').style.display='none'; }
+  document.getElementById('hud').classList.add('hidden'); document.getElementById('touchpad').classList.add('hidden'); document.getElementById('steerhint').classList.add('hidden'); document.getElementById('lights').style.display='none'; }
 
 function renderMenu(){
   state='menu';
@@ -531,6 +552,7 @@ function enterRace(L){
   resetRace();
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('touchpad').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
   state='countdown';
   Engine.resume();                          // unlock audio on this tap/click
@@ -549,6 +571,7 @@ function prizeFor(pos,total,L){
 function finishRace(){
   state='finish';
   document.getElementById('lights').style.display='none';
+  document.getElementById('touchpad').classList.add('hidden');
   document.getElementById('steerhint').classList.add('hidden');
   const f=career();
   const board=[{name:playerName, dist:playerDist(), me:true, color:getCar(f.car).color}];
@@ -610,15 +633,25 @@ window.addEventListener('keyup',e=>{
   if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=false;
   if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') brakeHeld=false;
 });
-function touchAt(clientX,clientY){ const r=cv.getBoundingClientRect(); const x=clientX-r.left, y=clientY-r.top;
-  brakeHeld=y>H*0.78; if(brakeHeld){ leftHeld=rightHeld=false; return; } leftHeld=x<W/2; rightHeld=x>=W/2; }
-function clearTouch(){ leftHeld=rightHeld=brakeHeld=false; }
-cv.addEventListener('touchstart',e=>{ Engine.resume(); const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
-cv.addEventListener('touchmove', e=>{ const t=e.touches[0]; touchAt(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
-cv.addEventListener('touchend', e=>{ if(e.touches.length===0) clearTouch(); },{passive:false});
-cv.addEventListener('mousedown',e=>touchAt(e.clientX,e.clientY));
-cv.addEventListener('mousemove',e=>{ if(e.buttons&1) touchAt(e.clientX,e.clientY); });
-window.addEventListener('mouseup',clearTouch);
+// dedicated on-screen D-pad buttons — each its own touch target so you can steer and
+// brake at once with two thumbs. First press also unlocks audio via Engine.resume().
+function hold(id,set){
+  const el=document.getElementById(id);
+  const on =e=>{ Engine.resume(); set(true);  e.preventDefault(); e.stopPropagation(); };
+  const off=e=>{ set(false); e.preventDefault(); e.stopPropagation(); };
+  el.addEventListener('touchstart', on,  {passive:false});
+  el.addEventListener('touchend',   off, {passive:false});
+  el.addEventListener('touchcancel',off, {passive:false});
+  el.addEventListener('mousedown',  e=>{ Engine.resume(); set(true); });
+  el.addEventListener('mouseup',    ()=>set(false));
+  el.addEventListener('mouseleave', ()=>set(false));
+}
+hold('btnLeft',  v=> leftHeld=v);
+hold('btnRight', v=> rightHeld=v);
+hold('btnDown',  v=> brakeHeld=v);
+hold('btnUp',    v=>{}); // Up = gas: car auto-accelerates, so this is a no-op (present for the familiar 4-button layout)
+// show the D-pad only on touch devices
+if(matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
 
 document.getElementById('garageBtn').addEventListener('click',openShop);
 document.getElementById('shopBack').addEventListener('click',renderMenu);

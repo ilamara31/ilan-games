@@ -105,6 +105,27 @@
   .brow.me { background:rgba(255,213,74,.2); }
   .brow .pos { width:30px; color:#ffd54a; font-weight:bold; }
   .brow .nm { flex:1; }
+  /* ---- economy / garage / customization ---- */
+  #wallet3d { background:rgba(8,14,28,.6); border:1px solid #2a3c63; border-radius:14px; padding:9px 16px;
+    margin:2px 0 12px; font-size:15px; max-width:560px; }
+  #wallet3d b { color:#ffd54a; }
+  .mapcard.locked { opacity:.5; cursor:not-allowed; }
+  .mapcard .fee { font-size:10.5px; color:#ffd54a; margin-top:3px; line-height:1.25; }
+  .carcard.locked { opacity:.82; }
+  .carcard .price { font-size:12px; font-weight:bold; margin-top:5px; }
+  .carcard .price.own { color:#39ff88; }
+  .carcard .price.buy { color:#ffd54a; }
+  .palette { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; max-width:430px; width:100%; margin:4px 0 10px; }
+  .sw { width:36px; height:36px; border-radius:9px; cursor:pointer; border:2px solid rgba(255,255,255,.22); }
+  .sw:active { transform:scale(.9); }
+  .sw.sel { border-color:#fff; box-shadow:0 0 0 3px rgba(255,213,74,.6); }
+  .striperow { display:flex; align-items:center; gap:9px; margin:6px 0 10px; font-size:16px; }
+  .striperow input { width:20px; height:20px; }
+  #paintPreview { margin:8px auto 4px; }
+  .pv-body { position:relative; width:74px; height:132px; border-radius:24px 24px 16px 16px; margin:0 auto; box-shadow:0 6px 16px rgba(0,0,0,.45); }
+  .pv-nose { position:absolute; top:-12px; left:27px; width:20px; height:26px; border-radius:8px 8px 3px 3px; }
+  .pv-stripe { position:absolute; top:6px; left:31px; width:12px; height:120px; border-radius:6px; opacity:.92; }
+  .pv-cockpit { position:absolute; top:44px; left:24px; width:26px; height:34px; border-radius:12px; background:#0d1116; }
 </style>
 </head>
 <body>
@@ -134,22 +155,42 @@
 
   <!-- MENU -->
   <div id="scr-menu" class="screen">
-    <div class="tag">3D · REAL 3D RACING</div>
+    <div class="tag">3D · WORLD TOUR CAREER · 🆕 v2.0</div>
     <h1>🏁 GRAND PRIX 3D</h1>
-    <div class="sub">Pick a country and a car, then race the pack on a wide 4-lane circuit. Tap <b>DASH</b> for a speed burst and take the win.</div>
-    <div class="secttl">🌍 CHOOSE CIRCUIT</div>
+    <div class="sub">Pay the entry fee, beat the grid, win prize money — then buy faster cars, paint your own livery, and unlock new circuits. Shares the same wallet &amp; garage as the 2D game.</div>
+    <div id="wallet3d"></div>
+    <div class="secttl">🌍 CHOOSE CIRCUIT · unlock in order</div>
     <div class="maps" id="mapList"></div>
-    <div class="secttl">🏎️ CHOOSE CAR</div>
+    <div class="secttl">🏎️ YOUR GARAGE · buy &amp; select</div>
     <div class="cars" id="carList"></div>
-    <button class="btn green" id="startBtn">🏁 START RACE</button>
+    <div class="row">
+      <button class="btn green" id="startBtn">🏁 START RACE</button>
+      <button class="btn alt" id="customBtn">🎨 CUSTOMIZE CAR</button>
+    </div>
     <div class="row">
       <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
       <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
       <a class="btn alt" href="./">⬅ 2D / 3D</a>
     </div>
     <div class="hintbar">
-      <b>Steer:</b> ← → or A / D (mobile: on-screen ◀ ▶). &nbsp;<b>Dash:</b> Space / Shift or ⚡. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
-      You auto-accelerate. Finishing high earns F1 championship points on the Grand Prix leaderboard.
+      <b>Steer:</b> ← → or A / D (mobile ◀ ▶) — <b>steer into the corners</b> or you run wide onto the grass and slow down. &nbsp;<b>Dash:</b> Space / Shift or ⚡. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
+      You auto-accelerate. Win prize money to buy faster cars; finishing high also earns championship points.
+    </div>
+  </div>
+
+  <!-- CUSTOMIZE -->
+  <div id="scr-custom" class="screen hidden">
+    <h1>🎨 CUSTOMIZE</h1>
+    <div class="sub" id="customSub"></div>
+    <div id="paintPreview"></div>
+    <div class="secttl">BODY COLOUR</div>
+    <div class="palette" id="bodyPalette"></div>
+    <div class="secttl">ACCENT · nose &amp; stripe</div>
+    <div class="palette" id="accentPalette"></div>
+    <label class="striperow"><input type="checkbox" id="stripeChk"> 🏁 Racing stripe</label>
+    <div class="row">
+      <button class="btn green" id="customSave">✔ SAVE PAINT</button>
+      <button class="btn alt" id="customBack">⬅ BACK</button>
     </div>
   </div>
 
@@ -182,26 +223,43 @@ const canvas = $('game');
 if (matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
 
 /* ---------------- cars ---------------- */
+// `top` = cruise speed in world units (rival `pace` is in the same units, ~80-106),
+// so cheap cars genuinely struggle on the faster grids and you must earn better ones.
+// `price` mirrors the 2D garage exactly — buy a car in either mode and it carries across.
 const CARS = [
-  { id:'kart',   name:'Starter Kart', top: 92, color:0xe10600 },
-  { id:'turbo',  name:'Turbo GT',     top: 96, color:0x1e90ff },
-  { id:'speed',  name:'Speedster',    top:100, color:0x39ff88 },
-  { id:'hyper',  name:'Hyper X',      top:104, color:0xffd21f },
-  { id:'apex',   name:'Apex Pro',     top:108, color:0xb14bff },
-  { id:'rocket', name:'Rocket V12',   top:112, color:0xff4fd8 },
+  { id:'kart',   name:'Starter Kart', top: 90, price:0,    color:0xe10600 },
+  { id:'turbo',  name:'Turbo GT',     top: 98, price:400,  color:0x1e90ff },
+  { id:'speed',  name:'Speedster',    top:106, price:900,  color:0x39ff88 },
+  { id:'hyper',  name:'Hyper X',      top:114, price:1800, color:0xffd21f },
+  { id:'apex',   name:'Apex Pro',     top:122, price:3500, color:0xb14bff },
+  { id:'rocket', name:'Rocket V12',   top:130, price:6000, color:0xff4fd8 },
 ];
-let chosenCar = CARS[2];   // default to a mid car (Speedster) so a first race feels fair
+function getCar(id){ return CARS.find(c=>c.id===id) || CARS[0]; }
 
-/* ---------------- shared F1 career + leaderboard (same store the 2D game uses) ---------------- */
+/* ---------------- shared F1 career + economy + leaderboard (same store the 2D game uses) ---------------- */
 const STORE_KEY = 'soc_store_v1';
 function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){} return {activeId:null,accounts:[]}; }
 const acctStore = igLoad();
 const acct = acctStore.accounts.find(a=>a.id===acctStore.activeId) || null;
 if (acct && !acct.f1) acct.f1 = {races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0};
-const guestF1 = {races:0,wins:0,podiums:0,points:0,bestPos:99};
+// economy + progression fields — identical shape/defaults to the 2D World Tour so the
+// wallet, owned cars and unlocked circuits are SHARED between 2D and 3D.
+function migrateEconomy(f){
+  if (f.money===undefined){ f.money=300; f.owned=['kart']; f.car='kart'; }
+  if (f.unlocked===undefined) f.unlocked=1;         // India unlocked to start
+  if (!Array.isArray(f.owned)) f.owned=['kart'];
+  if (!f.paint) f.paint={};                          // per-car custom paint (3D only): {carId:{body,accent,stripe}}
+  return f;
+}
+if (acct && acct.f1){ migrateEconomy(acct.f1); }
+const guestF1 = migrateEconomy({races:0,wins:0,podiums:0,points:0,bestPos:99});
 function career(){ return acct ? acct.f1 : guestF1; }
 function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
+function saveF1(){ if (acct) igSave(); }             // guest career lives only for the session
 const POINTS = [25,18,15,12,10,8,6,4,2,1];   // F1 points by finishing position
+// the car you own & drive comes from the shared career; default to a car you actually own
+let chosenCar = getCar(career().car);
+if (!career().owned.includes(chosenCar.id)) chosenCar = CARS[0];
 
 /* ---------------- engine sound (WebAudio, synthesised — no assets) ---------------- */
 const Engine = (function(){
@@ -278,42 +336,48 @@ const UP = new THREE.Vector3(0,1,0);
 // Every country is a map, all free to pick. `pace` = rival cruise speed (units/s);
 // `gen` builds a star-shaped loop — R(θ) stays > 0, which guarantees the circuit
 // never self-intersects. Distinct params per country = distinct maps.
+// `fee`/`win` mirror the 2D World Tour exactly; unlock in order (index), except the
+// free Afghanistan practice race (fee 0, guaranteed prize) which is always available.
 const COUNTRIES = [
-  { id:'india', name:'India', flag:'🇮🇳', pace:86, laps:3,
+  { id:'india', name:'India', flag:'🇮🇳', pace:86, laps:3, fee:100, win:200,
     gen:{n:12, base:150, amps:[0.18,-0.10,0.05], phase:[0.4,1.1,0.0], squash:0.86, rot:0.0},
     theme:{ sky:['#2f6fb8','#cfe6ff'], fog:0xbfe0ff, ground:0x2f9d3a, road:0x30343c, night:false } },
-  { id:'dubai', name:'Dubai', flag:'🇦🇪', pace:92, laps:3,
+  { id:'dubai', name:'Dubai', flag:'🇦🇪', pace:92, laps:3, fee:200, win:450,
     gen:{n:10, base:158, amps:[0.22,0.08,-0.04], phase:[1.2,0.3,0.6], squash:0.70, rot:0.5},
     theme:{ sky:['#ffcf8f','#ffe9cc'], fog:0xf0dcae, ground:0xd9b36b, road:0x33322f, night:false } },
-  { id:'england', name:'England', flag:'🇬🇧', pace:96, laps:3,
+  { id:'england', name:'England', flag:'🇬🇧', pace:96, laps:3, fee:300, win:650,
     gen:{n:14, base:146, amps:[0.16,0.12,0.06], phase:[0.0,1.6,0.9], squash:0.95, rot:0.2},
     theme:{ sky:['#8a97a8','#cfd6de'], fog:0xc2cad3, ground:0x2e7d4f, road:0x2e3138, night:false } },
-  { id:'japan', name:'Japan', flag:'🇯🇵', pace:100, laps:4,
+  { id:'japan', name:'Japan', flag:'🇯🇵', pace:100, laps:4, fee:400, win:900,
     gen:{n:13, base:140, amps:[0.24,-0.14,0.08], phase:[0.7,0.2,1.3], squash:0.80, rot:1.1},
     theme:{ sky:['#6a8fc0','#dde9ff'], fog:0xd0deff, ground:0x1f9a4a, road:0x30343c, night:false } },
-  { id:'italy', name:'Italy', flag:'🇮🇹', pace:104, laps:3,
+  { id:'italy', name:'Italy', flag:'🇮🇹', pace:104, laps:3, fee:550, win:1200,
     gen:{n:11, base:152, amps:[0.20,0.10,-0.06], phase:[0.9,1.4,0.2], squash:0.90, rot:0.3},
     theme:{ sky:['#3a7fce','#dbeeff'], fog:0xcfe6ff, ground:0x3a9d3a, road:0x30343c, night:false } },
-  { id:'brazil', name:'Brazil', flag:'🇧🇷', pace:104, laps:3,
+  { id:'brazil', name:'Brazil', flag:'🇧🇷', pace:104, laps:3, fee:700, win:1500,
     gen:{n:14, base:150, amps:[0.26,-0.12,0.10], phase:[1.5,0.6,0.4], squash:0.82, rot:0.8},
     theme:{ sky:['#2f9b8f','#d8f5ef'], fog:0xbfeee6, ground:0x16a52b, road:0x2f3238, night:false } },
-  { id:'usa', name:'USA', flag:'🇺🇸', pace:104, laps:3,
+  { id:'usa', name:'USA', flag:'🇺🇸', pace:104, laps:3, fee:900, win:2000,
     gen:{n:12, base:160, amps:[0.14,0.14,0.05], phase:[0.2,1.0,1.5], squash:0.75, rot:0.0},
     theme:{ sky:['#3a4f9b','#cdd6ff'], fog:0xccd6ff, ground:0x1f8a3b, road:0x30343c, night:false } },
-  { id:'singapore', name:'Singapore', flag:'🇸🇬', pace:104, laps:4,
+  { id:'singapore', name:'Singapore', flag:'🇸🇬', pace:104, laps:4, fee:1100, win:2500,
     gen:{n:15, base:142, amps:[0.22,0.16,0.08], phase:[1.1,0.4,0.9], squash:0.88, rot:0.6},
     theme:{ sky:['#0a1230','#1c2748'], fog:0x101a34, ground:0x141b2c, road:0x23262e, night:true } },
-  { id:'australia', name:'Australia', flag:'🇦🇺', pace:104, laps:3,
+  { id:'australia', name:'Australia', flag:'🇦🇺', pace:104, laps:3, fee:1300, win:3200,
     gen:{n:12, base:150, amps:[0.20,-0.08,0.06], phase:[0.5,1.2,0.3], squash:0.84, rot:1.4},
     theme:{ sky:['#9fc0e8','#eef6ff'], fog:0xdfeeff, ground:0x3aa53b, road:0x30343c, night:false } },
-  { id:'monaco', name:'Monaco', flag:'🇲🇨', pace:106, laps:4,
+  { id:'monaco', name:'Monaco', flag:'🇲🇨', pace:106, laps:4, fee:1500, win:4000,
     gen:{n:16, base:138, amps:[0.28,0.14,-0.10], phase:[0.8,1.7,0.5], squash:0.90, rot:0.2},
     theme:{ sky:['#3a6fb0','#bfe0ff'], fog:0xbfe0ff, ground:0x2f7d8a, road:0x30343c, night:false } },
-  { id:'afghan', name:'Afghanistan', flag:'🇦🇫', pace:80, laps:3,
+  { id:'afghan', name:'Afghanistan', flag:'🇦🇫', pace:80, laps:3, fee:0, win:50, free:true,
     gen:{n:11, base:150, amps:[0.20,0.06,0.04], phase:[0.3,0.9,1.1], squash:0.80, rot:0.7},
     theme:{ sky:['#caa46a','#f0e2c2'], fog:0xe6d3a8, ground:0xc2a15a, road:0x35322c, night:false } },
 ];
-let chosenCountry = COUNTRIES[0];
+COUNTRIES.forEach((c,i)=>c.idx=i);
+// a circuit is playable if it's the free race or its index is within the unlocked count
+function isUnlocked(c){ return c.free || c.idx < career().unlocked; }
+// start on the furthest circuit the player has unlocked (nicer than always India)
+let chosenCountry = COUNTRIES.slice().reverse().find(c=>!c.free && isUnlocked(c)) || COUNTRIES[0];
 
 // star-shaped loop generator: R(θ) = base*(1 + Σ aₖ·sin(kθ+φₖ)), kept > 0
 function starTrack(g){
@@ -328,16 +392,22 @@ function starTrack(g){
 
 // track state — rebuilt by buildTrack() for each country
 const FRAMES = 600;
-let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [];
+let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [], frameCurv = [];
 let worldGroup = null;
 function buildFrames(){
-  framePos = []; frameTan = []; frameRight = [];
+  framePos = []; frameTan = []; frameRight = []; frameCurv = [];
   for (let i=0;i<FRAMES;i++){
     const u = i/FRAMES;
     const p = curve.getPointAt(u);
     const t = curve.getTangentAt(u).normalize();
     const r = new THREE.Vector3().crossVectors(t, UP).normalize();
     framePos.push(p); frameTan.push(t); frameRight.push(r);
+  }
+  // signed curvature: how fast the tangent rotates toward `right` (>0 = bends right).
+  // Drives the centrifugal push that makes cornering a skill instead of automatic.
+  for (let i=0;i<FRAMES;i++){
+    const t0 = frameTan[i], t1 = frameTan[(i+1)%FRAMES], r = frameRight[i];
+    frameCurv.push(r.x*(t1.x-t0.x) + r.y*(t1.y-t0.y) + r.z*(t1.z-t0.z));
   }
 }
 function buildTrack(country){
@@ -366,7 +436,8 @@ function sampleAt(prog){
   _p.copy(framePos[i]).lerp(framePos[j], a);
   _t.copy(frameTan[i]).lerp(frameTan[j], a).normalize();
   _r.copy(frameRight[i]).lerp(frameRight[j], a).normalize();
-  return { pos:_p, tan:_t, right:_r };
+  const curv = frameCurv[i]*(1-a) + frameCurv[j]*a;
+  return { pos:_p, tan:_t, right:_r, curv };
 }
 // shortest signed distance from b to a around the loop
 function wrapDelta(d){
@@ -519,14 +590,23 @@ function makeSkyTexture(sky){
 }
 
 /* ---------------- car model ---------------- */
-function buildCar(colorHex){
+// opts (player only): { accent:<hex>, stripe:<bool> } for custom liveries. Rivals pass none.
+function buildCar(colorHex, opts){
+  opts = opts || {};
+  const accent = (opts.accent!=null) ? opts.accent : colorHex;
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.7, 4.2),
     new THREE.MeshLambertMaterial({ color:colorHex }));
   body.position.y = 0.75; g.add(body);
   const nose = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.4, 1.6),
-    new THREE.MeshLambertMaterial({ color:colorHex }));
+    new THREE.MeshLambertMaterial({ color:accent }));
   nose.position.set(0,0.55,-2.4); g.add(nose);
+  // optional racing stripe down the spine (livery / "design")
+  if (opts.stripe){
+    const st = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.72, 4.4),
+      new THREE.MeshLambertMaterial({ color:accent }));
+    st.position.y = 0.77; g.add(st);
+  }
   const cockpit = new THREE.Mesh(new THREE.BoxGeometry(1.0,0.6,1.4),
     new THREE.MeshLambertMaterial({ color:0x101418 }));
   cockpit.position.set(0,1.15,-0.1); g.add(cockpit);
@@ -559,7 +639,10 @@ const RIVAL_COLORS = [0xff7b3d,0x39ff88,0x1e90ff,0xffd21f,0xb14bff,0xff4fd8,0x7c
 let raceLaps = 3;         // set per race from the chosen country
 const CAR_LEN = 5.2;      // collision length along track
 const CAR_W   = 2.6;      // collision half-reach across track sums via both widths
-const MAX_LAT = HALF_W - 1.4;
+const MAX_LAT = HALF_W - 1.4;           // rivals stay on the tarmac
+const OFF_EDGE = HALF_W - 0.7;          // past this the player's wheels are on the grass
+const PLAYER_MAX_LAT = HALF_W + 7;      // how far off the track the player can stray
+const CENTRIF = 4.6;                    // corner-out force strength (× speed × curvature)
 
 let player, rivals = [], all = [];
 function disposeObj(o){
@@ -575,7 +658,7 @@ function makeRacers(){
   rivals = []; all = [];
 
   const GRID = 11; // + player = 12
-  player = mkRacer(chosenCar.color, true);
+  player = mkPlayer();
   player.name = 'You'; player.top = chosenCar.top;
   // player starts at the back of the grid so there's a race to win
   gridPlace(player, GRID);
@@ -592,13 +675,27 @@ function makeRacers(){
     rivals.push(r); all.push(r);
   }
 }
-function mkRacer(color, isPlayer){
-  const mesh = buildCar(color); scene.add(mesh);
+function mkRacer(color, isPlayer, opts){
+  const mesh = buildCar(color, opts); scene.add(mesh);
   return {
     mesh, color, isPlayer,
     prog: 0, lateral: 0, speed: 0, top: 100,
     targetLat: 0, laneTimer: 0, wheelSpin: 0, finished:false, finishTime:0,
   };
+}
+// the player's chosen car + saved custom paint (body / accent / stripe)
+function playerStyle(){
+  const p = (career().paint || {})[chosenCar.id] || {};
+  return {
+    body:   (p.body   != null) ? p.body   : chosenCar.color,
+    accent: (p.accent != null) ? p.accent : null,
+    stripe: !!p.stripe,
+  };
+}
+function mkPlayer(){
+  const s = playerStyle();
+  const r = mkRacer(s.body, true, { accent:s.accent, stripe:s.stripe });
+  return r;
 }
 // place on a staggered 2-wide grid behind the line (negative progress)
 function gridPlace(r, slot){
@@ -651,9 +748,17 @@ canvas.addEventListener('touchmove',  e=>e.preventDefault(), {passive:false});
 let state = 'menu';         // menu | countdown | race | finish
 let raceTime = 0, cdTimer = 0, cdStep = 0;
 let boostE = 100;           // 0..100
-const BOOST_MUL = 1.55, BOOST_DRAIN = 42, BOOST_RECHARGE = 20, BOOST_MIN = 8;
+// Boost is a SHORT tactical overtake aid, not a win-everything button:
+// modest multiplier, drains fast, recharges slowly. You win on car + racing line, not dash.
+const BOOST_MUL = 1.20, BOOST_DRAIN = 58, BOOST_RECHARGE = 13, BOOST_MIN = 8;
 
 function startRace(){
+  const f = career();
+  if (!isUnlocked(chosenCountry)){ flashWallet('🔒 That circuit is still locked.'); return; }
+  if (!chosenCountry.free && f.money < chosenCountry.fee){
+    flashWallet(`💸 Need ₹${chosenCountry.fee} entry — race the free 🇦🇫 practice to earn.`); return;
+  }
+  if (!chosenCountry.free){ f.money -= chosenCountry.fee; saveF1(); }   // pay the entry fee
   buildTrack(chosenCountry);                 // rebuild the selected country's circuit
   raceLaps = chosenCountry.laps || 3;
   makeRacers();
@@ -669,15 +774,16 @@ function startRace(){
 }
 function toMenu(){
   state='menu'; Engine.stop();
+  buildMenu();       // refresh wallet, unlocked circuits and garage after a race
   resetShowcase();   // clear the race grid; leave one idling car on the menu backdrop
-  $('scr-menu').classList.remove('hidden'); $('scr-finish').classList.add('hidden');
+  $('scr-menu').classList.remove('hidden'); $('scr-finish').classList.add('hidden'); $('scr-custom').classList.add('hidden');
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden'); $('lamps').classList.remove('on');
 }
 // menu backdrop: a single idling car sitting on the current circuit
 function resetShowcase(){
   all.forEach(r => { if (r.mesh){ scene.remove(r.mesh); disposeObj(r.mesh); } });
   rivals = []; all = [];
-  player = mkRacer(chosenCar.color, true); player.name='You'; player.top=chosenCar.top;
+  player = mkPlayer(); player.name='You'; player.top=chosenCar.top;
   player.prog = 0; player.lateral = 0; all.push(player);
   updateCarMesh(player);
 }
@@ -686,17 +792,28 @@ function finishRace(){
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden');
   const order = rankings();
   const myPos = order.findIndex(r=>r.isPlayer) + 1;
-  // award F1 championship points to the shared career + post to the leaderboard
+  // award F1 championship points + prize money to the shared career + post to the leaderboard
   const pts = POINTS[myPos-1] || 0;
   const c = career();
+  const prize = chosenCountry.free ? chosenCountry.win : prizeFor(myPos, all.length, chosenCountry);
+  const net = prize - (chosenCountry.free ? 0 : chosenCountry.fee);
   c.points = (c.points||0) + pts; c.races = (c.races||0) + 1;
+  c.money  = (c.money||0) + prize;
   if (myPos===1) c.wins = (c.wins||0) + 1;
   if (myPos<=3) c.podiums = (c.podiums||0) + 1;
-  if (acct) igSave();
+  // unlock the next circuit in order (same rule the 2D World Tour uses)
+  let unlockedNew = null;
+  if (chosenCountry.idx+1 < COUNTRIES.length && (c.unlocked||1) < chosenCountry.idx+2){
+    c.unlocked = chosenCountry.idx+2;
+    const nx = COUNTRIES[chosenCountry.idx+1];
+    if (nx && !nx.free) unlockedNew = nx;
+  }
+  saveF1();
   if (window.IGAuth) IGAuth.submitScore('f1', c.points);   // career points (higher is better)
   const medal = myPos===1?'🥇':myPos===2?'🥈':myPos===3?'🥉':'🏁';
   $('finTitle').textContent = myPos===1 ? '🏆 YOU WON!' : (medal+' P'+myPos);
-  const earned = `<b>+${pts}</b> pts · career <b>${c.points}</b>`;
+  const earned = `💰 Prize <b>+₹${prize}</b> · balance <b>₹${c.money}</b> · <b>+${pts}</b> pts`
+    + (unlockedNew ? `<br>🔓 New circuit unlocked: <b>${unlockedNew.flag} ${unlockedNew.name}</b>!` : '');
   $('finSub').innerHTML = (myPos===1
     ? `Fantastic driving — you won ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`
     : `P${myPos} of ${all.length} at ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`) + `<br>${earned}`;
@@ -733,31 +850,45 @@ function updateCountdown(dt){
 }
 
 function updatePlayer(dt){
-  // steering — stronger at speed, gentle when crawling
+  const f = sampleAt(player.prog);                 // curvature under the car (only .curv used here)
   const steer = (rightHeld?1:0) - (leftHeld?1:0);
-  const grip = 0.35 + 0.65*Math.min(1, player.speed/player.top);
+  player._steer = steer;
+
+  // off-track? a wheel is on the grass past the white line
+  const offTrack = Math.abs(player.lateral) > OFF_EDGE;
+
+  // steering authority — strong at speed, sluggish (understeer) on the grass
+  const grip = (0.35 + 0.65*Math.min(1, player.speed/player.top)) * (offTrack ? 0.55 : 1);
   player.lateral += steer * 26 * grip * dt;
+
+  // F1 cornering: the bend flings you toward its OUTSIDE. Steer INTO the corner to hold
+  // the racing line — do nothing and you run wide onto the grass and bleed speed.
+  const centrif = THREE.MathUtils.clamp(-f.curv * player.speed * CENTRIF, -22, 22);
+  player.lateral += centrif * dt;
 
   // dash / boost
   let boosting = false;
   if (dashHeld && boostE > BOOST_MIN){ boosting = true; boostE = Math.max(0, boostE - BOOST_DRAIN*dt); }
   else boostE = Math.min(100, boostE + BOOST_RECHARGE*dt);
 
-  // longitudinal: ease speed toward target
-  const target = brakeHeld ? 0 : player.top * (boosting ? BOOST_MUL : 1);
-  const rate = brakeHeld ? 2.2 : (player.speed < target ? 1.4 : 1.0);
+  // longitudinal: ease speed toward target; the grass caps you low (go off → slow down)
+  let target = brakeHeld ? 0 : player.top * (boosting ? BOOST_MUL : 1);
+  if (offTrack) target = Math.min(target, player.top * 0.48);
+  let rate = brakeHeld ? 2.2 : (player.speed < target ? 1.4 : 1.0);
+  if (offTrack && player.speed > target) rate = 3.0;   // scrub speed quickly on the grass
   player.speed += (target - player.speed) * rate * dt;
   if (player.speed < 0) player.speed = 0;
   player.prog += player.speed * dt;
 
   player._boosting = boosting;
+  player._offTrack = offTrack;
   player.mesh.userData.flame.visible = boosting;
 
   // vignette + FOV kick for speed sensation
-  const targetFov = BASE_FOV + (boosting ? 12 : 0) + Math.min(6, player.speed/player.top*4);
+  const targetFov = BASE_FOV + (boosting ? 10 : 0) + Math.min(6, player.speed/player.top*4);
   camera.fov += (targetFov - camera.fov) * Math.min(1, dt*6);
   camera.updateProjectionMatrix();
-  $('vignette').classList.toggle('on', boosting);
+  $('vignette').classList.toggle('on', boosting || offTrack);
 }
 
 function updateRival(r, dt){
@@ -801,7 +932,11 @@ function resolveCollisions(){
 }
 
 function clampLaterals(){
-  for (const r of all) r.lateral = THREE.MathUtils.clamp(r.lateral, -MAX_LAT, MAX_LAT);
+  // the player may run wide onto the grass (penalised in updatePlayer); rivals hold the tarmac
+  for (const r of all){
+    const lim = r.isPlayer ? PLAYER_MAX_LAT : MAX_LAT;
+    r.lateral = THREE.MathUtils.clamp(r.lateral, -lim, lim);
+  }
 }
 
 function checkFinish(){
@@ -827,6 +962,12 @@ function updateCarMesh(r){
   const leanT = THREE.MathUtils.clamp(-dLat * 3.2, -0.32, 0.32);
   r._lean = (r._lean ?? 0) + (leanT - (r._lean ?? 0)) * 0.2;
   r.mesh.rotateZ(r._lean);
+  // player: point the nose into the turn for a real "steering the car" feel (visual only)
+  if (r.isPlayer){
+    const yawT = THREE.MathUtils.clamp(-(r._steer||0)*0.16 - dLat*1.4, -0.3, 0.3);
+    r._yaw = (r._yaw ?? 0) + (yawT - (r._yaw ?? 0)) * 0.18;
+    r.mesh.rotateY(r._yaw);
+  }
   // spin wheels by speed
   r.wheelSpin += r.speed * 0.02;
   const ws = r.mesh.userData.wheels;
@@ -894,41 +1035,121 @@ function loop(now){
   renderer.render(scene, camera);
 }
 
+/* ---------------- economy helpers ---------------- */
+// prize scales with finishing position between a floor (half the fee) and the win purse
+function prizeFor(pos,total,L){
+  const floor = Math.round((L.fee||0)*0.5);
+  return Math.round(floor + (L.win-floor)*Math.pow((total-pos)/Math.max(1,total-1),1.6));
+}
+function refreshWallet(){
+  const f = career();
+  $('wallet3d').innerHTML = `💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${chosenCar.name}</b> (${Math.round(chosenCar.top*3.4)} km/h)`;
+}
+function flashWallet(msg){
+  $('wallet3d').innerHTML = `<span style="color:#ff7b7b">${msg}</span>`;
+  setTimeout(refreshWallet, 1800);
+}
+
 /* ---------------- menu UI ---------------- */
 function buildMenu(){
-  // country / map picker
+  const f = career();
+  refreshWallet();
+  // ---- circuits: unlock in order; free practice race shown first ----
   const maps = $('mapList');
-  maps.innerHTML = COUNTRIES.map(c=>`
-    <div class="mapcard ${c.id===chosenCountry.id?'sel':''}" data-id="${c.id}">
-      <div class="fl">${c.flag}</div>
+  const ordered = COUNTRIES.slice().sort((a,b)=>(b.free?1:0)-(a.free?1:0));
+  maps.innerHTML = ordered.map(c=>{
+    const unlocked = isUnlocked(c);
+    const info = !unlocked
+      ? `🔒 win ${COUNTRIES[c.idx-1].name}`
+      : c.free ? `FREE · win ₹${c.win}` : `Entry ₹${c.fee} · win ₹${c.win}`;
+    return `<div class="mapcard ${c.id===chosenCountry.id?'sel':''} ${unlocked?'':'locked'}" data-id="${c.id}">
+      <div class="fl">${unlocked?c.flag:'🔒'}</div>
       <div class="mn">${c.name}</div>
       <div class="md">${c.laps||3} laps${c.theme.night?' · 🌙':''}</div>
-    </div>`).join('');
+      <div class="fee">${info}</div>
+    </div>`;
+  }).join('');
   maps.querySelectorAll('.mapcard').forEach(el=>{
     el.onclick = ()=>{
-      chosenCountry = COUNTRIES.find(c=>c.id===el.dataset.id);
+      const c = COUNTRIES.find(x=>x.id===el.dataset.id);
+      if (!isUnlocked(c)){ flashWallet(`🔒 Win ${COUNTRIES[c.idx-1].name} first to unlock ${c.name}.`); return; }
+      chosenCountry = c;
       maps.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
       buildTrack(chosenCountry);              // refresh the menu backdrop to this country
       if (state==='menu') resetShowcase();    // re-seat the idling car on the new circuit
     };
   });
-  // car picker
+  // ---- garage: owned cars are selectable, the rest are buyable (shared with 2D) ----
   const list = $('carList');
-  list.innerHTML = CARS.map(c=>`
-    <div class="carcard ${c.id===chosenCar.id?'sel':''}" data-id="${c.id}">
+  list.innerHTML = CARS.map(c=>{
+    const owned = f.owned.includes(c.id), selected = chosenCar.id===c.id, afford = f.money>=c.price;
+    const price = owned
+      ? `<div class="price own">${selected?'✓ SELECTED':'OWNED · tap to drive'}</div>`
+      : `<div class="price buy">Buy ₹${c.price}${afford?'':' · need more'}</div>`;
+    return `<div class="carcard ${selected?'sel':''} ${owned?'':'locked'}" data-id="${c.id}">
       <div class="swatch" style="background:#${c.color.toString(16).padStart(6,'0')}"></div>
       <div class="cn">${c.name}</div><div class="cs">Top ${Math.round(c.top*3.4)} km/h</div>
-    </div>`).join('');
+      ${price}
+    </div>`;
+  }).join('');
   list.querySelectorAll('.carcard').forEach(el=>{
     el.onclick = ()=>{
-      chosenCar = CARS.find(c=>c.id===el.dataset.id);
-      list.querySelectorAll('.carcard').forEach(x=>x.classList.toggle('sel', x===el));
+      const c = getCar(el.dataset.id), f = career();
+      if (f.owned.includes(c.id)){ chosenCar = c; f.car = c.id; saveF1(); }
+      else if (f.money >= c.price){ f.money -= c.price; f.owned.push(c.id); chosenCar = c; f.car = c.id; saveF1(); flashWallet(`✅ Bought ${c.name}!`); }
+      else { flashWallet(`💸 ${c.name} costs ₹${c.price} — win more races first.`); return; }
+      buildMenu();                            // re-render owned/selected/price states
+      if (state==='menu') resetShowcase();    // new car (and its paint) on the backdrop
     };
   });
 }
+
+/* ---------------- car customization ---------------- */
+const PAINTS = [0xe10600,0xff7b3d,0xffd21f,0x39ff88,0x1e90ff,0x7c4dff,0xb14bff,0xff4fd8,0x00e5ff,0xffffff,0x0d1116,0x9aa0a6];
+let customSnapshot = '{}';
+function curPaint(){ const f=career(); if(!f.paint) f.paint={}; if(!f.paint[chosenCar.id]) f.paint[chosenCar.id]={}; return f.paint[chosenCar.id]; }
+function openCustom(){
+  customSnapshot = JSON.stringify((career().paint||{})[chosenCar.id] || {});
+  $('customSub').innerHTML = `Paint your <b>${chosenCar.name}</b> — body colour, an accent for the nose &amp; stripe, and a racing stripe. You'll drive it in the race.`;
+  renderCustom();
+  $('scr-menu').classList.add('hidden'); $('scr-finish').classList.add('hidden');
+  $('scr-custom').classList.remove('hidden');
+}
+function renderCustom(){
+  const p = curPaint();
+  const body   = (p.body   != null) ? p.body   : chosenCar.color;
+  const accent = (p.accent != null) ? p.accent : body;
+  const swHtml = (val,sel)=>`<div class="sw ${sel?'sel':''}" style="background:#${val.toString(16).padStart(6,'0')}" data-c="${val}"></div>`;
+  $('bodyPalette').innerHTML   = PAINTS.map(v=>swHtml(v, v===body)).join('');
+  $('accentPalette').innerHTML = PAINTS.map(v=>swHtml(v, v===accent)).join('');
+  $('bodyPalette').querySelectorAll('.sw').forEach(el=>el.onclick=()=>{ curPaint().body=+el.dataset.c; renderCustom(); });
+  $('accentPalette').querySelectorAll('.sw').forEach(el=>el.onclick=()=>{ curPaint().accent=+el.dataset.c; renderCustom(); });
+  $('stripeChk').checked = !!p.stripe;
+  const bh = '#'+body.toString(16).padStart(6,'0'), ah = '#'+accent.toString(16).padStart(6,'0');
+  $('paintPreview').innerHTML =
+    `<div class="pv-body" style="background:${bh}">
+       <div class="pv-nose" style="background:${ah}"></div>
+       ${p.stripe?`<div class="pv-stripe" style="background:${ah}"></div>`:''}
+       <div class="pv-cockpit"></div>
+     </div>`;
+}
+function closeCustom(){ $('scr-custom').classList.add('hidden'); $('scr-menu').classList.remove('hidden'); }
+
 $('startBtn').onclick = startRace;
-$('againBtn').onclick = startRace;
+$('againBtn').onclick = ()=>{
+  const f = career();
+  if (isUnlocked(chosenCountry) && (chosenCountry.free || f.money>=chosenCountry.fee)) startRace();
+  else toMenu();
+};
 $('menuBtn').onclick  = toMenu;
+$('customBtn').onclick = openCustom;
+$('stripeChk').onchange = e=>{ curPaint().stripe = e.target.checked; renderCustom(); };
+$('customSave').onclick = ()=>{ saveF1(); refreshWallet(); closeCustom(); };
+$('customBack').onclick = ()=>{                       // discard edits made this session
+  const f = career(); if(!f.paint) f.paint={};
+  f.paint[chosenCar.id] = JSON.parse(customSnapshot);
+  closeCustom();
+};
 // sound on/off
 let soundOff = false;
 $('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); $('muteBtn').textContent = soundOff?'🔇':'🔊'; };
