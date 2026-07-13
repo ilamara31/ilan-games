@@ -925,8 +925,14 @@ const TL={
 };
 
 const myId='u'+Math.random().toString(36).slice(2,9);
-const STAND_MS=8000, AFK_MS=45000, MAX_PLAYERS=10;
-let roomMode='normal', R=null, RGEN=0;
+const STAND_MS=8000, AFK_MS=45000, MAX_PLAYERS=10, ROUND_TIMEOUT_MS=90000;
+// Liveness is decided by APPLICATION-LEVEL signals, not Supabase presence (which
+// blips unreliably under load and used to cause false "host left" boots and false
+// "kicked out" player removals). The host heartbeats every ~3.5s (proves host alive);
+// each client pings the host every ~4s (proves that player alive). We only conclude
+// someone is gone after this many ms of true silence AND presence agreeing they're absent.
+const HOST_SILENCE_MS=22000, PLAYER_SILENCE_MS=22000, PING_MS=4000;
+let roomMode='normal', R=null, RGEN=0, LWDog=null;
 
 const MP={
   sb:null, ch:null, code:null, isHost:false,
@@ -937,24 +943,46 @@ const MP={
     if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}});
     return this.sb; },
   _wire(ch){
-    ['lobby','begin','quickmatch','round','move','result','standings','done','hello','rematch'].forEach(ev=>
+    ['lobby','begin','quickmatch','round','result','standings','done','hello','rematch','ping'].forEach(ev=>
       ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
     ch.on('presence',{event:'sync'},()=>onNet('presence'));
     ch.on('presence',{event:'join'},()=>onNet('presence'));
     ch.on('presence',{event:'leave'},({leftPresences})=>onNet('leave',leftPresences)); },
   async open(code,host){
     await this.ensure(); this.code=code; this.isHost=host;
-    this.ch=this.sb.channel('hcl-room-'+code,{config:{broadcast:{self:false},presence:{key:myId}}});
-    this._wire(this.ch);
-    await new Promise((res,rej)=>{ let done=false;
-      this.ch.subscribe(st=>{
-        if(st==='SUBSCRIBED'&&!done){ done=true; this.ch.track({id:myId,name:SV.name,av:SV.avatar,t:Date.now()}); res(); }
-        else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!done){ done=true; rej(new Error(st)); } }); }); },
+    await new Promise((res,rej)=>this._sub(res,rej)); },
+  // (re)subscribe the room channel. Supabase channels can drop under load and do NOT
+  // reliably self-rejoin, which strands a player forever (sends fall back to REST, and
+  // no broadcasts arrive). The liveness watchdog polls state() and calls reopen() to
+  // rebuild a dropped channel so directives/heartbeat resume and the player recovers.
+  reopening:false,
+  _sub(res,rej){
+    if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} }
+    const ch=this.sb.channel('hcl-room-'+this.code,{config:{broadcast:{self:false},presence:{key:myId}}});
+    this._wire(ch); this.ch=ch; let done=false;
+    ch.subscribe(st=>{
+      if(st==='SUBSCRIBED'){ done=true; this.reopening=false; try{ ch.track({id:myId,name:SV.name,av:SV.avatar,t:Date.now()}); }catch(e){} if(res){ const r=res; res=null; r(); } }
+      else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){ this.reopening=false; if(!done&&rej){ done=true; rej(new Error(st)); } }
+    }); },
+  state(){ return (this.ch&&this.ch.state)||'closed'; },
+  reopen(){ if(this.reopening||!this.sb||!this.code) return; const s=this.state(); if(s==='joined'||s==='joining') return;
+    this.reopening=true; try{ this._sub(null,null); }catch(e){ this.reopening=false; }
+    setTimeout(()=>{ this.reopening=false; }, 6000); },   // safety: allow a retry if this attempt never resolves
   send(ev,payload){ if(this.ch){ try{ this.ch.send({type:'broadcast',event:ev,payload:payload||{}}); }catch(e){} } },
   presenceList(){ try{ const st=this.ch.presenceState(),a=[];
       for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.id)a.push({id:p.id,name:(p.name||'Player').slice(0,14),av:p.av||'🧑',t:p.t||0}); }
       a.sort((x,y)=>(x.id===myId?-1:y.id===myId?1:x.t-y.t)); return a; }catch(e){ return []; } },
-  leave(){ RGEN++; if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.isHost=false; },
+  leave(){ RGEN++; this.closeMatch(); if(this.ch){ try{ this.sb.removeChannel(this.ch); }catch(e){} } this.ch=null; this.isHost=false; },
+  // Per-match move channel: the room channel is only for coordination (lobby/round/
+  // result/heartbeat). A match's rapid move traffic goes on its OWN 2-player channel so
+  // it can't overload the room channel and strand other players' directive delivery.
+  matchCh:null, matchId:null,
+  openMatch(matchId){ this.closeMatch(); if(!this.sb||!this.code)return; this.matchId=matchId;
+    const ch=this.sb.channel('hcl-m-'+this.code+'-'+matchId,{config:{broadcast:{self:false}}});
+    ch.on('broadcast',{event:'move'},({payload})=>onMoveMsg(payload));
+    ch.subscribe(()=>{}); this.matchCh=ch; },
+  sendMove(payload){ if(this.matchCh){ try{ this.matchCh.send({type:'broadcast',event:'move',payload:payload||{}}); }catch(e){} } },
+  closeMatch(){ if(this.matchCh){ try{ this.sb.removeChannel(this.matchCh); }catch(e){} } this.matchCh=null; this.matchId=null; },
 };
 
 /* ---- room helpers ---- */
@@ -968,7 +996,7 @@ let HB=null;
 // message (dropped broadcast) self-heals within seconds. Clients ignore stale seqs.
 function hostDir(ev,payload){ payload.seq=++R.seq; R.lastDir={ev,payload}; MP.send(ev,payload); startHeartbeat(); }
 function startHeartbeat(){ if(HB)return; const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!R||!R.isHost){ clearInterval(HB); HB=null; return; } if(R.lastDir) MP.send(R.lastDir.ev, R.lastDir.payload); }, 3500); }
-function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(MP.ch)MP.leave(); R=null; G.online=false; G.tourney=false; }
+function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(LWDog){ clearInterval(LWDog); LWDog=null; } if(MP.ch)MP.leave(); R=null; G.online=false; G.tourney=false; }
 
 function openRoom(){ roomMode='normal'; segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]')); $('joinCode').value=''; show('room'); }
 $('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click(); roomMode=b.dataset.rmode; segOn('roomModeSeg',b); });
@@ -977,18 +1005,18 @@ async function createRoomFlow(code){
   code=(typeof code==='string' && code.length>=4)?code:genCode();
   R={ code, isHost:true, hostId:myId, mode:roomMode, phase:'lobby', players:[], format:null,
       schedule:[], roundIndex:0, results:{}, roundPairs:[], roundResults:{}, koSeeds:[], koBye:null, koStep:0, champion:null,
-      seq:0, lastDir:null };
+      seq:0, lastDir:null, lastHostMsg:performance.now(), seen:{}, startedAt:0 };
   showLobby(code,true);
-  try{ await MP.open(code,true); hostLobbyUpdate(); }catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
+  try{ await MP.open(code,true); hostLobbyUpdate(); startLiveWatch(); }catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
 }
 $('createRoomBtn').addEventListener('click',()=>{ Sound.click(); createRoomFlow(); });
 $('joinRoomBtn').addEventListener('click',()=> joinRoom(($('joinCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4)) );
 async function joinRoom(code){
   if(!code || code.length<4){ toast('Enter the 4-letter code'); return; }
   Sound.click();
-  R={ code, isHost:false, hostId:null, mode:roomMode, phase:'lobby', players:[], lastSeq:0 };
+  R={ code, isHost:false, hostId:null, mode:roomMode, phase:'lobby', players:[], lastSeq:0, lastHostMsg:performance.now(), seen:{} };
   showLobby(code,false);
-  try{ await MP.open(code,false); MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }
+  try{ await MP.open(code,false); MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); startLiveWatch(); }
   catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
 }
 $('lobbyCancel').addEventListener('click',()=>{ Sound.click(); leaveRoom(); show('room'); });
@@ -1022,6 +1050,7 @@ function hostStart(){
   if(R.players.length<2){ toast('Need at least 2 players'); return; }
   R.format = R.players.length===2 ? 'quick' : 'tourney';
   R.results={}; R.koStep=0;
+  R.startedAt=performance.now(); R.seen={}; R.players.forEach(p=>R.seen[p.id]=performance.now());
   hostDir('begin',{mode:R.mode,players:R.players,format:R.format,hostId:myId});
   if(R.format==='quick'){ R.phase='quick'; hostQuickMatch(); }
   else { R.phase='group'; R.schedule=TL.roundRobin(R.players.map(p=>p.id)); R.roundIndex=0; hostStartRound(); }
@@ -1045,7 +1074,7 @@ function hostStartRound(){
   });
   const pkt={stage:'group',roundName:'Round '+(R.roundIndex+1),roundNo:R.roundIndex+1,totalRounds:R.schedule.length,pairs:R.roundPairs,bye:R.roundBye,mode:R.mode,players:R.players};
   hostDir('round',pkt); clientOnRound(pkt);
-  hostCheckRound();
+  scheduleRoundTimeout(); hostCheckRound();
 }
 function hostOnResult(res){
   if(!R||!R.isHost) return;
@@ -1059,6 +1088,15 @@ function hostOnResult(res){
 }
 function hostCheckRound(){ if(!R||!R.isHost||R._closing)return;
   if(Object.keys(R.roundResults).length >= R.roundPairs.length){ R._closing=true; roomTimer(hostFinishRound, 400); } }
+// safety net: if a round hasn't finished after ROUND_TIMEOUT_MS (a match got stuck and even
+// AFK/walkover couldn't resolve it), force-resolve the remaining pairs so the WHOLE tournament
+// never freezes. Deterministic winner (lower id) so it can't disagree with anything.
+function scheduleRoundTimeout(){ const nonce=(R._rnonce=(R._rnonce||0)+1), g=RGEN;
+  setTimeout(()=>{ if(g!==RGEN||!R||!R.isHost||R._rnonce!==nonce||R._closing)return; hostForceRound(); }, ROUND_TIMEOUT_MS); }
+function hostForceRound(){ if(!R||!R.isHost||R._closing)return;
+  R.roundPairs.forEach(pr=>{ if(!R.roundResults[pr.matchId]){ const w=(pr.a<pr.b)?pr.a:pr.b;
+    R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:0,bScore:0,winner:w,reason:'timeout'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; } });
+  hostCheckRound(); }
 function hostFinishRound(){
   if(!R||!R.isHost||R.phase==='done') return;
   const standings=TL.standings(R.players, Object.values(R.results));
@@ -1096,33 +1134,35 @@ function hostStartKO(){
   R.koStep++;
   const pkt={stage:'ko',roundName:rd.name,pairs:R.roundPairs,bye:R.koBye,mode:R.mode,players:R.players,isFinal:rd.isFinal};
   hostDir('round',pkt); clientOnRound(pkt);
-  hostCheckRound();
+  scheduleRoundTimeout(); hostCheckRound();
 }
 function hostBroadcastStandings(rows,title,done,stage,q){ const pkt={rows,title,nextIn:STAND_MS/1000,stage,q}; hostDir('standings',pkt); clientOnStandings(pkt); }
-function hostBroadcastDone(champId,rows){ if(!R)return; R.phase='done'; const pkt={champion:champId,champName:pname(champId),champAv:pav(champId),rows}; hostDir('done',pkt); clientOnDone(pkt); }
+function hostBroadcastDone(champId,rows){ if(!R)return;
+  // never crown a ghost: if the champion id isn't a current player (e.g. they rage-quit
+  // right at the end), fall back to the top of the standings so a real player is shown.
+  const real=new Set(R.players.map(p=>p.id));
+  if(!real.has(champId)){ const alt=(rows||[]).find(r=>real.has(r.id)); champId=alt?alt.id:((R.players[0]||{}).id); R.champion=champId; }
+  R.phase='done'; const pkt={champion:champId,champName:pname(champId),champAv:pav(champId),rows}; hostDir('done',pkt); clientOnDone(pkt); }
 
 /* ---- net message router ---- */
 function onNet(kind,payload){
   if(!R) return;                                        // ignore stray messages after leaving
+  // liveness: any host-originated directive proves the host is alive (even a stale/
+  // duplicate heartbeat); any message carrying `from` proves that player is alive.
+  if(!R.isHost && ['lobby','begin','quickmatch','round','standings','done'].indexOf(kind)>=0) R.lastHostMsg=performance.now();
+  if(R.isHost && payload && payload.from) R.seen[payload.from]=performance.now();
   // sequenced directives (self-heal via heartbeat): ignore stale/duplicate on clients
   if(!R.isHost && payload && payload.seq!=null && ['begin','quickmatch','round','standings','done'].indexOf(kind)>=0){
     if(R.lastSeq!=null && payload.seq<=R.lastSeq) return; R.lastSeq=payload.seq;
   }
+  if(kind==='ping') return;                              // liveness only (recorded above)
   if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
-  if(kind==='leave'){ onLeave(payload); return; }
+  if(kind==='leave'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }  // lobby only; in-game leaves handled by the liveness watchdog
   if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
   if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.players=payload.players||[]; renderLobby(); } return; }
   if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
   if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,quick:true}); return; }
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
-  if(kind==='move'){ if(G.online && payload.matchId===G.matchId){
-      if(payload.ball===G.ballIndex){
-        if(G.busy){ G.pendingOpp={ball:payload.ball,num:payload.num}; }   // mid-reveal: buffer it (applied when this ball opens) — fixes per-ball move loss & the resend storm
-        else { G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
-      }
-      else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
-      else if(G.moveHist && G.moveHist[payload.ball]!=null){ MP.send('move',{matchId:G.matchId, ball:payload.ball, num:G.moveHist[payload.ball]}); } // opponent is a ball behind → re-send my move for that ball so they catch up
-    } return; }
   if(kind==='result'){ hostOnResult(payload); return; }
   if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
   if(kind==='done'){ if(!R.isHost) clientOnDone(payload); return; }
@@ -1168,8 +1208,18 @@ function beginNetMatch(m){
   G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko; G.moveHist={};
   G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
   G.firstBat=m.batFirst;
+  MP.openMatch(m.matchId);                    // moves for this match go on their own channel
   $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+(m.mode==='crazy'?'Crazy':'Normal');
   startInnings();
+}
+// opponent's move (arrives on the per-match channel)
+function onMoveMsg(payload){ if(!G.online || !payload || payload.matchId!==G.matchId) return;
+  if(payload.ball===G.ballIndex){
+    if(G.busy){ G.pendingOpp={ball:payload.ball,num:payload.num}; }   // mid-reveal: buffer it (applied when this ball opens)
+    else { G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
+  }
+  else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
+  else if(G.moveHist && G.moveHist[payload.ball]!=null){ MP.sendMove({matchId:G.matchId, ball:payload.ball, num:G.moveHist[payload.ball]}); } // opponent a ball behind → re-send that ball
 }
 function onlineNextBall(){
   G.myNum=null; G.oppNum=null; clearAfk();
@@ -1185,14 +1235,16 @@ function onlinePick(n){
   Sound.pick(); G.myNum=n; (G.moveHist=G.moveHist||{})[G.ballIndex]=n;
   const chosen=$('pad').querySelector('.num[data-n="'+n+'"]'); if(chosen)chosen.classList.add('chosen');
   padLock(true);
-  MP.send('move',{matchId:G.matchId, ball:G.ballIndex, num:n});
+  MP.sendMove({matchId:G.matchId, ball:G.ballIndex, num:n});
   $('prompt').textContent='Waiting for opponent…';
   tryResolveOnline();
 }
-// resilience: while waiting for the opponent's move, keep re-broadcasting mine (dropped
+// resilience: while waiting for the opponent's move, keep re-sending mine (dropped
 // broadcasts / a 1-ball drift no longer soft-lock the match — it self-heals in ~1s).
 setInterval(()=>{ if(G.online && cur==='game' && !G.busy && G.myNum!=null && G.oppNum==null && G.matchId){
-  MP.send('move',{matchId:G.matchId, ball:G.ballIndex, num:G.myNum}); } }, 900);
+  MP.sendMove({matchId:G.matchId, ball:G.ballIndex, num:G.myNum}); } }, 1200);
+// client -> host liveness ping (proves this player is still here, independent of presence)
+setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.phase==='quick')) MP.send('ping',{from:myId}); }, PING_MS);
 function tryResolveOnline(){
   if(G.busy || G.myNum==null || G.oppNum==null) return;
   clearAfk(); G.busy=true;
@@ -1224,9 +1276,13 @@ function reportResult(){
   reportOrRematch(res, winner===myId);
 }
 function reportOrRematch(res, iWon){
+  MP.closeMatch();                            // match over — leave its move channel
   if(G.quick){ showQuickResult(res, iWon); return; }
-  // tournament: report to host, then wait
+  // tournament: report to host, then wait. Re-send a few times (result is on the room
+  // channel; a single drop must not lose it) — host dedups by matchId.
+  res.from=myId;
   MP.send('result', res); if(MP.isHost) hostOnResult(res);
+  [700,1600,3000].forEach(d=>setTimeout(()=>{ if(R&&!MP.isHost) MP.send('result',res); }, d));
   const oppN=esc(pname(G.oppId));
   showTwait(iWon?'✅':'❌', iWon?'You won!':'You lost', 'vs '+oppN+' — waiting for the other matches…');
 }
@@ -1243,26 +1299,45 @@ function showQuickResult(res, iWon){
 }
 
 /* ---- disconnects ---- */
-function onLeave(left){
-  if(!R) return;
-  const gone=(left||[]).map(p=>p&&(p.id||(p.metas&&p.metas[0]&&p.metas[0].id))).filter(Boolean);
-  if(!gone.length) return;
-  if(!R.isHost && R.hostId && gone.includes(R.hostId)){ toast('Host left — room closed'); leaveRoom(); show('menu'); return; }
-  // my current opponent left mid-match -> I win by walkover
-  if(G.online && G.oppId && gone.includes(G.oppId) && cur==='game'){ netMatchWalkover(); }
-  if(R.isHost){
-    gone.forEach(id=>{
-      R.players=R.players.filter(p=>p.id!==id);
-      if(R.roundPairs){ R.roundPairs.forEach(pr=>{ if((pr.a===id||pr.b===id)&&!R.roundResults[pr.matchId]){
-        const opp=pr.a===id?pr.b:pr.a; R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:pr.a===opp?1:0,bScore:pr.b===opp?1:0,winner:opp,reason:'walkover'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; } }); }
-      if(R.koSeeds) R.koSeeds=R.koSeeds.filter(s=>s!==id);
-    });
-    if(R.phase==='lobby'){ hostLobbyUpdate(); return; }
-    // only a real tournament auto-crowns a lone survivor; a quick match just falls through
-    // to the walkover result handled above (line: netMatchWalkover).
-    if(R.players.length<=1 && (R.phase==='group'||R.phase==='ko')){ if(R.players.length===1){ R.champion=R.players[0].id; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); } return; }
-    if(R.phase==='group'||R.phase==='ko') hostCheckRound();
-  }
+/* A Supabase presence 'leave' fires on any transient network blip (common under load
+   with many players). Don't act on it immediately — wait out a grace window and only
+   treat a player as truly gone if they're STILL absent. This kills the "host left the
+   room" / "kicked for no reason" false-positives. */
+// Liveness watchdog. Presence is only advisory (it blips unreliably under load); the
+// real "who's still here" decision uses application silence: the host heartbeats every
+// ~3.5s and each client pings every ~4s. Only after PLAYER_SILENCE_MS/HOST_SILENCE_MS of
+// true silence AND presence agreeing they're absent do we act — so a transient blip can
+// never boot a client ("host left") or wrongly eliminate a player ("kicked out").
+function startLiveWatch(){ if(LWDog) clearInterval(LWDog); const g=RGEN;
+  LWDog=setInterval(()=>{ if(g!==RGEN||!R){ if(LWDog){ clearInterval(LWDog); LWDog=null; } return; }
+    const now=performance.now();
+    // 1) heal a dropped room channel before judging anyone as "gone"
+    const s=MP.state();
+    if(s!=='joined'&&s!=='joining'){ MP.reopen(); R.lastHostMsg=now; if(R.seen)R.players&&R.players.forEach(p=>R.seen[p.id]=now); return; }
+    // 2) heal a dropped per-match channel so a live match can't soft-lock on lost moves
+    if(G.online && cur==='game' && G.matchId && MP.matchCh && MP.matchCh.state!=='joined' && MP.matchCh.state!=='joining'){ MP.openMatch(G.matchId); }
+    if(R.isHost){
+      if(R.phase==='group'||R.phase==='ko'){
+        const present=new Set(MP.presenceList().map(p=>p.id));
+        R.players.slice().forEach(p=>{ if(p.id===myId) return;
+          const silent = now-(R.seen[p.id]||R.startedAt||now) > PLAYER_SILENCE_MS;
+          if(silent && !present.has(p.id)) removePlayer(p.id); });
+      }
+    } else if(R.phase==='group'||R.phase==='ko'||R.phase==='quick'){
+      if(R.hostId && now-(R.lastHostMsg||0) > HOST_SILENCE_MS) hostGone();
+    }
+  }, 3000);
+}
+function hostGone(){ toast('Host left — room closed'); leaveRoom(); show('menu'); }
+function removePlayer(id){
+  if(!R||!R.isHost) return;
+  R.players=R.players.filter(p=>p.id!==id); delete R.seen[id];
+  if(R.roundPairs){ R.roundPairs.forEach(pr=>{ if((pr.a===id||pr.b===id)&&!R.roundResults[pr.matchId]){
+    const opp=pr.a===id?pr.b:pr.a; R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:pr.a===opp?1:0,bScore:pr.b===opp?1:0,winner:opp,reason:'walkover'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; } }); }
+  if(R.koSeeds) R.koSeeds=R.koSeeds.filter(s=>s!==id);
+  if(R.phase==='lobby'){ hostLobbyUpdate(); return; }
+  if(R.players.length<=1 && (R.phase==='group'||R.phase==='ko')){ if(R.players.length===1){ R.champion=R.players[0].id; hostBroadcastDone(R.champion, TL.standings(R.players,Object.values(R.results))); } return; }
+  if(R.phase==='group'||R.phase==='ko') hostCheckRound();
 }
 
 /* ================= COMPETITIONS (league / tournament / world cup) =================
