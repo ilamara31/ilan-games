@@ -81,6 +81,8 @@ body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI
 .pill.medium{background:rgba(90,180,255,.16);color:#7cc4ff}
 .pill.hard{background:rgba(255,190,60,.16);color:#ffd27a}
 .pill.expert{background:rgba(255,80,110,.16);color:#ff90a6}
+.pill.impossible{background:rgba(180,60,255,.18);color:#c98aff}
+.pill.enigma{background:linear-gradient(90deg,rgba(255,210,74,.22),rgba(255,90,220,.22));color:#ffd76a}
 .mcard.locked{opacity:.5;cursor:not-allowed}
 .mcard .lk{font-size:22px}
 .mcard .done{color:var(--accent2);font-size:12px;font-weight:900}
@@ -123,13 +125,15 @@ body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI
 
 /* keypad */
 .entry{margin:14px 12px 0}
-.display{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.display{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
 .slot{cursor:pointer;width:clamp(38px,11vw,50px);height:clamp(50px,15vw,64px);border-radius:12px;background:rgba(6,10,22,.85);
   border:2px solid var(--key-br);display:flex;align-items:center;justify-content:center;
   font-family:var(--mono);font-weight:900;font-size:clamp(24px,7vw,32px);color:var(--accent)}
 .slot.active{border-color:var(--accent);box-shadow:0 0 16px color-mix(in srgb,var(--accent) 50%,transparent)}
 .slot.filled{color:var(--ink)}
 .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:340px;margin:0 auto}
+.keypad.alpha{grid-template-columns:repeat(6,1fr);max-width:460px;gap:7px}
+.keypad.alpha .key{font-size:16px;padding:12px 0}
 .key{background:var(--key-bg);border:1px solid var(--key-br);border-radius:14px;color:var(--key-fg);
   font-family:var(--mono);font-weight:900;font-size:24px;padding:15px 0;cursor:pointer;transition:transform .08s,filter .12s}
 .key:hover{filter:brightness(1.2)}
@@ -303,19 +307,30 @@ body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI
 const CB = (function(){
 "use strict";
 
-/* ---------- MISSIONS ---------- */
-const MISSIONS = [
-  {name:'Bank Vault',               em:'🏦', diff:'easy',   len:3, time:180, hue:210, scene:'vault'},
-  {name:'Train Control Room',       em:'🚆', diff:'easy',   len:3, time:180, hue:150, scene:'train'},
-  {name:'Museum Security Room',     em:'🏛️', diff:'medium', len:4, time:120, hue:40,  scene:'museum'},
-  {name:'Airport Control Tower',    em:'🛫', diff:'medium', len:4, time:120, hue:195, scene:'airport'},
-  {name:'Secret Laboratory',        em:'🧪', diff:'hard',   len:5, time:120,  hue:110, scene:'lab'},
-  {name:'Submarine Control Center', em:'⚓', diff:'hard',   len:5, time:120,  hue:185, scene:'sub'},
-  {name:'Space Station',            em:'🛰️', diff:'expert', len:6, time:150,  hue:265, scene:'space'},
-  {name:'Military Command Center',  em:'🎖️', diff:'expert', len:6, time:150,  hue:0,   scene:'military'}
+/* ---------- MISSIONS (data-driven tiers, 54 levels) ---------- */
+const SCENES=['vault','train','museum','airport','lab','sub','space','military'];
+const TIER_DEFS=[
+  {diff:'easy',       len:3,  time:180, engine:'enum'},
+  {diff:'medium',     len:4,  time:150, engine:'enum'},
+  {diff:'hard',       len:5,  time:150, engine:'enum'},
+  {diff:'expert',     len:6,  time:180, engine:'enum'},
+  {diff:'impossible', len:8,  time:300, engine:'chain'},               // math-relation clues
+  {diff:'enigma',     len:10, time:300, engine:'chain', alpha:true}    // 10-char letters + numbers
 ];
-const DIFF_LABEL={easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert'};
-const COIN_BASE={easy:60,medium:90,hard:130,expert:190};
+const TIER_NAMES={
+  easy:[['Bank Vault','🏦'],['Train Control Room','🚆'],['Corner Store Safe','🏪'],['School Locker','🎒'],['Parking Garage','🅿️'],['Ticket Booth','🎟️'],['Gym Locker','🏋️'],['Diner Register','🍽️'],['Mailroom','📮'],['Toy Shop Vault','🧸'],['Bike Lock','🚲'],['Cinema Booth','🎬']],
+  medium:[['Museum Security Room','🏛️'],['Airport Control Tower','🛫'],['Hotel Vault','🏨'],['Casino Cage','🎰'],['Jewellery Store','💍'],['Art Gallery','🖼️'],['Radio Station','📻'],['Power Substation','⚡'],['City Archive','🗃️'],['Harbour Office','⚓'],['Newsroom','🗞️'],['Clock Tower','🕰️']],
+  hard:[['Secret Laboratory','🧪'],['Submarine Control Center','🚢'],['Diamond Exchange','💎'],['Nuclear Bunker','☢️'],['Data Center','🖥️'],['Embassy Safe','🏛️'],['Prison Control','⛓️'],['Oil Rig Control','🛢️'],['Weather Station','🌩️'],['Bank HQ Vault','🏦']],
+  expert:[['Space Station','🛰️'],['Military Command Center','🎖️'],['Satellite Uplink','📡'],['Cyber Warfare Unit','💻'],['Black Site','🕳️'],['Missile Silo','🚀'],['Intelligence HQ','🕵️'],['Quantum Lab','⚛️'],['Aircraft Carrier','✈️'],['Vault of Secrets','🗝️']],
+  impossible:[['The Cipher Vault','🔐'],['Shadow Mainframe','🌑'],['Doomsday Terminal','💀'],['The Oracle Core','🔮'],['Phantom Server','👻'],['Abyss Control','🕸️'],['The Labyrinth','🌀'],['Omega Bunker','🛡️']],
+  enigma:[['The Enigma Machine','🧩'],['Ghost Protocol','☠️']]
+};
+const MISSIONS=[];
+(function(){ let g=0; TIER_DEFS.forEach(t=>{ TIER_NAMES[t.diff].forEach(nm=>{
+  MISSIONS.push({name:nm[0], em:nm[1], diff:t.diff, len:t.len, time:t.time, engine:t.engine, alpha:!!t.alpha,
+    hue:(g*47)%360, scene:SCENES[g%SCENES.length]}); g++; }); }); })();
+const DIFF_LABEL={easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert',impossible:'Impossible',enigma:'Enigma'};
+const COIN_BASE={easy:60,medium:90,hard:130,expert:190,impossible:280,enigma:400};
 
 const OBJECTS=[
   ['💻','Computer'],['📝','Sticky Note'],['📋','Security Log'],['📄','Document'],['🗄️','Drawer'],
@@ -383,7 +398,10 @@ function stopMusic(){ if(musicNodes){ try{musicNodes.o1.stop();musicNodes.o2.sto
 /* =========================================================
    CLUE ENGINE — guarantees a unique, solvable code
    ========================================================= */
-const ORD=['first','second','third','fourth','fifth','sixth'];
+const ORD=['first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth'];
+const DIGITS='0123456789'.split('');
+const LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ALNUM=DIGITS.concat(LETTERS);
 // Predicates take a flat digit matrix `m` and a base index `b`; digit at position i is m[b+i].
 function makeCluePool(secret){
   const n=secret.length, P=[];
@@ -441,6 +459,84 @@ function buildMission(n){
   return { secret, clues: chosen.map((c,i)=>({text:c.text, obj:bag[i%bag.length], found:false})) };
 }
 
+/* =========================================================
+   CHAIN ENGINE — for Impossible (8-digit math) & Enigma (10-char alphanumeric).
+   The full code space (10^8 .. 36^10) is far too large to enumerate, so instead we
+   build a CHAIN: one clue per position, each derived from already-revealed positions
+   via math. Following the chain in order fixes every symbol → a UNIQUE, solvable code
+   (verified by simulation, not enumeration).
+   Value space: a digit position holds 0-9; a letter position holds its alphabet index 1-26.
+   ========================================================= */
+function symVal(ch){ return /[0-9]/.test(ch) ? +ch : ch.charCodeAt(0)-64; }      // A=1..Z=26
+function letterFromVal(v){ return String.fromCharCode(65 + ((v-1)%26)); }         // 1->A
+function slotWord(i,types){ return `the ${ORD[i]} ${types[i]==='letter'?'letter':'digit'}`; }
+function buildChain(n, opts){
+  const alpha=!!opts.alpha;
+  const types=[]; for(let i=0;i<n;i++) types.push(alpha ? (Math.random()<0.5?'letter':'digit') : 'digit');
+  if(alpha){ if(types.indexOf('letter')<0) types[0]='letter'; if(types.indexOf('digit')<0) types[1]='digit'; }
+  const secret=[]; for(let i=0;i<n;i++) secret.push(types[i]==='digit' ? String((Math.random()*10)|0) : letterFromVal(1+((Math.random()*26)|0)));
+  const V=secret.map((s)=>symVal(s));               // target value per position
+  const order=shuffle(Array.from({length:n},(_,i)=>i));
+  const known=[], clues=[];
+  for(let step=0; step<order.length; step++){
+    const pos=order[step];
+    let clue = step>0 ? mathClue(pos, known.slice(), types, V) : null;
+    if(!clue) clue = anchorClue(pos, types, secret, V);
+    known.push(pos); clues.push(clue);
+  }
+  shuffle(clues);
+  const bag=shuffle(OBJECTS.slice());
+  return { secret, alpha, types, alphabet: alpha?ALNUM:DIGITS,
+    clues: clues.map((c,i)=>({text:c.text, obj:bag[i%bag.length], found:false, pos:c.pos, refs:c.refs, fn:c.fn})) };
+}
+function anchorClue(pos,types,secret,V){
+  if(types[pos]==='letter') return {pos, refs:[], fn:()=>V[pos], text:`${cap(slotWord(pos,types))} is the letter ${secret[pos]}.`};
+  return {pos, refs:[], fn:()=>V[pos], text:`${cap(slotWord(pos,types))} is exactly ${secret[pos]}.`};
+}
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function mathClue(pos, knownArr, types, V){
+  const tv=V[pos], isLetter=types[pos]==='letter';
+  const pick=()=>knownArr[(Math.random()*knownArr.length)|0];
+  for(let attempt=0; attempt<50; attempt++){
+    const a=pick(), b=pick();
+    const wa=slotWord(a,types), wb=slotWord(b,types), S=cap(slotWord(pos,types));
+    const t=(Math.random()*8)|0;
+    let cl=null;
+    if(!isLetter){
+      if(t===0)                 cl={refs:[a,b], fn:v=>(v[a]+v[b])%10,          text:`${S} is the units digit of ${wa} plus ${wb}.`};
+      else if(t===1 && a!==b)   cl={refs:[a,b], fn:v=>Math.abs(v[a]-v[b]),     text:`${S} is the difference between ${wa} and ${wb}.`};
+      else if(t===2)            cl={refs:[a,b], fn:v=>(v[a]*v[b])%10,          text:`${S} is the units digit of ${wa} times ${wb}.`};
+      else if(t===3)            cl={refs:[a],   fn:v=>(v[a]*v[a])%10,          text:`${S} is the units digit of ${wa} squared.`};
+      else if(t===4)            cl={refs:[a],   fn:v=>(2*v[a])%10,             text:`${S} is double ${wa} (units digit only).`};
+      else if(t===5)            cl={refs:[a,b], fn:v=>(v[a]+v[b]+3)%10,        text:`${S} is the units digit of ${wa} plus ${wb} plus 3.`};
+      else if(t===6 && a!==b)   cl={refs:[a,b], fn:v=>Math.max(v[a],v[b]),     text:`${S} is the larger of ${wa} and ${wb}.`};
+      else if(a!==b)            cl={refs:[a,b], fn:v=>((v[a]-v[b])%10+10)%10,  text:`${S} is the units digit of ${wa} minus ${wb}.`};
+    } else {
+      if(t<3)                   cl={refs:[a,b], fn:v=>v[a]+v[b],               text:`${S} is the letter at alphabet position ${wa} + ${wb}.`};
+      else if(t<6 && types[a]==='letter'){ const d=((tv-V[a])%26+26)%26; if(d>=1)
+                                cl={refs:[a],   fn:v=>((v[a]+d-1)%26)+1,       text:`${S} comes ${d} letters after ${wa}.`}; }
+      else                      cl={refs:[a],   fn:v=>v[a],                    text:`${S} is the same alphabet position as ${wa}.`};
+    }
+    if(!cl) continue;
+    const cand=cl.fn(V);                                   // check value comes from the SAME fn the solver uses
+    if(cand===tv && cand>=(isLetter?1:0) && cand<=(isLetter?26:9)) return {pos, refs:cl.refs, fn:cl.fn, text:cl.text};
+  }
+  return null;
+}
+// Simulate the chain solve: fill each position from its clue once all refs are known.
+function solveChain(n, clues){
+  const v=new Array(n).fill(null); let progress=true, guard=0;
+  while(progress && guard++<n+5){ progress=false;
+    for(const c of clues){ if(v[c.pos]!=null) continue;
+      if(c.refs.every(r=>v[r]!=null)){ v[c.pos]=c.fn(v); progress=true; } } }
+  return v;
+}
+function generateMission(m){
+  if(m.engine==='chain') return buildChain(m.len,{alpha:m.alpha});
+  const b=buildMission(m.len);
+  return { secret:b.secret.map(String), alpha:false, alphabet:DIGITS, clues:b.clues };
+}
+
 /* ---------- SCENES (unique visuals per mission) ---------- */
 function buildScene(el,m){
   const hue=m.hue;
@@ -474,11 +570,12 @@ function startMission(idx){
   setTimeout(()=>{ _beginMission(idx,m); closeOv(); }, 60);
 }
 function _beginMission(idx,m){
-  const built=buildMission(m.len);
-  G={ idx, m, secret:built.secret, clues:built.clues, entry:new Array(m.len).fill(null), cursor:0, time:m.time, frozen:0,
+  const built=generateMission(m);
+  G={ idx, m, secret:built.secret, clues:built.clues, alpha:!!built.alpha, alphabet:built.alphabet||DIGITS,
+      entry:new Array(m.len).fill(null), cursor:0, time:m.time, frozen:0,
       attempts:0, cluesFound:0, dead:new Set(), started:Date.now(), over:false };
   document.getElementById('gName').textContent=m.name;
-  document.getElementById('gDiff').textContent=m.len+'-digit code · '+DIFF_LABEL[m.diff];
+  document.getElementById('gDiff').textContent=(m.alpha?m.len+'-char code (letters + numbers)':m.len+'-digit code')+' · '+DIFF_LABEL[m.diff];
   document.getElementById('gCoins').textContent=S.coins;
   buildScene(document.getElementById('scene'),m);
   renderObjs(); renderClues(); renderDisplay(); renderKeypad(); renderHelp();
@@ -519,20 +616,29 @@ function renderDisplay(){
 }
 function renderKeypad(){
   const k=document.getElementById('keypad'); k.innerHTML='';
-  for(let n=1;n<=9;n++) k.appendChild(mkKey(String(n)));
-  k.appendChild(mkKey('C','clr'));
-  k.appendChild(mkKey('0'));
-  k.appendChild(mkKey('✓','confirm'));
+  if(G.alpha){
+    k.classList.add('alpha');
+    DIGITS.forEach(d=>k.appendChild(mkKey(d)));
+    LETTERS.forEach(l=>k.appendChild(mkKey(l)));
+    k.appendChild(mkKey('','clr'));
+    k.appendChild(mkKey('','confirm'));
+  } else {
+    k.classList.remove('alpha');
+    for(let n=1;n<=9;n++) k.appendChild(mkKey(String(n)));
+    k.appendChild(mkKey('','clr'));
+    k.appendChild(mkKey('0'));
+    k.appendChild(mkKey('','confirm'));
+  }
 }
 function mkKey(label,cls){
   const b=document.createElement('button'); b.className='key'+(cls?' '+cls:'');
-  b.textContent= label==='C'?'⌫': label;
-  if(/[0-9]/.test(label) && G.dead.has(+label)) b.classList.add('dead');
-  b.onclick=()=>{ if(cls==='clr') back(); else if(cls==='confirm') confirmCode(); else press(+label); };
+  b.textContent= cls==='clr'?'⌫' : cls==='confirm'?'✓' : label;
+  if(!cls && G.dead.has(label)) b.classList.add('dead');
+  b.onclick=()=>{ if(cls==='clr') back(); else if(cls==='confirm') confirmCode(); else press(label); };
   return b;
 }
-function press(n){ if(G.over)return; if(G.dead.has(n)){SFX.error();return;}
-  G.entry[G.cursor]=n; SFX.key();
+function press(ch){ if(G.over)return; if(G.dead.has(ch)){SFX.error();return;}
+  G.entry[G.cursor]=ch; SFX.key();
   // jump to the next empty box on the right; if none, stay put
   let nx=G.cursor+1; while(nx<G.m.len && G.entry[nx]!=null) nx++;
   if(nx<G.m.len) G.cursor=nx;
@@ -570,9 +676,9 @@ function useGadget(id){
     const pick=un[Math.floor(Math.random()*un.length)];
     S.items.hint--; const el=document.getElementById('objs').children[pick.i]; investigate(pick.i,el); }
   else if(id==='freeze'){ S.items.freeze--; G.frozen+=10; updTimer(); SFX.buy(); toast('❄️ Timer frozen for 10s'); }
-  else if(id==='analyzer'){ const cand=[]; for(let d=0;d<=9;d++) if(G.secret.indexOf(d)===-1 && !G.dead.has(d)) cand.push(d);
-    if(!cand.length){ toast('No wrong digits left to rule out'); return; }
-    const d=cand[Math.floor(Math.random()*cand.length)]; G.dead.add(d); S.items.analyzer--; renderKeypad(); SFX.buy(); toast('🔬 Digit '+d+' is NOT in the code'); }
+  else if(id==='analyzer'){ const cand=G.alphabet.filter(s=>G.secret.indexOf(s)===-1 && !G.dead.has(s));
+    if(!cand.length){ toast('No wrong symbols left to rule out'); return; }
+    const d=cand[Math.floor(Math.random()*cand.length)]; G.dead.add(d); S.items.analyzer--; renderKeypad(); SFX.buy(); toast('🔬 '+(G.alpha?'':'Digit ')+d+' is NOT in the code'); }
   save(); renderHelp();
 }
 function winMission(){
