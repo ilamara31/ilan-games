@@ -85,8 +85,10 @@
     box-shadow:0 2px 6px rgba(0,0,0,.45); z-index:3; }
   /* new / recently-updated badges */
   a.card { position:relative; overflow:visible; }
-  .badge { position:absolute; top:-9px; right:-7px; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
-    box-shadow:0 3px 10px rgba(0,0,0,.45); letter-spacing:.5px; z-index:3; }
+  /* all card badges live in a top-left flex stack so several can show without overlapping */
+  a.card .badges { position:absolute; top:-9px; left:-7px; display:flex; flex-wrap:wrap; gap:4px; z-index:3; max-width:calc(100% - 4px); }
+  .badge { font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
+    box-shadow:0 3px 10px rgba(0,0,0,.45); letter-spacing:.5px; }
   .badge.new { background:linear-gradient(135deg,#ff4d6d,#ff9b3d); color:#3a0010; animation:badgepulse 1.6s infinite; }
   .badge.upd { background:linear-gradient(135deg,#7ee0ff,#3aa0e8); color:#04203a; }
   @keyframes badgepulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
@@ -102,7 +104,8 @@
   /* play count + trending fire */
   .plays { margin-top:8px; font-size:11px; font-weight:800; color:#ffe0b0; background:rgba(0,0,0,.32);
     border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:3px 9px; letter-spacing:.3px; }
-  .badge.fire { left:-7px; right:auto; background:linear-gradient(135deg,#ff5a2b,#ffb02e); color:#3a1400; animation:badgepulse 1.4s infinite; }
+  .badge.fire { background:linear-gradient(135deg,#ff5a2b,#ffb02e); color:#3a1400; animation:badgepulse 1.4s infinite; }
+  .badge.fix { background:linear-gradient(135deg,#57e39b,#20b263); color:#04331a; }
   footer { margin-top:42px; color:#5e6f93; font-size:13px; }
   /* account bar + modal */
   #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
@@ -170,7 +173,7 @@
       <p>Fast, physics-driven air hockey — first to 7 wins. Career mode, paddle skins, arenas & leaderboard.</p>
     </a>
     <a class="card codebreaker" href="codebreaker/">
-      <span class="badge upd">UPDATED</span>
+      <span class="badges"><span class="badge upd">UPDATED</span></span>
       <span class="emoji">🕵️</span>
       <h2>Codebreaker: Secret Agent</h2>
       <p>Crack the secret code before time runs out — investigate the room, find clues, break in.</p>
@@ -186,6 +189,7 @@
       <p>Time your shots, chase the target, and win the IPL-style cup.</p>
     </a>
     <a class="card hcl" href="handcricket/">
+      <span class="badges"><span class="badge fix">BUG FIXED</span></span>
       <span class="emoji">✋</span>
       <h2>Hand Cricket League</h2>
       <p>Numbers 1–10! Normal &amp; wild Crazy mode, smart AI, online rooms with a friend, leagues &amp; cups.</p>
@@ -584,6 +588,8 @@
       'f1/':           { updated: '2026-07-09T21:00:00' },   // new 3D mode + 2D/3D chooser, all maps, engine sound
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
     };
+    /* every card badge goes into a single top-left .badges flex box so they stack side-by-side */
+    window.getBadges = function(card){ var bb=card.querySelector('.badges'); if(!bb){ bb=document.createElement('span'); bb.className='badges'; card.insertBefore(bb, card.firstChild); } return bb; };
     (function(){
       const WINDOW=16*60*60*1000, now=Date.now();   // badge shows for 16h from its timestamp
       const fresh = ts => ts && (now - new Date(ts).getTime()) < WINDOW;
@@ -591,10 +597,10 @@
       document.querySelectorAll('a.card').forEach(card=>{
         const g = GAMES[card.getAttribute('href')]; if(!g) return;
         if(fresh(g.added)){
-          const b=document.createElement('span'); b.className='badge new'; b.textContent='NEW'; card.appendChild(b);
+          const b=document.createElement('span'); b.className='badge new'; b.textContent='NEW'; window.getBadges(card).appendChild(b);
           const t=new Date(g.added).getTime(); if(t>newestT){ newestT=t; newest=card; }
         } else if(fresh(g.updated)){
-          const b=document.createElement('span'); b.className='badge upd'; b.textContent='UPDATED'; card.appendChild(b);
+          const b=document.createElement('span'); b.className='badge upd'; b.textContent='UPDATED'; window.getBadges(card).appendChild(b);
         }
       });
       const banner=document.getElementById('newBanner');
@@ -657,7 +663,7 @@
       });
       if (maxCard && max > 0 && !maxCard.querySelector('.badge.fire')) {
         var f = document.createElement('span'); f.className = 'badge fire'; f.textContent = '🔥 TRENDING';
-        maxCard.appendChild(f);
+        window.getBadges(maxCard).appendChild(f);
       }
     }
     function fromLeaderboard() {
