@@ -200,7 +200,7 @@ const TWISTS = {
   movers:    {name:'Moving walls',        bg:['#2a2a3e','#0c0c14'], accent:'#9fb3ff', movers:true},
   // ---- new mechanics that start appearing from level 100 ----
   dflip:     {name:'Double flip',         bg:['#3a1d5e','#0c0618'], accent:'#c9a0ff', dflip:true},
-  burst:     {name:'Speed burst',         bg:['#6b1a2a','#1a0006'], accent:'#ff6b8a', burst:true},
+  blackout:  {name:'Blackout',            bg:['#101018','#020207'], accent:'#8aa0ff', blackout:true},
   ghost:     {name:'Ghost spikes',        bg:['#22303a','#080e12'], accent:'#a9e6ff', ghost:true},
   fakehz:    {name:'Fake hazard',         bg:['#3a3a12','#12120a'], accent:'#ffe07a', fakehz:true},
   portal:    {name:'Fake portal',         bg:['#0a3a4a','#02141c'], accent:'#5fe0ff', portal:true},
@@ -208,7 +208,7 @@ const TWISTS = {
 /* first levels match the classic order; afterwards twists are stacked & shuffled. */
 const ORDER = ['spikes','spikes','reverse','gaps','fast','lowgrav','upside','fake','movers'];
 const BASE_POOL = ['spikes','reverse','gaps','fast','lowgrav','upside','fake','movers'];
-const NEW_POOL  = ['dflip','burst','ghost','fakehz','portal'];
+const NEW_POOL  = ['dflip','blackout','ghost','fakehz','portal'];
 const WHEEL = { low:'Low Gravity', fast:'Hyper Speed', dark:'Darkness', heavy:'Heavy Gravity' };
 
 // difficulty tiers the player grows into
@@ -216,7 +216,7 @@ function tierConfig(n){
   return {
     combo:  n>=25,                 // two events stacked together
     triple: n>=50,                 // sometimes three spikes
-    newMech:n>=100,                // fake hazard, ghost, double flip, speed burst, fake portal
+    newMech:n>=100,                // fake hazard, ghost, double flip, blackout, fake portal
     master: n>=200,                // "you've come this far" chaos
     wheel:  n>=200 && n%10===0,    // random event wheel every 10 levels
   };
@@ -236,7 +236,7 @@ function combineTwists(keys){
   const ps = keys.map(k=>TWISTS[k]), any = f=>ps.some(p=>p[f]);
   return { keys, name: ps.map(p=>p.name).join(' + '), bg:ps[0].bg, accent:ps[0].accent,
     fast:any('fast'), low:any('low'), flip:any('flip'), upside:any('upside'), fake:any('fake'),
-    movers:any('movers'), gaps:any('gaps'), dflip:any('dflip'), burst:any('burst'),
+    movers:any('movers'), gaps:any('gaps'), dflip:any('dflip'), blackout:any('blackout'),
     ghost:any('ghost'), fakehz:any('fakehz'), portal:any('portal') };
 }
 // ghost spikes blink solid<->safe as a function of position (deterministic on every retry)
@@ -317,11 +317,11 @@ function buildLevel(n){
   const events = [];
   if(tw.dflip){ events.push({type:'flip', x:440+(finishX-440)*0.38, dur:2.4, fired:false});
                 if(tier.master) events.push({type:'flip', x:440+(finishX-440)*0.72, dur:2.2, fired:false}); }
-  if(tw.burst){ events.push({type:'burst', x:440+(finishX-440)*0.30, dur:3.0, fired:false});
-                if(tier.master) events.push({type:'burst', x:440+(finishX-440)*0.66, dur:3.0, fired:false}); }
+  if(tw.blackout){ events.push({type:'blackout', x:440+(finishX-440)*0.35, dur:1.4, fired:false});
+                   if(tier.master) events.push({type:'blackout', x:440+(finishX-440)*0.68, dur:1.4, fired:false}); }
 
   return { n, keys, tk:keys[0], tw, tier, wheel, dark, speed, g, jumpV, gravSign, surf, dir,
-           feats, coins, finishX, fakeX, events, flipT:0, burstT:0 };
+           feats, coins, finishX, fakeX, events, flipT:0, blackoutT:0, blackoutDur:0 };
 }
 
 /* ===================================================================
@@ -431,16 +431,16 @@ function update(dt){
 
   // gravity + integrate (nothing moves or falls during the intro beat)
   if(started){
-    // timed events fire as we pass their trigger x (double flip / speed burst)
+    // timed events fire as we pass their trigger x (double flip / blackout)
     for(const ev of L.events){
       if(!ev.fired && player.x>=ev.x){ ev.fired=true;
-        if(ev.type==='flip') L.flipT=ev.dur; else if(ev.type==='burst') L.burstT=ev.dur;
+        if(ev.type==='flip') L.flipT=ev.dur; else if(ev.type==='blackout'){ L.blackoutT=ev.dur; L.blackoutDur=ev.dur; }
         shake=Math.max(shake,7);
       }
     }
     if(L.flipT>0) L.flipT = Math.max(0, L.flipT - dt);
     let spd = L.speed;
-    if(L.burstT>0){ spd *= 2; L.burstT = Math.max(0, L.burstT - dt); }   // speed burst = 2x
+    if(L.blackoutT>0) L.blackoutT = Math.max(0, L.blackoutT - dt);   // blackout only dims the screen — speed is untouched
     player.x += spd*dt;
     player.vy += L.g * L.gravSign * dt;
     player.y  += player.vy*dt;
@@ -578,9 +578,17 @@ function render(){
     g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.9)');
     ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
   }
-  // live event indicator (speed burst / flip)
+  // blackout pulse — a brief dim that fades in and out (spikes stay visible; no speed change)
+  if(L && L.blackoutT>0 && (state==='play'||state==='dead')){
+    const RAMP = 0.5, elapsed = (L.blackoutDur||1.4) - L.blackoutT;
+    const env = Math.min(1, elapsed/RAMP, L.blackoutT/RAMP);   // 0→1→0 smooth fade
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle = 'rgba(2,2,10,'+(0.62*env).toFixed(3)+')';
+    ctx.fillRect(0,0,cv.width,cv.height);
+  }
+  // live event indicator (blackout / flip)
   if(state==='play' && L){
-    const msg = L.burstT>0 ? '⚡ 2× SPEED' : (L.flipT>0 ? '🔄 FLIP!' : null);
+    const msg = L.blackoutT>0 ? '🌑 BLACKOUT' : (L.flipT>0 ? '🔄 FLIP!' : null);
     if(msg){
       ctx.setTransform(1,0,0,1,0,0); ctx.textAlign='center'; ctx.font='900 '+Math.round(20*DPR)+'px Trebuchet MS';
       ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillText(msg, cv.width/2+2, cv.height*0.30+2);

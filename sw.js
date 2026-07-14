@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v82';
+const CACHE = 'ilan-arcade-v84';
 const ASSETS = [
   './',
   './index.html',
