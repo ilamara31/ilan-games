@@ -58,6 +58,10 @@
   let _unread = {};                 // from_key -> { count, name }
   let _profiles = {};               // key -> profile (cache)
   let _chatOpenWith = null;         // key of the friend whose chat modal is open
+  let _groups = [];                 // my groups: {id,name,avatar_emoji,avatar_url,owner_key,role}
+  let _groupUnread = {};            // group_id -> unread count
+  let _boardRows = null;            // leaderboard cache (for "leading N games")
+  let _pauser = null;               // lazy game-pause engine
   const CHAT_MUTE_LIMIT = 6;        // this many bad words → chat disabled
   const listeners = []; function onUpdate(cb) { listeners.push(cb); } function fire() { listeners.forEach(function (cb) { S(function () { cb(); }); }); refreshBell(); }
 
@@ -160,6 +164,78 @@
     return results;
   }
 
+  /* ================= game-pause engine (unit-tested 13/13) ================= */
+  function makeGamePause() {
+    var paused = false, queue = [], origRAF = null, origCAF = null, fakeIdCounter = 0, pausedMedia = [];
+    function getWin() { return (typeof window !== 'undefined') ? window : null; }
+    function pauseMedia() {
+      pausedMedia = [];
+      try { if (typeof document === 'undefined' || !document.querySelectorAll) return;
+        var els = document.querySelectorAll('audio, video'); if (!els) return;
+        for (var i = 0; i < els.length; i++) { var el = els[i]; try { if (el && el.paused === false) { el.pause(); pausedMedia.push(el); } } catch (e) {} }
+      } catch (e) {}
+    }
+    function resumeMedia() {
+      try { for (var i = 0; i < pausedMedia.length; i++) { var el = pausedMedia[i]; try { if (el && typeof el.play === 'function') { var p = el.play(); if (p && typeof p.catch === 'function') p.catch(function () {}); } } catch (e) {} } } catch (e) {}
+      pausedMedia = [];
+    }
+    function dispatch(type) {
+      try { var win = getWin(); if (!win || typeof win.dispatchEvent !== 'function') return; var evt = null;
+        try { if (typeof win.Event === 'function') evt = new win.Event(type); else if (typeof Event === 'function') evt = new Event(type); } catch (e) { evt = null; }
+        if (!evt) evt = { type: type }; win.dispatchEvent(evt);
+      } catch (e) {}
+    }
+    function pause() {
+      if (paused) return; var win = getWin(); if (!win) return; paused = true;
+      origRAF = win.requestAnimationFrame; origCAF = win.cancelAnimationFrame;
+      win.requestAnimationFrame = function (cb) { var id = ++fakeIdCounter; queue.push({ id: id, cb: cb }); return id; };
+      win.cancelAnimationFrame = function (id) { for (var i = 0; i < queue.length; i++) { if (queue[i].id === id) { queue.splice(i, 1); break; } } };
+      pauseMedia(); dispatch('blur');
+    }
+    function resume() {
+      if (!paused) return; var win = getWin(); if (!win) { paused = false; return; } paused = false;
+      if (origRAF !== null && typeof origRAF !== 'undefined') win.requestAnimationFrame = origRAF;
+      if (origCAF !== null && typeof origCAF !== 'undefined') win.cancelAnimationFrame = origCAF;
+      var pending = queue; queue = []; var realRAF = win.requestAnimationFrame;
+      for (var i = 0; i < pending.length; i++) { try { if (typeof realRAF === 'function') realRAF(pending[i].cb); } catch (e) {} }
+      origRAF = null; origCAF = null; resumeMedia(); dispatch('focus');
+    }
+    function isPaused() { return paused === true; }
+    return { pause: pause, resume: resume, isPaused: isPaused };
+  }
+  function pauser() { if (!_pauser) _pauser = makeGamePause(); return _pauser; }
+  function inGame() { return gameSlug() !== "home"; }
+
+  /* ================= "leading N games" counter (unit-tested 14/14) ================= */
+  function igCountLeading(rows, targetName) {
+    function key(name) { return String(name == null ? '' : name).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    var result = { count: 0, games: [] };
+    if (!rows || !rows.length) return result;
+    var targetKey = key(targetName); if (targetKey === '') return result;
+    var effective = {}, i, r, g, k, s;
+    for (i = 0; i < rows.length; i++) {
+      r = rows[i]; if (!r) continue; g = r.game; k = key(r.name); s = Number(r.score);
+      if (g == null || k === '' || isNaN(s)) continue;
+      if (!effective[g]) effective[g] = {};
+      if (!(k in effective[g]) || s > effective[g][k]) effective[g][k] = s;
+    }
+    var games = [];
+    for (g in effective) {
+      if (!effective.hasOwnProperty(g)) continue;
+      var byPlayer = effective[g]; if (!(targetKey in byPlayer)) continue;
+      var targetScore = byPlayer[targetKey], maxScore = -Infinity;
+      for (k in byPlayer) { if (byPlayer.hasOwnProperty(k) && byPlayer[k] > maxScore) maxScore = byPlayer[k]; }
+      if (targetScore >= maxScore) games.push(g);
+    }
+    games.sort(); return { count: games.length, games: games };
+  }
+  async function fetchAllBoard() {
+    if (_boardRows) return _boardRows;
+    const s = await ensureSb(); if (!s) return [];
+    try { const r = await s.from("leaderboard").select("name,game,score,is_guest").limit(2000); if (!r.error && r.data) { _boardRows = r.data; return _boardRows; } } catch (e) {}
+    return [];
+  }
+
   /* ================= PROFILES ================= */
   const BASE_AVATARS = ["🙂", "😀", "😎", "🐱", "🐶", "🦊", "🐼", "🐵", "🦁", "🐯", "🐨", "🐸", "🐷", "🐹", "🦄", "🐙", "🐢", "🐬", "🦉", "🐧", "🐙", "🦖", "🐳", "🦋"];
   const AV_COLORS = ["#3a6cf0", "#7c3aed", "#db2777", "#ea580c", "#0d9488", "#16a34a", "#ca8a04", "#dc2626", "#0891b2", "#4f46e5"];
@@ -242,13 +318,13 @@
       } catch (e) { rej(e); }
     });
   }
-  async function uploadAvatar(file) {
+  async function uploadAvatar(file, prefix) {
     const s = await ensureSb(); if (!s) throw new Error("Not connected — try again.");
     if (!file) throw new Error("No file chosen.");
     if (!/^image\//.test(file.type)) throw new Error("Please choose an image file (JPG, PNG…).");
     if (file.size > 12 * 1024 * 1024) throw new Error("That image is too big (max 12 MB).");
     const blob = await downscale(file, 256);
-    const path = myKey + "/" + Date.now() + ".jpg";
+    const path = (prefix || myKey) + "/" + Date.now() + ".jpg";
     const up = await s.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
     if (up.error) throw new Error("Upload failed: " + (up.error.message || "storage error") + ". Make sure the 'avatars' bucket exists.");
     const pub = s.storage.from("avatars").getPublicUrl(path);
@@ -326,13 +402,16 @@
   function deny(name, key) { doDeny(name, key || nameKey(name)); }
   function unfriend(name, key) { doUnfriend(name, key || nameKey(name)); }
 
-  /* ================= CHAT ================= */
+  /* ================= CHAT (1:1) ================= */
   function pairKey(a, b) { return [a, b].sort().join("__"); }
   async function loadThread(otherKey) {
     const s = await ensureSb(); if (!s) return [];
     try {
-      const r = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: true }).limit(200);
+      const r = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at,reply_to,reply_name,reply_body").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: true }).limit(300);
       if (!r.error && r.data) return r.data;
+      // reply columns not migrated yet? fall back to base columns so chat still works
+      const r2 = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: true }).limit(300);
+      if (!r2.error && r2.data) return r2.data;
     } catch (e) {}
     return [];
   }
@@ -341,28 +420,41 @@
     try { await s.from("ig_chat").update({ read_at: new Date().toISOString() }).eq("to_key", myKey).eq("from_key", otherKey).is("read_at", null); } catch (e) {}
     delete _unread[otherKey]; fire();
   }
-  // returns { ok, blocked, warn } ; applies moderation, strikes, mute
-  async function sendChat(otherKey, otherName, text) {
-    const s = await ensureSb(); if (!s) return { ok: false, msg: "Not connected." };
-    text = String(text || "").trim().slice(0, 400); if (!text) return { ok: false };
-    if (_myProfile && _myProfile.chat_muted) return { ok: false, blocked: true, msg: "Your chat is disabled for repeated bad language." };
+  // shared moderation (1:1 + groups): { blocked, msg?, warn?, masked, badCount }
+  async function moderateAndStrike(text) {
     const mod = igModerate(text);
+    if (_myProfile && _myProfile.chat_muted) return { blocked: true, msg: "🚫 Your chat is disabled for repeated bad language.", masked: mod.masked, badCount: mod.badCount };
     let warn = null;
     if (mod.badCount > 0) {
+      const s = await ensureSb();
       try {
         const r = await s.rpc("ig_chat_strike", { p_key: myKey, p_name: myName, p_add: mod.badCount, p_limit: CHAT_MUTE_LIMIT });
-        const st = r && r.data; if (st) { if (_myProfile) { _myProfile.chat_strikes = st.strikes; _myProfile.chat_muted = st.muted; wr("ig_my_profile", _myProfile); }
-          if (st.muted) { fire(); return { ok: false, blocked: true, msg: "🚫 Your chat has been disabled for repeated inappropriate language." }; }
+        const st = r && r.data;
+        if (st) {
+          if (_myProfile) { _myProfile.chat_strikes = st.strikes; _myProfile.chat_muted = st.muted; wr("ig_my_profile", _myProfile); }
+          if (st.muted) { fire(); return { blocked: true, msg: "🚫 Your chat has been disabled for repeated inappropriate language.", masked: mod.masked, badCount: mod.badCount }; }
           const left = CHAT_MUTE_LIMIT - st.strikes;
-          warn = "⚠️ Please keep it friendly — bad words are hidden. " + (left <= 2 ? "Your chat will be disabled after " + left + " more." : "");
+          warn = "⚠️ Please keep it friendly — bad words are hidden." + (left <= 2 ? " Chat disabled after " + left + " more." : "");
         }
       } catch (e) {}
     }
+    return { blocked: false, warn: warn, masked: mod.masked, badCount: mod.badCount };
+  }
+  // reply = null or { id, name, body }
+  async function sendChat(otherKey, otherName, text, reply) {
+    const s = await ensureSb(); if (!s) return { ok: false, msg: "Not connected." };
+    text = String(text || "").trim().slice(0, 400); if (!text) return { ok: false };
+    const mod = await moderateAndStrike(text);
+    if (mod.blocked) return { ok: false, blocked: true, msg: mod.msg };
+    const row = { pair_key: pairKey(myKey, otherKey), from_key: myKey, from_name: myName, to_key: otherKey, body: mod.masked };
+    if (reply && reply.id) { row.reply_to = reply.id; row.reply_name = String(reply.name || "").slice(0, 40); row.reply_body = String(reply.body || "").slice(0, 120); }
     try {
-      const r = await s.from("ig_chat").insert({ pair_key: pairKey(myKey, otherKey), from_key: myKey, from_name: myName, to_key: otherKey, body: mod.masked });
+      let r = await s.from("ig_chat").insert(row).select("id,from_key,from_name,body,created_at").maybeSingle();
+      if (r.error && row.reply_to) { delete row.reply_to; delete row.reply_name; delete row.reply_body; r = await s.from("ig_chat").insert(row).select("id,from_key,from_name,body,created_at").maybeSingle(); }
       if (r.error) return { ok: false, msg: "Message didn't send — try again." };
+      const outRow = r.data || row; if (reply && reply.id) { outRow.reply_name = reply.name; outRow.reply_body = reply.body; }
+      return { ok: true, warn: mod.warn, row: outRow };
     } catch (e) { return { ok: false, msg: "Message didn't send — try again." }; }
-    return { ok: true, warn: warn, body: mod.masked };
   }
   async function loadUnread() {
     const s = await ensureSb(); if (!s || !myKey) return;
@@ -373,7 +465,98 @@
     fire();
   }
   function unreadTotal() { let n = 0; for (const k in _unread) n += _unread[k].count; return n; }
-  function bellCount() { return _in.length + unreadTotal(); }
+  function groupUnreadTotal() { let n = 0; for (const k in _groupUnread) n += _groupUnread[k]; return n; }
+  function bellCount() { return _in.length + unreadTotal() + groupUnreadTotal(); }
+
+  /* ================= GROUPS (data) ================= */
+  async function loadGroups() {
+    const s = await ensureSb(); if (!s || !myKey) return;
+    try {
+      const mem = await s.from("ig_group_member").select("group_id,role,last_read_at").eq("user_key", myKey);
+      if (mem.error || !mem.data || !mem.data.length) { _groups = []; _groupUnread = {}; fire(); return; }
+      const ids = mem.data.map(function (m) { return m.group_id; });
+      const roleBy = {}, lastBy = {}; mem.data.forEach(function (m) { roleBy[m.group_id] = m.role; lastBy[m.group_id] = m.last_read_at; });
+      const gr = await s.from("ig_group").select("id,name,avatar_emoji,avatar_url,owner_key,owner_name").in("id", ids);
+      _groups = (gr.data || []).map(function (g) { return { id: g.id, name: g.name, avatar_emoji: g.avatar_emoji, avatar_url: g.avatar_url, owner_key: g.owner_key, owner_name: g.owner_name, role: roleBy[g.id], last_read_at: lastBy[g.id] }; });
+      // unread per group = messages after my last_read_at not sent by me
+      _groupUnread = {};
+      for (const g of _groups) {
+        try {
+          const c = await s.from("ig_group_msg").select("id", { count: "exact", head: true }).eq("group_id", g.id).neq("from_key", myKey).gt("created_at", g.last_read_at || "1970-01-01");
+          if (typeof c.count === "number" && c.count > 0) _groupUnread[g.id] = c.count;
+        } catch (e) {}
+      }
+      fire();
+    } catch (e) {}
+  }
+  async function loadGroupMsgs(groupId) {
+    const s = await ensureSb(); if (!s) return [];
+    try { const r = await s.from("ig_group_msg").select("id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body").eq("group_id", groupId).order("created_at", { ascending: true }).limit(300); if (!r.error && r.data) return r.data; } catch (e) {}
+    return [];
+  }
+  async function markGroupRead(groupId) {
+    const s = await ensureSb(); if (!s) return;
+    try { await s.from("ig_group_member").update({ last_read_at: new Date().toISOString() }).eq("group_id", groupId).eq("user_key", myKey); } catch (e) {}
+    delete _groupUnread[groupId]; fire();
+  }
+  async function sendGroupMsg(groupId, text, reply) {
+    const s = await ensureSb(); if (!s) return { ok: false, msg: "Not connected." };
+    text = String(text || "").trim().slice(0, 400); if (!text) return { ok: false };
+    const mod = await moderateAndStrike(text);
+    if (mod.blocked) return { ok: false, blocked: true, msg: mod.msg };
+    const row = { group_id: groupId, from_key: myKey, from_name: myName, body: mod.masked };
+    if (reply && reply.id) { row.reply_to = reply.id; row.reply_name = String(reply.name || "").slice(0, 40); row.reply_body = String(reply.body || "").slice(0, 120); }
+    try {
+      const r = await s.from("ig_group_msg").insert(row).select("id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body").maybeSingle();
+      if (r.error) return { ok: false, msg: "Message didn't send — try again." };
+      return { ok: true, warn: mod.warn, row: r.data || row };
+    } catch (e) { return { ok: false, msg: "Message didn't send — try again." }; }
+  }
+  async function groupMembers(groupId) {
+    const s = await ensureSb(); if (!s) return [];
+    try { const r = await s.from("ig_group_member").select("user_key,name,role").eq("group_id", groupId); if (!r.error && r.data) return r.data; } catch (e) {}
+    return [];
+  }
+  async function createGroup(name, memberKeys, memberNames, avatar) {
+    const s = await ensureSb(); if (!s) return { ok: false, msg: "Not connected." };
+    name = String(name || "").trim().slice(0, 40); if (!name) return { ok: false, msg: "Enter a group name." };
+    try {
+      const g = await s.from("ig_group").insert({ name: name, owner_key: myKey, owner_name: myName, avatar_emoji: (avatar && avatar.emoji) || "", avatar_url: (avatar && avatar.url) || "" }).select("id").maybeSingle();
+      if (g.error || !g.data) return { ok: false, msg: "Couldn't create the group." };
+      const gid = g.data.id;
+      const rows = [{ group_id: gid, user_key: myKey, name: myName, role: "owner" }];
+      (memberKeys || []).forEach(function (k, i) { if (k && k !== myKey) rows.push({ group_id: gid, user_key: k, name: (memberNames && memberNames[i]) || k, role: "member" }); });
+      await s.from("ig_group_member").upsert(rows, { onConflict: "group_id,user_key" });
+      await loadGroups();
+      return { ok: true, id: gid };
+    } catch (e) { return { ok: false, msg: "Couldn't create the group." }; }
+  }
+  async function addGroupMember(groupId, key, name) {
+    const s = await ensureSb(); if (!s) return false;
+    try { const r = await s.from("ig_group_member").upsert({ group_id: groupId, user_key: key, name: name, role: "member" }, { onConflict: "group_id,user_key" }); return !r.error; } catch (e) { return false; }
+  }
+  async function removeGroupMember(groupId, key) {
+    const s = await ensureSb(); if (!s) return false;
+    try { const r = await s.from("ig_group_member").delete().eq("group_id", groupId).eq("user_key", key); return !r.error; } catch (e) { return false; }
+  }
+  async function leaveGroup(groupId) {
+    const s = await ensureSb(); if (!s) return;
+    const g = _groups.find(function (x) { return x.id === groupId; });
+    try {
+      await s.from("ig_group_member").delete().eq("group_id", groupId).eq("user_key", myKey);
+      // owner leaving with members left → hand ownership to another member; if empty, delete group
+      if (g && g.owner_key === myKey) {
+        const rest = await s.from("ig_group_member").select("user_key,name").eq("group_id", groupId).limit(1);
+        if (rest.data && rest.data.length) { await s.from("ig_group").update({ owner_key: rest.data[0].user_key, owner_name: rest.data[0].name }).eq("id", groupId); await s.from("ig_group_member").update({ role: "owner" }).eq("group_id", groupId).eq("user_key", rest.data[0].user_key); }
+        else { await s.from("ig_group_msg").delete().eq("group_id", groupId); await s.from("ig_group").delete().eq("id", groupId); }
+      }
+    } catch (e) {}
+    await loadGroups();
+  }
+  async function saveGroupMeta(groupId, patch) {
+    const s = await ensureSb(); if (!s) return false;
+    try { const r = await s.from("ig_group").update(patch).eq("id", groupId); if (!r.error) { const g = _groups.find(function (x) { return x.id === groupId; }); if (g) Object.assign(g, patch); fire(); } return !r.error; } catch (e) { return false; }
+  }
 
   /* ================= presence ================= */
   function presenceOf(name) { const v = presState && presState[nameKey(name)]; if (v && v.length) return { online: true, game: v[0].game }; return { online: false }; }
@@ -447,11 +630,12 @@
       fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_friend_req", filter: "to_key=eq." + myKey }, function () { dbLoad().then(function () { toast("👋 New friend request!"); }); });
       fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_friend", filter: "akey=eq." + myKey }, function () { dbLoad(); });
       fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_chat", filter: "to_key=eq." + myKey }, function (payload) { onIncomingChat(payload && payload.new); });
+      fc.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_member", filter: "user_key=eq." + myKey }, function () { loadGroups().then(function () { toast("👥 You were added to a group!"); }); });
       fc.subscribe();
     } catch (e) {}
     ensureMyProfile();
-    dbLoad(); loadUnread();
-    setInterval(function () { dbLoad(); loadUnread(); }, 15000);
+    dbLoad(); loadUnread(); loadGroups();
+    setInterval(function () { dbLoad(); loadUnread(); loadGroups(); }, 15000);
     bumpPlay(); weeklyInfo();
   }
   function onIncomingChat(msg) {
@@ -498,7 +682,22 @@
       + ".igf-emopick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.igf-emopick button{width:40px;height:40px;font-size:22px;border-radius:10px;border:1px solid #2a3c63;background:#16243f;cursor:pointer}"
       + ".igf-score{display:flex;align-items:center;gap:8px;background:#16243f;border-radius:10px;padding:8px 11px;margin:4px 0;font-size:14px}.igf-score .g{flex:1}.igf-score .v{font-weight:800;color:#ffd54a}"
       + ".igf-banner{background:linear-gradient(135deg,#1ea85a,#0e7a6f);color:#eafff4;border-radius:14px;padding:10px 14px;margin:0 auto 16px;max-width:460px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;justify-content:center;box-shadow:0 6px 18px rgba(20,160,90,.3)}"
-      + ".igf-banner b{color:#fff}.igf-banner .x{cursor:pointer;opacity:.8;font-weight:800}";
+      + ".igf-banner b{color:#fff}.igf-banner .x{cursor:pointer;opacity:.8;font-weight:800}"
+      + ".igf-bub{position:relative}.igf-bub .rt{cursor:pointer;opacity:0;position:absolute;top:2px;font-size:12px;color:#9fb3d8}.igf-bub:hover .rt{opacity:.9}.igf-bub.me .rt{left:-18px}.igf-bub.them .rt{right:-18px}"
+      + ".igf-quote{border-left:3px solid rgba(255,255,255,.5);padding:2px 8px;margin-bottom:4px;font-size:12px;opacity:.85;background:rgba(0,0,0,.18);border-radius:5px;white-space:normal}"
+      + ".igf-quote b{display:block;font-size:11px;opacity:.9}"
+      + ".igf-sender{font-size:11px;font-weight:800;color:#8fd0ff;margin-bottom:1px}"
+      + ".igf-replybar{display:flex;align-items:center;gap:8px;background:#0c1426;border-left:3px solid #3a6cf0;border-radius:8px;padding:6px 10px;margin-bottom:6px;font-size:12px}"
+      + ".igf-replybar .rb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cfe0ff}.igf-replybar .rb b{color:#8fd0ff}.igf-replybar .rx{cursor:pointer;color:#9fb3d8;font-weight:800}"
+      + ".igf-typing{font-size:12px;color:#8aa0c6;min-height:16px;padding:2px 4px;font-style:italic}"
+      + ".igf-zoom{position:fixed;inset:0;z-index:9700;background:rgba(2,4,10,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px}"
+      + ".igf-zoom img{max-width:86vw;max-height:74vh;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}"
+      + ".igf-zoom .ze{font-size:min(46vw,300px);line-height:1}.igf-zoom .zn{color:#fff;font-size:20px;font-weight:800}"
+      + ".igf-resume{position:fixed;inset:0;z-index:8700;background:rgba(4,8,18,.86);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff;font-family:-apple-system,system-ui,sans-serif}"
+      + ".igf-resume .rb2{font-size:22px;font-weight:900}.igf-resume button{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border:none;border-radius:30px;padding:15px 40px;font-size:19px;font-weight:900;cursor:pointer;box-shadow:0 8px 24px rgba(40,220,120,.4)}"
+      + ".igf-lead{display:inline-flex;align-items:center;gap:4px;background:rgba(255,213,74,.16);color:#ffd54a;border-radius:10px;padding:2px 9px;font-size:12px;font-weight:800;margin-top:4px}"
+      + ".igf-clickav{cursor:zoom-in}"
+      + ".igf-pick{display:flex;align-items:center;gap:8px;background:#16243f;border-radius:10px;padding:8px 11px;margin:4px 0;cursor:pointer}.igf-pick .ck{width:20px;height:20px;border-radius:6px;border:2px solid #3a6cf0;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}.igf-pick.on .ck{background:#3a6cf0}";
     document.head.appendChild(c);
   }
 
@@ -520,7 +719,7 @@
     });
   }
   function openBell() {
-    dbLoad(); loadUnread();
+    dbLoad(); loadUnread(); loadGroups();
     const ov = document.createElement("div"); ov.className = "igf-ov";
     ov.innerHTML = '<div class="igf-box"><h2>🔔 Notifications</h2><div class="s">Tap a message to open the chat, or a request to view their profile. You can’t reply from here.</div><div id="igf-bell-body"></div><button class="igf-x" id="igf-bell-close">Close</button></div>';
     document.body.appendChild(ov);
@@ -539,10 +738,17 @@
         uk.forEach(function (k) { const u = _unread[k]; const p = _profiles[k] || { user_key: k, name: u.name };
           h += '<div class="igf-row tap" data-msg="' + esc(u.name) + '" data-k="' + esc(k) + '">' + avatarHTML(p, 38) + '<span class="n">' + esc(u.name) + '<small>' + u.count + ' new message' + (u.count > 1 ? "s" : "") + " — tap to open chat</small></span><span style=\"background:#ff3b5c;color:#fff;border-radius:9px;padding:1px 7px;font-size:12px;font-weight:800\">" + u.count + "</span></div>"; });
       }
-      if (!_in.length && !uk.length) h += '<div class="s" style="text-align:center;padding:22px 0">🎉 You’re all caught up — no new notifications.</div>';
+      const gk = Object.keys(_groupUnread);
+      if (gk.length) {
+        h += '<div class="igf-sec">Group messages</div>';
+        gk.forEach(function (id) { const g = _groups.find(function (x) { return String(x.id) === String(id); }); if (!g) return; const c = _groupUnread[id];
+          h += '<div class="igf-row tap" data-grp="' + esc(id) + '">' + avatarHTML(grpAvatar(g), 38) + '<span class="n">' + esc(g.name) + '<small>' + c + " new message" + (c > 1 ? "s" : "") + ' — tap to open group</small></span><span style="background:#ff3b5c;color:#fff;border-radius:9px;padding:1px 7px;font-size:12px;font-weight:800">' + c + "</span></div>"; });
+      }
+      if (!_in.length && !uk.length && !gk.length) h += '<div class="s" style="text-align:center;padding:22px 0">🎉 You’re all caught up — no new notifications.</div>';
       const body = ov.querySelector("#igf-bell-body"); body.innerHTML = h;
       body.querySelectorAll("[data-req]").forEach(function (el) { el.onclick = function () { ov.remove(); openProfile(el.getAttribute("data-req"), el.getAttribute("data-k")); }; });
       body.querySelectorAll("[data-msg]").forEach(function (el) { el.onclick = function () { ov.remove(); openChat(el.getAttribute("data-k"), el.getAttribute("data-msg")); }; });
+      body.querySelectorAll("[data-grp]").forEach(function (el) { el.onclick = function () { ov.remove(); openGroupChat(parseInt(el.getAttribute("data-grp"), 10)); }; });
     }
     render(); onUpdate(function () { if (document.body.contains(ov)) render(); });
   }
@@ -565,6 +771,9 @@
     const friend = isFriend(realName);
     const incoming = _in.some(function (r) { return r.key === key; });
     const pending = _out.some(function (o) { return o.key === key; });
+    const board = await fetchAllBoard();
+    const lead = igCountLeading(board, realName);
+    const leadH = lead.count > 0 ? '<div class="igf-lead" title="' + esc(lead.games.map(function (g) { return GAME_TITLES[g] || g; }).join(", ")) + '">🥇 Leading ' + lead.count + " game" + (lead.count > 1 ? "s" : "") + "</div>" : "";
     const scores = await scoresFor(realName);
     let scoreH = "";
     if (scores.length) scoreH = '<div class="igf-sec">Scores</div>' + scores.map(function (r) {
@@ -577,11 +786,13 @@
     else if (pending) actions = '<button class="igf-btn igf-g" style="width:100%;opacity:.85;cursor:default">⏳ Request pending</button>';
     else actions = '<button class="igf-btn igf-b" id="igf-add" style="width:100%">➕ Add friend</button>';
     const bioH = (p && p.bio) ? '<div class="igf-bio">' + esc(p.bio) + "</div>" : (mine ? '<div class="s">No bio yet — tap Edit profile to add one.</div>' : "");
+    const avObj = Object.assign({ user_key: key, name: realName }, p || {});
     ov.querySelector("#igf-prof").innerHTML =
-      '<div class="igf-prof-top">' + avatarHTML(Object.assign({ user_key: key, name: realName }, p || {}), 66) +
-      '<div><div class="nm">' + esc(realName) + wk + '</div><div class="st">' + st + "</div></div></div>" +
+      '<div class="igf-prof-top"><span class="igf-clickav" id="igf-prof-av">' + avatarHTML(avObj, 66) + "</span>" +
+      '<div><div class="nm">' + esc(realName) + wk + '</div><div class="st">' + st + "</div>" + leadH + "</div></div>" +
       bioH + '<div style="margin:12px 0">' + actions + "</div>" + scoreH;
     const q = function (id) { return ov.querySelector(id); };
+    if (q("#igf-prof-av")) q("#igf-prof-av").onclick = function () { openAvatarZoom(avObj, realName); };
     if (q("#igf-edit")) q("#igf-edit").onclick = function () { ov.remove(); openEditProfile(); };
     if (q("#igf-chat")) q("#igf-chat").onclick = function () { ov.remove(); openChat(key, realName); };
     if (q("#igf-add")) q("#igf-add").onclick = function () { q("#igf-add").disabled = true; sendRequestKey(realName, key).then(function (r) { toast(r.msg); if (r.ok) { ov.remove(); } else q("#igf-add").disabled = false; }); };
@@ -627,49 +838,266 @@
     };
   }
 
-  /* ================= chat modal ================= */
+  /* ================= chat shared helpers (zoom · typing · pause · bubbles) ================= */
   function fmtTime(iso) { try { const d = new Date(iso); return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } }
-  let _chatOv = null;
+  let _chatOv = null, _chatOpts = null, _pausedByChat = false;
+  function grpAvatar(g) { return { user_key: "g" + g.id, name: g.name, avatar_url: g.avatar_url || "", avatar_emoji: g.avatar_emoji || "👥" }; }
+  function openAvatarZoom(p, name) {
+    injectCSS();
+    const ov = document.createElement("div"); ov.className = "igf-zoom";
+    let inner;
+    if (p && p.avatar_url) inner = '<img src="' + esc(p.avatar_url) + '" alt="">';
+    else { const k = (p && (p.user_key || p.key)) || nameKey(p && p.name); const emo = (p && p.avatar_emoji) || baseEmoji(k); inner = '<div class="ze">' + esc(emo) + '</div>'; }
+    ov.innerHTML = inner + '<div class="zn">' + esc(name || (p && p.name) || "") + '</div>';
+    ov.onclick = function () { ov.remove(); };
+    document.body.appendChild(ov);
+  }
+  function makeTypingChannel(topic, onEvent) {
+    let ch = null, stopT = null;
+    ensureSb().then(function (s) { if (!s) return; try {
+      ch = s.channel(topic, { config: { broadcast: { self: false } } });
+      ch.on("broadcast", { event: "typing" }, function (p) { const d = (p && p.payload) || {}; onEvent(d.typing ? (d.name || "Someone") : null); });
+      ch.subscribe();
+    } catch (e) {} });
+    function send(t) { if (!ch) return; try { ch.send({ type: "broadcast", event: "typing", payload: { typing: t, name: myName, key: myKey } }); } catch (e) {} }
+    return {
+      typing: function () { send(true); if (stopT) clearTimeout(stopT); stopT = setTimeout(function () { send(false); }, 1500); },
+      stop: function () { if (stopT) clearTimeout(stopT); send(false); },
+      close: function () { try { if (stopT) clearTimeout(stopT); send(false); if (ch) ensureSb().then(function (s) { try { s.removeChannel(ch); } catch (e) {} }); } catch (e) {} }
+    };
+  }
+  function showResumeOverlay() {
+    if (!inGame() || !_pauser) { if (_pauser) _pauser.resume(); return; }
+    if (document.getElementById("igf-resume")) { _pauser.resume(); return; }
+    const o = document.createElement("div"); o.id = "igf-resume"; o.className = "igf-resume";
+    o.innerHTML = '<div class="rb2">⏸ Game paused</div><div style="color:#9fb3d8;font-size:14px;max-width:280px;text-align:center">You were chatting — your game is frozen and waiting. Tap to jump back in.</div><button>▶ Resume game</button>';
+    document.body.appendChild(o);
+    o.querySelector("button").onclick = function () { if (_pauser) _pauser.resume(); o.remove(); };
+  }
+  function renderBubble(box, m, opts) {
+    opts = opts || {};
+    const me = m.from_key === myKey;
+    const div = document.createElement("div"); div.className = "igf-bub " + (me ? "me" : "them");
+    let h = "";
+    if (opts.group && !me) h += '<div class="igf-sender">' + esc(m.from_name) + "</div>";
+    if (m.reply_body) h += '<div class="igf-quote"><b>' + esc(m.reply_name || "") + "</b>" + esc(m.reply_body) + "</div>";
+    h += '<span class="bd">' + esc(m.body) + "</span><small>" + fmtTime(m.created_at || new Date().toISOString()) + "</small>";
+    if (opts.onReply) h += '<span class="rt" title="Reply">↩</span>';
+    div.innerHTML = h;
+    if (opts.onReply) { const rt = div.querySelector(".rt"); if (rt) rt.onclick = function (e) { e.stopPropagation(); opts.onReply(m); }; }
+    box.appendChild(div); box.scrollTop = box.scrollHeight;
+    return div;
+  }
   function appendChatBubble(m) {
     if (!_chatOv || !document.body.contains(_chatOv)) return;
     const box = _chatOv.querySelector("#igf-msgs"); if (!box) return;
-    const me = m.from_key === myKey;
-    const div = document.createElement("div"); div.className = "igf-bub " + (me ? "me" : "them");
-    div.innerHTML = esc(m.body) + '<small>' + fmtTime(m.created_at || new Date().toISOString()) + "</small>";
-    box.appendChild(div); box.scrollTop = box.scrollHeight;
+    if (box.querySelector(".s")) box.innerHTML = "";   // clear "no messages yet" placeholder
+    renderBubble(box, m, _chatOpts || {});
   }
+
+  /* ================= 1:1 chat modal ================= */
   async function openChat(key, name) {
-    injectCSS(); if (!isFriend(name) && key !== myKey) { /* only chat friends */ }
+    injectCSS();
     _chatOpenWith = key;
+    let reply = null;
     const ov = document.createElement("div"); ov.className = "igf-ov"; _chatOv = ov;
-    ov.innerHTML = '<div class="igf-box"><h2 style="cursor:pointer" id="igf-chat-hd">💬 ' + esc(name) + '</h2><div class="igf-chat"><div class="igf-msgs" id="igf-msgs">Loading…</div>'
-      + '<div id="igf-chat-warn" style="font-size:12px;color:#ffd27a;min-height:0;margin-top:4px"></div>'
+    ov.innerHTML = '<div class="igf-box"><h2 style="cursor:pointer" id="igf-chat-hd">💬 ' + esc(name) + '</h2>'
+      + '<div class="igf-chat"><div class="igf-msgs" id="igf-msgs">Loading…</div>'
+      + '<div class="igf-typing" id="igf-typing"></div><div id="igf-replybar-wrap"></div>'
+      + '<div id="igf-chat-warn" style="font-size:12px;color:#ffd27a;min-height:0"></div>'
       + '<div class="igf-cin"><input id="igf-cin" maxlength="400" placeholder="Message…" autocomplete="off"><button class="igf-btn igf-p" id="igf-csend">Send</button></div></div>'
       + '<button class="igf-x" id="igf-chat-close">Close</button></div>';
     document.body.appendChild(ov);
+    if (inGame()) { pauser().pause(); _pausedByChat = true; }
+    let typingHideT = null;
+    const typer = makeTypingChannel("typ-" + pairKey(myKey, key), function (who) {
+      const t = ov.querySelector("#igf-typing"); if (!t) return;
+      if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = "";
+    });
+    function closeChat() { _chatOpenWith = null; _chatOv = null; _chatOpts = null; try { typer.close(); } catch (e) {} ov.remove(); if (_pausedByChat) { _pausedByChat = false; showResumeOverlay(); } }
     ov.addEventListener("click", function (e) { if (e.target === ov) closeChat(); });
     ov.querySelector("#igf-chat-close").onclick = closeChat;
     ov.querySelector("#igf-chat-hd").onclick = function () { closeChat(); openProfile(name, key); };
-    function closeChat() { _chatOpenWith = null; _chatOv = null; ov.remove(); }
+    function setReply(m) { reply = { id: m.id, name: (m.from_key === myKey ? "You" : m.from_name), body: m.body }; showReplyBar(); ov.querySelector("#igf-cin").focus(); }
+    function clearReply() { reply = null; showReplyBar(); }
+    function showReplyBar() { const w = ov.querySelector("#igf-replybar-wrap"); if (!reply) { w.innerHTML = ""; return; } w.innerHTML = '<div class="igf-replybar"><span class="rb">Replying to <b>' + esc(reply.name) + "</b>: " + esc(reply.body) + '</span><span class="rx" id="igf-rx">✕</span></div>'; w.querySelector("#igf-rx").onclick = clearReply; }
+    _chatOpts = { onReply: setReply };
     const box = ov.querySelector("#igf-msgs");
     const thread = await loadThread(key);
     if (!thread.length) box.innerHTML = '<div class="s" style="margin:auto;text-align:center">No messages yet — say hi! 👋</div>';
-    else { box.innerHTML = ""; thread.forEach(appendChatBubble); }
+    else { box.innerHTML = ""; thread.forEach(function (m) { renderBubble(box, m, _chatOpts); }); }
     box.scrollTop = box.scrollHeight;
     markRead(key);
-    // muted?
     if (_myProfile && _myProfile.chat_muted) { ov.querySelector("#igf-cin").disabled = true; ov.querySelector("#igf-csend").disabled = true; ov.querySelector("#igf-chat-warn").textContent = "🚫 Your chat is disabled due to repeated bad language."; }
     const inp = ov.querySelector("#igf-cin"), snd = ov.querySelector("#igf-csend");
     async function doSend() {
       const v = inp.value.trim(); if (!v) return; snd.disabled = true;
-      const r = await sendChat(key, name, v);
-      if (r.ok) { inp.value = ""; appendChatBubble({ from_key: myKey, body: r.body, created_at: new Date().toISOString() }); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; }
-      else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) { inp.disabled = true; } }
+      const r = await sendChat(key, name, v, reply);
+      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, _chatOpts); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
       snd.disabled = false; inp.focus();
     }
     snd.onclick = doSend;
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
+    inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
     inp.focus();
+  }
+
+  /* ================= group chat modal ================= */
+  async function openGroupChat(groupId) {
+    injectCSS();
+    if (!_groups.some(function (x) { return x.id === groupId; })) await loadGroups();
+    const grp = _groups.find(function (x) { return x.id === groupId; }) || { id: groupId, name: "Group" };
+    let reply = null;
+    const ov = document.createElement("div"); ov.className = "igf-ov";
+    ov.innerHTML = '<div class="igf-box"><h2 style="cursor:pointer" id="igf-g-hd">' + avatarHTML(grpAvatar(grp), 28) + '<span>' + esc(grp.name) + '</span><small style="font-size:12px;color:#8aa0c6;font-weight:400">ⓘ info</small></h2>'
+      + '<div class="igf-chat"><div class="igf-msgs" id="igf-msgs">Loading…</div>'
+      + '<div class="igf-typing" id="igf-typing"></div><div id="igf-replybar-wrap"></div>'
+      + '<div id="igf-chat-warn" style="font-size:12px;color:#ffd27a;min-height:0"></div>'
+      + '<div class="igf-cin"><input id="igf-cin" maxlength="400" placeholder="Message the group…" autocomplete="off"><button class="igf-btn igf-p" id="igf-csend">Send</button></div></div>'
+      + '<button class="igf-x" id="igf-g-close">Close</button></div>';
+    document.body.appendChild(ov);
+    if (inGame()) { pauser().pause(); _pausedByChat = true; }
+    const opts = { group: true, onReply: setReply };
+    const box = ov.querySelector("#igf-msgs");
+    let sub = null;
+    ensureSb().then(function (s) { if (!s) return; try {
+      sub = s.channel("gmsg-" + groupId);
+      sub.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_msg", filter: "group_id=eq." + groupId }, function (p) { const m = p && p.new; if (!m || m.from_key === myKey) return; if (box.querySelector(".s")) box.innerHTML = ""; renderBubble(box, m, opts); markGroupRead(groupId); });
+      sub.subscribe();
+    } catch (e) {} });
+    let typingHideT = null;
+    const typer = makeTypingChannel("gtyp-" + groupId, function (who) { const t = ov.querySelector("#igf-typing"); if (!t) return; if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = ""; });
+    function close() { try { typer.close(); } catch (e) {} try { if (sub) ensureSb().then(function (s) { try { s.removeChannel(sub); } catch (e) {} }); } catch (e) {} ov.remove(); if (_pausedByChat) { _pausedByChat = false; showResumeOverlay(); } }
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    ov.querySelector("#igf-g-close").onclick = close;
+    ov.querySelector("#igf-g-hd").onclick = function () { close(); openGroupInfo(groupId); };
+    function setReply(m) { reply = { id: m.id, name: (m.from_key === myKey ? "You" : m.from_name), body: m.body }; showReplyBar(); ov.querySelector("#igf-cin").focus(); }
+    function clearReply() { reply = null; showReplyBar(); }
+    function showReplyBar() { const w = ov.querySelector("#igf-replybar-wrap"); if (!reply) { w.innerHTML = ""; return; } w.innerHTML = '<div class="igf-replybar"><span class="rb">Replying to <b>' + esc(reply.name) + "</b>: " + esc(reply.body) + '</span><span class="rx" id="igf-rx">✕</span></div>'; w.querySelector("#igf-rx").onclick = clearReply; }
+    const msgs = await loadGroupMsgs(groupId);
+    if (!msgs.length) box.innerHTML = '<div class="s" style="margin:auto;text-align:center">No messages yet — start the conversation! 👋</div>';
+    else { box.innerHTML = ""; msgs.forEach(function (m) { renderBubble(box, m, opts); }); }
+    box.scrollTop = box.scrollHeight;
+    markGroupRead(groupId);
+    if (_myProfile && _myProfile.chat_muted) { ov.querySelector("#igf-cin").disabled = true; ov.querySelector("#igf-csend").disabled = true; ov.querySelector("#igf-chat-warn").textContent = "🚫 Your chat is disabled due to repeated bad language."; }
+    const inp = ov.querySelector("#igf-cin"), snd = ov.querySelector("#igf-csend");
+    async function doSend() {
+      const v = inp.value.trim(); if (!v) return; snd.disabled = true;
+      const r = await sendGroupMsg(groupId, v, reply);
+      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, opts); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
+      snd.disabled = false; inp.focus();
+    }
+    snd.onclick = doSend;
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
+    inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
+    inp.focus();
+  }
+
+  /* ================= group info / admin ================= */
+  async function openGroupInfo(groupId) {
+    injectCSS();
+    const grp = _groups.find(function (x) { return x.id === groupId; }) || { id: groupId, name: "Group" };
+    const iAmOwner = grp.owner_key === myKey;
+    const ov = document.createElement("div"); ov.className = "igf-ov";
+    ov.innerHTML = '<div class="igf-box"><div id="igf-gi">Loading…</div><button class="igf-x" id="igf-gi-close">Close</button></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    ov.querySelector("#igf-gi-close").onclick = function () { ov.remove(); };
+    async function render() {
+      const members = await groupMembers(groupId);
+      const memKeys = members.map(function (m) { return m.user_key; });
+      if (memKeys.length) await fetchProfiles(memKeys);
+      members.sort(function (a, b) { return (a.role === "owner" ? 0 : 1) - (b.role === "owner" ? 0 : 1); });
+      let h = '<div style="text-align:center;margin-bottom:10px"><span class="igf-clickav" id="igf-gi-av">' + avatarHTML(grpAvatar(grp), 72) + '</span><div class="nm" style="font-size:20px;font-weight:900;margin-top:6px">' + esc(grp.name) + '</div><div class="s">' + members.length + " member" + (members.length !== 1 ? "s" : "") + "</div></div>";
+      if (iAmOwner) h += '<button class="igf-btn igf-g" id="igf-gi-edit" style="width:100%;margin-bottom:6px">✏️ Edit group name & picture</button>';
+      h += '<div class="igf-sec">Members</div>';
+      members.forEach(function (m) { const p = _profiles[m.user_key] || { user_key: m.user_key, name: m.name };
+        const canRemove = iAmOwner && m.user_key !== myKey;
+        h += '<div class="igf-row">' + avatarHTML(p, 34) + '<span class="n tapp" data-k="' + esc(m.user_key) + '" data-n="' + esc(m.name) + '" style="cursor:pointer">' + esc(m.name) + (m.role === "owner" ? ' <small>👑 admin</small>' : "") + "</span>" + (canRemove ? '<button class="igf-btn igf-d" data-rm="' + esc(m.user_key) + '">Remove</button>' : "") + "</div>";
+      });
+      if (iAmOwner) h += '<button class="igf-btn igf-b" id="igf-gi-add" style="width:100%;margin-top:8px">➕ Add friends</button>';
+      h += '<button class="igf-btn igf-d" id="igf-gi-leave" style="width:100%;margin-top:10px">🚪 Leave group</button>';
+      const b = ov.querySelector("#igf-gi"); b.innerHTML = h;
+      b.querySelector("#igf-gi-av").onclick = function () { openAvatarZoom(grpAvatar(grp), grp.name); };
+      if (b.querySelector("#igf-gi-edit")) b.querySelector("#igf-gi-edit").onclick = function () { ov.remove(); openEditGroup(groupId); };
+      if (b.querySelector("#igf-gi-add")) b.querySelector("#igf-gi-add").onclick = function () { ov.remove(); openAddMembers(groupId, memKeys); };
+      b.querySelector("#igf-gi-leave").onclick = function () { if (confirm("Leave " + grp.name + "?")) { leaveGroup(groupId); ov.remove(); } };
+      b.querySelectorAll("[data-rm]").forEach(function (btn) { btn.onclick = function () { if (confirm("Remove this member?")) removeGroupMember(groupId, btn.getAttribute("data-rm")).then(render); }; });
+      b.querySelectorAll(".tapp").forEach(function (el) { el.onclick = function () { openProfile(el.getAttribute("data-n"), el.getAttribute("data-k")); }; });
+    }
+    render();
+  }
+  async function openEditGroup(groupId) {
+    injectCSS(); const grp = _groups.find(function (x) { return x.id === groupId; }) || { id: groupId, name: "Group" };
+    let pending = { avatar_emoji: grp.avatar_emoji || "", avatar_url: grp.avatar_url || "" };
+    const ov = document.createElement("div"); ov.className = "igf-ov";
+    ov.innerHTML = '<div class="igf-box"><h2>✏️ Edit group</h2>'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span id="igf-eg-av">' + avatarHTML(grpAvatar(grp), 60) + '</span><div style="flex:1"><button class="igf-btn igf-b" id="igf-eg-up" style="width:100%">📷 Upload picture</button><input type="file" accept="image/*" id="igf-eg-file" style="display:none"></div></div>'
+      + '<div class="s">Or pick an emoji:</div><div class="igf-emopick" id="igf-eg-emo"></div>'
+      + '<div class="igf-sec">Group name</div><input id="igf-eg-name" maxlength="40" value="' + esc(grp.name) + '" style="width:100%;background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:10px 12px;border-radius:10px;font-size:15px">'
+      + '<div id="igf-eg-msg" style="font-size:13px;min-height:16px;margin:6px 0;color:#9fb3d8"></div>'
+      + '<button class="igf-btn igf-p" id="igf-eg-save" style="width:100%">Save</button><button class="igf-x" id="igf-eg-cancel">Cancel</button></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    const emo = ov.querySelector("#igf-eg-emo"); emo.innerHTML = ["👥", "🎮", "🔥", "⭐", "🏆", "🚀", "🐱", "🦊", "🐼", "🦁", "🐉", "🌈", "⚽", "🏏", "🎯", "💎", "👑", "😎"].map(function (e) { return '<button data-e="' + e + '">' + e + "</button>"; }).join("");
+    emo.querySelectorAll("button").forEach(function (bt) { bt.onclick = function () { pending.avatar_emoji = bt.getAttribute("data-e"); pending.avatar_url = ""; ov.querySelector("#igf-eg-av").innerHTML = avatarHTML({ user_key: "g" + groupId, name: grp.name, avatar_emoji: pending.avatar_emoji }, 60); }; });
+    const msg = function (t, err) { const m = ov.querySelector("#igf-eg-msg"); m.textContent = t; m.style.color = err ? "#ff8088" : "#7CFFB2"; };
+    const fileI = ov.querySelector("#igf-eg-file");
+    ov.querySelector("#igf-eg-up").onclick = function () { fileI.click(); };
+    fileI.onchange = async function () { const f = fileI.files && fileI.files[0]; if (!f) return; msg("Uploading…"); ov.querySelector("#igf-eg-up").disabled = true;
+      try { const url = await uploadAvatar(f, "group_" + groupId); pending.avatar_url = url; pending.avatar_emoji = ""; ov.querySelector("#igf-eg-av").innerHTML = avatarHTML({ user_key: "g" + groupId, name: grp.name, avatar_url: url }, 60); msg("Picture ready — tap Save."); }
+      catch (e) { msg(e.message || "Upload failed.", true); }
+      ov.querySelector("#igf-eg-up").disabled = false; };
+    ov.querySelector("#igf-eg-cancel").onclick = function () { ov.remove(); };
+    ov.querySelector("#igf-eg-save").onclick = async function () { const name = ov.querySelector("#igf-eg-name").value.trim().slice(0, 40) || grp.name; msg("Saving…"); ov.querySelector("#igf-eg-save").disabled = true;
+      const ok = await saveGroupMeta(groupId, { name: name, avatar_emoji: pending.avatar_emoji, avatar_url: pending.avatar_url });
+      if (ok) { toast("✅ Group updated!"); ov.remove(); } else { msg("Couldn't save — try again.", true); ov.querySelector("#igf-eg-save").disabled = false; } };
+  }
+  async function openAddMembers(groupId, existingKeys) {
+    injectCSS(); const avail = _friends.filter(function (f) { return existingKeys.indexOf(f.key) < 0; });
+    const ov = document.createElement("div"); ov.className = "igf-ov"; let picked = {};
+    ov.innerHTML = '<div class="igf-box"><h2>➕ Add friends</h2><div class="s">Tap friends to add them to the group.</div><div id="igf-am-list"></div><div id="igf-am-msg" style="font-size:13px;min-height:16px;color:#9fb3d8"></div><button class="igf-btn igf-p" id="igf-am-add" style="width:100%">Add selected</button><button class="igf-x" id="igf-am-cancel">Cancel</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    const list = ov.querySelector("#igf-am-list");
+    if (!avail.length) list.innerHTML = '<div class="s">All your friends are already in this group.</div>';
+    else { if (avail.length) await fetchProfiles(avail.map(function (f) { return f.key; }));
+      list.innerHTML = avail.map(function (f) { const p = _profiles[f.key] || { user_key: f.key, name: f.name }; return '<div class="igf-pick" data-k="' + esc(f.key) + '" data-n="' + esc(f.name) + '"><span class="ck"></span>' + avatarHTML(p, 32) + '<span class="n" style="flex:1;text-align:left">' + esc(f.name) + "</span></div>"; }).join("");
+      list.querySelectorAll(".igf-pick").forEach(function (el) { el.onclick = function () { const k = el.getAttribute("data-k"); if (picked[k]) { delete picked[k]; el.classList.remove("on"); el.querySelector(".ck").textContent = ""; } else { picked[k] = el.getAttribute("data-n"); el.classList.add("on"); el.querySelector(".ck").textContent = "✓"; } }; });
+    }
+    ov.querySelector("#igf-am-cancel").onclick = function () { ov.remove(); };
+    ov.querySelector("#igf-am-add").onclick = async function () { const keys = Object.keys(picked); if (!keys.length) { ov.querySelector("#igf-am-msg").textContent = "Pick at least one friend."; return; } ov.querySelector("#igf-am-add").disabled = true;
+      for (const k of keys) { await addGroupMember(groupId, k, picked[k]); }
+      toast("✅ Added " + keys.length + " to the group."); ov.remove(); await loadGroups(); openGroupInfo(groupId); };
+  }
+  async function openCreateGroup() {
+    injectCSS();
+    const ov = document.createElement("div"); ov.className = "igf-ov"; let picked = {}, avatar = { emoji: "👥", url: "" };
+    ov.innerHTML = '<div class="igf-box"><h2>👥 New group</h2>'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span id="igf-cg-av">' + avatarHTML({ user_key: "gnew", name: "g", avatar_emoji: "👥" }, 52) + '</span><input id="igf-cg-name" maxlength="40" placeholder="Group name" style="flex:1;background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:11px 12px;border-radius:10px;font-size:15px"></div>'
+      + '<div style="display:flex;gap:6px;margin-bottom:6px"><button class="igf-btn igf-b" id="igf-cg-up" style="flex:1">📷 Picture</button><input type="file" accept="image/*" id="igf-cg-file" style="display:none"></div>'
+      + '<div class="igf-emopick" id="igf-cg-emo"></div>'
+      + '<div class="igf-sec">Add friends</div><div id="igf-cg-list"></div>'
+      + '<div id="igf-cg-msg" style="font-size:13px;min-height:16px;color:#9fb3d8"></div>'
+      + '<button class="igf-btn igf-p" id="igf-cg-create" style="width:100%">Create group</button><button class="igf-x" id="igf-cg-cancel">Cancel</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    const emo = ov.querySelector("#igf-cg-emo"); emo.innerHTML = ["👥", "🎮", "🔥", "⭐", "🏆", "🚀", "🐱", "🦊", "🐼", "🦁", "🐉", "🌈", "⚽", "🏏", "🎯", "💎"].map(function (e) { return '<button data-e="' + e + '">' + e + "</button>"; }).join("");
+    emo.querySelectorAll("button").forEach(function (bt) { bt.onclick = function () { avatar = { emoji: bt.getAttribute("data-e"), url: "" }; ov.querySelector("#igf-cg-av").innerHTML = avatarHTML({ user_key: "gnew", name: "g", avatar_emoji: avatar.emoji }, 52); }; });
+    const fileI = ov.querySelector("#igf-cg-file"); const msg = function (t, err) { const m = ov.querySelector("#igf-cg-msg"); m.textContent = t; m.style.color = err ? "#ff8088" : "#7CFFB2"; };
+    ov.querySelector("#igf-cg-up").onclick = function () { fileI.click(); };
+    fileI.onchange = async function () { const f = fileI.files && fileI.files[0]; if (!f) return; msg("Uploading…"); try { const url = await uploadAvatar(f, "group_new"); avatar = { emoji: "", url: url }; ov.querySelector("#igf-cg-av").innerHTML = avatarHTML({ user_key: "gnew", name: "g", avatar_url: url }, 52); msg(""); } catch (e) { msg(e.message || "Upload failed.", true); } };
+    const list = ov.querySelector("#igf-cg-list");
+    if (!_friends.length) list.innerHTML = '<div class="s">You have no friends yet to add — add some first!</div>';
+    else { await fetchProfiles(_friends.map(function (f) { return f.key; }));
+      list.innerHTML = _friends.map(function (f) { const p = _profiles[f.key] || { user_key: f.key, name: f.name }; return '<div class="igf-pick" data-k="' + esc(f.key) + '" data-n="' + esc(f.name) + '"><span class="ck"></span>' + avatarHTML(p, 32) + '<span class="n" style="flex:1;text-align:left">' + esc(f.name) + "</span></div>"; }).join("");
+      list.querySelectorAll(".igf-pick").forEach(function (el) { el.onclick = function () { const k = el.getAttribute("data-k"); if (picked[k]) { delete picked[k]; el.classList.remove("on"); el.querySelector(".ck").textContent = ""; } else { picked[k] = el.getAttribute("data-n"); el.classList.add("on"); el.querySelector(".ck").textContent = "✓"; } }; });
+    }
+    ov.querySelector("#igf-cg-cancel").onclick = function () { ov.remove(); };
+    ov.querySelector("#igf-cg-create").onclick = async function () { const name = ov.querySelector("#igf-cg-name").value.trim(); if (!name) { msg("Enter a group name.", true); return; } const keys = Object.keys(picked), names = keys.map(function (k) { return picked[k]; });
+      ov.querySelector("#igf-cg-create").disabled = true; msg("Creating…");
+      const r = await createGroup(name, keys, names, avatar);
+      if (r.ok) { toast("✅ Group created!"); ov.remove(); openGroupChat(r.id); } else { msg(r.msg || "Couldn't create.", true); ov.querySelector("#igf-cg-create").disabled = false; } };
   }
 
   /* ================= friends panel (with search) ================= */
@@ -686,7 +1114,7 @@
     return ranked.slice(0, 12);
   }
   function openPanel() {
-    injectCSS(); dbLoad(); loadUnread();
+    injectCSS(); dbLoad(); loadUnread(); loadGroups();
     const ov = document.createElement("div"); ov.className = "igf-ov";
     ov.innerHTML = '<div class="igf-box"><h2>👥 Friends</h2><div class="s" id="igf-me"></div>'
       + '<div class="igf-add"><input id="igf-name" maxlength="16" placeholder="Search players by name…" autocomplete="off"><button class="igf-btn igf-p" id="igf-send">Add</button></div>'
@@ -725,8 +1153,15 @@
         const sub = pr.online ? (pr.game === "home" ? "Online • in the menu" : "Online • playing " + gname(pr.game)) : "Offline";
         const u = _unread[f.key] ? '<span style="background:#ff3b5c;color:#fff;border-radius:9px;padding:1px 7px;font-size:12px;font-weight:800;margin-right:4px">' + _unread[f.key].count + "</span>" : "";
         h += '<div class="igf-row tap" data-open="' + esc(f.name) + '" data-k="' + esc(f.key) + '"><span class="igf-dot ' + (pr.online ? "on" : "off") + '"></span>' + avatarHTML(p, 36) + '<span class="n">' + esc(f.name) + "<small>" + sub + "</small></span>" + u + '<button class="igf-btn igf-p" data-chat="' + esc(f.name) + '" data-k="' + esc(f.key) + '">💬</button></div>'; });
+      h += '<div class="igf-sec" style="display:flex;justify-content:space-between;align-items:center">Your groups <button class="igf-btn igf-b" id="igf-newgroup" style="padding:5px 10px;font-size:12px">➕ New group</button></div>';
+      if (!_groups.length) h += '<div class="s">No groups yet — make one to chat with several friends at once.</div>';
+      _groups.forEach(function (g) { const c = _groupUnread[g.id]; const u = c ? '<span style="background:#ff3b5c;color:#fff;border-radius:9px;padding:1px 7px;font-size:12px;font-weight:800;margin-right:4px">' + c + "</span>" : "";
+        h += '<div class="igf-row tap" data-grp="' + esc(g.id) + '">' + avatarHTML(grpAvatar(g), 36) + '<span class="n">' + esc(g.name) + "<small>" + (g.owner_key === myKey ? "You're the admin 👑" : "Group") + "</small></span>" + u + '<button class="igf-btn igf-p" data-grpc="' + esc(g.id) + '">💬</button></div>'; });
       if (_out.length) { h += '<div class="igf-sec">Sent requests</div>'; _out.forEach(function (r) { h += '<div class="igf-row"><span class="n">' + esc(r.name) + '<small>waiting for them to accept</small></span><span class="igf-btn igf-g" style="opacity:.85;cursor:default">⏳</span></div>'; }); }
       const body = ov.querySelector("#igf-body"); body.innerHTML = h;
+      const ng = body.querySelector("#igf-newgroup"); if (ng) ng.onclick = function (e) { e.stopPropagation(); openCreateGroup(); };
+      body.querySelectorAll("[data-grp]").forEach(function (b) { b.onclick = function () { openGroupChat(parseInt(b.getAttribute("data-grp"), 10)); }; });
+      body.querySelectorAll("[data-grpc]").forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); openGroupChat(parseInt(b.getAttribute("data-grpc"), 10)); }; });
       body.querySelectorAll("[data-acc]").forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); accept(b.getAttribute("data-acc"), b.getAttribute("data-k")); }; });
       body.querySelectorAll("[data-den]").forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); deny(b.getAttribute("data-den"), b.getAttribute("data-k")); }; });
       body.querySelectorAll("[data-chat]").forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); openChat(b.getAttribute("data-k"), b.getAttribute("data-chat")); }; });
@@ -752,7 +1187,8 @@
   /* ================= public API ================= */
   window.IGFriends = {
     openPanel: openPanel, openProfile: openProfile, openChat: openChat, openBell: openBell,
-    list: function () { return _friends; }, isFriend: isFriend, sendRequest: sendRequest,
+    openGroupChat: openGroupChat, openCreateGroup: openCreateGroup, openAvatarZoom: openAvatarZoom,
+    list: function () { return _friends; }, groups: function () { return _groups; }, isFriend: isFriend, sendRequest: sendRequest,
     accept: accept, deny: deny, unfriend: unfriend, presenceOf: presenceOf,
     onUpdate: onUpdate, reqInCount: function () { return _in.length; }, bellCount: bellCount,
     weeklyInfo: weeklyInfo, isWeekWinner: isWeekWinner, ready: function () { return started; }
