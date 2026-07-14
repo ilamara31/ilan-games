@@ -55,7 +55,7 @@
     <div class="row"><button class="btn alt" id="btnTutorial">🎓 Tutorial</button><button class="btn alt" id="btnShop">🛍️ Shop</button></div>
     <div class="row"><button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button><button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')">🏆 Leaderboard</button></div>
     <a class="btn ghost" href="../" style="display:block;margin-top:10px;text-decoration:none">🚪 Exit to Ilan Games</a>
-    <div class="sub" style="margin-top:14px">Move the mouse to move your racket — the cursor locks into the match and releases when it ends. Aim with the racket edge, click for a power shot.</div>
+    <div class="sub" style="margin-top:14px">Move the mouse to move your racket. A ring shrinks onto the incoming ball — <b>click the instant it snaps tight to SMASH 🔥</b>. Chain smashes for a combo &amp; go ON FIRE. Mistime it and you'll dink a weak floater the opponent will punish!</div>
   </div>
 </div>
 
@@ -155,7 +155,10 @@ function star(g,cx,cy,R,r,n){ g.beginPath(); for(let i=0;i<n*2;i++){ const ra=i%
 /* ============================================================ WORLD / CAMERA ============================================================ */
 const TL=12, HALFW=3.0, NETZ=6.0, NETH=0.55, BALLR=0.17, GRAV=11;
 const PZ=2.2, AZ=10.0, PW=0.60, PH=0.68;      // PW = visible racket size (small)
-const CATCHX=1.9, ZWIN=1.3;   // CATCHX = how forgiving the hit is — wide, so getting roughly to the ball returns it
+const CATCHX=1.9, ZWIN=1.3;   // CATCHX = how forgiving the hit is (online / tutorial keep the wide, easy window)
+const CATCHX_SP=1.2;          // single-player: tighter — you have to actually get to the ball, you can miss
+const SMASH_IDEALZ=PZ+0.15;   // the sweet-spot contact point; click here = SMASH
+const SMASH_WIN=0.34, POWER_WIN=0.85;   // timing windows (distance from ideal) for smash / power
 const CAM={x:0,y:2.3,z:-2.6}; let focal=0, horY=0;
 function setupCam(){ focal=H*0.62; horY=H*0.32; }
 function proj(x,y,z){ const d=Math.max(0.25,z-CAM.z); return { X:W/2+focal*(x-CAM.x)/d, Y:horY-focal*(y-CAM.y)/d, s:focal/d, d }; }
@@ -178,6 +181,9 @@ let coachMsg='', coachPop=0;
 let pPts=0, aPts=0, server='player';
 let serveT=0, pointPause=0, msg='', msgT=0;
 let shake=0, flash=0, clickT=0, timeNow=0;
+/* single-player skill layer (smash timing + combo/fire) — never used in online mode */
+let combo=0, bestCombo=0, smashCount=0, fireLevel=0, bonusCoins=0, lastPlayerQ='';
+let qtext='', qcol='#fff', qT=0;   // floating "SMASH!/NICE/weak" popup
 
 const pad   ={ x:0, y:1.0, tx:0, ty:1.0, vx:0, swing:0, tilt:0 };
 const PXR=4.2, PYMIN=0.10, PYMAX=3.1;     // how far the racket can reach (wide enough to chase off the table)
@@ -249,8 +255,10 @@ function tutorialUpdate(dt){
 }
 
 /* ============================================================ MATCH ============================================================ */
-function startServeMatch(){ const a = (mode==='tournament')?ROUND_AI[roundIdx]:{miss:0.15,spd:5.1,reach:1.08,serve:7.0};
-  ai.miss=a.miss; ai.spd=a.spd; ai.reach=a.reach; ai.serve=a.serve; ai.errn=Math.max(0.5,1.4-(mode==='tournament'?roundIdx:1)*0.4);
+function startServeMatch(){ const a = (mode==='tournament')?ROUND_AI[roundIdx]:{miss:0.10,spd:6.3,reach:1.22,serve:7.6};
+  ai.miss=a.miss; ai.spd=a.spd; ai.reach=a.reach; ai.serve=a.serve; ai.errn=Math.max(0.45,1.3-(mode==='tournament'?roundIdx:1)*0.4);
+  ai.smashChance = (mode==='tournament') ? [0.12,0.18,0.26][roundIdx] : 0.14;   // how often the AI attacks / punishes weak balls
+  combo=0; bestCombo=0; smashCount=0; fireLevel=0; bonusCoins=0; lastPlayerQ=''; qT=0;
   pPts=0; aPts=0; server='player'; newPoint(); }
 function newPoint(){ pad.x=0; pad.y=1.0; pad.tx=0; pad.ty=1.0; pad.vx=0; pad.swing=0; aiPad.x=0; aiPad.y=0.9; aiPad.swing=0;
   ball.trail.length=0; ball.bounces=0; ball.vx=ball.vy=ball.vz=0; ball.active=true; ball.last=server;
@@ -260,7 +268,8 @@ function serveLaunch(by){ const dir=by==='player'?1:-1; const spd=by==='player'?
   ball.x=0; ball.y=1.05; ball.z=by==='player'?PZ+0.3:AZ; ball.vz=dir*spd; ball.vy=4.1; ball.vx=rand(-1.2,1.2);
   ball.last=by; ball.bounces=0; ball.active=true; phase='rally'; if(by==='player')pad.swing=1; else aiPad.swing=1; snd('hit'); netForceSend(); }
 function scorePoint(who){ if(phase==='point')return;
-  if(who==='player'){ pPts++; banner('POINT!'); snd('point'); shake=Math.min(.4,shake+.2); } else { aPts++; banner('LOST'); }
+  if(who==='player'){ pPts++; banner('POINT!'); snd('point'); shake=Math.min(.4,shake+.2); if(mode!=='online'&&fireLevel>0)bonusCoins+=2; }
+  else { aPts++; banner('LOST'); combo=0; fireLevel=0; lastPlayerQ=''; }
   if(pPts>=5||aPts>=5){ matchEnd(pPts>aPts); return; }
   server = server==='player'?'ai':'player'; phase='point'; pointPause=1.1; netForceSend(); }
 function matchEnd(won){ ball.active=false; coinsEarned=0;
@@ -268,7 +277,11 @@ function matchEnd(won){ ball.active=false; coinsEarned=0;
     if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);
     const mg=NET.mg; let n=0; const rs=()=>{ if(n++<3&&NET.on&&NET.mg===mg){ MP.send('gameover',{pp:pPts,ap:aPts,g:mg}); roomTimer(rs,500); } }; rs();
     showOverOnline(won); return; }
-  if(won){ coinsEarned = (mode==='tournament')?ROUND_COINS[roundIdx]:30; S.coins+=coinsEarned; S.wins=(S.wins||0)+1; save(); }
+  const winBonus = won ? ((mode==='tournament')?ROUND_COINS[roundIdx]:30) : 0;
+  coinsEarned = winBonus + bonusCoins;                 // smash/combo coins count even if you lost the match
+  if(coinsEarned>0) S.coins += coinsEarned;
+  if(won){ S.wins=(S.wins||0)+1; }
+  save();
   if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0);   // total matches won (higher is better)
   if(mode==='tournament'){
     if(won && roundIdx<2){ roundIdx++; showOver(true,'round'); }
@@ -294,16 +307,44 @@ function showOver(won,kind){ phase=''; let title,subt,b1,b2,b1act,b2act;
 }
 
 /* ============================================================ PHYSICS / AI ============================================================ */
-function reflect(by){ const dir=by==='player'?1:-1;
-  if(by==='player'){ const power=clickT>0; const vz=power?11:7.4, vy=power?3.2:3.9; const y0=Math.max(ball.y,0.4);
+function reflect(by, quality){ const dir=by==='player'?1:-1;
+  if(by==='player'){
+    let vz, vy, smash=false;
+    if(quality){                                   // single-player timed shot
+      if(quality==='smash'){ vz=15.2; vy=2.4; smash=true; }
+      else if(quality==='power'){ vz=11; vy=3.2; }
+      else if(quality==='weak'){ vz=5.0; vy=4.9; }   // floaty & slow — the AI will punish it
+      else { vz=7.6; vy=3.9; }                       // normal (mistimed)
+      if(fireLevel>0 && quality!=='weak'){ vz*=1.10+fireLevel*0.04; }   // ON FIRE = extra pace
+    } else { const power=clickT>0; vz=power?11:7.4; vy=power?3.2:3.9; }  // online / tutorial: unchanged
+    const y0=Math.max(ball.y,0.4);
     const tb=(vy+Math.sqrt(vy*vy+2*GRAV*y0))/GRAV;                       // time until the ball lands
     const off=ball.x-pad.x; const aimDir=clamp(-off*2.4 + pad.vx*0.35, -1, 1);   // -1 = aim left, +1 = aim right
-    const targetX=aimDir*(HALFW-0.5);                                    // ALWAYS a spot inside the table -> never out
-    ball.vz=vz; ball.vy=vy; ball.vx=clamp((targetX-ball.x)/tb, -10, 10); ball.y=y0; pad.swing=1;
-    if(power){ snd('power'); shake=Math.min(.4,shake+.25); flash=.4; } else snd('hit'); }
-  else { const away=pad.x>0?-1:1; const target=clamp(pad.x*0.4+away*rand(0.6,2.2)+rand(-ai.errn,ai.errn),-2.7,2.7);
-    ball.vz=dir*7.2; ball.vx=clamp((target-ball.x)*1.2,-7.5,7.5); ball.vy=3.8; aiPad.swing=1; snd('hit'); }
+    const targetX=aimDir*(smash?(HALFW-0.1):(HALFW-0.5));                // a smash is aimed harder into the corner
+    ball.vz=vz; ball.vy=vy; ball.vx=clamp((targetX-ball.x)/tb, -12, 12); ball.y=y0; pad.swing=1;
+    if(smash){ snd('smash'); shake=Math.min(.6,shake+.42); flash=.6; }
+    else if(quality==='power'||(!quality&&clickT>0)){ snd('power'); shake=Math.min(.4,shake+.22); flash=.35; }
+    else if(quality==='weak'){ snd('weak'); }
+    else snd('hit');
+    if(quality){ lastPlayerQ=quality; onPlayerShot(quality); }
+  }
+  else { const smashBack = mode!=='online' && (lastPlayerQ==='weak' || Math.random()<(ai.smashChance||0));   // AI punishes weak balls / occasionally attacks
+    const away=pad.x>0?-1:1; const target=clamp(pad.x*0.4+away*rand(0.6,smashBack?2.7:2.2)+rand(-ai.errn,ai.errn),-2.7,2.7);
+    ball.vz=dir*(smashBack?9.6:7.2); ball.vx=clamp((target-ball.x)*1.2,smashBack?-9:-7.5,smashBack?9:7.5); ball.vy=smashBack?3.1:3.8; aiPad.swing=1;
+    snd(smashBack?'power':'hit'); if(smashBack){ shake=Math.min(.4,shake+.12); } lastPlayerQ=''; }
   ball.y=Math.max(ball.y,0.4); ball.last=by; ball.bounces=0; netForceSend(); }
+/* combo / fire streak + floating feedback (single-player only) */
+function qpop(t,c){ qtext=t; qcol=c; qT=0.85; }
+function onPlayerShot(q){
+  if(q==='smash'){ combo++; smashCount++; bonusCoins += (fireLevel>0?4:2); qpop(fireLevel>0?'SMASH! 🔥':'SMASH!','#ff6a6a'); }
+  else if(q==='power'){ combo++; bonusCoins += (fireLevel>0?2:1); qpop('NICE!','#86ffc6'); }
+  else if(q==='weak'){ combo=0; qpop('weak…','#9fb3d8'); }
+  else { qpop('good','#c3d2ff'); }                       // normal: keeps combo, no growth
+  bestCombo=Math.max(bestCombo,combo);
+  const nf = combo>=9?3 : combo>=6?2 : combo>=3?1 : 0;
+  if(nf>fireLevel && nf>0){ banner(nf>=2?'🔥 ON FIRE! x'+combo:'COMBO x'+combo); bonusCoins+=nf*3; }
+  fireLevel=nf;
+}
 function physics(dt){
   if(phase==='serve'){ if(server==='player'){ball.x=0;ball.y=1.05;ball.z=PZ+0.4;} else {ball.x=0;ball.y=1.05;ball.z=AZ;} return; }
   if(phase!=='rally'){ if(ball.active){ ball.x+=ball.vx*dt; ball.z+=ball.vz*dt; ball.vy-=GRAV*dt; ball.y+=ball.vy*dt; if(ball.y<BALLR){ball.y=BALLR;ball.vy=Math.abs(ball.vy)*0.6;} pushTrail(); if(ball.z<CAM.z-1||ball.z>TL+4)ball.active=false; } return; }
@@ -314,7 +355,14 @@ function physics(dt){
     const onTable=Math.abs(ball.x)<=HALFW+0.2 && ball.z>=-0.2 && ball.z<=TL+0.2;
     if(ball.bounces===1 && !onTable){ scorePoint(ball.last==='player'?'ai':'player'); return; }
     if(ball.bounces>=2){ scorePoint(ball.last); return; } }
-  if(ball.last==='ai' && ball.vz<0 && ball.z<PZ+ZWIN && ball.z>PZ-ZWIN){ if(Math.abs(ball.x-pad.x)<CATCHX) reflect('player'); }   // only your left/right needs to line up
+  if(ball.last==='ai' && ball.vz<0){
+    if(mode==='online'){
+      if(ball.z<PZ+ZWIN && ball.z>PZ-ZWIN && Math.abs(ball.x-pad.x)<CATCHX) reflect('player');   // online: wide, easy (unchanged)
+    } else if(Math.abs(ball.x-pad.x)<CATCHX_SP && ball.z<PZ+ZWIN && ball.z>PZ-ZWIN-0.05){        // single-player: you must line up AND time it
+      if(clickT>0){ const dz=Math.abs(ball.z-SMASH_IDEALZ); reflect('player', dz<=SMASH_WIN?'smash':dz<=POWER_WIN?'power':'normal'); }
+      else if(ball.z<=SMASH_IDEALZ){ reflect('player','weak'); }   // let it reach you but no swing -> weak floater
+    }
+  }
   if(ball.last==='ai' && ball.z<PZ-ZWIN-0.25){ scorePoint('ai'); return; }
   if(mode==='online'){
     if(ball.last==='player' && ball.vz>0 && ball.z>AZ-ZWIN && ball.z<AZ+ZWIN){ if(Math.abs(ball.x-aiPad.x)<CATCHX) reflectFar(); }   // human opponent (guest) returns
@@ -341,10 +389,10 @@ window.addEventListener('touchmove',e=>{ if(!inPlay())return; const t=e.touches[
 let AC=null,MAS=null; function actx(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); MAS=AC.createGain(); MAS.gain.value=.5; MAS.connect(AC.destination);}catch(e){} } return AC; }
 window.addEventListener('pointerdown',()=>{ const c=actx(); if(c&&c.state==='suspended')c.resume(); });
 function tone(f,d,t,v,sl){ if(!actx())return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t||'sine'; o.frequency.setValueAtTime(f,AC.currentTime); if(sl)o.frequency.exponentialRampToValueAtTime(sl,AC.currentTime+d); g.gain.setValueAtTime(v||.4,AC.currentTime); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d); o.connect(g); g.connect(MAS); o.start(); o.stop(AC.currentTime+d+.02); }
-function snd(k){ if(k==='hit')tone(880,.04,'square',.4,520); else if(k==='power')tone(560,.1,'square',.5,170); else if(k==='bounce')tone(1300,.03,'square',.2,820); else if(k==='point')tone(720,.12,'triangle',.45,1080); else if(k==='win'){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.3,'triangle',.5),i*130));} else if(k==='lose'){[392,330,262].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.4),i*150));} }
+function snd(k){ if(k==='hit')tone(880,.04,'square',.4,520); else if(k==='power')tone(560,.1,'square',.5,170); else if(k==='smash'){ tone(300,.16,'sawtooth',.6,90); tone(1200,.07,'square',.35,420); } else if(k==='weak')tone(340,.09,'sine',.25,220); else if(k==='bounce')tone(1300,.03,'square',.2,820); else if(k==='point')tone(720,.12,'triangle',.45,1080); else if(k==='win'){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.3,'triangle',.5),i*130));} else if(k==='lose'){[392,330,262].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.4),i*150));} }
 
 /* ============================================================ UPDATE ============================================================ */
-function update(dt){ timeNow+=dt; shake=Math.max(0,shake-dt*2.5); flash=Math.max(0,flash-dt*2.5); clickT=Math.max(0,clickT-dt); if(msgT>0)msgT-=dt; coachPop=Math.min(1,coachPop+dt*4);
+function update(dt){ timeNow+=dt; shake=Math.max(0,shake-dt*2.5); flash=Math.max(0,flash-dt*2.5); clickT=Math.max(0,clickT-dt); if(msgT>0)msgT-=dt; if(qT>0)qT-=dt; coachPop=Math.min(1,coachPop+dt*4);
   if(screen===null && ball.active && ball.last==='ai' && ball.vz<0){ pad.ty=clamp(ball.y,0.25,2.7); }  // racket auto-meets the ball's height
   const ox=pad.x; pad.x=lerp(pad.x,pad.tx,clamp(dt*18,0,1)); pad.y=lerp(pad.y,pad.ty,clamp(dt*18,0,1)); pad.vx=(pad.x-ox)/Math.max(dt,.001);
   pad.tilt=lerp(pad.tilt, clamp(pad.vx*0.06,-0.8,0.8), clamp(dt*10,0,1));   // racket angles in the direction you move
@@ -372,6 +420,7 @@ function render(){ setupCam();
   const sx=shake>0?rand(-1,1)*shake*9:0, sy=shake>0?rand(-1,1)*shake*9:0; ctx.save(); ctx.translate(sx,sy);
   drawBG(); drawTable(); drawNet(); drawOppPaddle();
   if(ball.active) drawBall();
+  if(ball.active && screen===null && mode!=='online' && phase==='rally') drawSmashCue();
   drawPaddle();
   ctx.restore();
   if(flash>0){ ctx.fillStyle=`rgba(255,255,255,${flash*0.4})`; ctx.fillRect(0,0,W,H); }
@@ -409,10 +458,23 @@ function drawOppPaddle(){ const p=proj(aiPad.x,aiPad.y,AZ); const r=Math.max(8,0
 function drawBall(){ const sh=proj(ball.x,0,ball.z); const ss=Math.max(3,4.5*sh.s/40);
   ctx.fillStyle='rgba(0,0,0,.34)'; ctx.beginPath(); ctx.ellipse(sh.X,sh.Y,ss*1.5,ss*0.65,0,0,6.28); ctx.fill();
   const p=proj(ball.x,ball.y,ball.z); const r=Math.max(6,BALLR*p.s);
-  for(let i=0;i<ball.trail.length;i++){ const t=ball.trail[i],q=proj(t.x,t.y,t.z),a=i/ball.trail.length; ctx.globalAlpha=a*0.45; ctx.fillStyle='#ffd27a'; ctx.beginPath(); ctx.arc(q.X,q.Y,Math.max(2,r*0.85)*a,0,6.28); ctx.fill(); } ctx.globalAlpha=1;
-  const gl=ctx.createRadialGradient(p.X,p.Y,0,p.X,p.Y,r*2.6); gl.addColorStop(0,'rgba(255,180,60,.55)'); gl.addColorStop(1,'rgba(255,150,30,0)'); ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(p.X,p.Y,r*2.6,0,6.28); ctx.fill();
+  const spd=Math.abs(ball.vz)+Math.abs(ball.vx); const hot=spd>13;   // a smash streaks red-hot
+  const tcol=hot?'#ff5a4d':'#ffd27a';
+  for(let i=0;i<ball.trail.length;i++){ const t=ball.trail[i],q=proj(t.x,t.y,t.z),a=i/ball.trail.length; ctx.globalAlpha=a*(hot?0.6:0.45); ctx.fillStyle=tcol; ctx.beginPath(); ctx.arc(q.X,q.Y,Math.max(2,r*(hot?1.05:0.85))*a,0,6.28); ctx.fill(); } ctx.globalAlpha=1;
+  const gr=hot?r*3.4:r*2.6; const gl=ctx.createRadialGradient(p.X,p.Y,0,p.X,p.Y,gr); gl.addColorStop(0,hot?'rgba(255,90,60,.7)':'rgba(255,180,60,.55)'); gl.addColorStop(1,'rgba(255,150,30,0)'); ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(p.X,p.Y,gr,0,6.28); ctx.fill();
   const bg=ctx.createRadialGradient(p.X-r*0.35,p.Y-r*0.35,r*0.2,p.X,p.Y,r); bg.addColorStop(0,'#fff3d0'); bg.addColorStop(.5,'#ff9e2c'); bg.addColorStop(1,'#f06d00'); ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(p.X,p.Y,r,0,6.28); ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(p.X-r*0.25,p.Y-r*0.25,r*0.4,0,6.28); ctx.stroke();
+}
+// shrinking ring around an incoming ball: smallest = the moment to click for a SMASH
+function drawSmashCue(){
+  if(ball.last!=='ai' || ball.vz>=0 || ball.z>PZ+ZWIN+0.3 || ball.z<PZ-ZWIN) return;
+  const aligned=Math.abs(ball.x-pad.x)<CATCHX_SP; const dz=Math.abs(ball.z-SMASH_IDEALZ); const inWin=dz<=SMASH_WIN;
+  const p=proj(ball.x,ball.y,ball.z); const rBall=Math.max(6,BALLR*p.s); const ringR=rBall+6+Math.min(80,dz*46);
+  ctx.save(); ctx.lineWidth=inWin?5:2.5;
+  ctx.strokeStyle = !aligned ? 'rgba(255,110,110,.45)' : inWin ? 'rgba(130,255,150,.95)' : 'rgba(255,220,120,.65)';
+  ctx.beginPath(); ctx.arc(p.X,p.Y,ringR,0,6.28); ctx.stroke();
+  if(inWin&&aligned){ ctx.fillStyle='rgba(150,255,170,.95)'; ctx.font='800 14px Segoe UI'; ctx.textAlign='center'; ctx.fillText('SMASH!',p.X,p.Y-ringR-7); }
+  ctx.restore();
 }
 function drawPaddle(){ const p=proj(pad.x,pad.y,PZ); const r=Math.max(16,PW*p.s); const sw=pad.swing;
   const sh=proj(pad.x,0,PZ); ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(sh.X,sh.Y,r*0.7,r*0.3,0,0,6.28); ctx.fill();
@@ -427,10 +489,15 @@ function drawHUD(){ ctx.textAlign='center';
     ctx.font='900 '+fs+'px Segoe UI'; ctx.fillStyle='#fff'; ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=8; ctx.fillText(pPts+'  :  '+aPts, W/2, Math.max(40,H*0.09)); ctx.shadowBlur=0;
     ctx.font='700 14px Segoe UI'; ctx.fillStyle='#8fb6ff'; ctx.fillText('YOU', W/2-fs*1.1, Math.max(40,H*0.09)+22);
     ctx.fillStyle='#ff9b9b'; ctx.fillText((curOpp||'CPU').toUpperCase(), W/2+fs*1.1, Math.max(40,H*0.09)+22);
-    ctx.fillStyle='#ffe27a'; ctx.font='800 12px Segoe UI'; ctx.fillText((mode==='tournament'?ROUND_NAMES[roundIdx]:'QUICK MATCH')+' • First to 5', W/2, Math.max(40,H*0.09)+40);
+    ctx.fillStyle='#ffe27a'; ctx.font='800 12px Segoe UI'; ctx.fillText((mode==='online'?'ONLINE':mode==='tournament'?ROUND_NAMES[roundIdx]:'QUICK MATCH')+' • First to 5', W/2, Math.max(40,H*0.09)+40);
+    if(mode!=='online'){
+      if(combo>=2){ ctx.font='900 '+Math.round(clamp(H*0.032,15,25))+'px Segoe UI'; ctx.fillStyle=fireLevel>=2?'#ff7a4d':fireLevel>=1?'#ffd23f':'#8fb6ff'; ctx.fillText((fireLevel>0?'🔥 ':'')+'COMBO x'+combo, W/2, Math.max(40,H*0.09)+66); }
+      if(bonusCoins>0){ ctx.font='800 13px Segoe UI'; ctx.fillStyle='#ffe27a'; ctx.fillText('🪙 +'+bonusCoins, W/2, Math.max(40,H*0.09)+(combo>=2?86:66)); }
+    }
   }
+  if(qT>0 && mode!=='online'){ ctx.globalAlpha=clamp(qT/0.85,0,1); ctx.font='900 '+Math.round(clamp(H*0.05,22,40))+'px Segoe UI'; ctx.fillStyle=qcol; ctx.fillText(qtext, W/2, H*0.6); ctx.globalAlpha=1; }
   if(msgT>0){ ctx.globalAlpha=clamp(msgT,0,1); ctx.font='900 '+Math.round(H*0.06)+'px Segoe UI'; ctx.fillStyle='#ffe27a'; ctx.fillText(msg, W/2, H*0.4); ctx.globalAlpha=1; }
-  if(phase!=='tutorial'){ ctx.font='600 12px Segoe UI'; ctx.fillStyle='rgba(195,210,255,.7)'; ctx.fillText('Move mouse to move racket • aim with the racket edge • click = power', W/2, H-16); }
+  if(phase!=='tutorial'){ ctx.font='600 12px Segoe UI'; ctx.fillStyle='rgba(195,210,255,.7)'; ctx.fillText(mode==='online'?'Move to move racket • aim with the edge • click = power':'CLICK the moment the ring snaps tight → SMASH 🔥  •  chain smashes for a combo', W/2, H-16); }
 }
 function wrapText(t,x,y,maxW,lh){ const paras=t.split('\n'); for(const para of paras){ const words=para.split(' '); let line=''; for(const w of words){ const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW && line){ ctx.fillText(line,x,y); y+=lh; line=w; } else line=test; } ctx.fillText(line,x,y); y+=lh; } return y; }
 function drawCoach(){ const cw=Math.min(360,W*0.8); const pop=clamp(coachPop,0,1);
