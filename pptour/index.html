@@ -55,7 +55,7 @@
     <div class="row"><button class="btn alt" id="btnTutorial">🎓 Tutorial</button><button class="btn alt" id="btnShop">🛍️ Shop</button></div>
     <div class="row"><button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button><button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')">🏆 Leaderboard</button></div>
     <a class="btn ghost" href="../" style="display:block;margin-top:10px;text-decoration:none">🚪 Exit to Ilan Games</a>
-    <div class="sub" style="margin-top:14px">Move the mouse to move your racket. A ring shrinks onto the incoming ball — <b>click the instant it snaps tight to SMASH 🔥</b>. Chain smashes for a combo &amp; go ON FIRE. Mistime it and you'll dink a weak floater the opponent will punish!</div>
+    <div class="sub" style="margin-top:14px">Move the mouse to move your racket. A ring shrinks onto the incoming ball — <b>click as it reaches your bat (ring turns green) to SMASH 🔥</b>. Chain smashes for a combo &amp; go ON FIRE. Mistime it and you'll dink a weak floater the opponent will punish!</div>
   </div>
 </div>
 
@@ -156,9 +156,11 @@ function star(g,cx,cy,R,r,n){ g.beginPath(); for(let i=0;i<n*2;i++){ const ra=i%
 const TL=12, HALFW=3.0, NETZ=6.0, NETH=0.55, BALLR=0.17, GRAV=11;
 const PZ=2.2, AZ=10.0, PW=0.60, PH=0.68;      // PW = visible racket size (small)
 const CATCHX=1.9, ZWIN=1.3;   // CATCHX = how forgiving the hit is (online / tutorial keep the wide, easy window)
-const CATCHX_SP=1.2;          // single-player: tighter — you have to actually get to the ball, you can miss
-const SMASH_IDEALZ=PZ+0.15;   // the sweet-spot contact point; click here = SMASH
-const SMASH_WIN=0.34, POWER_WIN=0.85;   // timing windows (distance from ideal) for smash / power
+const CATCHX_SP=1.6;          // single-player: line up near the ball and you connect — a genuine miss only if you're truly not there
+const SMASH_IDEALZ=PZ+0.15;   // the contact plane: the ball is "on your bat" as it crosses here
+const CLICK_T=0.24;           // how long a tap counts as an active swing (seconds)
+const SMASH_CLICK=0.12;       // clickT still >= this at contact => SMASH; >0 but lower => firm drive; 0 => weak floater
+const SMASH_WIN=0.34, POWER_WIN=0.85;   // (legacy timing windows, no longer used for grading)
 const CAM={x:0,y:2.3,z:-2.6}; let focal=0, horY=0;
 function setupCam(){ focal=H*0.62; horY=H*0.32; }
 function proj(x,y,z){ const d=Math.max(0.25,z-CAM.z); return { X:W/2+focal*(x-CAM.x)/d, Y:horY-focal*(y-CAM.y)/d, s:focal/d, d }; }
@@ -358,9 +360,13 @@ function physics(dt){
   if(ball.last==='ai' && ball.vz<0){
     if(mode==='online'){
       if(ball.z<PZ+ZWIN && ball.z>PZ-ZWIN && Math.abs(ball.x-pad.x)<CATCHX) reflect('player');   // online: wide, easy (unchanged)
-    } else if(Math.abs(ball.x-pad.x)<CATCHX_SP && ball.z<PZ+ZWIN && ball.z>PZ-ZWIN-0.05){        // single-player: you must line up AND time it
-      if(clickT>0){ const dz=Math.abs(ball.z-SMASH_IDEALZ); reflect('player', dz<=SMASH_WIN?'smash':dz<=POWER_WIN?'power':'normal'); }
-      else if(ball.z<=SMASH_IDEALZ){ reflect('player','weak'); }   // let it reach you but no swing -> weak floater
+    } else if(prevZ>SMASH_IDEALZ && ball.z<=SMASH_IDEALZ){        // single-player: ONE clean contact as the ball reaches your bat
+      if(Math.abs(ball.x-pad.x)<CATCHX_SP){                       // lined up? you connect — grade the swing purely by its timing
+        if(clickT>=SMASH_CLICK) reflect('player','smash');        // swung as it arrived -> SMASH 🔥
+        else if(clickT>0)       reflect('player','power');        // swung a touch early -> firm drive
+        else                    reflect('player','weak');         // no swing -> weak floater the AI will punish
+      }
+      // not lined up in x -> a genuine miss: the ball sails past and the AI takes the point below
     }
   }
   if(ball.last==='ai' && ball.z<PZ-ZWIN-0.25){ scorePoint('ai'); return; }
@@ -381,8 +387,8 @@ function aiUpdate(dt){ let target=(ball.vz>0&&ball.last==='player')?ball.x+ball.
 function inPlay(){ return screen===null; }
 function setPaddleAbs(mx,my){ pad.tx=clamp((mx/W-0.5)*2*4.4,-PXR,PXR); pad.ty=clamp((1-my/H)*3.7-0.3,PYMIN,PYMAX); }
 window.addEventListener('mousemove',e=>{ if(!inPlay())return; if(locked){ pad.tx=clamp(pad.tx+e.movementX*SENSX,-PXR,PXR); pad.ty=clamp(pad.ty-e.movementY*SENSY,PYMIN,PYMAX); } else setPaddleAbs(e.clientX,e.clientY); });
-window.addEventListener('mousedown',()=>{ if(!inPlay())return; if(!locked)requestLock(); clickT=0.16; pad.swing=Math.max(pad.swing,0.6); });
-window.addEventListener('touchstart',e=>{ if(!inPlay())return; const t=e.touches[0]; if(t)setPaddleAbs(t.clientX,t.clientY); clickT=0.16; pad.swing=Math.max(pad.swing,0.6); e.preventDefault(); },{passive:false});
+window.addEventListener('mousedown',()=>{ if(!inPlay())return; if(!locked)requestLock(); clickT=CLICK_T; pad.swing=Math.max(pad.swing,0.6); });
+window.addEventListener('touchstart',e=>{ if(!inPlay())return; const t=e.touches[0]; if(t)setPaddleAbs(t.clientX,t.clientY); clickT=CLICK_T; pad.swing=Math.max(pad.swing,0.6); e.preventDefault(); },{passive:false});
 window.addEventListener('touchmove',e=>{ if(!inPlay())return; const t=e.touches[0]; if(t)setPaddleAbs(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 
 /* ============================================================ AUDIO ============================================================ */
@@ -467,9 +473,12 @@ function drawBall(){ const sh=proj(ball.x,0,ball.z); const ss=Math.max(3,4.5*sh.
 }
 // shrinking ring around an incoming ball: smallest = the moment to click for a SMASH
 function drawSmashCue(){
-  if(ball.last!=='ai' || ball.vz>=0 || ball.z>PZ+ZWIN+0.3 || ball.z<PZ-ZWIN) return;
-  const aligned=Math.abs(ball.x-pad.x)<CATCHX_SP; const dz=Math.abs(ball.z-SMASH_IDEALZ); const inWin=dz<=SMASH_WIN;
-  const p=proj(ball.x,ball.y,ball.z); const rBall=Math.max(6,BALLR*p.s); const ringR=rBall+6+Math.min(80,dz*46);
+  if(ball.last!=='ai' || ball.vz>=0 || ball.z>PZ+ZWIN+0.3 || ball.z<SMASH_IDEALZ-0.35) return;
+  const aligned=Math.abs(ball.x-pad.x)<CATCHX_SP;
+  const dz=ball.z-SMASH_IDEALZ;                             // z still to travel before contact
+  const smashBand=Math.abs(ball.vz)*(CLICK_T-SMASH_CLICK);  // click anywhere inside this approach -> SMASH
+  const inWin=dz>=-0.2 && dz<=smashBand;                    // "click NOW" zone (turns the ring green)
+  const p=proj(ball.x,ball.y,ball.z); const rBall=Math.max(6,BALLR*p.s); const ringR=rBall+6+Math.min(80,Math.max(0,dz)*46);
   ctx.save(); ctx.lineWidth=inWin?5:2.5;
   ctx.strokeStyle = !aligned ? 'rgba(255,110,110,.45)' : inWin ? 'rgba(130,255,150,.95)' : 'rgba(255,220,120,.65)';
   ctx.beginPath(); ctx.arc(p.X,p.Y,ringR,0,6.28); ctx.stroke();
@@ -497,7 +506,7 @@ function drawHUD(){ ctx.textAlign='center';
   }
   if(qT>0 && mode!=='online'){ ctx.globalAlpha=clamp(qT/0.85,0,1); ctx.font='900 '+Math.round(clamp(H*0.05,22,40))+'px Segoe UI'; ctx.fillStyle=qcol; ctx.fillText(qtext, W/2, H*0.6); ctx.globalAlpha=1; }
   if(msgT>0){ ctx.globalAlpha=clamp(msgT,0,1); ctx.font='900 '+Math.round(H*0.06)+'px Segoe UI'; ctx.fillStyle='#ffe27a'; ctx.fillText(msg, W/2, H*0.4); ctx.globalAlpha=1; }
-  if(phase!=='tutorial'){ ctx.font='600 12px Segoe UI'; ctx.fillStyle='rgba(195,210,255,.7)'; ctx.fillText(mode==='online'?'Move to move racket • aim with the edge • click = power':'CLICK the moment the ring snaps tight → SMASH 🔥  •  chain smashes for a combo', W/2, H-16); }
+  if(phase!=='tutorial'){ ctx.font='600 12px Segoe UI'; ctx.fillStyle='rgba(195,210,255,.7)'; ctx.fillText(mode==='online'?'Move to move racket • aim with the edge • click = power':'CLICK as the ball reaches your bat → SMASH 🔥  •  chain smashes for a combo', W/2, H-16); }
 }
 function wrapText(t,x,y,maxW,lh){ const paras=t.split('\n'); for(const para of paras){ const words=para.split(' '); let line=''; for(const w of words){ const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW && line){ ctx.fillText(line,x,y); y+=lh; line=w; } else line=test; } ctx.fillText(line,x,y); y+=lh; } return y; }
 function drawCoach(){ const cw=Math.min(360,W*0.8); const pop=clamp(coachPop,0,1);
