@@ -79,7 +79,11 @@ const ASSETS = [
   './teaser/',
   './teaser/index.html',
   './codebreaker/',
-  './codebreaker/index.html'
+  './codebreaker/index.html',
+  './codewords/',
+  './codewords/index.html',
+  './codewords/game.js',
+  './codewords/data.js'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)

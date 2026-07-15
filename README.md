@@ -5,6 +5,7 @@ Games made by Ilan!
 🌐 **Play online:** https://ilamara31.github.io/ilan-games/
 
 ## Games
+- 🕵️ **Codewords** — `codewords/` — spy word game inspired by Codenames. Team Gold vs Team Silver find their hidden agents from one-word Commander clues. Practice/Quick/Daily/Family solo modes with 4 AI levels, local **Party** pass-and-play, and real-time **online rooms** (Supabase) where empty seats are filled by AI. Hint/Reveal/Protection tokens, Double-Agent bonus, Trap card, a themes shop, stats and a 30-second tutorial.
 - 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
 - 🍔 **Basket Catch 2** — `catch2/` — catch fruit & dodge junk food; junk fills a one-way 🤢 Tummy meter, 5 lives, plus 🎉 Cheat Day / 🌪️ Junk Storm events.
