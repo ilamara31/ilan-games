@@ -308,6 +308,7 @@
       <div class="coin spin" style="font-size:44px" id="twaitIco">⏳</div>
       <h2 class="title" id="twaitTitle">Waiting…</h2>
       <div class="muted" id="twaitMsg"></div>
+      <div class="card" id="twaitLive" style="width:100%;max-width:440px;margin-top:16px;display:none"></div>
     </div>
   </div>
 
@@ -562,6 +563,9 @@ function shake(hard){ const el=$('shake'); el.classList.remove('shakeit','hard')
 let cur='menu';
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $(id).classList.add('on'); cur=id; const sc=$(id); sc.scrollTop=0;
+  // Block the Friends chat only during an ACTIVE online match (can't pause multiplayer).
+  // While waiting/menu/result you can chat freely.
+  try{ if(window.IGFriends&&IGFriends.blockChat) IGFriends.blockChat(id==='game' && !!(G&&G.online)); }catch(e){}
   if(id==='menu'){ Sound.startMusic(); syncMenu(); } else { Sound.stopMusic(); } }
 
 /* ---------------- profile / menu ---------------- */
@@ -944,7 +948,7 @@ const MP={
     if(!this.sb) this.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}});
     return this.sb; },
   _wire(ch){
-    ['lobby','begin','quickmatch','round','result','standings','done','hello','rematch','ping'].forEach(ev=>
+    ['lobby','begin','quickmatch','round','result','standings','done','hello','rematch','ping','score'].forEach(ev=>
       ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
     ch.on('presence',{event:'sync'},()=>onNet('presence'));
     ch.on('presence',{event:'join'},()=>onNet('presence'));
@@ -1157,6 +1161,7 @@ function onNet(kind,payload){
     if(R.lastSeq!=null && payload.seq<=R.lastSeq) return; R.lastSeq=payload.seq;
   }
   if(kind==='ping') return;                              // liveness only (recorded above)
+  if(kind==='score'){ if(payload&&payload.matchId){ LIVE[payload.matchId]=Object.assign({t:performance.now()},payload); if(cur==='twait') renderTwaitLive(); } return; }
   if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
   if(kind==='leave'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }  // lobby only; in-game leaves handled by the liveness watchdog
   if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
@@ -1164,22 +1169,48 @@ function onNet(kind,payload){
   if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
   if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,quick:true}); return; }
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
-  if(kind==='result'){ hostOnResult(payload); return; }
+  if(kind==='result'){ if(payload&&payload.matchId){ delete LIVE[payload.matchId]; if(cur==='twait') renderTwaitLive(); } hostOnResult(payload); return; }
   if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
   if(kind==='done'){ if(!R.isHost) clientOnDone(payload); return; }
+}
+
+/* ---- live spectate scoreboard (waiting players watch the other matches) ---- */
+let LIVE={};
+function renderTwaitLive(){
+  const box=$('twaitLive'); if(!box) return;
+  const now=performance.now();
+  const rows=Object.values(LIVE)
+    .filter(s=> s.matchId!==G.matchId && (now-(s.t||0))<12000)   // drop my own + stale (finished) matches
+    .sort((x,y)=>(x.matchId<y.matchId?-1:1));
+  if(!rows.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='';
+  box.innerHTML='<div class="muted" style="font-size:12px;font-weight:800;letter-spacing:.4px;margin-bottom:8px;text-align:center">🔴 LIVE — OTHER MATCHES</div>'+
+    rows.map(s=>{
+      // G.target is already the score needed to WIN (first-innings score + 1)
+      const need = (s.inns===2 && s.tgt!=null) ? Math.max(0, s.tgt-(s.bat==='a'?s.a:s.b)) : null;
+      const chase = need!=null ? (' needs '+need+' to win') : '';
+      const aB = s.bat==='a'?' 🏏':'', bB = s.bat==='b'?' 🏏':'';
+      return '<div class="statrow" style="align-items:center">'+
+        '<span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.aAv||'🧑')+' '+esc((s.aName||'A'))+aB+'</span>'+
+        '<span style="font-weight:900;padding:0 8px">'+(s.a|0)+' — '+(s.b|0)+'</span>'+
+        '<span style="flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc((s.bName||'B'))+bB+' '+(s.bAv||'🧑')+'</span>'+
+        '</div>'+ (chase?'<div class="muted" style="font-size:11px;text-align:center;margin:-2px 0 4px">'+esc((s.bat==='a'?s.aName:s.bName))+chase+'</div>':'');
+    }).join('');
 }
 
 /* ---- client: play a round ---- */
 function clientOnRound(pkt){
   if(!R) return; if(pkt.players)R.players=pkt.players; R.roundNameNow=pkt.roundName;
+  LIVE={};                                              // new round — clear last round's live scores
   const mine=(pkt.pairs||[]).find(p=>p.a===myId||p.b===myId);
   if(mine){ beginNetMatch({matchId:mine.matchId,a:mine.a,b:mine.b,batFirst:mine.batFirst,mode:pkt.mode,ko:pkt.stage==='ko'}); }
   else { showTwait('🍿', pkt.bye===myId?'You have a bye this round':'Spectating', pkt.roundName+' — waiting for the matches to finish…'); }
 }
-function showTwait(ico,title,msg){ $('twaitIco').textContent=ico; $('twaitTitle').textContent=title; $('twaitMsg').textContent=msg||''; show('twait'); }
+function showTwait(ico,title,msg){ $('twaitIco').textContent=ico; $('twaitTitle').textContent=title; $('twaitMsg').textContent=msg||''; renderTwaitLive(); show('twait'); }
 
 /* ---- client: standings between rounds ---- */
 function clientOnStandings(pkt){
+  LIVE={};                                              // round over — clear live scores
   $('tstandTitle').textContent=pkt.title||'Standings';
   const rows=pkt.rows||[];
   $('tstandBody').innerHTML='<div class="statrow" style="color:var(--muted);font-size:12px"><span>#  Player</span><span>P&nbsp;&nbsp;W-L&nbsp;&nbsp;Pts</span></div>'+
@@ -1246,6 +1277,10 @@ setInterval(()=>{ if(G.online && cur==='game' && !G.busy && G.myNum!=null && G.o
   MP.sendMove({matchId:G.matchId, ball:G.ballIndex, num:G.myNum}); } }, 1200);
 // client -> host liveness ping (proves this player is still here, independent of presence)
 setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.phase==='quick')) MP.send('ping',{from:myId}); }, PING_MS);
+// live spectate: active tournament players broadcast a lightweight score so WAITING
+// players can watch the other matches. Only in tournaments (quick 2-player has no waiters).
+setInterval(()=>{ if(R && G.online && G.tourney && !G.quick && cur==='game' && G.matchId){
+  MP.send('score',{matchId:G.matchId, aId:G.matchAId, bId:G.matchBId, aName:G.aName, bName:G.bName, aAv:G.aAv, bAv:G.bAv, a:G.a|0, b:G.b|0, bat:G.batting, inns:G.innings|0, tgt:(G.target==null?null:G.target|0), from:myId}); } }, 1500);
 function tryResolveOnline(){
   if(G.busy || G.myNum==null || G.oppNum==null) return;
   clearAfk(); G.busy=true;
@@ -1321,6 +1356,13 @@ function startLiveWatch(){ if(LWDog) clearInterval(LWDog); const g=RGEN;
       if(R.phase==='group'||R.phase==='ko'){
         const present=new Set(MP.presenceList().map(p=>p.id));
         R.players.slice().forEach(p=>{ if(p.id===myId) return;
+          // Only cull a player who is EXPECTED TO BE ACTIVELY PLAYING right now — i.e. they
+          // still have an UNRESOLVED match this round. Players who already finished their
+          // match (or have a bye) are just WAITING for the other matches; they must never be
+          // removed for inactivity, no matter how long a slow match takes. (The old code
+          // culled waiters here — that's the "kicked out while resting" tournament bug.)
+          const activePair = (R.roundPairs||[]).find(pr=>(pr.a===p.id||pr.b===p.id) && !R.roundResults[pr.matchId]);
+          if(!activePair) return;
           const silent = now-(R.seen[p.id]||R.startedAt||now) > PLAYER_SILENCE_MS;
           if(silent && !present.has(p.id)) removePlayer(p.id); });
       }
