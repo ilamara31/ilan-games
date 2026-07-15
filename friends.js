@@ -230,8 +230,10 @@
   function mediaPreview(b) { const m = parseMedia(b); return m.type === "img" ? "📷 Photo" : m.type === "aud" ? "🎤 Voice message" : b; }
   async function uploadBlob(blob, prefix, ext, contentType) {
     const s = await ensureSb(); if (!s) throw new Error("Not connected — try again.");
+    if (!blob || !blob.size) throw new Error("Nothing was recorded — hold the mic a moment longer.");
     const path = prefix + "/" + myKey + "/" + Date.now() + "." + ext;
-    const up = await s.storage.from("avatars").upload(path, blob, { upsert: true, contentType: contentType, cacheControl: "3600" });
+    const upP = s.storage.from("avatars").upload(path, blob, { upsert: true, contentType: contentType, cacheControl: "3600" });
+    const up = await Promise.race([upP, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("Upload timed out — check your connection.")); }, 20000); })]);
     if (up.error) throw new Error("Upload failed: " + (up.error.message || "storage error"));
     const pub = s.storage.from("avatars").getPublicUrl(path);
     const url = pub && pub.data && pub.data.publicUrl; if (!url) throw new Error("Couldn't get the URL.");
@@ -271,7 +273,7 @@
         } else {
           const cur = rec; rec = null; micBtn.textContent = "🎤"; micBtn.classList.remove("rec"); if (timerInt) clearInterval(timerInt);
           const dur = Math.max(1, Math.round((Date.now() - t0) / 1000)); warn("🎤 Sending…"); micBtn.disabled = true;
-          try { const blob = await stopRecording(cur); const ext = cur.mime.indexOf("mp4") >= 0 ? "mp4" : "webm"; const url = await uploadBlob(blob, "voice", ext, cur.mime); await onMediaReady(mkAud(url, dur)); warn(""); }
+          try { const blob = await stopRecording(cur); const ext = cur.mime.indexOf("mp4") >= 0 ? "mp4" : "webm"; const ctype = ext === "mp4" ? "audio/mp4" : "audio/webm"; const url = await uploadBlob(blob, "voice", ext, ctype); await onMediaReady(mkAud(url, dur)); warn(""); }
           catch (e) { warn(e.message || "Couldn't send that voice message."); }
           micBtn.disabled = false;
         }
