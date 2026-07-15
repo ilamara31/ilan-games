@@ -265,19 +265,33 @@
     }
     if (micBtn) {
       if (!recordSupported()) { micBtn.style.display = "none"; return; }
-      let rec = null, t0 = 0, timerInt = null;
-      micBtn.onclick = async function () {
-        if (!rec) {
-          try { rec = await startRecording(); t0 = Date.now(); micBtn.textContent = "⏹"; micBtn.classList.add("rec"); timerInt = setInterval(function () { warn("🎤 Recording… " + Math.floor((Date.now() - t0) / 1000) + "s — tap ⏹ to send"); }, 300); }
-          catch (e) { warn("Allow microphone access to record a voice message."); rec = null; }
-        } else {
-          const cur = rec; rec = null; micBtn.textContent = "🎤"; micBtn.classList.remove("rec"); if (timerInt) clearInterval(timerInt);
-          const dur = Math.max(1, Math.round((Date.now() - t0) / 1000)); warn("🎤 Sending…"); micBtn.disabled = true;
-          try { const blob = await stopRecording(cur); const ext = cur.mime.indexOf("mp4") >= 0 ? "mp4" : "webm"; const ctype = ext === "mp4" ? "audio/mp4" : "audio/webm"; const url = await uploadBlob(blob, "voice", ext, ctype); await onMediaReady(mkAud(url, dur)); warn(""); }
-          catch (e) { warn(e.message || "Couldn't send that voice message."); }
-          micBtn.disabled = false;
-        }
-      };
+      // "■" (U+25A0) renders on virtually every font — unlike the emoji ⏹ (U+23F9),
+      // which shows as a blank/tofu glyph on many phones (looks like "no button to tap").
+      const sendBtn = ov.querySelector("#igf-csend");
+      let rec = null, t0 = 0, timerInt = null, prevSendTxt = "", prevSendBg = "", prevSendClick = null;
+      async function beginRecording() {
+        try {
+          rec = await startRecording(); t0 = Date.now();
+          micBtn.textContent = "■"; micBtn.classList.add("rec");
+          if (sendBtn) {   // repurpose the big, obvious Send button as the stop-and-send control
+            prevSendTxt = sendBtn.textContent; prevSendBg = sendBtn.style.background; prevSendClick = sendBtn.onclick;
+            sendBtn.textContent = "■ Send voice"; sendBtn.style.background = "#ff3b5c"; sendBtn.onclick = finishRecording;
+          }
+          timerInt = setInterval(function () { warn("🔴 Recording " + Math.floor((Date.now() - t0) / 1000) + "s — tap the red ■ button to send"); }, 300);
+        } catch (e) { warn("Allow microphone access to record a voice message."); rec = null; }
+      }
+      async function finishRecording() {
+        if (!rec) return;
+        const cur = rec; rec = null;
+        micBtn.textContent = "🎤"; micBtn.classList.remove("rec");
+        if (sendBtn) { sendBtn.textContent = prevSendTxt || "Send"; sendBtn.style.background = prevSendBg; sendBtn.onclick = prevSendClick; }
+        if (timerInt) clearInterval(timerInt);
+        const dur = Math.max(1, Math.round((Date.now() - t0) / 1000)); warn("🎤 Sending…"); micBtn.disabled = true;
+        try { const blob = await stopRecording(cur); const ext = cur.mime.indexOf("mp4") >= 0 ? "mp4" : "webm"; const ctype = ext === "mp4" ? "audio/mp4" : "audio/webm"; const url = await uploadBlob(blob, "voice", ext, ctype); await onMediaReady(mkAud(url, dur)); warn(""); }
+        catch (e) { warn(e.message || "Couldn't send that voice message."); }
+        micBtn.disabled = false;
+      }
+      micBtn.onclick = function () { if (!rec) beginRecording(); else finishRecording(); };
     }
   }
 
