@@ -5,6 +5,7 @@ Games made by Ilan!
 🌐 **Play online:** https://ilamara31.github.io/ilan-games/
 
 ## Games
+- 🏀 **Basket Scoop** — `scoop/` — swipe basketball on a 2.5D court. Flick the ball off the floor: swipe length sets the power, sideways sets the aim. Real arc, rim, backboard and a simulated net. Swish +2, long range +3, golden balls +10, combos up to a x5 FIRE STREAK. Classic (3 misses), Time Attack (60s) and one-miss High Score, plus a coin shop with 5 ball skins and 4 trails.
 - 🕵️ **Codewords** — `codewords/` — spy word game inspired by Codenames. Team Gold vs Team Silver find their hidden agents from one-word Commander clues. Practice/Quick/Daily/Family solo modes with 4 AI levels, local **Party** pass-and-play, and real-time **online rooms** (Supabase) where empty seats are filled by AI. Hint/Reveal/Protection tokens, Double-Agent bonus, Trap card, a themes shop, stats and a 30-second tutorial.
 - 🏏 **Super Over Cricket** — `cricket/` — timing-based IPL cricket, chase the target and win the cup.
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.

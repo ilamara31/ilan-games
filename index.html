@@ -54,6 +54,7 @@
   .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
   .codebreaker { background:linear-gradient(135deg,#123a6b,#05081c); }
   .codewords { background:linear-gradient(135deg,#2a3352,#0a0e1a); }
+  .scoop { background:linear-gradient(135deg,#ff8a34,#7a2f08); }
   /* ===== Game of the Day / Week + Passport ===== */
   #feats { width:100%; max-width:900px; display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   #passport { width:100%; max-width:900px; margin-bottom:18px; }
@@ -168,6 +169,11 @@
   </div>
   <div id="noResults">No games match — try another search.</div>
   <div class="cards">
+    <a class="card scoop" href="scoop/">
+      <span class="emoji">🏀</span>
+      <h2>Basket Scoop</h2>
+      <p>Flick the ball off the floor and sink it. Swishes, long range, golden balls and fire streaks — Classic, Time Attack & one-miss High Score.</p>
+    </a>
     <a class="card codewords" href="codewords/">
       <span class="emoji">🕵️</span>
       <h2>Codewords</h2>
@@ -575,6 +581,7 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
+      'scoop/':        { added:   '2026-07-16T17:30:00' },   // swipe basketball: 2.5D court, combos, shop
       'codewords/':    { added:   '2026-07-15T18:30:00' },   // spy word game: solo, party, online multiplayer
       'try/':          { updated: '2026-07-13T23:30:00' },   // levels 25-400: stacked events, new hazards, master mode
       'airhockey/':    { added:   '2026-07-13T20:00:00' },   // newest -> also the bottom banner
@@ -619,7 +626,7 @@
 
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
-      'codewords/':'both', 'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'airhockey/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
+      'scoop/':'both', 'codewords/':'both', 'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'airhockey/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
       'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both',
@@ -704,12 +711,12 @@
 <script>
 /* Home-page search + category filters (Poki-style) */
 (function(){
-  const CATS={ 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
+  const CATS={ 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
     'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['3d','sports'], 'airhockey/':['arcade','sports'],
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
     'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'rescue/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
+  const DEV={ 'scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';

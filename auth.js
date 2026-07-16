@@ -22,7 +22,8 @@
     catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis", karate: "Karate", rescue: "Rescue", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
-    paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena"
+    paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
+    scoop: "Basket Scoop"
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat"]);  // Super Over Cricket 2 (idea dropped)
@@ -30,7 +31,8 @@
     catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won",
-    paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won"
+    paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
+    scoop: "Best in 60s"
   };
   // Read a game's best straight from its own localStorage save (every game on
   // this origin shares storage), so we can re-post high scores on each load.
@@ -48,6 +50,10 @@
     paper:         () => kget("paperTerritory_v1", "best"),
     stack:         () => kget("stackTower_v1", "best"),
     archer:        () => kget("archerDuel_v1", "best"),
+    // Basket Scoop ranks on Time Attack — the same 60s for everyone, so it compares.
+    scoop:         () => { try { const o = JSON.parse(localStorage.getItem("basketScoop_v1"));
+                                 return (o && o.best && +o.best.time) || 0; }
+                           catch (e) { return 0; } },
   };
 
   let sb = null, ready = false, player = null;   // player = {name, pw?, guest}

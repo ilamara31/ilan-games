@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Basket Scoop</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Basket Scoop" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; background:#070b16; color:#fff;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
+  body{ position:fixed; inset:0; width:100%; touch-action:none; }   /* lock page — no scroll / edge-swipe */
+  #app{ position:relative; width:100vw; height:100vh; overflow:hidden; }
+  canvas#game{ display:block; position:absolute; inset:0; width:100%; height:100%; touch-action:none; background:#070b16; }
+
+  /* ---- screens ---- */
+  .screen{ position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; text-align:center; padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    overflow-y:auto; background:radial-gradient(circle at 50% 16%, #1b3566, #070b16 74%); }
+  .screen.hidden{ display:none; }
+  h1{ font-size:clamp(30px,9vw,58px); letter-spacing:1px; margin:4px 0 2px; font-weight:800;
+    background:linear-gradient(90deg,#ff9b3d,#ffd54a 50%,#ff6b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub{ color:#9fb3d8; font-size:clamp(13px,3vw,16px); margin-bottom:12px; max-width:520px; line-height:1.5; }
+  h2.hd{ font-size:22px; margin:2px 0 10px; color:#ffd54a; }
+
+  .btn{ background:linear-gradient(135deg,#ff9b3d,#ff6b2c); color:#25120a; border:none; padding:14px 26px; font-size:17px;
+    font-weight:800; border-radius:26px; cursor:pointer; margin:5px; box-shadow:0 6px 16px rgba(255,140,60,.32);
+    text-decoration:none; display:inline-block; min-width:200px; }
+  .btn:active{ transform:translateY(2px); }
+  .btn.sec{ background:linear-gradient(135deg,#2a3c63,#1b2947); color:#dbe7ff; box-shadow:none; min-width:0; }
+  .btn.green{ background:linear-gradient(135deg,#39ff9d,#1ea85a); color:#04220f; }
+  .btn.gold{ background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#241600; }
+  .btn.ghost{ background:transparent; color:#c3d2ff; border:1px solid rgba(150,180,255,.3); box-shadow:none; font-size:15px; padding:12px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
+
+  .chip{ background:rgba(10,18,34,.7); border:1px solid #2b3f6b; border-radius:20px; padding:7px 14px; font-size:14px; margin:3px; display:inline-block; }
+  .chip b{ color:#ffd54a; }
+  .coins{ display:inline-block; background:rgba(0,0,0,.28); border-radius:12px; padding:8px 16px; font-weight:800; color:#ffe27a; font-size:18px; margin:6px 0 10px; }
+
+  .card{ background:linear-gradient(180deg,#1a2a55,#0c1430); border:1px solid rgba(130,170,255,.2); border-radius:22px;
+    padding:18px 16px; max-width:440px; width:100%; box-shadow:0 26px 60px rgba(0,0,0,.55); margin-bottom:10px; }
+
+  /* mode buttons */
+  .mode{ display:block; width:100%; text-align:left; border:none; border-radius:16px; padding:14px 16px; cursor:pointer; margin-top:9px;
+    background:linear-gradient(180deg,#24407e,#152449); color:#fff; box-shadow:0 5px 0 #101d3b; }
+  .mode:active{ transform:translateY(3px); box-shadow:0 2px 0 #101d3b; }
+  .mode b{ font-size:17px; display:block; }
+  .mode .rank{ font-size:10px; font-weight:800; color:#25120a; background:linear-gradient(135deg,#ffd54a,#ff9b3d);
+    border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  .mode span{ font-size:12.5px; color:#9fb3d8; }
+  .mode i{ float:right; font-style:normal; font-size:12px; color:#ffd54a; font-weight:800; }
+
+  /* shop */
+  .tabs{ display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+  .tab{ background:rgba(255,255,255,.06); border:1px solid rgba(150,180,255,.16); color:#c3d2ff; border-radius:14px;
+    padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .tab.on{ background:linear-gradient(135deg,#ff9b3d,#ff6b2c); color:#25120a; border-color:transparent; }
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-height:52vh; overflow:auto; padding:2px; }
+  .item{ background:rgba(255,255,255,.05); border:2px solid rgba(150,180,255,.12); border-radius:14px; padding:10px; text-align:center;
+    cursor:pointer; transition:transform .06s; }
+  .item:active{ transform:scale(.97); }
+  .item.equipped{ border-color:#86ffc6; box-shadow:0 0 0 2px rgba(134,255,198,.22) inset; }
+  .item.locked{ opacity:.9; }
+  .item b{ font-size:13px; display:block; margin-top:4px; }
+  .item .price{ font-size:12px; color:#ffe27a; font-weight:800; margin-top:3px; }
+  .item .price.owned{ color:#86ffc6; }
+  .item canvas{ display:block; margin:0 auto; }
+
+  /* tutorial */
+  .tut{ display:flex; gap:10px; align-items:flex-start; text-align:left; font-size:13.5px; line-height:1.45;
+    padding:9px 2px; border-bottom:1px solid rgba(150,180,255,.10); color:#c3d2ff; }
+  .tut:last-of-type{ border-bottom:none; }
+  .tut b{ color:#fff; }
+  .tut .ti{ font-size:19px; flex:0 0 26px; text-align:center; }
+  #tutDemo{ position:relative; height:132px; margin:2px 0 8px; border-radius:14px; overflow:hidden;
+    background:linear-gradient(180deg,#0d1730,#1b2c52); border:1px solid rgba(150,180,255,.14); }
+  #tutBall{ position:absolute; left:50%; bottom:12px; transform:translateX(-50%); font-size:30px; }
+  /* the dashed track the flick follows */
+  #tutArrow{ position:absolute; left:50%; bottom:44px; width:3px; height:64px; margin-left:-1.5px;
+    background:repeating-linear-gradient(to top, rgba(255,255,255,.55) 0 6px, transparent 6px 12px);
+    transform-origin:bottom center; transform:rotate(18deg); }
+  #tutHand{ position:absolute; left:50%; bottom:16px; font-size:26px; margin-left:-13px;
+    animation:tutSwipe 2.4s ease-in-out infinite; }
+  @keyframes tutSwipe{
+    0%,12%   { transform:translate(0,0)      scale(1);    opacity:0; }
+    18%      { transform:translate(0,0)      scale(1);    opacity:1; }
+    58%      { transform:translate(22px,-68px) scale(.92); opacity:1; }
+    74%,100% { transform:translate(22px,-68px) scale(.92); opacity:0; }
+  }
+
+  /* stats */
+  .stat{ display:flex; justify-content:space-between; padding:11px 4px; border-bottom:1px solid rgba(150,180,255,.12); font-size:15px; }
+  .stat:last-child{ border-bottom:none; }
+  .stat .v{ color:#ffd54a; font-weight:800; }
+
+  /* settings */
+  .sw{ display:flex; justify-content:space-between; align-items:center; padding:12px 4px; border-bottom:1px solid rgba(150,180,255,.12); font-size:15px; }
+  .toggle{ width:52px; height:30px; border-radius:15px; background:#2a3c63; border:none; position:relative; cursor:pointer; transition:background .15s; }
+  .toggle::after{ content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#8fa5cc; transition:transform .15s,background .15s; }
+  .toggle.on{ background:#1ea85a; }
+  .toggle.on::after{ transform:translateX(22px); background:#eafff3; }
+
+  /* ---- in-game HUD ---- */
+  #hud{ position:absolute; inset:0; z-index:8; pointer-events:none; }
+  #hud.hidden{ display:none; }
+  #hud > *{ position:absolute; }
+  #scoreBox{ top:calc(env(safe-area-inset-top) + 10px); left:0; right:0; text-align:center; }
+  #score{ font-size:46px; font-weight:800; line-height:1; text-shadow:0 3px 12px rgba(0,0,0,.75); }
+  #scoreSub{ font-size:12px; color:#9fb3d8; letter-spacing:1px; margin-top:2px; }
+  #comboBox{ top:calc(env(safe-area-inset-top) + 78px); left:0; right:0; text-align:center; font-size:19px; font-weight:800; color:#ffd54a;
+    text-shadow:0 2px 8px rgba(0,0,0,.7); opacity:0; transition:opacity .18s; }
+  #comboBox.on{ opacity:1; }
+  #hudRight{ top:calc(env(safe-area-inset-top) + 10px); right:12px; text-align:right; font-size:13px; font-weight:800; }
+  #hudRight div{ margin-bottom:4px; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  #coinHud{ color:#ffd54a; }
+  #timeHud{ color:#8fe3ff; font-size:19px; }
+  #livesHud{ color:#ff8f8f; }
+  #pauseBtn{ top:calc(env(safe-area-inset-top) + 10px); left:12px; width:40px; height:40px; border-radius:50%;
+    background:rgba(10,18,34,.6); border:1px solid #2b3f6b; color:#fff; font-size:15px; cursor:pointer; pointer-events:auto; font-family:inherit; }
+  #hint{ bottom:calc(env(safe-area-inset-bottom) + 18px); left:0; right:0; text-align:center; color:#9fb3d8; font-size:14px;
+    text-shadow:0 2px 6px rgba(0,0,0,.8); transition:opacity .3s; }
+
+  #flash{ position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0; }
+
+  .badge{ display:inline-block; background:#ff6b2c; color:#fff; font-size:10px; font-weight:800; border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  .lnk{ color:#8fb6ff; font-size:13px; margin-top:10px; text-decoration:none; display:inline-block; }
+
+  /* announce.js pins its banner to bottom:12px at z-index:99999 — which lands
+     exactly on the ball, and it swallows every swipe. Hide it for the duration
+     of a run; the menu and the game-over screen still show it. A CSS rule (not
+     a one-shot removal) also covers a banner that arrives late from its fetch. */
+  body.playing div[role="status"]{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hidden">
+    <button id="pauseBtn" title="Pause">⏸</button>
+    <div id="scoreBox"><div id="score">0</div><div id="scoreSub">SCORE</div></div>
+    <div id="comboBox"></div>
+    <div id="hudRight">
+      <div id="timeHud"></div>
+      <div id="livesHud"></div>
+      <div id="coinHud">🪙 0</div>
+    </div>
+    <div id="hint">Swipe the ball up to shoot</div>
+  </div>
+  <div id="flash"></div>
+
+  <!-- ============ MENU ============ -->
+  <div class="screen" id="scrMenu">
+    <h1>BASKET SCOOP</h1>
+    <div class="sub">Flick the ball. Sink the shot. Chain combos and go on a fire streak.</div>
+    <div class="row">
+      <span class="chip">Best <b id="mBest">0</b></span>
+      <span class="chip">🪙 <b id="mCoins">0</b></span>
+    </div>
+    <div style="height:10px"></div>
+    <button class="btn" id="btnPlay">🏀 Play</button>
+    <button class="btn sec" id="btnHow" style="min-width:200px">❓ How to play</button>
+    <button class="btn sec" id="btnShop" style="min-width:200px">🛒 Shop</button>
+    <button class="btn sec" id="btnStats" style="min-width:200px">📊 Statistics</button>
+    <button class="btn sec" id="btnSettings" style="min-width:200px">⚙️ Settings</button>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('scoop','Basket Scoop — 60s')">🏆 Leaderboard</button>
+    </div>
+    <a class="lnk" href="../">🏠 All Ilan Games</a>
+  </div>
+
+  <!-- ============ TUTORIAL ============ -->
+  <div class="screen hidden" id="scrTut">
+    <h2 class="hd" style="margin-top:6px">How to play</h2>
+    <div class="card" style="max-width:420px">
+      <div id="tutDemo">
+        <div id="tutBall">🏀</div>
+        <div id="tutArrow"></div>
+        <div id="tutHand">👆</div>
+      </div>
+      <div class="tut"><span class="ti">👆</span><div><b>Swipe up to shoot.</b> Anywhere on the screen — you don't have to touch the ball.</div></div>
+      <div class="tut"><span class="ti">📏</span><div><b>Longer swipe = more power.</b> Short swipe is a soft shot. This is the whole skill.</div></div>
+      <div class="tut"><span class="ti">↔️</span><div><b>Swipe up-left or up-right to aim.</b> Take as long as you like lining it up — only the flick counts.</div></div>
+      <div class="tut"><span class="ti">🏀</span><div><b>Swish</b> (no rim) is +2 · <b>long range</b> is +3 · a <b>golden ball</b> is +10.</div></div>
+      <div class="tut"><span class="ti">🔥</span><div><b>Chain them.</b> 3 in a row is x2, 5 is x3, 10 lights a <b>FIRE STREAK</b> at x5.</div></div>
+      <button class="btn" id="btnTutGo" style="width:100%;margin-top:12px">🏀 Got it — play</button>
+      <button class="btn ghost" id="btnTutBack" style="width:100%;margin-top:8px">← Back</button>
+    </div>
+  </div>
+
+  <!-- ============ MODES ============ -->
+  <div class="screen hidden" id="scrModes">
+    <h2 class="hd" style="margin-top:6px">Choose a mode</h2>
+    <div class="card">
+      <button class="mode" data-mode="classic"><i id="bClassic">BEST 0</i><b>🏀 Classic</b><span>Score as much as you can. Three misses and you're out.</span></button>
+      <button class="mode" data-mode="time"><i id="bTime">BEST 0</i><b>⏱️ Time Attack <span class="rank">🏆 RANKED</span></b><span>60 seconds. Misses cost you nothing but time. This is the mode on the global leaderboard.</span></button>
+      <button class="mode" data-mode="hs"><i id="bHs">BEST 0</i><b>🔥 High Score</b><span>One miss ends the run. Nerves of steel.</span></button>
+      <button class="btn ghost" id="btnModesBack" style="width:100%;margin-top:12px">← Back</button>
+    </div>
+  </div>
+
+  <!-- ============ SHOP ============ -->
+  <div class="screen hidden" id="scrShop">
+    <h2 class="hd" style="margin-top:6px">Shop</h2>
+    <div class="coins">🪙 <span id="shopCoins">0</span></div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab on" data-tab="balls">Balls</button>
+        <button class="tab" data-tab="trails">Trails</button>
+      </div>
+      <div class="grid" id="shopGrid"></div>
+      <div style="font-size:11.5px;color:#7f93bb;margin-top:10px">Cosmetic only — nothing here changes how you play.</div>
+      <button class="btn ghost" id="btnShopBack" style="width:100%;margin-top:8px">← Back</button>
+    </div>
+  </div>
+
+  <!-- ============ STATS ============ -->
+  <div class="screen hidden" id="scrStats">
+    <h2 class="hd" style="margin-top:6px">Statistics</h2>
+    <div class="card" id="statsCard"></div>
+    <div class="row">
+      <button class="btn ghost" id="btnStatsBack">← Back</button>
+      <button class="btn ghost" id="btnReset">Reset stats</button>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="screen hidden" id="scrSettings">
+    <h2 class="hd" style="margin-top:6px">Settings</h2>
+    <div class="card">
+      <div class="sw"><span>🔊 Sound effects</span><button class="toggle" id="tgSfx"></button></div>
+      <div class="sw"><span>🎵 Music</span><button class="toggle" id="tgMusic"></button></div>
+      <div class="sw"><span>📳 Screen shake</span><button class="toggle" id="tgShake"></button></div>
+      <div class="sw"><span>👈 Left-handed hint</span><button class="toggle" id="tgLeft"></button></div>
+      <button class="btn ghost" id="btnSetBack" style="width:100%;margin-top:12px">← Back</button>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div class="screen hidden" id="scrPause" style="background:rgba(4,8,20,.86)">
+    <div style="height:14vh"></div>
+    <h2 class="hd" style="font-size:28px">Paused</h2>
+    <div class="card" style="max-width:340px">
+      <button class="btn" id="btnResume" style="width:100%">▶ Resume</button>
+      <button class="btn ghost" id="btnRestart" style="width:100%;margin-top:8px">↻ Restart</button>
+      <button class="btn ghost" id="btnQuit" style="width:100%;margin-top:8px">🚪 Quit to menu</button>
+    </div>
+  </div>
+
+  <!-- ============ GAME OVER ============ -->
+  <div class="screen hidden" id="scrOver" style="background:rgba(4,8,20,.9)">
+    <div style="height:8vh"></div>
+    <h2 class="hd" id="overTitle" style="font-size:30px">Time!</h2>
+    <div class="card" style="max-width:360px">
+      <div style="font-size:60px;font-weight:800;color:#fff;line-height:1" id="overScore">0</div>
+      <div style="font-size:12px;color:#9fb3d8;letter-spacing:1px;margin-bottom:8px">FINAL SCORE</div>
+      <div id="overNew" class="badge" style="display:none;background:#1ea85a">NEW BEST!</div>
+      <div id="overStats" style="margin:12px 0 4px"></div>
+      <button class="btn" id="btnAgain" style="width:100%">↻ Play again</button>
+      <button class="btn gold" id="btnOverLb" style="width:100%;margin-top:8px">🏆 Leaderboard</button>
+      <button class="btn ghost" id="btnOverModes" style="width:100%;margin-top:8px">🎮 Change mode</button>
+      <button class="btn ghost" id="btnOverMenu" style="width:100%;margin-top:8px">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   BASKET SCOOP — swipe basketball, pseudo-3D (2.5D).
+   Physics runs in real-world metres in a right-handed-ish world:
+      x = left/right (0 = centre court)   y = up (0 = floor)   z = depth away from camera
+   Everything is projected through one pinhole camera each frame, so the
+   arc, the shadow, the rim and the net all agree about where things are.
+   ===================================================================== */
+'use strict';
+
+const SKEY = 'basketScoop_v1';          // NB: not basketCatch* — that namespace belongs to catch/
+const $ = id => document.getElementById(id);
+
+/* ---------------- save ---------------- */
+const DEFAULT_SAVE = {
+  coins: 0,
+  best: { classic:0, time:0, hs:0 },
+  ownedBalls: ['classic'], ball: 'classic',
+  ownedTrails: ['none'],   trail: 'none',
+  stats: { shots:0, made:0, bestCombo:0, bestScore:0, games:0 },
+  sfx: true, music: true, shake: true, lefty: false,
+  seenTut: false
+};
+let S = load();
+function load(){
+  const base = JSON.parse(JSON.stringify(DEFAULT_SAVE));   // deep copy — never share default arrays
+  try{
+    const s = JSON.parse(localStorage.getItem(SKEY));
+    if (s && typeof s === 'object'){
+      Object.assign(base, s);
+      base.best  = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SAVE.best)),  s.best  || {});
+      base.stats = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SAVE.stats)), s.stats || {});
+      if (!Array.isArray(base.ownedBalls)  || !base.ownedBalls.length)  base.ownedBalls  = ['classic'];
+      if (!Array.isArray(base.ownedTrails) || !base.ownedTrails.length) base.ownedTrails = ['none'];
+      if (!base.ownedBalls.includes(base.ball))   base.ball  = 'classic';
+      if (!base.ownedTrails.includes(base.trail)) base.trail = 'none';
+      base.coins = Math.max(0, +base.coins || 0);
+      // Coerce every number: a string that survives here turns `st.shots += n`
+      // into a concat ("7" + 5 = "75") and then re-saves the corruption.
+      ['shots','made','bestCombo','bestScore','games'].forEach(k => base.stats[k] = Math.max(0, +base.stats[k] || 0));
+      ['classic','time','hs'].forEach(k => base.best[k] = Math.max(0, +base.best[k] || 0));
+    }
+  }catch(e){}
+  return base;
+}
+function save(){ try{ localStorage.setItem(SKEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------------- audio (all synthesised — no files anywhere in this repo) ---------------- */
+const Sound = (() => {
+  let ac=null, master=null, musicGain=null, unlocked=false, musicTimer=null, step=0, playingMusic=null;
+  function init(){
+    if (ac) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = 0.85; master.connect(ac.destination);
+    musicGain = ac.createGain(); musicGain.gain.value = S.music ? 0.08 : 0; musicGain.connect(master);
+  }
+  // Must run inside a real user gesture: silent blip satisfies the iOS autoplay lock.
+  function unlock(){
+    init(); if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    if (!unlocked){
+      try{ const b=ac.createBuffer(1,1,22050), s=ac.createBufferSource(); s.buffer=b; s.connect(ac.destination); s.start(0); unlocked=true; }catch(e){}
+    }
+  }
+  function ready(){ init(); if (ac && ac.state==='suspended') ac.resume(); return !!ac; }
+  function tone(f, dur, type, vol, slideTo, dest){
+    if (!ac) return;
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type = type||'sine';
+    o.frequency.setValueAtTime(f, ac.currentTime);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1,slideTo), ac.currentTime+dur);
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0002, vol==null?.3:vol), ac.currentTime+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+    o.connect(g); g.connect(dest||master); o.start(); o.stop(ac.currentTime+dur+0.02);
+  }
+  function noise(dur, freq, vol, q){
+    if (!ac) return;
+    const len = Math.max(1, Math.floor(ac.sampleRate*dur));
+    const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const f = ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=q||1;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(vol==null?.3:vol, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+    src.connect(f); f.connect(g); g.connect(master); src.start(); src.stop(ac.currentTime+dur+0.02);
+  }
+  function fx(fn){ if (!S.sfx) return; if (!ready()) return; try{ fn(); }catch(e){} }
+
+  const api = {
+    unlock, ready,
+    shoot(power){ fx(()=>{ noise(.13, 700+power*900, .10, .8); tone(220+power*160, .1, 'sine', .05, 120); }); },
+    rim(){       fx(()=>{ tone(2100,.09,'square',.06,1500); tone(880,.13,'triangle',.09,600); noise(.05,3200,.05,3); }); },
+    board(){     fx(()=>{ tone(150,.13,'sine',.16,90); noise(.07,420,.09,1.4); }); },
+    bounce(v){   fx(()=>{ tone(120,.1,'sine',Math.min(.2,.05+v*.02),70); noise(.05,260,.05,1.2); }); },
+    swish(){     fx(()=>{ noise(.24, 5200, .16, .5); noise(.16, 2600, .09, .7); }); },
+    score(n){    fx(()=>{ const b=520+n*40; tone(b,.1,'triangle',.2); setTimeout(()=>tone(b*1.5,.13,'triangle',.18),70); }); },
+    combo(mult){ fx(()=>{ const base=440; [0,4,7,12].forEach((st,i)=> setTimeout(()=>tone(base*Math.pow(2,(st+mult*2)/12),.16,'square',.11),i*62)); }); },
+    fire(){      fx(()=>{ [0,7,12,16,19,24].forEach((st,i)=> setTimeout(()=>tone(392*Math.pow(2,st/12),.3,'sawtooth',.1),i*70)); noise(.5,900,.12,.6); }); },
+    golden(){    fx(()=>{ [0,7,12].forEach((st,i)=> setTimeout(()=>tone(880*Math.pow(2,st/12),.12,'sine',.14),i*55)); }); },
+    coin(){      fx(()=>{ tone(1200,.07,'square',.1,1800); }); },
+    miss(){      fx(()=>{ tone(260,.2,'sine',.11,120); }); },
+    over(){      fx(()=>{ [0,-3,-7,-12].forEach((st,i)=> setTimeout(()=>tone(440*Math.pow(2,st/12),.3,'triangle',.13),i*130)); }); },
+    click(){     fx(()=>{ tone(700,.05,'square',.06,900); }); },
+    buy(){       fx(()=>{ [0,4,7,12].forEach((st,i)=> setTimeout(()=>tone(523*Math.pow(2,st/12),.12,'square',.1),i*55)); }); },
+    deny(){      fx(()=>{ tone(180,.16,'square',.09,120); }); },
+
+    /* --- procedural music: a lazy 2-bar loop, different feel per screen --- */
+    startMusic(kind){
+      if (!S.music) return;
+      if (!ready()) return;
+      if (playingMusic === kind && musicTimer) return;
+      api.stopMusic(); playingMusic = kind; step = 0;
+      const MENU = [0,3,7,10,7,3], GAME = [0,7,12,7,3,10,7,3];
+      const seq = kind==='game' ? GAME : MENU;
+      const root = kind==='game' ? 98 : 82.4;                      // G2 / E2
+      const beat = kind==='game' ? 300 : 420;
+      musicTimer = setInterval(()=>{
+        // A suspended context has a FROZEN currentTime, so every tick would
+        // schedule at the same instant and all of them would fire together the
+        // moment it resumes. Skip ticks unless the clock is actually running.
+        if (!ac || ac.state !== 'running' || !S.music) return;
+        const n = seq[step % seq.length];
+        tone(root*Math.pow(2,n/12), beat/1000*0.9, 'triangle', .3, null, musicGain);
+        if (step % 2 === 0) tone(root/2*Math.pow(2,n/12), beat/1000*1.6, 'sine', .34, null, musicGain);
+        if (kind==='game' && step % 4 === 2) tone(root*4*Math.pow(2,n/12), .06, 'square', .1, null, musicGain);
+        step++;
+      }, beat);
+    },
+    stopMusic(){ if (musicTimer){ clearInterval(musicTimer); musicTimer=null; } playingMusic=null; },
+    applyMusicSetting(){
+      if (musicGain) musicGain.gain.value = S.music ? 0.08 : 0;
+      if (!S.music) api.stopMusic();
+    },
+    isPlaying(){ return !!musicTimer; }
+  };
+  return api;
+})();
+window.addEventListener('pointerdown', () => Sound.unlock(), { passive:true });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) Sound.stopMusic();
+  else if (!document.hidden) { Sound.ready(); resumeMusicForScreen(); }
+});
+
+/* =====================================================================
+   CANVAS + CAMERA
+   ===================================================================== */
+const cv = $('game'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+/* The camera sits just behind the shooter, NOT at the far end of the court.
+   With it at z=0 the only focal length that puts the rim and the ball at their
+   target screen positions is ~2350px — a 21 degree super-telephoto, which flattens
+   the court into a strip and strands the hoop in an empty void. Pulling the camera
+   up to z=2.5 solves the same two constraints at f~1156 (a natural 40 degree lens),
+   and balances the ball and rim at ~70px each.
+   SPAWN_Y is low because the ball's shadow must stay on screen: the ball-to-shadow
+   gap is SPAWN_Y * f/(SPAWN_Z-camZ), so at y=0.95 the shadow lands ~150px BELOW the
+   bottom edge at any usable focal length. At 0.45 the ball reads as a live dribble
+   with its shadow under it — which is the shot this game is named for. */
+const CAM = { x:0, y:1.5, z:2.5 };
+const RIM_Y      = 3.05;    // regulation 10ft
+const RIM_R      = 0.25;    // ring radius to tube centre (a touch generous vs the real 0.229 — arcade fair)
+const RIM_TUBE   = 0.018;
+const BALL_R     = 0.121;
+const BASE_HOOP_Z= 11.0;
+const SPAWN_Z    = 6.5;
+const SPAWN_Y    = 0.45;
+const BASELINE_Z = 12.6;
+const WALL_Z     = 15.2;    // back wall of the gym; the floor stops exactly here
+const COURT_HW   = 7.62;
+const GRAV       = -9.8;
+
+// Where those two anchor points should land on screen. Solving the projection
+// backwards from these keeps the layout identical on every device.
+const RIM_FRAC = 0.175, BALL_FRAC = 0.78;
+
+let focal = 2200, horizon = 470;
+let hoopZ = BASE_HOOP_Z;                 // grows with difficulty — the hoop drifts away
+// +0.15 is the real rim-to-board gap, and it also keeps the glass clear of the
+// rim's collision shell (which reaches hoopZ + RIM_R + BALL_R + RIM_TUBE = +0.389),
+// so rim depenetration can never eject a ball out the back of the board.
+const boardZ = () => hoopZ + RIM_R + 0.15;
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  // Solve the projection backwards from the two anchor points. NB these are
+  // DISTANCES FROM THE LENS, so CAM.z has to come off — using the raw world z
+  // here silently assumes a camera at the origin and mis-frames the whole scene.
+  const dRim = BASE_HOOP_Z - CAM.z, dBall = SPAWN_Z - CAM.z;
+  const denom = (RIM_Y - CAM.y)/dRim + (CAM.y - SPAWN_Y)/dBall;
+  focal   = (BALL_FRAC - RIM_FRAC) * H / denom;
+  horizon = RIM_FRAC*H + (RIM_Y - CAM.y)*focal/dRim;
+}
+addEventListener('resize', resize); resize();
+
+const MIN_DZ = 0.4;
+function proj(x, y, z){
+  const dz = z - CAM.z;
+  if (dz < MIN_DZ) return null;            // at/behind the lens — never draw it
+  const s = focal/dz;
+  return { x: W/2 + (x-CAM.x)*s, y: horizon - (y-CAM.y)*s, s };
+}
+// A horizontal circle (constant y) projected as a polygon — the honest way to
+// get the rim, its shadow and the court arcs to sit in perspective.
+function projCircle(cx, cy, cz, r, segs, from, to){
+  const pts = []; const a0 = from==null?0:from, a1 = to==null?Math.PI*2:to;
+  for (let i=0;i<=segs;i++){
+    const a = a0 + (a1-a0)*i/segs;
+    const p = proj(cx + Math.cos(a)*r, cy, cz + Math.sin(a)*r);
+    if (p) pts.push({ x:p.x, y:p.y, s:p.s, z: cz + Math.sin(a)*r, a });
+  }
+  return pts;
+}
+function polyPath(pts){
+  if (!pts.length) return;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+}
+
+/* =====================================================================
+   COURT
+   ===================================================================== */
+/* The gym: a real wall standing on the floor at WALL_Z. Because it is a plane in
+   the same projection, the floor's far edge meets its base exactly — no void, no
+   floating hoop. Everything at one z means the quad is screen-axis-aligned, so it
+   fills with plain rects. */
+function drawArena(){
+  ctx.fillStyle = '#070b16'; ctx.fillRect(0,0,W,H);
+  const yAt = h => { const p = proj(0, h, WALL_Z); return p ? p.y : (h > CAM.y ? -1e4 : 1e4); };
+  const yFloor = yAt(0), yRail = yAt(1.9), yTop = yAt(12);
+
+  // stands, above the rail
+  const sg = ctx.createLinearGradient(0, yTop, 0, yRail);
+  sg.addColorStop(0,'#05080f'); sg.addColorStop(.6,'#0d1526'); sg.addColorStop(1,'#1b2742');
+  ctx.fillStyle = sg; ctx.fillRect(0, yTop, W, Math.max(0, yRail-yTop));
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, Math.max(0,yTop), W, Math.max(0, yRail-Math.max(0,yTop))); ctx.clip();
+  const rowH = Math.max(9, (yRail-yTop)/16);
+  for (let i=0;i<440;i++){                                   // crowd — seeded, so it never flickers
+    const px = rnd(i*1.7+3)*W;
+    const row = Math.floor(rnd(i*2.3+11)*16);
+    const py = yRail - row*rowH - rnd(i*3.1+7)*rowH*0.5;
+    if (py < yTop) continue;
+    ctx.fillStyle = i%9===0 ? 'rgba(255,190,90,.34)' : (i%3===0 ? 'rgba(150,180,255,.16)' : 'rgba(210,225,255,.10)');
+    ctx.beginPath(); ctx.arc(px, py, 1.6 + rnd(i*4.7+5)*1.8, 0, 6.2832); ctx.fill();
+  }
+  for (let r=1;r<16;r++){                                    // seat rows
+    const y = yRail - r*rowH;
+    if (y < yTop) break;
+    ctx.strokeStyle='rgba(0,0,0,.28)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+  ctx.restore();
+
+  // padded wall, below the rail
+  const pg = ctx.createLinearGradient(0, yRail, 0, yFloor);
+  pg.addColorStop(0,'#1a2542'); pg.addColorStop(1,'#0b1226');
+  ctx.fillStyle = pg; ctx.fillRect(0, yRail, W, Math.max(0, yFloor-yRail));
+  // pad seams — vertical joints, so the padding isn't one dead slab of navy
+  ctx.strokeStyle = 'rgba(0,0,0,.30)'; ctx.lineWidth = 1;
+  for (let x=-12; x<=12; x+=2){
+    const p1 = proj(x, 0.02, WALL_Z), p2 = proj(x, 1.88, WALL_Z);
+    if (p1 && p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
+  }
+  ctx.fillStyle = 'rgba(255,107,44,.55)'; ctx.fillRect(0, yRail-2, W, 3);
+  ctx.fillStyle = 'rgba(0,0,0,.34)'; ctx.fillRect(0, yFloor-4, W, 5);
+
+  // arena light pooling behind the rig — depth, and it pulls the eye to the hoop
+  const sp = proj(0, 3.1, WALL_Z);
+  if (sp){
+    const lg = ctx.createRadialGradient(sp.x, sp.y, 8, sp.x, sp.y, W*0.78);
+    lg.addColorStop(0,'rgba(105,145,225,.17)'); lg.addColorStop(.6,'rgba(80,110,190,.06)'); lg.addColorStop(1,'rgba(80,110,190,0)');
+    ctx.fillStyle = lg; ctx.fillRect(0, 0, W, Math.max(0, yFloor));
+  }
+}
+
+function drawFloor(){
+  const NEAR = CAM.z + 1.1, FAR_Z = WALL_Z;      // stop at the wall, start clear of the lens
+  const c1 = proj(-COURT_HW,0,NEAR), c2 = proj(COURT_HW,0,NEAR);
+  const c3 = proj(COURT_HW,0,FAR_Z), c4 = proj(-COURT_HW,0,FAR_Z);
+  if (!c1||!c2||!c3||!c4) return;
+
+  // base wood
+  const wg = ctx.createLinearGradient(0, horizon, 0, H);
+  wg.addColorStop(0,'#6b4423'); wg.addColorStop(.35,'#9c6b34'); wg.addColorStop(1,'#c98f4a');
+  ctx.beginPath(); ctx.moveTo(c1.x,c1.y); ctx.lineTo(c2.x,c2.y); ctx.lineTo(c3.x,c3.y); ctx.lineTo(c4.x,c4.y); ctx.closePath();
+  ctx.fillStyle = wg; ctx.fill();
+  ctx.save(); ctx.clip();
+
+  // planks running into the screen
+  for (let i=-24;i<=24;i++){
+    const x = i*0.32;
+    const a = proj(x,0,NEAR), b = proj(x,0,FAR_Z);
+    if (!a||!b) continue;
+    ctx.strokeStyle = i%2===0 ? 'rgba(60,32,12,.20)' : 'rgba(255,210,150,.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  // cross seams + grain
+  for (let z=NEAR; z<FAR_Z; z+=1.6){
+    const a = proj(-COURT_HW,0,z), b = proj(COURT_HW,0,z);
+    if (!a||!b) continue;
+    ctx.strokeStyle = 'rgba(60,32,12,.13)'; ctx.lineWidth = Math.max(.5, 40/z*0.03);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  // sheen — the polished-floor highlight that sells the material
+  const sh = ctx.createRadialGradient(W/2, horizon+(H-horizon)*0.35, 10, W/2, horizon+(H-horizon)*0.35, W*0.75);
+  sh.addColorStop(0,'rgba(255,235,200,.16)'); sh.addColorStop(1,'rgba(255,235,200,0)');
+  ctx.fillStyle = sh; ctx.fillRect(0,horizon,W,H-horizon);
+
+  /* --- markings --- */
+  const line = (pts, w, col) => { if (pts.length<2) return; polyPath(pts); ctx.strokeStyle=col||'rgba(255,250,240,.72)'; ctx.lineWidth=w||2; ctx.stroke(); };
+  const seg = (x1,z1,x2,z2,w,col) => { const a=proj(x1,0,z1), b=proj(x2,0,z2); if(!a||!b) return;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.strokeStyle=col||'rgba(255,250,240,.72)'; ctx.lineWidth=w||2; ctx.stroke(); };
+
+  seg(-COURT_HW, BASELINE_Z, COURT_HW, BASELINE_Z, 3);            // baseline
+  // the paint
+  const KEY_HW = 2.44, KEY_FRONT = BASELINE_Z - 5.79;
+  ctx.save();
+  const kp1=proj(-KEY_HW,0,KEY_FRONT), kp2=proj(KEY_HW,0,KEY_FRONT), kp3=proj(KEY_HW,0,BASELINE_Z), kp4=proj(-KEY_HW,0,BASELINE_Z);
+  if (kp1&&kp2&&kp3&&kp4){
+    ctx.beginPath(); ctx.moveTo(kp1.x,kp1.y); ctx.lineTo(kp2.x,kp2.y); ctx.lineTo(kp3.x,kp3.y); ctx.lineTo(kp4.x,kp4.y); ctx.closePath();
+    ctx.fillStyle='rgba(28,64,150,.20)'; ctx.fill();   // keep it light — the paint fills most of the visible floor
+  }
+  ctx.restore();
+  seg(-KEY_HW,KEY_FRONT,-KEY_HW,BASELINE_Z,2); seg(KEY_HW,KEY_FRONT,KEY_HW,BASELINE_Z,2); seg(-KEY_HW,KEY_FRONT,KEY_HW,KEY_FRONT,2);
+  line(projCircle(0,0,KEY_FRONT,1.8,40), 2);                       // free-throw circle
+  // three-point arc: the NEAR half (sin<0 => z<hoopZ). The far half is behind the
+  // hoop and mostly behind the wall — drawing that half put it on the wrong side.
+  line(projCircle(0,0,hoopZ,6.75,60, Math.PI*1.02, Math.PI*1.98), 2.5);
+  line(projCircle(0,0,hoopZ,1.25,30), 1.5, 'rgba(255,250,240,.4)');       // restricted area
+
+  ctx.restore();
+}
+
+/* =====================================================================
+   HOOP — backboard, rim (split back/front so the ball passes THROUGH), net
+   ===================================================================== */
+const BOARD_HW = 0.92, BOARD_B = 2.75, BOARD_T = 3.85;
+
+function drawBackboard(){
+  const bz = boardZ();
+  const tl=proj(-BOARD_HW,BOARD_T,bz), tr=proj(BOARD_HW,BOARD_T,bz), br=proj(BOARD_HW,BOARD_B,bz), bl=proj(-BOARD_HW,BOARD_B,bz);
+  if (!tl||!tr||!br||!bl) return;
+
+  // Mounting arms running back to the gym wall. A single centre post looked like a
+  // stick ending in mid-air, because its foot sits well above the floor line.
+  ctx.lineCap = 'round';
+  [-0.62, 0.62].forEach(sx => {
+    const m1=proj(sx,3.62,bz), m2=proj(sx*1.2,4.5,WALL_Z);
+    const n1=proj(sx,2.92,bz), n2=proj(sx*1.2,3.0,WALL_Z);
+    if (m1&&m2){ ctx.strokeStyle='#39435c'; ctx.lineWidth=Math.max(2,(m1.s||300)*0.017);
+      ctx.beginPath(); ctx.moveTo(m1.x,m1.y); ctx.lineTo(m2.x,m2.y); ctx.stroke(); }
+    if (n1&&n2){ ctx.strokeStyle='#2b3345'; ctx.lineWidth=Math.max(2,(n1.s||300)*0.014);
+      ctx.beginPath(); ctx.moveTo(n1.x,n1.y); ctx.lineTo(n2.x,n2.y); ctx.stroke(); }
+  });
+  // glass
+  ctx.beginPath(); ctx.moveTo(tl.x,tl.y); ctx.lineTo(tr.x,tr.y); ctx.lineTo(br.x,br.y); ctx.lineTo(bl.x,bl.y); ctx.closePath();
+  const gg = ctx.createLinearGradient(tl.x,tl.y,br.x,br.y);
+  gg.addColorStop(0,'rgba(190,225,255,.22)'); gg.addColorStop(.5,'rgba(120,170,225,.13)'); gg.addColorStop(1,'rgba(190,225,255,.20)');
+  ctx.fillStyle = gg; ctx.fill();
+  ctx.strokeStyle='#e8f2ff'; ctx.lineWidth=Math.max(2,(tl.s||300)*0.016); ctx.stroke();
+
+  // the shooter's square
+  const sq = [proj(-0.30,3.50,bz), proj(0.30,3.50,bz), proj(0.30,2.90,bz), proj(-0.30,2.90,bz)];
+  if (sq.every(Boolean)){
+    ctx.beginPath(); ctx.moveTo(sq[0].x,sq[0].y); ctx.lineTo(sq[1].x,sq[1].y); ctx.lineTo(sq[2].x,sq[2].y); ctx.lineTo(sq[3].x,sq[3].y); ctx.closePath();
+    ctx.strokeStyle='#ff6b2c'; ctx.lineWidth=Math.max(1.5,(tl.s||300)*0.011); ctx.stroke();
+  }
+  // glass glare
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(tl.x,tl.y); ctx.lineTo(tr.x,tr.y); ctx.lineTo(br.x,br.y); ctx.lineTo(bl.x,bl.y); ctx.closePath(); ctx.clip();
+  const gl = ctx.createLinearGradient(tl.x,tl.y, tr.x, br.y);
+  gl.addColorStop(0,'rgba(255,255,255,0)'); gl.addColorStop(.42,'rgba(255,255,255,.16)'); gl.addColorStop(.52,'rgba(255,255,255,.05)'); gl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=gl; ctx.fill(); ctx.restore();
+}
+
+function rimPts(){ return projCircle(0, RIM_Y, hoopZ, RIM_R, 48); }
+function drawRimHalf(back){
+  const pts = rimPts().filter(p => back ? p.z >= hoopZ : p.z <= hoopZ);
+  if (pts.length < 2) return;
+  const sc = pts[0].s || 300;
+  const w = Math.max(2.2, RIM_TUBE*2*sc);
+  polyPath(pts);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle = '#b83814'; ctx.lineWidth = w*1.25; ctx.stroke();     // underside/shadow
+  polyPath(pts);
+  ctx.strokeStyle = '#f2571d'; ctx.lineWidth = w; ctx.stroke();          // body
+  polyPath(pts);
+  ctx.strokeStyle = 'rgba(255,190,140,.75)'; ctx.lineWidth = Math.max(.8, w*0.3); ctx.stroke();  // top highlight
+}
+function drawRimBack(){ drawRimHalf(true); }
+function drawRimFront(){
+  drawRimHalf(false);
+  // the two little braces back to the board
+  const bz = boardZ();
+  [-1,1].forEach(sgn=>{
+    const a = proj(sgn*RIM_R*0.72, RIM_Y, hoopZ + RIM_R*0.7), b = proj(sgn*0.16, RIM_Y+0.02, bz);
+    if (a&&b){ ctx.strokeStyle='#c8431a'; ctx.lineWidth=Math.max(1.5,(a.s||300)*0.012); ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+  });
+}
+
+/* --- net: real nodes on springs, so a made basket actually snaps the mesh --- */
+const NET_RINGS = 6, NET_STRANDS = 12, NET_DROP = 0.42;
+let net = [];
+function buildNet(){
+  net = [];
+  for (let i=0;i<NET_RINGS;i++){
+    const t = i/(NET_RINGS-1);
+    const r = RIM_R * (1 - 0.42*t);
+    const y = RIM_Y - NET_DROP*t;
+    const ring = [];
+    for (let j=0;j<NET_STRANDS;j++){
+      const a = j/NET_STRANDS*Math.PI*2;
+      const rest = { x: Math.cos(a)*r, y, z: hoopZ + Math.sin(a)*r };
+      ring.push({ x:rest.x, y:rest.y, z:rest.z, vx:0, vy:0, vz:0, rest, pinned: i===0 });
+    }
+    net.push(ring);
+  }
+}
+// hoopZ moves with difficulty; keep the rest shape with it.
+// snapAll also drops the live deformation — otherwise a net still stretched
+// around the last ball of a run is frozen there (update() stops calling
+// updateNet) and the next game opens with a visibly bent mesh.
+function netRestSync(snapAll){
+  for (let i=0;i<NET_RINGS;i++){
+    const t = i/(NET_RINGS-1), r = RIM_R*(1-0.42*t), y = RIM_Y - NET_DROP*t;
+    for (let j=0;j<NET_STRANDS;j++){
+      const a = j/NET_STRANDS*Math.PI*2, n = net[i][j];
+      n.rest.x = Math.cos(a)*r; n.rest.y = y; n.rest.z = hoopZ + Math.sin(a)*r;
+      if (n.pinned || snapAll){ n.x=n.rest.x; n.y=n.rest.y; n.z=n.rest.z; n.vx=n.vy=n.vz=0; }
+    }
+  }
+}
+function updateNet(dt, balls){
+  const STIFF = 190, DAMP = 6.5;
+  for (let i=0;i<NET_RINGS;i++) for (let j=0;j<NET_STRANDS;j++){
+    const n = net[i][j];
+    if (n.pinned){ n.x=n.rest.x; n.y=n.rest.y; n.z=n.rest.z; n.vx=n.vy=n.vz=0; continue; }
+    n.vx += (n.rest.x - n.x)*STIFF*dt;
+    n.vy += (n.rest.y - n.y)*STIFF*dt - 2.2*dt;
+    n.vz += (n.rest.z - n.z)*STIFF*dt;
+    // ball drags the mesh
+    for (const b of balls){
+      if (!b.live) continue;
+      const dx=n.x-b.x, dy=n.y-b.y, dz=n.z-b.z;
+      const d = Math.hypot(dx,dy,dz), lim = BALL_R + 0.03;
+      if (d < lim && d > 1e-4){
+        const push = (lim-d)*140*dt;
+        n.vx += dx/d*push; n.vy += dy/d*push - 40*dt; n.vz += dz/d*push;
+      }
+    }
+    const damp = Math.exp(-DAMP*dt);
+    n.vx*=damp; n.vy*=damp; n.vz*=damp;
+    n.x += n.vx*dt; n.y += n.vy*dt; n.z += n.vz*dt;
+  }
+}
+function drawNet(){
+  const p = [];
+  for (let i=0;i<NET_RINGS;i++){ p[i]=[]; for (let j=0;j<NET_STRANDS;j++){ const n=net[i][j]; p[i][j] = proj(n.x,n.y,n.z); } }
+  const s0 = p[0][0] ? p[0][0].s : 300;
+  ctx.lineCap='round';
+  // diamond mesh: each node cross-links to both neighbours on the ring below
+  for (let i=0;i<NET_RINGS-1;i++){
+    const fade = 0.85 - i*0.07;
+    ctx.strokeStyle = 'rgba(248,251,255,'+fade.toFixed(2)+')';
+    ctx.lineWidth = Math.max(.6, s0*0.0042);
+    ctx.beginPath();
+    for (let j=0;j<NET_STRANDS;j++){
+      const a=p[i][j], b=p[i+1][(j+1)%NET_STRANDS], c=p[i+1][(j-1+NET_STRANDS)%NET_STRANDS];
+      if (a&&b){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); }
+      if (a&&c){ ctx.moveTo(a.x,a.y); ctx.lineTo(c.x,c.y); }
+    }
+    ctx.stroke();
+  }
+  // hoops of the mesh
+  for (let i=1;i<NET_RINGS;i++){
+    ctx.strokeStyle='rgba(240,248,255,.5)'; ctx.lineWidth=Math.max(.5,s0*0.003);
+    ctx.beginPath();
+    for (let j=0;j<=NET_STRANDS;j++){ const a=p[i][j%NET_STRANDS]; if(!a) continue; if(j===0) ctx.moveTo(a.x,a.y); else ctx.lineTo(a.x,a.y); }
+    ctx.stroke();
+  }
+}
+buildNet();
+
+/* =====================================================================
+   BALL SKINS — each pre-rendered once to an offscreen canvas.
+   The texture rotates with the ball; the lighting is painted on top and
+   does NOT rotate, which is what makes a flat sprite read as a sphere.
+   ===================================================================== */
+const BALLS = [
+  { id:'classic', name:'Classic Ball', cost:0 },
+  { id:'gold',    name:'Gold Ball',    cost:250 },
+  { id:'fire',    name:'Fire Ball',    cost:400 },
+  { id:'galaxy',  name:'Galaxy Ball',  cost:600 },
+  { id:'neon',    name:'Neon Ball',    cost:800 }
+];
+const TRAILS = [
+  { id:'none',      name:'No Trail',        cost:0 },
+  { id:'fire',      name:'Fire Trail',      cost:300 },
+  { id:'lightning', name:'Lightning Trail', cost:450 },
+  { id:'rainbow',   name:'Rainbow Trail',   cost:650 },
+  { id:'star',      name:'Star Trail',      cost:900 }
+];
+const TEX = {};
+const TS = 256, TC = 128, TR = 126;
+function rnd(seed){ const x = Math.sin(seed*12.9898)*43758.5453; return x - Math.floor(x); }
+
+function makeTex(skin){
+  const c = document.createElement('canvas'); c.width=c.height=TS;
+  const g = c.getContext('2d');
+  g.save(); g.beginPath(); g.arc(TC,TC,TR,0,6.2832); g.clip();
+
+  let seamCol = 'rgba(20,10,4,.92)', seamW = 7;
+  if (skin==='classic'){
+    const gr = g.createLinearGradient(0,0,0,TS);
+    gr.addColorStop(0,'#e88b3e'); gr.addColorStop(.5,'#d4701f'); gr.addColorStop(1,'#a44d12');
+    g.fillStyle = gr; g.fillRect(0,0,TS,TS);
+  } else if (skin==='gold'){
+    const gr = g.createLinearGradient(0,0,TS,TS);
+    gr.addColorStop(0,'#fff3b0'); gr.addColorStop(.35,'#ffd54a'); gr.addColorStop(.7,'#e0a417'); gr.addColorStop(1,'#8f6304');
+    g.fillStyle = gr; g.fillRect(0,0,TS,TS);
+    seamCol='rgba(70,44,0,.85)';
+  } else if (skin==='fire'){
+    const gr = g.createLinearGradient(0,TS,TS,0);
+    gr.addColorStop(0,'#5c0d02'); gr.addColorStop(.4,'#c62806'); gr.addColorStop(.75,'#ff7a18'); gr.addColorStop(1,'#ffd76a');
+    g.fillStyle = gr; g.fillRect(0,0,TS,TS);
+    for (let i=0;i<26;i++){                       // licking flame streaks
+      const a = rnd(i+1)*6.2832, rr = 30+rnd(i+9)*90;
+      g.strokeStyle = 'rgba(255,'+(150+Math.floor(rnd(i+3)*90))+',40,.5)'; g.lineWidth = 2+rnd(i+5)*4;
+      g.beginPath();
+      g.moveTo(TC+Math.cos(a)*rr, TC+Math.sin(a)*rr);
+      g.quadraticCurveTo(TC+Math.cos(a+.5)*(rr+30), TC+Math.sin(a+.5)*(rr+30), TC+Math.cos(a+.1)*(rr+62), TC+Math.sin(a+.1)*(rr+62));
+      g.stroke();
+    }
+    seamCol='rgba(40,6,0,.8)';
+  } else if (skin==='galaxy'){
+    const gr = g.createRadialGradient(TC*0.7,TC*0.7,10,TC,TC,TR);
+    gr.addColorStop(0,'#5b3ea8'); gr.addColorStop(.45,'#2a1a5e'); gr.addColorStop(1,'#0a0620');
+    g.fillStyle = gr; g.fillRect(0,0,TS,TS);
+    for (let i=0;i<11;i++){                        // nebula wisps
+      const a=rnd(i+21)*6.2832, rr=rnd(i+31)*100;
+      const ng = g.createRadialGradient(TC+Math.cos(a)*rr, TC+Math.sin(a)*rr, 2, TC+Math.cos(a)*rr, TC+Math.sin(a)*rr, 46);
+      ng.addColorStop(0, i%2 ? 'rgba(255,90,200,.34)' : 'rgba(80,180,255,.34)'); ng.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=ng; g.fillRect(0,0,TS,TS);
+    }
+    for (let i=0;i<150;i++){                       // stars
+      const a=rnd(i+41)*6.2832, rr=Math.sqrt(rnd(i+51))*TR;
+      g.fillStyle='rgba(255,255,255,'+(0.3+rnd(i+61)*0.7).toFixed(2)+')';
+      g.beginPath(); g.arc(TC+Math.cos(a)*rr, TC+Math.sin(a)*rr, rnd(i+71)*1.6+0.4, 0, 6.2832); g.fill();
+    }
+    seamCol='rgba(180,150,255,.5)'; seamW=5;
+  } else if (skin==='neon'){
+    g.fillStyle='#0a0a14'; g.fillRect(0,0,TS,TS);
+    const gr = g.createLinearGradient(0,0,TS,TS);
+    gr.addColorStop(0,'rgba(0,255,230,.30)'); gr.addColorStop(.5,'rgba(140,0,255,.22)'); gr.addColorStop(1,'rgba(255,0,160,.30)');
+    g.fillStyle=gr; g.fillRect(0,0,TS,TS);
+    seamCol='#00ffe6'; seamW=6;
+  }
+
+  // pebble grain — seeded, so it never flickers between frames
+  if (skin!=='neon' && skin!=='galaxy'){
+    for (let i=0;i<820;i++){
+      const a = rnd(i+101)*6.2832, rr = Math.sqrt(rnd(i+201))*TR;
+      const px = TC+Math.cos(a)*rr, py = TC+Math.sin(a)*rr;
+      g.fillStyle = rnd(i+301) > .5 ? 'rgba(255,220,180,.13)' : 'rgba(40,18,4,.16)';
+      g.beginPath(); g.arc(px,py, 1.1+rnd(i+401)*1.3, 0, 6.2832); g.fill();
+    }
+  }
+
+  // seams: one meridian, one equator, two C-curves — the iconic pattern
+  g.strokeStyle = seamCol; g.lineWidth = seamW; g.lineCap='round';
+  if (skin==='neon'){ g.shadowColor='#00ffe6'; g.shadowBlur=12; }
+  g.beginPath(); g.moveTo(TC,0); g.lineTo(TC,TS); g.stroke();
+  g.beginPath(); g.moveTo(0,TC); g.lineTo(TS,TC); g.stroke();
+  g.beginPath(); g.ellipse(TC,TC, 58, TR, 0, 0, 6.2832); g.stroke();
+  g.shadowBlur = 0;
+  g.restore();
+  return c;
+}
+BALLS.forEach(b => TEX[b.id] = makeTex(b.id));
+TEX.golden = (()=>{                                  // the +10 special — its own look, whatever skin you run
+  const c = document.createElement('canvas'); c.width=c.height=TS; const g=c.getContext('2d');
+  g.save(); g.beginPath(); g.arc(TC,TC,TR,0,6.2832); g.clip();
+  const gr = g.createLinearGradient(0,0,TS,TS);
+  gr.addColorStop(0,'#fffbe0'); gr.addColorStop(.3,'#ffe36a'); gr.addColorStop(.62,'#ffb300'); gr.addColorStop(1,'#a06a00');
+  g.fillStyle=gr; g.fillRect(0,0,TS,TS);
+  for (let i=0;i<40;i++){
+    const a=rnd(i+7)*6.2832, rr=Math.sqrt(rnd(i+17))*TR;
+    g.fillStyle='rgba(255,255,255,'+(0.25+rnd(i+27)*0.5).toFixed(2)+')';
+    g.beginPath(); g.arc(TC+Math.cos(a)*rr, TC+Math.sin(a)*rr, 1+rnd(i+37)*2.4, 0, 6.2832); g.fill();
+  }
+  g.strokeStyle='rgba(120,74,0,.75)'; g.lineWidth=7; g.lineCap='round';
+  g.beginPath(); g.moveTo(TC,0); g.lineTo(TC,TS); g.stroke();
+  g.beginPath(); g.moveTo(0,TC); g.lineTo(TS,TC); g.stroke();
+  g.beginPath(); g.ellipse(TC,TC, 58, TR, 0, 0, 6.2832); g.stroke();
+  g.restore(); return c;
+})();
+
+function drawBallSprite(px, py, r, skin, spin, golden, glowPulse){
+  if (r < 0.7) return;
+  if (golden){
+    const gl = ctx.createRadialGradient(px,py,r*0.5, px,py, r*(2.4+glowPulse*0.5));
+    gl.addColorStop(0,'rgba(255,215,80,.55)'); gl.addColorStop(.5,'rgba(255,170,30,.20)'); gl.addColorStop(1,'rgba(255,150,0,0)');
+    ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(px,py, r*(2.4+glowPulse*0.5), 0, 6.2832); ctx.fill();
+  } else if (skin==='neon'){
+    const gl = ctx.createRadialGradient(px,py,r*0.6, px,py, r*1.8);
+    gl.addColorStop(0,'rgba(0,255,230,.28)'); gl.addColorStop(1,'rgba(0,255,230,0)');
+    ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(px,py, r*1.8, 0, 6.2832); ctx.fill();
+  }
+  ctx.save(); ctx.translate(px,py); ctx.rotate(spin);
+  ctx.drawImage(golden ? TEX.golden : (TEX[skin]||TEX.classic), -r, -r, r*2, r*2);
+  ctx.restore();
+
+  // fixed-light shading — this is the bit that makes it a sphere
+  ctx.save();
+  ctx.beginPath(); ctx.arc(px,py,r,0,6.2832); ctx.clip();
+  const spec = ctx.createRadialGradient(px-r*0.36, py-r*0.40, r*0.04, px-r*0.36, py-r*0.40, r*1.15);
+  spec.addColorStop(0,'rgba(255,255,255,.42)'); spec.addColorStop(.28,'rgba(255,255,255,.13)'); spec.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=spec; ctx.fillRect(px-r,py-r,r*2,r*2);
+  const vig = ctx.createRadialGradient(px,py,r*0.52, px,py, r);
+  vig.addColorStop(0,'rgba(0,0,0,0)'); vig.addColorStop(.82,'rgba(0,0,0,.28)'); vig.addColorStop(1,'rgba(0,0,0,.55)');
+  ctx.fillStyle=vig; ctx.fillRect(px-r,py-r,r*2,r*2);
+  ctx.restore();
+  // contact edge
+  ctx.beginPath(); ctx.arc(px,py,r,0,6.2832);
+  ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=Math.max(.6,r*0.045); ctx.stroke();
+}
+
+/* ---------------- trails ---------------- */
+function drawTrail(b){
+  const kind = b.golden ? 'gold' : S.trail;
+  if (kind==='none' || b.trail.length<2) return;
+  const pts = [];
+  for (const t of b.trail){ const p = proj(t.x,t.y,t.z); if (p) pts.push({x:p.x,y:p.y,s:p.s}); }
+  if (pts.length<2) return;
+  const n = pts.length;
+
+  if (kind==='fire'){
+    for (let i=0;i<n;i++){
+      const a = i/n, p = pts[i], rr = BALL_R*p.s*(0.30+a*0.62);
+      const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);
+      g.addColorStop(0,'rgba(255,'+Math.floor(210*a+40)+',60,'+(a*0.60).toFixed(2)+')');
+      g.addColorStop(.5,'rgba(255,'+Math.floor(90*a+20)+',0,'+(a*0.28).toFixed(2)+')');
+      g.addColorStop(1,'rgba(120,0,0,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,6.2832); ctx.fill();
+    }
+  } else if (kind==='gold'){
+    for (let i=0;i<n;i++){
+      const a = i/n, p = pts[i], rr = BALL_R*p.s*(0.25+a*0.5);
+      const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);
+      g.addColorStop(0,'rgba(255,240,150,'+(a*0.7).toFixed(2)+')'); g.addColorStop(1,'rgba(255,180,0,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,6.2832); ctx.fill();
+    }
+  } else if (kind==='lightning'){
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    for (let pass=0; pass<2; pass++){
+      ctx.strokeStyle = pass ? 'rgba(190,240,255,.95)' : 'rgba(90,200,255,.42)';
+      ctx.lineWidth = pass ? Math.max(1, BALL_R*pts[n-1].s*0.16) : Math.max(2.5, BALL_R*pts[n-1].s*0.5);
+      ctx.beginPath();
+      for (let i=0;i<n;i++){
+        const p = pts[i], a = i/n;
+        const j = (1-a)*BALL_R*p.s*0.55;
+        const x = p.x + (rnd(i*3+b.seed)*2-1)*j, y = p.y + (rnd(i*7+b.seed)*2-1)*j;
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+  } else if (kind==='rainbow'){
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    for (let i=1;i<n;i++){
+      const a = i/n;
+      ctx.strokeStyle = 'hsla('+Math.floor((i*16 + b.age*180)%360)+',100%,60%,'+(a*0.85).toFixed(2)+')';
+      ctx.lineWidth = Math.max(1.5, BALL_R*pts[i].s*(0.25+a*0.85));
+      ctx.beginPath(); ctx.moveTo(pts[i-1].x,pts[i-1].y); ctx.lineTo(pts[i].x,pts[i].y); ctx.stroke();
+    }
+  } else if (kind==='star'){
+    for (let i=0;i<n;i+=2){
+      const a = i/n, p = pts[i], rr = BALL_R*p.s*(0.16+a*0.34);
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(i*0.7 + b.age*3);
+      ctx.fillStyle='rgba(255,240,140,'+(a*0.9).toFixed(2)+')';
+      ctx.beginPath();
+      for (let k=0;k<10;k++){ const ang=k*Math.PI/5, rad=k%2? rr*0.42: rr; if(k===0) ctx.moveTo(Math.cos(ang)*rad, Math.sin(ang)*rad); else ctx.lineTo(Math.cos(ang)*rad, Math.sin(ang)*rad); }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+}
+
+/* =====================================================================
+   BALL PHYSICS
+   ===================================================================== */
+let seedCounter = 1;
+function makeBall(x, z, golden){
+  return {
+    x, y: SPAWN_Y, z, vx:0, vy:0, vz:0,
+    live:true, shot:false, golden:!!golden,
+    spin:0, spinV:0, trail:[], age:0,
+    hitRim:false, hitBoard:false, floorBounces:0,
+    scored:false, scoreAt:0, startZ:z, startX:x,
+    seed: seedCounter++, bob: Math.random()*6.28
+  };
+}
+
+const REST_RIM = 0.62, REST_FLOOR = 0.70, REST_BOARD = 0.52;
+
+function stepBall(b, dt){
+  b.age += dt;
+  if (!b.shot){                                  // idle ball waiting to be flicked
+    b.bob += dt*2.4;
+    b.y = SPAWN_Y + Math.sin(b.bob)*0.035;
+    b.spin += dt*0.35;
+    return;
+  }
+
+  const px = b.x, py = b.y, pz = b.z;
+
+  // integrate — light quadratic drag keeps long shots honest without feeling floaty
+  const sp = Math.hypot(b.vx,b.vy,b.vz);
+  const k = 0.011 * sp;
+  b.vx -= b.vx*k*dt; b.vy -= b.vy*k*dt; b.vz -= b.vz*k*dt;
+  b.vy += GRAV*dt;
+  b.x += b.vx*dt; b.y += b.vy*dt; b.z += b.vz*dt;
+  b.spin += b.spinV*dt;
+
+  /* --- rim: the ball vs a torus, resolved against the nearest point on the ring --- */
+  const dx = b.x, dz = b.z - hoopZ;
+  const hd = Math.hypot(dx, dz);
+  if (hd > 1e-5){
+    const nx = dx/hd, nz = dz/hd;
+    const rx = nx*RIM_R, rz = hoopZ + nz*RIM_R;
+    const vX = b.x-rx, vY = b.y-RIM_Y, vZ = b.z-rz;
+    const d = Math.hypot(vX,vY,vZ), lim = BALL_R + RIM_TUBE;
+    if (d < lim && d > 1e-5){
+      const ux=vX/d, uy=vY/d, uz=vZ/d;
+      b.x = rx + ux*lim; b.y = RIM_Y + uy*lim; b.z = rz + uz*lim;
+      const vn = b.vx*ux + b.vy*uy + b.vz*uz;
+      if (vn < 0){
+        b.vx -= (1+REST_RIM)*vn*ux; b.vy -= (1+REST_RIM)*vn*uy; b.vz -= (1+REST_RIM)*vn*uz;
+        b.vx *= 0.86; b.vz *= 0.86;               // the rim eats some pace
+        if (!b.scored){ b.hitRim = true; if (Math.abs(vn) > 0.55) Sound.rim(); }
+      }
+    }
+  }
+
+  /* --- backboard: sphere vs the rectangle of glass, resolved against the nearest
+     point on it — the same shape of test as the rim.
+     A swept plane test cannot do this job: `pz + BALL_R <= bz` is a one-way latch,
+     so once the centre passes the glass plane it is off for good. A ball that
+     clears the TOP edge (legitimately, no bounce) and then drops down the face of
+     the board falls straight through it. Closest-point has no latch, and it gives
+     us the edges and the underside for free. --- */
+  const bz = boardZ();
+  const cx = Math.max(-BOARD_HW, Math.min(BOARD_HW, b.x));
+  const cy = Math.max(BOARD_B,   Math.min(BOARD_T,  b.y));
+  const ex = b.x-cx, ey = b.y-cy, ez = b.z-bz;
+  const ed = Math.hypot(ex, ey, ez);
+  if (ed < BALL_R){
+    let ux, uy, uz;
+    if (ed > 1e-5){ ux=ex/ed; uy=ey/ed; uz=ez/ed; }
+    else { ux=0; uy=0; uz=-1; }                    // dead centre on the glass — eject out the front
+    b.x = cx+ux*BALL_R; b.y = cy+uy*BALL_R; b.z = bz+uz*BALL_R;
+    const vn = b.vx*ux + b.vy*uy + b.vz*uz;
+    if (vn < 0){
+      b.vx -= (1+REST_BOARD)*vn*ux; b.vy -= (1+REST_BOARD)*vn*uy; b.vz -= (1+REST_BOARD)*vn*uz;
+      b.vx *= 0.9; b.vy *= 0.92;
+      if (!b.scored){ b.hitBoard = true; Sound.board(); }
+    }
+  }
+
+  /* --- floor --- */
+  if (b.y - BALL_R < 0 && b.vy < 0){
+    b.y = BALL_R;
+    if (Math.abs(b.vy) > 0.35){ Sound.bounce(Math.abs(b.vy)); b.floorBounces++; }
+    b.vy *= -REST_FLOOR; b.vx *= 0.80; b.vz *= 0.80; b.spinV *= 0.7;
+  }
+
+  /* --- did it go in? Interpolate the rim-plane crossing so a fast ball
+         can never skip past the check between two steps. --- */
+  if (!b.scored && py > RIM_Y && b.y <= RIM_Y && b.vy < 0){
+    const t = (py - RIM_Y) / Math.max(1e-6, (py - b.y));
+    const ix = px + (b.x-px)*t, iz = pz + (b.z-pz)*t;
+    if (Math.hypot(ix, iz - hoopZ) < RIM_R) onScored(b);
+  }
+}
+
+function ballSettled(b){
+  if (!b.shot) return false;
+  if (b.z > boardZ() + 3.5) return true;
+  if (b.z < 0.55) return true;
+  if (Math.abs(b.x) > COURT_HW) return true;
+  if (b.age > 6.5) return true;
+  if (b.floorBounces >= 2) return true;
+  if (b.y <= BALL_R + 0.02 && Math.hypot(b.vx,b.vy,b.vz) < 0.9) return true;
+  return false;
+}
+
+/* =====================================================================
+   GAME STATE
+   ===================================================================== */
+const MODES = {
+  classic: { lives:3,        time:0,  label:'Classic'    },
+  time:    { lives:Infinity, time:60, label:'Time Attack'},
+  hs:      { lives:1,        time:0,  label:'High Score' }
+};
+/* Shot tuning — measured, not guessed.
+   Sweeping launch angle against the real collision code showed 58° maximises the
+   narrowest make-window across the three shot scenarios (base / deep / far hoop):
+   at 52° the tightest window is 0.62 m/s, at 58° it is 0.78 m/s. A steeper arc
+   drops through the rim rather than at it, so speed error costs less.
+   The scoring speeds that fall out of that are base 8.86, deep 9.64, far 10.42 m/s.
+   Mapping swipe length onto a narrow band around those (rather than 0..30) is what
+   turns a 13px make-window into a ~50px one — i.e. something a thumb can hit. */
+const ELEV = 58*Math.PI/180;
+const SPEED_BASE = 4.9, SWIPE_POWER = 13, SPEED_MIN = 4.5, SPEED_MAX = 14;
+/* Lateral: a 2D sweep of (vx x power) showed only a 0.20-0.26 m/s band of vx can
+   score, so LAT_POWER sets how many pixels that band is worth. 3 puts the lateral
+   window (57px worst case) on par with the power window (~50px). */
+const LAT_POWER = 3;
+const MIN_UP = 0.045, LONG_DIST = 5.2;
+const SIN_E = Math.sin(ELEV), COS_E = Math.cos(ELEV);
+const swipeSpeed = dyN => Math.max(SPEED_MIN, Math.min(SPEED_MAX, SPEED_BASE + dyN*SWIPE_POWER));
+
+const G = {
+  mode:'classic', running:false, paused:false,
+  score:0, combo:0, lives:3, timeLeft:0,
+  made:0, shots:0, bestComboRun:0, coinsRun:0,
+  balls:[], ready:null, spawnTimer:0, ballsSpawned:0
+};
+let shake = 0, flashT = 0, flashCol = '255,180,60';
+const pops = [], parts = [];
+
+function comboMult(c){ return c>=10 ? 5 : c>=5 ? 3 : c>=3 ? 2 : 1; }
+function diffOf(){ return Math.min(1, G.made/26); }
+function spawnDelay(){ return 0.42 - diffOf()*0.18; }
+
+// Every ball spawns at the same depth. A closer "deep ball" variant would sit ~3m
+// from the lens, blowing the sprite up and pushing its shadow off the bottom edge.
+// Long range instead arrives on its own: the hoop recedes with difficulty, so the
+// shot distance grows 4.5m -> 7.1m and crosses LONG_DIST after ~7 makes.
+function newReadyBall(){
+  const jitter = diffOf()*0.55;   // capped: the worst offset costs ~120px of sideways swipe, no more
+  const x = (Math.random()*2-1)*jitter;
+  const golden = G.ballsSpawned > 2 && Math.random() < 0.07;
+  G.ballsSpawned++;
+  const b = makeBall(x, SPAWN_Z, golden);
+  if (golden) Sound.golden();
+  return b;
+}
+
+// Coins are credited the instant a basket drops, but shots/made only land here.
+// So an abandoned run must still be recorded, or you could farm coins with a
+// spotless lifetime accuracy by quitting after every make.
+function commitRunStats(){
+  const st = S.stats;
+  st.shots += G.shots; st.made += G.made; st.games++;
+  if (G.bestComboRun > st.bestCombo) st.bestCombo = G.bestComboRun;
+  if (G.score > st.bestScore) st.bestScore = G.score;
+}
+
+function startGame(mode){
+  if (G.running){ commitRunStats(); save(); }     // Pause -> Restart abandons a run
+  G.mode = mode; const M = MODES[mode];
+  G.running = true; G.paused = false;
+  G.score = 0; G.combo = 0; G.lives = M.lives; G.timeLeft = M.time;
+  G.made = 0; G.shots = 0; G.bestComboRun = 0; G.coinsRun = 0;
+  G.balls = []; G.ballsSpawned = 0; G.ready = null; G.spawnTimer = 0;
+  pops.length = 0; parts.length = 0; shake = 0; flashT = 0; drag = null; acc = 0;
+  hoopZ = BASE_HOOP_Z; netRestSync(true);
+  G.ready = newReadyBall();
+  document.body.classList.add('playing');
+  hideScreens(); $('hud').classList.remove('hidden');
+  syncHint();
+  $('hint').style.opacity = S.seenTut ? '0' : '1';
+  syncHud();
+  Sound.startMusic('game');
+}
+
+function endGame(reason){
+  if (!G.running) return;
+  G.running = false; G.paused = false; drag = null;
+  document.body.classList.remove('playing');
+  Sound.stopMusic(); Sound.over();
+
+  commitRunStats();
+  const isBest = G.score > (S.best[G.mode]||0);
+  if (isBest) S.best[G.mode] = G.score;
+  save();
+
+  try{ if (window.track) window.track('game_over', { mode:G.mode, score:G.score, made:G.made, shots:G.shots }); }catch(e){}
+  // The global board is Time Attack: everyone gets the same 60 seconds, so the
+  // scores are actually comparable. Classic/High Score are endurance runs whose
+  // scores depend on how long you survive — they stay local, in Statistics.
+  try{ if (window.IGAuth && (S.best.time||0) > 0) IGAuth.submitScore('scoop', S.best.time); }catch(e){}
+
+  $('hud').classList.add('hidden');
+  $('overTitle').textContent = reason;
+  $('overScore').textContent = G.score;
+  $('overNew').style.display = isBest && G.score>0 ? 'inline-block' : 'none';
+  const acc = G.shots ? Math.round(G.made/G.shots*100) : 0;
+  $('overStats').innerHTML =
+    '<span class="chip">Made <b>'+G.made+'/'+G.shots+'</b></span>'+
+    '<span class="chip">Accuracy <b>'+acc+'%</b></span>'+
+    '<span class="chip">Best combo <b>'+G.bestComboRun+'</b></span>'+
+    '<span class="chip">🪙 <b>+'+G.coinsRun+'</b></span>';
+  showScreen('scrOver');
+}
+
+/* ---------------- scoring ---------------- */
+function onScored(b){
+  b.scored = true; b.scoreAt = b.age;
+  const swish = !b.hitRim && !b.hitBoard;
+  const dist = Math.hypot(b.startX, hoopZ - b.startZ);
+  const long = dist > LONG_DIST;
+  const base = b.golden ? 10 : (long ? 3 : (swish ? 2 : 1));
+
+  G.combo++;
+  if (G.combo > G.bestComboRun) G.bestComboRun = G.combo;
+  const mult = comboMult(G.combo);
+  const pts = base * mult;
+  G.score += pts; G.made++;
+  S.coins += pts; G.coinsRun += pts;
+
+  const label = b.golden ? 'GOLDEN!' : (long && swish) ? 'LONG SWISH!' : long ? 'LONG RANGE!' : swish ? 'SWISH!' : '';
+  const col = b.golden ? '#ffd54a' : long ? '#8fe3ff' : swish ? '#86ffc6' : '#ffffff';
+  const hp = proj(0, RIM_Y, hoopZ);
+  if (hp){
+    pops.push({ sx:hp.x, sy:hp.y-10, text:'+'+pts, col, size:34+Math.min(20,pts*1.4), age:0, life:1.0 });
+    if (label) pops.push({ sx:hp.x, sy:hp.y-52, text:label, col, size:19, age:0, life:1.05 });
+    burst(hp.x, hp.y, b.golden ? 26 : (swish?18:12), b.golden ? ['#ffd54a','#fff6c0','#ffb300'] : (swish?['#86ffc6','#ffffff']:['#ff9b3d','#ffd54a']));
+  }
+  shake = S.shake ? Math.min(13, (b.golden?9:4) + pts*0.35) : 0;
+
+  if (b.golden){ Sound.golden(); flash('255,215,80', .5); }
+  else if (swish) Sound.swish(); else Sound.score(pts);
+  Sound.coin();
+
+  // combo milestones
+  if (G.combo === 3 || G.combo === 5 || G.combo === 10 || (G.combo > 10 && G.combo % 5 === 0)){
+    const fire = G.combo >= 10;
+    pops.push({ sx:W/2, sy:H*0.42, text: fire ? '🔥 FIRE STREAK x5' : 'x'+mult+' COMBO', col: fire ? '#ff6b2c' : '#ffd54a',
+                size: fire ? 40 : 32, age:0, life:1.4, big:true });
+    burst(W/2, H*0.44, fire?40:20, fire?['#ff6b2c','#ffd54a','#fff0a0']:['#ffd54a','#ffffff']);
+    if (fire){ Sound.fire(); flash('255,107,44', .6); shake = S.shake ? 16 : 0; }
+    else Sound.combo(mult);
+  }
+  syncHud();
+  if (!G.ready) G.spawnTimer = Math.min(G.spawnTimer, 0.12);   // "immediately spawn another ball"
+}
+
+function onMissed(){
+  G.combo = 0;
+  Sound.miss();
+  syncHud();
+  if (G.mode === 'time') return;                 // Time Attack only ever ends on the clock
+  G.lives--;
+  if (G.lives <= 0){ endGame(G.mode==='hs' ? 'Missed!' : 'Game over'); return; }
+  const p = proj(0, 1.6, hoopZ);
+  if (p) pops.push({ sx:p.x, sy:p.y, text:'MISS', col:'#ff8f8f', size:24, age:0, life:.9 });
+}
+
+function flash(col, amt){ flashCol = col; flashT = amt; }
+function burst(sx, sy, n, cols){
+  for (let i=0;i<n;i++){
+    const a = Math.random()*6.2832, sp = 60 + Math.random()*300;
+    parts.push({ x:sx, y:sy, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 60, life:0.5+Math.random()*0.6, age:0,
+                 col: cols[(Math.random()*cols.length)|0], r: 2+Math.random()*4 });
+  }
+}
+
+/* ---------------- input ---------------- */
+/* One swipe = one pointer. Track the id: without it a second finger overwrites
+   the drag, and the first finger's release is measured against the OTHER finger's
+   start point — a resting thumb plus a tap elsewhere fires a full-power shot the
+   player never made. Extra fingers are ignored until the current one is done.
+
+   The anchor MOVES. Measuring the shot from wherever the finger first landed
+   breaks aiming in two ways: hold still to line the shot up and the gesture
+   outlives any sane time limit, and — worse — drift right while aiming then flick
+   up-left and the shot is measured right, i.e. the ball flies the OPPOSITE way to
+   the flick. So the anchor re-sets when the finger settles or drifts downward:
+   the shot is measured from where the flick actually begins. Aim for as long as
+   you like; only the flick counts. */
+const IDLE_MS = 130, IDLE_PX = 4;
+let drag = null;
+cv.addEventListener('pointerdown', e => {
+  Sound.unlock();
+  if (!G.running || G.paused || drag) return;
+  const t = performance.now();
+  drag = { id:e.pointerId, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, t0:t, lastMove:t };
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const t = performance.now();
+  if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > IDLE_PX){
+    // Settled, then moved again -> the aiming is over and the flick starts HERE.
+    // Heading downward -> still setup, since a shot is always an upward flick.
+    if (t - drag.lastMove > IDLE_MS || e.clientY > drag.y0){
+      drag.x0 = drag.x; drag.y0 = drag.y; drag.t0 = t;
+    }
+    drag.lastMove = t;
+  }
+  drag.x = e.clientX; drag.y = e.clientY;
+});
+cv.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.id) drag = null; });
+window.addEventListener('pointerup', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const d = drag; drag = null;
+  if (!G.running || G.paused || !G.ready) return;
+  d.x = e.clientX; d.y = e.clientY;
+  const dxN = (d.x - d.x0)/H, dyN = -(d.y - d.y0)/H;
+  if (dyN < MIN_UP) return;                      // a tap or a downward drag — not a shot
+  shoot(dxN, dyN);
+});
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+
+function shoot(dxN, dyN){
+  const b = G.ready; if (!b) return;
+  const speed = swipeSpeed(dyN);
+  b.shot = true;
+  b.vy = speed * SIN_E;
+  b.vz = speed * COS_E;
+  b.vx = dxN * LAT_POWER;
+  b.spinV = -(2.5 + speed*0.45) + b.vx*1.2;
+  b.age = 0;
+  G.balls.push(b); G.ready = null;
+  G.shots++; G.spawnTimer = spawnDelay();
+  Sound.shoot(Math.min(1, speed/16));
+  if (!S.seenTut){ S.seenTut = true; save(); $('hint').style.opacity = '0'; }
+}
+
+/* ---------------- per-frame update ---------------- */
+const FIXED = 1/240;      // The fastest reachable shot is hypot(SPEED_MAX, max lateral) = 15.5 m/s,
+let acc = 0;              // i.e. 6.5cm per step against a 27.8cm rim shell — it cannot tunnel through.
+function update(dt){
+  if (!G.running || G.paused){ updateFx(dt); return; }
+
+  if (G.mode === 'time'){
+    G.timeLeft -= dt;
+    if (G.timeLeft <= 0){ G.timeLeft = 0; syncHud(); endGame("Time!"); return; }
+  }
+
+  acc += dt;
+  let guard = 0;
+  while (acc >= FIXED && guard++ < 500){
+    for (const b of G.balls) stepBall(b, FIXED);
+    if (G.ready) stepBall(G.ready, FIXED);
+    acc -= FIXED;
+  }
+  if (guard >= 500) acc = 0;
+
+  // trails + retire finished balls
+  for (let i = G.balls.length-1; i >= 0; i--){
+    const b = G.balls[i];
+    if (b.shot){
+      b.trail.push({ x:b.x, y:b.y, z:b.z });
+      if (b.trail.length > 16) b.trail.shift();
+    }
+    if (b.scored){
+      if (b.age - b.scoreAt > 0.75){ b.live = false; G.balls.splice(i,1); }
+    } else if (ballSettled(b)){
+      b.live = false; G.balls.splice(i,1); onMissed();
+      if (!G.running) return;
+    }
+  }
+
+  // next ball
+  if (!G.ready){
+    G.spawnTimer -= dt;
+    if (G.spawnTimer <= 0) G.ready = newReadyBall();
+  }
+
+  // the hoop drifts away as you get good — but never while a shot is live, so
+  // no shot is ever stolen mid-flight by the target moving.
+  const target = BASE_HOOP_Z + diffOf()*2.6;
+  const inFlight = G.balls.some(b => b.shot && !b.scored);
+  if (!inFlight && Math.abs(hoopZ - target) > 0.005){
+    hoopZ += (target - hoopZ) * Math.min(1, dt*1.6);
+    netRestSync();
+  }
+
+  updateNet(dt, G.balls);
+  updateFx(dt);
+  if (G.mode==='time') syncTime();
+}
+function updateFx(dt){
+  if (shake > 0) shake = Math.max(0, shake - dt*38);
+  if (flashT > 0) flashT = Math.max(0, flashT - dt*2.2);
+  for (let i=pops.length-1;i>=0;i--){ const p=pops[i]; p.age+=dt; if (p.age>p.life) pops.splice(i,1); }
+  for (let i=parts.length-1;i>=0;i--){
+    const p=parts[i]; p.age+=dt;
+    if (p.age>p.life){ parts.splice(i,1); continue; }
+    p.vy += 520*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.99;
+  }
+}
+
+/* ---------------- render ---------------- */
+function drawShadow(x, z, y){
+  const spread = 1 + y*0.05;
+  const pts = projCircle(x, 0.004, z, BALL_R*spread, 16);
+  if (pts.length < 3) return;
+  const a = 0.42/(1 + y*0.55);
+  polyPath(pts); ctx.closePath();
+  ctx.fillStyle = 'rgba(20,8,0,'+a.toFixed(3)+')'; ctx.fill();
+}
+function drawAim(){
+  if (!drag || !G.ready) return;
+  const b = G.ready, p = proj(b.x,b.y,b.z); if (!p) return;
+  const dxN = (drag.x-drag.x0)/H, dyN = -(drag.y-drag.y0)/H;
+  if (dyN < MIN_UP*0.5) return;
+  const pw = Math.max(0, Math.min(1, (swipeSpeed(dyN) - SPEED_MIN)/(SPEED_MAX - SPEED_MIN)));
+  const len = 40 + pw*130;
+  const ang = Math.atan2(-dyN, dxN);
+  const ex = p.x + Math.cos(ang)*len, ey = p.y - Math.sin(ang)*len;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.30)'; ctx.lineWidth = 4; ctx.setLineDash([7,7]); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.setLineDash([]);
+  // power pip
+  const col = pw<0.4 ? '#8fe3ff' : pw<0.75 ? '#ffd54a' : '#ff6b2c';
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ex,ey, 6+pw*5, 0, 6.2832); ctx.fill();
+  ctx.restore();
+}
+function render(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if (shake > 0.05) ctx.translate((Math.random()*2-1)*shake, (Math.random()*2-1)*shake);
+
+  drawArena();
+  drawFloor();
+
+  // shadows sit on the floor, under everything
+  const rs = projCircle(0, 0.004, hoopZ, RIM_R*1.06, 20);
+  if (rs.length>2){ polyPath(rs); ctx.closePath(); ctx.fillStyle='rgba(20,8,0,.22)'; ctx.fill(); }
+  for (const b of G.balls) drawShadow(b.x, b.z, b.y);
+  if (G.ready) drawShadow(G.ready.x, G.ready.z, G.ready.y);
+
+  const pulse = 0.5 + 0.5*Math.sin(performance.now()/220);
+  const paint = b => {
+    drawTrail(b);
+    const p = proj(b.x,b.y,b.z); if (!p) return;
+    drawBallSprite(p.x, p.y, BALL_R*p.s, S.ball, b.spin, b.golden, pulse);
+  };
+  /* Depth order. Three groups, far to near:
+       past the glass  -> before the board, or it paints over the frame and square
+       rim..glass       -> after the board, before the net (so a dropping ball sits
+                           inside the mesh, with the near strands in front of it)
+       in front of rim  -> after everything */
+  const bzz = boardZ(), byDepth = (a,b) => b.z - a.z;
+  G.balls.filter(b => b.z > bzz).sort(byDepth).forEach(paint);
+  drawBackboard();
+  drawRimBack();
+  G.balls.filter(b => b.z >= hoopZ - 0.05 && b.z <= bzz).sort(byDepth).forEach(paint);
+  drawNet();
+  drawRimFront();
+  G.balls.filter(b => b.z < hoopZ - 0.05).sort(byDepth).forEach(paint);
+  if (G.ready) paint(G.ready);
+  drawAim();
+
+  // particles + popups
+  for (const p of parts){
+    const a = 1 - p.age/p.life;
+    ctx.globalAlpha = Math.max(0,a); ctx.fillStyle = p.col;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r*(0.4+a*0.6), 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const p of pops){
+    const t = p.age/p.life, a = t<0.75 ? 1 : (1-(t-0.75)/0.25);
+    const pop = t < 0.18 ? 1 + (0.18-t)*2.6 : 1;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,a);
+    ctx.translate(p.sx, p.sy - t*(p.big?70:46));
+    ctx.scale(pop,pop);
+    ctx.font = '800 '+p.size+'px "Trebuchet MS", system-ui, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth = Math.max(3, p.size*0.16); ctx.strokeStyle='rgba(0,0,0,.65)'; ctx.lineJoin='round';
+    ctx.strokeText(p.text, 0, 0);
+    ctx.fillStyle = p.col; ctx.fillText(p.text, 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  $('flash').style.background = 'radial-gradient(circle at 50% 40%, rgba('+flashCol+',0.5), rgba('+flashCol+',0) 70%)';
+  $('flash').style.opacity = flashT.toFixed(3);
+}
+
+/* ---------------- HUD ---------------- */
+function syncHud(){
+  $('score').textContent = G.score;
+  $('coinHud').textContent = '🪙 ' + S.coins;
+  const m = comboMult(G.combo);
+  const cb = $('comboBox');
+  if (G.combo >= 3){
+    cb.classList.add('on');
+    cb.textContent = G.combo>=10 ? ('🔥 FIRE x5  ·  '+G.combo+' in a row') : ('x'+m+' COMBO  ·  '+G.combo+' in a row');
+    cb.style.color = G.combo>=10 ? '#ff6b2c' : '#ffd54a';
+  } else cb.classList.remove('on');
+  $('livesHud').textContent = (G.mode==='time') ? '' : '❤️'.repeat(Math.max(0, Math.min(5, G.lives)));
+  syncTime();
+}
+function syncTime(){ $('timeHud').textContent = G.mode==='time' ? Math.ceil(G.timeLeft)+'s' : ''; }
+
+/* ---------------- screens ---------------- */
+const SCREENS = ['scrMenu','scrModes','scrShop','scrStats','scrSettings','scrPause','scrOver','scrTut'];
+function hideScreens(){ SCREENS.forEach(s => $(s).classList.add('hidden')); }
+function showScreen(id){ hideScreens(); $(id).classList.remove('hidden'); }
+function resumeMusicForScreen(){
+  if (!S.music) return;
+  if (G.paused) return;                                              // pause is meant to be silent
+  if (G.running){ Sound.startMusic('game'); return; }
+  if (!$('scrOver').classList.contains('hidden')) return;            // game over is meant to be silent too
+  Sound.startMusic('menu');
+}
+function toMenu(){
+  G.running = false; G.paused = false; drag = null;
+  document.body.classList.remove('playing');
+  $('hud').classList.add('hidden');
+  $('mBest').textContent = Math.max(S.best.classic||0, S.best.time||0, S.best.hs||0);
+  $('mCoins').textContent = S.coins;
+  showScreen('scrMenu');
+  Sound.startMusic('menu');
+}
+function syncHint(){
+  $('hint').textContent = S.lefty ? 'Swipe up with your left thumb to shoot' : 'Swipe the ball up to shoot';
+}
+function openTut(firstRun){
+  Sound.startMusic('menu');
+  $('btnTutGo').textContent = firstRun ? '🏀 Got it — play' : '🏀 Play';
+  showScreen('scrTut');
+}
+function toModes(){
+  Sound.startMusic('menu');            // reachable from game over, where music was stopped
+  $('bClassic').textContent = 'BEST '+(S.best.classic||0);
+  $('bTime').textContent    = 'BEST '+(S.best.time||0);
+  $('bHs').textContent      = 'BEST '+(S.best.hs||0);
+  showScreen('scrModes');
+}
+
+/* ---------------- shop ---------------- */
+let shopTab = 'balls';
+function previewBall(canvas, id){
+  const g = canvas.getContext('2d'), s = canvas.width, r = s*0.42, cx=s/2, cy=s/2;
+  g.clearRect(0,0,s,s);
+  g.save(); g.translate(cx,cy); g.rotate(-0.35); g.drawImage(TEX[id]||TEX.classic, -r,-r, r*2,r*2); g.restore();
+  g.save(); g.beginPath(); g.arc(cx,cy,r,0,6.2832); g.clip();
+  const sp = g.createRadialGradient(cx-r*0.36, cy-r*0.4, r*0.04, cx-r*0.36, cy-r*0.4, r*1.15);
+  sp.addColorStop(0,'rgba(255,255,255,.42)'); sp.addColorStop(.28,'rgba(255,255,255,.13)'); sp.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=sp; g.fillRect(0,0,s,s);
+  const vg = g.createRadialGradient(cx,cy,r*0.52, cx,cy,r);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(.82,'rgba(0,0,0,.28)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg; g.fillRect(0,0,s,s); g.restore();
+}
+function previewTrail(canvas, id){
+  const g = canvas.getContext('2d'), w=canvas.width, h=canvas.height;
+  g.clearRect(0,0,w,h);
+  const path = i => ({ x: 6 + (w-12)*i/11, y: h*0.72 - Math.sin(i/11*Math.PI)*h*0.42 });
+  if (id==='none'){ g.fillStyle='rgba(160,180,220,.5)'; g.font='700 11px system-ui'; g.textAlign='center'; g.fillText('—', w/2, h/2+4); }
+  else if (id==='fire'){ for(let i=0;i<12;i++){ const p=path(i),a=i/11,rr=2+a*5; const gg=g.createRadialGradient(p.x,p.y,0,p.x,p.y,rr); gg.addColorStop(0,'rgba(255,'+Math.floor(210*a+40)+',60,'+(a*.9)+')'); gg.addColorStop(1,'rgba(120,0,0,0)'); g.fillStyle=gg; g.beginPath(); g.arc(p.x,p.y,rr,0,6.2832); g.fill(); } }
+  else if (id==='lightning'){ g.strokeStyle='rgba(190,240,255,.95)'; g.lineWidth=2; g.beginPath(); for(let i=0;i<12;i++){ const p=path(i); const j=(1-i/11)*4; const x=p.x+(rnd(i*3)*2-1)*j, y=p.y+(rnd(i*7)*2-1)*j; i?g.lineTo(x,y):g.moveTo(x,y);} g.stroke(); }
+  else if (id==='rainbow'){ g.lineWidth=3.4; g.lineCap='round'; for(let i=1;i<12;i++){ const a=path(i-1),b=path(i); g.strokeStyle='hsl('+(i*28)+',100%,60%)'; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); } }
+  else if (id==='star'){ for(let i=0;i<12;i+=2){ const p=path(i),a=i/11,rr=1.6+a*3.4; g.save(); g.translate(p.x,p.y); g.rotate(i); g.fillStyle='rgba(255,240,140,'+(0.35+a*0.65)+')'; g.beginPath(); for(let k=0;k<10;k++){ const ang=k*Math.PI/5, rad=k%2?rr*.42:rr; k?g.lineTo(Math.cos(ang)*rad,Math.sin(ang)*rad):g.moveTo(Math.cos(ang)*rad,Math.sin(ang)*rad);} g.closePath(); g.fill(); g.restore(); } }
+}
+function openShop(){
+  $('shopCoins').textContent = S.coins;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab===shopTab));
+  const grid = $('shopGrid'); grid.innerHTML = '';
+  const isBalls = shopTab==='balls';
+  const list  = isBalls ? BALLS : TRAILS;
+  const owned = isBalls ? S.ownedBalls : S.ownedTrails;
+  const equip = isBalls ? S.ball : S.trail;
+
+  list.forEach(it => {
+    const own = owned.includes(it.id), eq = equip===it.id;
+    const d = document.createElement('div');
+    d.className = 'item' + (eq?' equipped':'') + (own?'':' locked');
+    const c = document.createElement('canvas');
+    if (isBalls){ c.width=c.height=76; previewBall(c, it.id); }
+    else { c.width=104; c.height=54; previewTrail(c, it.id); }
+    // Locked items keep their real colours — greying them out hid exactly the thing
+    // you're meant to want. The price tag already says it's locked.
+    if (!own) c.style.filter = 'brightness(.86)';
+    const lbl = document.createElement('b'); lbl.textContent = it.name;
+    const pr = document.createElement('div'); pr.className = 'price'+(own?' owned':'');
+    pr.textContent = eq ? 'EQUIPPED' : own ? 'OWNED' : '🪙 '+it.cost;
+    d.appendChild(c); d.appendChild(lbl); d.appendChild(pr);
+    d.onclick = () => {
+      if (eq) return;
+      if (own){ if (isBalls) S.ball = it.id; else S.trail = it.id; save(); Sound.click(); }
+      else {
+        if (S.coins >= it.cost){
+          S.coins -= it.cost;
+          if (isBalls){ S.ownedBalls.push(it.id); S.ball = it.id; } else { S.ownedTrails.push(it.id); S.trail = it.id; }
+          save(); Sound.buy();
+        } else {
+          Sound.deny();
+          d.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:200});
+          return;
+        }
+      }
+      openShop();
+    };
+    grid.appendChild(d);
+  });
+  showScreen('scrShop');
+}
+
+/* ---------------- stats ---------------- */
+function openStats(){
+  const st = S.stats;
+  const acc = st.shots ? Math.round(st.made/st.shots*100) : 0;
+  const rows = [
+    ['Shots taken', st.shots], ['Shots made', st.made], ['Accuracy', acc+'%'],
+    ['Best combo', st.bestCombo], ['Best score (any mode)', st.bestScore],
+    ['Best — Classic', S.best.classic||0], ['Best — Time Attack', S.best.time||0], ['Best — High Score', S.best.hs||0],
+    ['Games played', st.games], ['Coins', S.coins]
+  ];
+  $('statsCard').innerHTML = rows.map(r => '<div class="stat"><span>'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
+  showScreen('scrStats');
+}
+
+/* ---------------- settings ---------------- */
+function syncToggles(){
+  $('tgSfx').classList.toggle('on', !!S.sfx);
+  $('tgMusic').classList.toggle('on', !!S.music);
+  $('tgShake').classList.toggle('on', !!S.shake);
+  $('tgLeft').classList.toggle('on', !!S.lefty);
+}
+
+/* ---------------- wiring ---------------- */
+// First time here? Teach before the mode picker — nobody reads a hint mid-flick.
+$('btnPlay').onclick     = () => { Sound.click(); if (!S.seenTut){ openTut(true); return; } toModes(); };
+$('btnHow').onclick      = () => { Sound.click(); openTut(false); };
+$('btnTutGo').onclick    = () => { Sound.click(); S.seenTut = true; save(); toModes(); };
+$('btnTutBack').onclick  = () => { Sound.click(); S.seenTut = true; save(); toMenu(); };
+$('btnShop').onclick     = () => { Sound.click(); openShop(); };
+$('btnStats').onclick    = () => { Sound.click(); openStats(); };
+$('btnSettings').onclick = () => { Sound.click(); syncToggles(); showScreen('scrSettings'); };
+$('btnModesBack').onclick= () => { Sound.click(); toMenu(); };
+$('btnShopBack').onclick = () => { Sound.click(); toMenu(); };
+$('btnStatsBack').onclick= () => { Sound.click(); toMenu(); };
+$('btnSetBack').onclick  = () => { Sound.click(); toMenu(); };
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { shopTab = t.dataset.tab; Sound.click(); openShop(); });
+document.querySelectorAll('.mode').forEach(m => m.onclick = () => { Sound.click(); Sound.unlock(); startGame(m.dataset.mode); });
+
+$('btnReset').onclick = () => {
+  if (!confirm('Reset all statistics and best scores? Coins and unlocks are kept.')) return;
+  S.stats = JSON.parse(JSON.stringify(DEFAULT_SAVE.stats));
+  S.best  = JSON.parse(JSON.stringify(DEFAULT_SAVE.best));
+  save(); openStats();
+};
+$('tgSfx').onclick   = () => { S.sfx = !S.sfx; save(); syncToggles(); if (S.sfx) Sound.click(); };
+$('tgMusic').onclick = () => { S.music = !S.music; save(); syncToggles(); Sound.applyMusicSetting(); if (S.music){ Sound.ready(); resumeMusicForScreen(); } };
+$('tgShake').onclick = () => { S.shake = !S.shake; save(); syncToggles(); Sound.click(); };
+$('tgLeft').onclick  = () => { S.lefty = !S.lefty; save(); syncToggles(); Sound.click(); syncHint(); };
+
+$('pauseBtn').onclick = () => { if (!G.running) return; G.paused = true; drag = null; Sound.stopMusic(); showScreen('scrPause'); };
+$('btnResume').onclick = () => { G.paused = false; hideScreens(); $('hud').classList.remove('hidden'); Sound.startMusic('game'); };
+$('btnRestart').onclick= () => { Sound.click(); startGame(G.mode); };
+$('btnQuit').onclick   = () => { Sound.click(); if (G.running){ commitRunStats(); save(); } G.running=false; toMenu(); };
+$('btnAgain').onclick  = () => { Sound.click(); startGame(G.mode); };
+$('btnOverLb').onclick    = () => { Sound.click(); if (window.IGAuth) IGAuth.showLeaderboard('scoop','Basket Scoop — 60s'); };
+$('btnOverModes').onclick = () => { Sound.click(); toModes(); };
+$('btnOverMenu').onclick  = () => { Sound.click(); toMenu(); };
+
+/* ---------------- loop ---------------- */
+let last = 0;
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (t - last)/1000 || 0);
+  last = t;
+  update(dt);
+  render();
+}
+syncHint();
+toMenu();
+requestAnimationFrame(loop);
+</script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
+  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
+    try{ var s=JSON.parse(localStorage.getItem(SKEY)); var tb=s&&s.best?(+s.best.time||0):0; if(tb>0) IGAuth.submitScore('scoop',tb); }catch(e){} }); });</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+<script src="../friends.js" defer></script>
+<script src="../rec.js" defer></script>
+</body>
+</html>
