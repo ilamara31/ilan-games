@@ -481,18 +481,23 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 
 /* ---------------- pure rules (unit-tested) ---------------- */
-// crazy-mode adjacency wraps around: the highest number and 1 are neighbours (above max = 1).
-// maxN defaults to 10 so old 2-arg callers keep the classic 10↔1 wrap.
-function adj(a,b,maxN){ maxN=maxN||10; return Math.abs(a-b)===1 || (Math.min(a,b)===1 && Math.max(a,b)===maxN); }
-function evalBall(mode, bat, bowl, maxN){
-  maxN=maxN||10;
+// The ONLY playable numbers, ever: 1–10, then tens up to 100. No in-between numbers
+// (no 35, 48, 66…). "Highest number" just trims this list to everything ≤ maxN.
+const NUMSET=[1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100];
+function numsFor(maxN){ maxN=maxN||10; return NUMSET.filter(v=>v<=maxN); }
+// crazy-mode adjacency = neighbours in the active number list (so 10's neighbours are 9 and 20),
+// and it wraps: the highest number and 1 are neighbours too.
+function adjNums(nums,a,b){ const ia=nums.indexOf(a), ib=nums.indexOf(b); if(ia<0||ib<0) return false;
+  return Math.abs(ia-ib)===1 || (Math.min(ia,ib)===0 && Math.max(ia,ib)===nums.length-1); }
+function evalBall(mode, bat, bowl, nums){
+  nums = nums || numsFor(10);
   if (mode==='normal'){
     if (bat===bowl) return {out:true, runs:0, crazy:false};
     return {out:false, runs:bat, crazy:false};
   }
-  if (bat===bowl) return {out:false, runs:bat*bat, crazy:true};       // crazy: square
-  if (adj(bat,bowl,maxN)) return {out:true, runs:0, crazy:false};     // adjacent (incl. max↔1): out
-  return {out:false, runs:bat, crazy:false};                          // else: safe runs
+  if (bat===bowl) return {out:false, runs:bat*bat, crazy:true};        // crazy: square
+  if (adjNums(nums,bat,bowl)) return {out:true, runs:0, crazy:false};  // adjacent (incl. highest↔1): out
+  return {out:false, runs:bat, crazy:false};                           // else: safe runs
 }
 
 /* ---------------- save ---------------- */
@@ -628,7 +633,7 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 function newMatch(cfg){
   EPOCH++;
   Object.assign(G,{
-    mode:cfg.mode, maxN:cfg.maxN||10, type:cfg.type, opp:cfg.opp, ai:cfg.ai||'medium',
+    mode:cfg.mode, maxN:cfg.maxN||10, nums:numsFor(cfg.maxN||10), type:cfg.type, opp:cfg.opp, ai:cfg.ai||'medium',
     aName:'You', aAv:SV.avatar, bName:cfg.bName||'AI', bAv:cfg.bAv||'🤖',
     a:0, b:0, aOut:false, bOut:false, innings:1, firstBat:'a', batting:'a',
     target:null, hbat:[], hbowl:[], busy:false,
@@ -640,12 +645,12 @@ function newMatch(cfg){
 }
 
 /* ---------------- number pad ---------------- */
-function buildPad(){ const pad=$('pad'); const N=G.maxN||10;
-  const cols = N<=10?5 : N<=24?6 : N<=48?8 : 10;
-  pad.className='pad'+(SV.theme!=='default'?' theme-'+SV.theme:'')+(N>20?' dense':'');
+function buildPad(){ const pad=$('pad'); const ns=G.nums||numsFor(10);
+  const cols = ns.length<=10?5:6;
+  pad.className='pad'+(SV.theme!=='default'?' theme-'+SV.theme:'')+(ns.length>12?' dense':'');
   pad.style.gridTemplateColumns='repeat('+cols+',1fr)';
-  pad.innerHTML=''; for(let n=1;n<=N;n++){ const b=document.createElement('button'); b.className='num'; b.textContent=n; b.dataset.n=n;
-    b.addEventListener('click',()=>onNumber(n)); pad.appendChild(b); } }
+  pad.innerHTML=''; ns.forEach(n=>{ const b=document.createElement('button'); b.className='num'; b.textContent=n; b.dataset.n=n;
+    b.addEventListener('click',()=>onNumber(n)); pad.appendChild(b); }); }
 function padLock(l){ $('pad').classList.toggle('locked',l); }
 function padEnableAll(){ $('pad').querySelectorAll('.num').forEach(b=>b.classList.remove('dis','chosen')); }
 
@@ -726,7 +731,7 @@ function revealAndResolve(batNum,bowlNum){
 }
 
 function resolve(batNum,bowlNum,myE){
-  const ev=evalBall(G.mode,batNum,bowlNum,G.maxN);
+  const ev=evalBall(G.mode,batNum,bowlNum,G.nums);
   const batSide=G.batting;
   if(ev.out){
     Sound.wicket(); shake(true); spawnParts(24,{colors:['#ff5252','#ff9a52','#fff'],spd:5}); fxStart();
@@ -803,10 +808,9 @@ $('brkNext').addEventListener('click',()=>{ Sound.click(); startInnings(); });
    ACROSS matches (SV.hist.bat / SV.hist.bowl, persisted). Harder difficulty =
    uses that prediction more often + sees more of your history, so if you keep
    playing e.g. 9, Expert will start bowling to get you out on 9. */
-function randNum(){ return rint(1, G.maxN||10); }
-function weightedHigh(){ const N=G.maxN||10;
-  if(N===10){ const pool=[3,4,5,6,6,7,7,8,8,9,9,10,10]; return pool[(Math.random()*pool.length)|0]; }
-  return rint(Math.max(1,Math.ceil(N*0.4)), N);   // bias toward the upper end for big hits
+function randNum(){ const ns=G.nums||numsFor(10); return ns[(Math.random()*ns.length)|0]; }
+function weightedHigh(){ const ns=G.nums||numsFor(10);
+  const lo=Math.floor(ns.length*0.4); return ns[lo+((Math.random()*(ns.length-lo))|0)];   // bias toward the upper end for big hits
 }
 function recordPick(kind,n){ const h=SV.hist[kind]; h.push(n); if(h.length>80)h.shift(); }
 // combined history for a role: persistent (older) + this match (most recent). depth caps how
@@ -818,35 +822,36 @@ function combined(kind){
   return persistent.slice(-Math.max(0,depth-inmatch.length)).concat(inmatch);
 }
 function predict(hist){
-  const N=G.maxN||10;
+  const ns=G.nums||numsFor(10);
   if(!hist.length) return randNum();
-  const w=new Array(N+1).fill(0);
-  hist.forEach((v,i)=>{ if(v>=1&&v<=N) w[v]+=1+(i/hist.length)*2; });   // recent picks weighted much higher (ignore out-of-range history)
-  const last=hist[hist.length-1]; if(last>=1&&last<=N) w[last]+=0.8;    // repeat bias (people repeat favourites)
-  let best=1,bv=-1; for(let n=1;n<=N;n++){ if(w[n]>bv){bv=w[n];best=n;} }
+  const w={}; ns.forEach(v=>{ w[v]=0; });
+  hist.forEach((v,i)=>{ if(w[v]!=null) w[v]+=1+(i/hist.length)*2; });   // recent picks weighted much higher (ignore off-set history)
+  const last=hist[hist.length-1]; if(w[last]!=null) w[last]+=0.8;       // repeat bias (people repeat favourites)
+  let best=ns[0],bv=-1; ns.forEach(v=>{ if(w[v]>bv){bv=w[v];best=v;} });
   return best;
 }
 const STR={easy:0,medium:.45,hard:.72,expert:.93}, BLUFF={easy:0,medium:.12,hard:.15,expert:.22};
 function aiBowl(){ // AI bowling, human batting -> try to get the human OUT on their likely number
-  const s=STR[G.ai], bl=BLUFF[G.ai], N=G.maxN||10;
+  const s=STR[G.ai], bl=BLUFF[G.ai], ns=G.nums||numsFor(10);
   if(Math.random()>s || Math.random()<bl) return randNum();     // dumb tiers / occasional bluff
   const p=predict(combined('bat'));
-  if(G.mode==='normal') return clamp(p,1,N);                    // match their predicted number = out
-  // crazy: equal gives them a square! only ADJACENT (incl. max↔1) is out — bowl a neighbour of p
-  const opts=[p-1,p+1].filter(x=>x>=1&&x<=N);
-  if(p===N)opts.push(1); if(p===1)opts.push(N);
+  if(G.mode==='normal') return p;                               // match their predicted number = out
+  // crazy: equal gives them a square! only ADJACENT (incl. highest↔1) is out — bowl a set-neighbour of p
+  const i=ns.indexOf(p), opts=[];
+  if(i>0)opts.push(ns[i-1]); if(i<ns.length-1)opts.push(ns[i+1]);
+  if(i===0)opts.push(ns[ns.length-1]); if(i===ns.length-1)opts.push(ns[0]);   // wrap: highest ↔ 1
   if(!opts.length) return randNum();
   return opts[(Math.random()*opts.length)|0];
 }
 function aiBat(){ // AI batting, human bowling -> dodge the human's likely ball, score big
-  const s=STR[G.ai], bl=BLUFF[G.ai], N=G.maxN||10;
+  const s=STR[G.ai], bl=BLUFF[G.ai], ns=G.nums||numsFor(10);
   if(Math.random()>s || Math.random()<bl) return G.mode==='crazy'?weightedHigh():randNum();
   const pb=predict(combined('bowl'));
   let safe=[];
-  for(let n=1;n<=N;n++){
+  ns.forEach(n=>{
     if(G.mode==='normal'){ if(n!==pb)safe.push(n); }
-    else { if(!adj(n,pb,N))safe.push(n); }                      // equal(pb) is allowed — it's a square!
-  }
+    else { if(!adjNums(ns,n,pb))safe.push(n); }                 // equal(pb) is allowed — it's a square!
+  });
   if(!safe.length) return randNum();
   if(G.mode==='crazy'){
     if(Math.random()<0.4 && safe.includes(pb)) return pb;       // gamble on a square off the predicted ball
@@ -935,7 +940,7 @@ function ruleDesc(mode){ return mode==='crazy'
   ? 'Same number = number²! (7+7 = 49). But if the bowler picks 1 above or below you — OUT! (the highest number and 1 are neighbours too.)'
   : 'Same number = OUT. Otherwise you score your batting number.'; }
 function updateModeDesc(){ let t=ruleDesc(setupCfg.mode);
-  if(setupCfg.custom) t='Playing with numbers 1–'+setupCfg.maxN+'.  '+t;
+  if(setupCfg.custom) t='Numbers: '+numsFor(setupCfg.maxN).join(', ')+'.  '+t;
   $('modeDesc').textContent=t; }
 function updateTypeDesc(){ const d={quick:'A single match.',league:'Round-robin — top the table.',tournament:'8-team knockout bracket.',worldcup:'Group stage + knockouts. The big one!'}; $('typeDesc').textContent=d[setupCfg.type]||''; }
 $('modeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(!b)return; Sound.click();
