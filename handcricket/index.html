@@ -931,6 +931,13 @@ const TL={
 
 const myId='u'+Math.random().toString(36).slice(2,9);
 const STAND_MS=8000, AFK_MS=45000, MAX_PLAYERS=10, ROUND_TIMEOUT_MS=90000;
+// A round is only force-resolved for matches that have gone SILENT (no live-score progress) for
+// STUCK_MS — an actively-played match, however long, is never force-ended (fixes "random winner
+// mid-match"). ROUND_HARD_CAP_MS is an absolute backstop so a wedged round can never freeze forever.
+// IMPORTANT: keep STUCK_MS > AFK_MS. If only one player in a match goes silent, the awake player's
+// AFK win (at AFK_MS) resolves the match FIRST; the STUCK_MS force-resolve is only a both-sides-gone
+// safety net. Shrinking STUCK_MS below AFK_MS would reintroduce the random-mid-match-winner bug.
+const STUCK_MS=70000, ROUND_HARD_CAP_MS=360000;
 // Liveness is decided by APPLICATION-LEVEL signals, not Supabase presence (which
 // blips unreliably under load and used to cause false "host left" boots and false
 // "kicked out" player removals). The host heartbeats every ~3.5s (proves host alive);
@@ -983,7 +990,7 @@ const MP={
   // it can't overload the room channel and strand other players' directive delivery.
   matchCh:null, matchId:null,
   openMatch(matchId){ this.closeMatch(); if(!this.sb||!this.code)return; this.matchId=matchId;
-    const ch=this.sb.channel('hcl-m-'+this.code+'-'+matchId,{config:{broadcast:{self:false}}});
+    const ch=this.sb.channel('hcl-m-'+this.code+'-'+matchId,{config:{broadcast:{self:false}}}); ch._mid=matchId;
     ch.on('broadcast',{event:'move'},({payload})=>onMoveMsg(payload));
     ch.subscribe(()=>{}); this.matchCh=ch; },
   sendMove(payload){ if(this.matchCh){ try{ this.matchCh.send({type:'broadcast',event:'move',payload:payload||{}}); }catch(e){} } },
@@ -1083,6 +1090,10 @@ function hostStartRound(){
 }
 function hostOnResult(res){
   if(!R||!R.isHost) return;
+  // ignore a late/retried result for a match that isn't in the CURRENT round (e.g. a match that was
+  // force-resolved last round, then the real result arrives after roundResults was reset for the new
+  // round). Counting it would inflate the "round done" tally and prematurely end the next round.
+  if(res && res.matchId!=null && !(R.roundPairs||[]).some(pr=>pr.matchId===res.matchId)) return;
   const prev=R.roundResults[res.matchId];
   if(prev){ // conflicting winner claims (both-idle / partition) → deterministic tiebreak, lower id wins
     if(prev.winner!==res.winner){ prev.winner = (res.aId<res.bId)?res.aId:res.bId; R.results[res.matchId]=prev; }
@@ -1097,11 +1108,21 @@ function hostCheckRound(){ if(!R||!R.isHost||R._closing)return;
 // AFK/walkover couldn't resolve it), force-resolve the remaining pairs so the WHOLE tournament
 // never freezes. Deterministic winner (lower id) so it can't disagree with anything.
 function scheduleRoundTimeout(){ const nonce=(R._rnonce=(R._rnonce||0)+1), g=RGEN;
-  setTimeout(()=>{ if(g!==RGEN||!R||!R.isHost||R._rnonce!==nonce||R._closing)return; hostForceRound(); }, ROUND_TIMEOUT_MS); }
-function hostForceRound(){ if(!R||!R.isHost||R._closing)return;
-  R.roundPairs.forEach(pr=>{ if(!R.roundResults[pr.matchId]){ const w=(pr.a<pr.b)?pr.a:pr.b;
-    R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:0,bScore:0,winner:w,reason:'timeout'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; } });
-  hostCheckRound(); }
+  R._roundStart=performance.now(); R.liveSeen={};
+  const tick=()=>{ if(g!==RGEN||!R||!R.isHost||R._rnonce!==nonce||R._closing)return;
+    const now=performance.now(); let forced=false, active=false;
+    (R.roundPairs||[]).forEach(pr=>{ if(R.roundResults[pr.matchId]) return;
+      if(pr.a===myId||pr.b===myId){ active=true; return; }     // my own match resolves via play / AFK / walkover — never force it
+      const last=R.liveSeen[pr.matchId]||R._roundStart;
+      const stuck=(now-last)>STUCK_MS || (now-R._roundStart)>ROUND_HARD_CAP_MS;   // silent (both players gone/frozen) or absolute backstop
+      if(stuck){ const w=(pr.a<pr.b)?pr.a:pr.b;
+        R.roundResults[pr.matchId]={matchId:pr.matchId,aId:pr.a,bId:pr.b,aScore:0,bScore:0,winner:w,reason:'timeout'}; R.results[pr.matchId]=R.roundResults[pr.matchId]; forced=true; }
+      else active=true;
+    });
+    if(forced) hostCheckRound();
+    if(active && !R._closing) setTimeout(tick, 8000);          // keep watching until every match resolves
+  };
+  setTimeout(tick, 8000); }
 function hostFinishRound(){
   if(!R||!R.isHost||R.phase==='done') return;
   const standings=TL.standings(R.players, Object.values(R.results));
@@ -1161,7 +1182,12 @@ function onNet(kind,payload){
     if(R.lastSeq!=null && payload.seq<=R.lastSeq) return; R.lastSeq=payload.seq;
   }
   if(kind==='ping') return;                              // liveness only (recorded above)
-  if(kind==='score'){ if(payload&&payload.matchId){ LIVE[payload.matchId]=Object.assign({t:performance.now()},payload); if(cur==='twait') renderTwaitLive(); } return; }
+  if(kind==='score'){ if(payload&&payload.matchId){
+    if(R.isHost) (R.liveSeen||(R.liveSeen={}))[payload.matchId]=performance.now();   // proof this match is still being played (stuck-match watchdog)
+    const ex=LIVE[payload.matchId];
+    // accept only non-decreasing progress so a lagging duplicate can never make the score jump backwards
+    if(!ex || payload.prog==null || ex.prog==null || payload.prog>=ex.prog){ LIVE[payload.matchId]=Object.assign({t:performance.now()},payload); if(cur==='twait') renderTwaitLive(); }
+  } return; }
   if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
   if(kind==='leave'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }  // lobby only; in-game leaves handled by the liveness watchdog
   if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
@@ -1280,7 +1306,9 @@ setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.pha
 // live spectate: active tournament players broadcast a lightweight score so WAITING
 // players can watch the other matches. Only in tournaments (quick 2-player has no waiters).
 setInterval(()=>{ if(R && G.online && G.tourney && !G.quick && cur==='game' && G.matchId){
-  MP.send('score',{matchId:G.matchId, aId:G.matchAId, bId:G.matchBId, aName:G.aName, bName:G.bName, aAv:G.aAv, bAv:G.bAv, a:G.a|0, b:G.b|0, bat:G.batting, inns:G.innings|0, tgt:(G.target==null?null:G.target|0), from:myId}); } }, 1500);
+  if(R.isHost) (R.liveSeen||(R.liveSeen={}))[G.matchId]=performance.now();   // host tracks its OWN match's activity (self-broadcasts aren't received)
+  if(G.myside!=='a') return;                                                 // only ONE player per match broadcasts → spectators never see it flip-flop
+  MP.send('score',{matchId:G.matchId, aId:G.matchAId, bId:G.matchBId, aName:G.aName, bName:G.bName, aAv:G.aAv, bAv:G.bAv, a:G.a|0, b:G.b|0, bat:G.batting, inns:G.innings|0, tgt:(G.target==null?null:G.target|0), from:myId, prog:(G.scoreProg=(G.scoreProg||0)+1)}); } }, 1500);
 function tryResolveOnline(){
   if(G.busy || G.myNum==null || G.oppNum==null) return;
   clearAfk(); G.busy=true;
@@ -1351,7 +1379,7 @@ function startLiveWatch(){ if(LWDog) clearInterval(LWDog); const g=RGEN;
     const s=MP.state();
     if(s!=='joined'&&s!=='joining'){ MP.reopen(); R.lastHostMsg=now; if(R.seen)R.players&&R.players.forEach(p=>R.seen[p.id]=now); return; }
     // 2) heal a dropped per-match channel so a live match can't soft-lock on lost moves
-    if(G.online && cur==='game' && G.matchId && MP.matchCh && MP.matchCh.state!=='joined' && MP.matchCh.state!=='joining'){ MP.openMatch(G.matchId); }
+    if(G.online && cur==='game' && G.matchId && (!MP.matchCh || MP.matchCh._mid!==G.matchId || (MP.matchCh.state!=='joined' && MP.matchCh.state!=='joining'))){ MP.openMatch(G.matchId); }
     if(R.isHost){
       if(R.phase==='group'||R.phase==='ko'){
         const present=new Set(MP.presenceList().map(p=>p.id));
@@ -1596,6 +1624,11 @@ if(window.IGAuth)IGAuth.onChange&&IGAuth.onChange(()=>{});
 (function(){ try{ const rc=new URLSearchParams(location.search).get('room');
   if(rc){ const code=rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
     if(code.length===4){ openRoom(); setTimeout(()=>joinRoom(code), 300); } } }catch(e){} })();
+/* test-only hook (inert unless ?cwtest is in the URL) */
+try{ if(String(location.search).indexOf('cwtest')>=0){ window.HC_T={
+  myId:myId, getR:()=>R, getG:()=>G, getCur:()=>cur, MP:MP, getLIVE:()=>LIVE,
+  createRoomFlow:createRoomFlow, joinRoom:joinRoom, hostStart:hostStart, onlinePick:onlinePick
+}; } }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>

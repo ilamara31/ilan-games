@@ -213,7 +213,7 @@
 
   /* ---- chat blocking (live multiplayer matches call IGFriends.blockChat(true) so you can't chat mid-match) ---- */
   let _chatBlocked = false;
-  function blockChat(b) { _chatBlocked = !!b; S(function () { const btn = document.getElementById("igf-bell"); if (btn) btn.style.display = _chatBlocked ? "none" : "flex"; }); if (_chatBlocked) S(function () { document.querySelectorAll(".igf-ov").forEach(function (o) { o.remove(); }); }); }
+  function blockChat(b) { _chatBlocked = !!b; S(function () { const btn = document.getElementById("igf-bell"); if (btn) btn.style.display = _chatBlocked ? "none" : "flex"; }); if (_chatBlocked) S(function () { document.querySelectorAll(".igf-ov").forEach(function (o) { if (o.__stopRec) o.__stopRec(); o.remove(); }); }); }
 
   /* ---- media messages (voice + photo) — encoded in the text body, stored in the avatars bucket (no schema change) ---- */
   const MED = "\u0001";   // invisible sentinel prefixing media message bodies
@@ -268,8 +268,18 @@
       // "■" (U+25A0) renders on virtually every font — unlike the emoji ⏹ (U+23F9),
       // which shows as a blank/tofu glyph on many phones (looks like "no button to tap").
       const sendBtn = ov.querySelector("#igf-csend");
-      let rec = null, t0 = 0, timerInt = null, prevSendTxt = "", prevSendBg = "", prevSendClick = null;
+      let rec = null, starting = false, t0 = 0, timerInt = null, prevSendTxt = "", prevSendBg = "", prevSendClick = null;
+      let prevPhotoTxt = "", prevPhotoTitle = "", prevPhotoClick = null;
+      // restore the chat bar to its normal (not-recording) look — shared by send & discard
+      function resetRecUI() {
+        micBtn.textContent = "🎤"; micBtn.classList.remove("rec"); micBtn.disabled = false;
+        if (sendBtn) { sendBtn.textContent = prevSendTxt || "Send"; sendBtn.style.background = prevSendBg; sendBtn.onclick = prevSendClick; }
+        if (photoBtn) { photoBtn.textContent = prevPhotoTxt || "📷"; photoBtn.title = prevPhotoTitle || "Send a photo"; photoBtn.onclick = prevPhotoClick; photoBtn.disabled = false; }
+        if (timerInt) { clearInterval(timerInt); timerInt = null; }
+      }
       async function beginRecording() {
+        if (rec || starting) return;   // guard against a double-tap during the getUserMedia gap (would corrupt saved button state)
+        starting = true;
         try {
           rec = await startRecording(); t0 = Date.now();
           micBtn.textContent = "■"; micBtn.classList.add("rec");
@@ -277,21 +287,34 @@
             prevSendTxt = sendBtn.textContent; prevSendBg = sendBtn.style.background; prevSendClick = sendBtn.onclick;
             sendBtn.textContent = "■ Send voice"; sendBtn.style.background = "#ff3b5c"; sendBtn.onclick = finishRecording;
           }
-          timerInt = setInterval(function () { warn("🔴 Recording " + Math.floor((Date.now() - t0) / 1000) + "s — tap the red ■ button to send"); }, 300);
+          if (photoBtn) {   // repurpose the 📷 button as a WhatsApp-style discard (delete) button while recording
+            prevPhotoTxt = photoBtn.textContent; prevPhotoTitle = photoBtn.title; prevPhotoClick = photoBtn.onclick;
+            photoBtn.textContent = "🗑️"; photoBtn.title = "Delete this recording (don't send)"; photoBtn.onclick = discardRecording; photoBtn.disabled = false;
+          }
+          timerInt = setInterval(function () { warn("🔴 Recording " + Math.floor((Date.now() - t0) / 1000) + "s — tap ■ to send, or 🗑️ to delete"); }, 300);
         } catch (e) { warn("Allow microphone access to record a voice message."); rec = null; }
+        finally { starting = false; }
+      }
+      // stop recording and throw the audio away — nothing is uploaded or sent
+      function discardRecording() {
+        if (!rec) return;
+        const cur = rec; rec = null;
+        try { cur.mr.onstop = function () { try { cur.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }; cur.mr.stop(); }
+        catch (e) { try { cur.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e2) {} }
+        resetRecUI();
+        warn("🗑️ Voice message deleted."); setTimeout(function () { if (!rec) warn(""); }, 1600);
       }
       async function finishRecording() {
         if (!rec) return;
         const cur = rec; rec = null;
-        micBtn.textContent = "🎤"; micBtn.classList.remove("rec");
-        if (sendBtn) { sendBtn.textContent = prevSendTxt || "Send"; sendBtn.style.background = prevSendBg; sendBtn.onclick = prevSendClick; }
-        if (timerInt) clearInterval(timerInt);
+        resetRecUI();
         const dur = Math.max(1, Math.round((Date.now() - t0) / 1000)); warn("🎤 Sending…"); micBtn.disabled = true;
         try { const blob = await stopRecording(cur); const ext = cur.mime.indexOf("mp4") >= 0 ? "mp4" : "webm"; const ctype = ext === "mp4" ? "audio/mp4" : "audio/webm"; const url = await uploadBlob(blob, "voice", ext, ctype); await onMediaReady(mkAud(url, dur)); warn(""); }
         catch (e) { warn(e.message || "Couldn't send that voice message."); }
         micBtn.disabled = false;
       }
       micBtn.onclick = function () { if (!rec) beginRecording(); else finishRecording(); };
+      ov.__stopRec = function () { if (rec) discardRecording(); };   // release the mic if the chat is closed mid-recording
     }
   }
 
@@ -317,6 +340,18 @@
       if (targetScore >= maxScore) games.push(g);
     }
     games.sort(); return { count: games.length, games: games };
+  }
+  // render the "leading" block: a headline count + a chip per game (emoji + name). Always shows,
+  // so a player who leads nothing reads "🥇 Leading 0 games".
+  function leadingHTML(lead) {
+    var games = (lead && lead.games ? lead.games : []).filter(function (g) { return !HIDDEN_GAMES[g]; });
+    var n = games.length;
+    var h = '<div class="igf-lead' + (n === 0 ? ' zero' : '') + '">🥇 Leading ' + n + ' game' + (n === 1 ? '' : 's') + '</div>';
+    if (n > 0) h += '<div class="igf-leadgs">' + games.map(function (g) {
+      var t = GAME_TITLES[g] || g;
+      return '<span class="igf-leadg" title="' + esc(t) + '">' + (GAME_EMOJI[g] || '🎮') + ' ' + esc(t) + '</span>';
+    }).join('') + '</div>';
+    return h;
   }
   async function fetchAllBoard() {
     if (_boardRows) return _boardRows;
@@ -787,6 +822,9 @@
       + ".igf-resume{position:fixed;inset:0;z-index:8700;background:rgba(4,8,18,.86);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff;font-family:-apple-system,system-ui,sans-serif}"
       + ".igf-resume .rb2{font-size:22px;font-weight:900}.igf-resume button{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border:none;border-radius:30px;padding:15px 40px;font-size:19px;font-weight:900;cursor:pointer;box-shadow:0 8px 24px rgba(40,220,120,.4)}"
       + ".igf-lead{display:inline-flex;align-items:center;gap:4px;background:rgba(255,213,74,.16);color:#ffd54a;border-radius:10px;padding:2px 9px;font-size:12px;font-weight:800;margin-top:4px}"
+      + ".igf-lead.zero{background:rgba(255,255,255,.08);color:#9fb3d8}"
+      + ".igf-leadgs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}"
+      + ".igf-leadg{display:inline-flex;align-items:center;gap:4px;background:rgba(255,213,74,.12);border:1px solid rgba(255,213,74,.32);color:#ffe6a3;border-radius:9px;padding:3px 8px;font-size:11px;font-weight:700;line-height:1.1}"
       + ".igf-clickav{cursor:zoom-in}"
       + ".igf-pick{display:flex;align-items:center;gap:8px;background:#16243f;border-radius:10px;padding:8px 11px;margin:4px 0;cursor:pointer}.igf-pick .ck{width:20px;height:20px;border-radius:6px;border:2px solid #3a6cf0;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}.igf-pick.on .ck{background:#3a6cf0}"
       + ".igf-att{background:#26344f;color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:17px;cursor:pointer;flex:0 0 auto;padding:0}.igf-att:disabled{opacity:.5}.igf-att.rec{background:#ff3b5c;animation:igpulse 1s infinite}@keyframes igpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}"
@@ -880,7 +918,7 @@
     const pending = _out.some(function (o) { return o.key === key; });
     const board = await fetchAllBoard();
     const lead = igCountLeading(board, realName);
-    const leadH = lead.count > 0 ? '<div class="igf-lead" title="' + esc(lead.games.map(function (g) { return GAME_TITLES[g] || g; }).join(", ")) + '">🥇 Leading ' + lead.count + " game" + (lead.count > 1 ? "s" : "") + "</div>" : "";
+    const leadH = leadingHTML(lead);
     const scores = await scoresFor(realName);
     let scoreH = "";
     if (scores.length) scoreH = '<div class="igf-sec">Scores</div>' + scores.map(function (r) {
@@ -1027,7 +1065,7 @@
       const t = ov.querySelector("#igf-typing"); if (!t) return;
       if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = "";
     });
-    function closeChat() { _chatOpenWith = null; _chatOv = null; _chatOpts = null; try { typer.close(); } catch (e) {} ov.remove(); disarmPause(); }
+    function closeChat() { if (ov.__stopRec) ov.__stopRec(); _chatOpenWith = null; _chatOv = null; _chatOpts = null; try { typer.close(); } catch (e) {} ov.remove(); disarmPause(); }
     ov.addEventListener("click", function (e) { if (e.target === ov) closeChat(); });
     ov.querySelector("#igf-chat-close").onclick = closeChat;
     ov.querySelector("#igf-chat-hd").onclick = function () { closeChat(); openProfile(name, key); };
@@ -1083,7 +1121,7 @@
     } catch (e) {} });
     let typingHideT = null;
     const typer = makeTypingChannel("gtyp-" + groupId, function (who) { const t = ov.querySelector("#igf-typing"); if (!t) return; if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = ""; });
-    function close() { try { typer.close(); } catch (e) {} try { if (sub) ensureSb().then(function (s) { try { s.removeChannel(sub); } catch (e) {} }); } catch (e) {} ov.remove(); disarmPause(); }
+    function close() { if (ov.__stopRec) ov.__stopRec(); try { typer.close(); } catch (e) {} try { if (sub) ensureSb().then(function (s) { try { s.removeChannel(sub); } catch (e) {} }); } catch (e) {} ov.remove(); disarmPause(); }
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     ov.querySelector("#igf-g-close").onclick = close;
     ov.querySelector("#igf-g-hd").onclick = function () { close(); openGroupInfo(groupId); };
@@ -1309,5 +1347,6 @@
     onUpdate: onUpdate, reqInCount: function () { return _in.length; }, bellCount: bellCount,
     weeklyInfo: weeklyInfo, isWeekWinner: isWeekWinner, ready: function () { return started; }
   };
+  try { if (String(location.search).indexOf("cwtest") >= 0) window.IGFriends._t = { igCountLeading: igCountLeading, leadingHTML: leadingHTML, wireAttachments: wireAttachments, GAME_TITLES: GAME_TITLES, GAME_EMOJI: GAME_EMOJI, HIDDEN_GAMES: HIDDEN_GAMES }; } catch (e) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
