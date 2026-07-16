@@ -127,6 +127,12 @@
     background:rgba(10,18,34,.6); border:1px solid #2b3f6b; color:#fff; font-size:15px; cursor:pointer; pointer-events:auto; font-family:inherit; }
   #hint{ bottom:calc(env(safe-area-inset-bottom) + 18px); left:0; right:0; text-align:center; color:#9fb3d8; font-size:14px;
     text-shadow:0 2px 6px rgba(0,0,0,.8); transition:opacity .3s; }
+  /* mid-screen: clear of the hoop above and the ball below, so it never hides the target */
+  #toast{ top:51%; left:50%; transform:translateX(-50%) translateY(-10px);
+    background:rgba(10,18,34,.94); border:2px solid #ff9b3d; color:#ffd54a; font-weight:800; font-size:15px;
+    padding:11px 18px; border-radius:14px; white-space:nowrap; opacity:0; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease; box-shadow:0 10px 28px rgba(0,0,0,.55); }
+  #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   #flash{ position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0; }
 
@@ -155,6 +161,7 @@
       <div id="coinHud">🪙 0</div>
     </div>
     <div id="hint">Swipe the ball up to shoot</div>
+    <div id="toast"></div>
   </div>
   <div id="flash"></div>
 
@@ -295,7 +302,7 @@ const DEFAULT_SAVE = {
   ownedTrails: ['none'],   trail: 'none',
   stats: { shots:0, made:0, bestCombo:0, bestScore:0, games:0 },
   sfx: true, music: true, shake: true, lefty: false,
-  seenTut: false
+  seenTut: false, warnedDown: false
 };
 let S = load();
 function load(){
@@ -1292,9 +1299,29 @@ window.addEventListener('pointerup', e => {
   if (!G.running || G.paused || !G.ready) return;
   d.x = e.clientX; d.y = e.clientY;
   const dxN = (d.x - d.x0)/H, dyN = -(d.y - d.y0)/H;
-  if (dyN < MIN_UP) return;                      // a tap or a downward drag — not a shot
+  if (dyN < MIN_UP){                             // a tap or a downward drag — not a shot
+    if (dyN < -MIN_UP) warnSwipeDown();          // deliberately downward, not just a tap
+    return;
+  }
   shoot(dxN, dyN);
 });
+
+/* Flicking DOWN is a lot of people's first guess (pull-back, like a slingshot).
+   Say which way once, then never again — a warning that fires every time is just
+   nagging, and by then they already know. */
+let toastTimer = null;
+function showToast(msg){
+  const el = $('toast');
+  el.textContent = msg; el.classList.add('on');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+function warnSwipeDown(){
+  if (S.warnedDown) return;
+  S.warnedDown = true; save();
+  showToast('👆 Swipe UPWARDS to shoot');
+  Sound.deny();
+}
 cv.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
 
 function shoot(dxN, dyN){
