@@ -130,6 +130,13 @@
   .num.dis{pointer-events:none;filter:grayscale(.5) brightness(.6);}
   .num.chosen{outline:3px solid #fff;transform:translateY(2px);}
   .pad.locked .num{pointer-events:none;}
+  /* dense pad for large custom ranges (up to 100) — smaller buttons + scroll */
+  .pad.dense{gap:6px;max-height:44vh;overflow-y:auto;padding:2px;}
+  .pad.dense .num{font-size:clamp(13px,4.2vw,20px);border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.35),0 0 12px var(--btn-glow);}
+  /* Custom-mode sub-card (rule + highest-number picker) */
+  .subcard{display:none;} .subcard.on{display:block;}
+  .numsel{width:100%;margin-top:8px;padding:12px;border-radius:12px;border:2px solid var(--cardb);
+    background:var(--card);color:var(--ink);font-size:16px;font-weight:800;text-align:center;}
   /* themes */
   .pad.theme-fire{--btn-bg:linear-gradient(160deg,#ff8a3d,#c11f1f);--btn-br:#ffd08a;--btn-glow:rgba(255,90,20,.6);}
   .pad.theme-ice{--btn-bg:linear-gradient(160deg,#7fe3ff,#2a7fd0);--btn-br:#d6f4ff;--btn-glow:rgba(90,190,255,.6);--btn-ink:#04203a;}
@@ -233,6 +240,16 @@
         <div class="seg" id="modeSeg" style="margin-top:8px">
           <button class="chip on" data-mode="normal">🏏 Normal</button>
           <button class="chip" data-mode="crazy">🔥 Crazy Mode</button>
+          <button class="chip" data-mode="custom">🎯 Custom</button>
+        </div>
+        <div class="subcard" id="customCard">
+          <div class="label" style="margin-top:14px">Custom rules</div>
+          <div class="seg" id="customRuleSeg" style="margin-top:8px">
+            <button class="chip on" data-crule="normal">🏏 Normal</button>
+            <button class="chip" data-crule="crazy">🔥 Crazy</button>
+          </div>
+          <div class="label" style="margin-top:14px">Highest number</div>
+          <select class="numsel" id="customMax"></select>
         </div>
         <div class="muted" id="modeDesc" style="text-align:center;margin-top:10px"></div>
       </div>
@@ -268,6 +285,16 @@
         <div class="seg" id="roomModeSeg" style="margin-top:8px">
           <button class="chip on" data-rmode="normal">🏏 Normal</button>
           <button class="chip" data-rmode="crazy">🔥 Crazy Mode</button>
+          <button class="chip" data-rmode="custom">🎯 Custom</button>
+        </div>
+        <div class="subcard" id="roomCustomCard">
+          <div class="label" style="margin-top:14px">Custom rules</div>
+          <div class="seg" id="roomCustomRuleSeg" style="margin-top:8px">
+            <button class="chip on" data-rcrule="normal">🏏 Normal</button>
+            <button class="chip" data-rcrule="crazy">🔥 Crazy</button>
+          </div>
+          <div class="label" style="margin-top:14px">Highest number</div>
+          <select class="numsel" id="roomCustomMax"></select>
         </div>
       </div>
       <button class="btn g block" id="createRoomBtn">➕ Create Room</button>
@@ -293,6 +320,7 @@
           <button class="btn sm b" id="shareMail">✉️ Email</button>
           <button class="btn sm gray" id="shareCopy">🔗 Copy link</button>
         </div>
+        <div class="pill-tag" id="lobbyMode" style="margin-top:10px;display:inline-block">Normal</div>
       </div>
       <div class="label">Players (<span id="lobbyCount">1</span>/10)</div>
       <div id="lobbyList" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
@@ -453,16 +481,18 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 
 /* ---------------- pure rules (unit-tested) ---------------- */
-// crazy-mode adjacency wraps around: 10 and 1 are neighbours (above 10 = 1)
-function adj(a,b){ return Math.abs(a-b)===1 || (Math.min(a,b)===1 && Math.max(a,b)===10); }
-function evalBall(mode, bat, bowl){
+// crazy-mode adjacency wraps around: the highest number and 1 are neighbours (above max = 1).
+// maxN defaults to 10 so old 2-arg callers keep the classic 10↔1 wrap.
+function adj(a,b,maxN){ maxN=maxN||10; return Math.abs(a-b)===1 || (Math.min(a,b)===1 && Math.max(a,b)===maxN); }
+function evalBall(mode, bat, bowl, maxN){
+  maxN=maxN||10;
   if (mode==='normal'){
     if (bat===bowl) return {out:true, runs:0, crazy:false};
     return {out:false, runs:bat, crazy:false};
   }
-  if (bat===bowl) return {out:false, runs:bat*bat, crazy:true};   // crazy: square
-  if (adj(bat,bowl)) return {out:true, runs:0, crazy:false};      // adjacent (incl. 10↔1): out
-  return {out:false, runs:bat, crazy:false};                      // else: safe runs
+  if (bat===bowl) return {out:false, runs:bat*bat, crazy:true};       // crazy: square
+  if (adj(bat,bowl,maxN)) return {out:true, runs:0, crazy:false};     // adjacent (incl. max↔1): out
+  return {out:false, runs:bat, crazy:false};                          // else: safe runs
 }
 
 /* ---------------- save ---------------- */
@@ -598,7 +628,7 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 function newMatch(cfg){
   EPOCH++;
   Object.assign(G,{
-    mode:cfg.mode, type:cfg.type, opp:cfg.opp, ai:cfg.ai||'medium',
+    mode:cfg.mode, maxN:cfg.maxN||10, type:cfg.type, opp:cfg.opp, ai:cfg.ai||'medium',
     aName:'You', aAv:SV.avatar, bName:cfg.bName||'AI', bAv:cfg.bAv||'🤖',
     a:0, b:0, aOut:false, bOut:false, innings:1, firstBat:'a', batting:'a',
     target:null, hbat:[], hbowl:[], busy:false,
@@ -610,8 +640,11 @@ function newMatch(cfg){
 }
 
 /* ---------------- number pad ---------------- */
-function buildPad(){ const pad=$('pad'); pad.className='pad'+(SV.theme!=='default'?' theme-'+SV.theme:'');
-  pad.innerHTML=''; for(let n=1;n<=10;n++){ const b=document.createElement('button'); b.className='num'; b.textContent=n; b.dataset.n=n;
+function buildPad(){ const pad=$('pad'); const N=G.maxN||10;
+  const cols = N<=10?5 : N<=24?6 : N<=48?8 : 10;
+  pad.className='pad'+(SV.theme!=='default'?' theme-'+SV.theme:'')+(N>20?' dense':'');
+  pad.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  pad.innerHTML=''; for(let n=1;n<=N;n++){ const b=document.createElement('button'); b.className='num'; b.textContent=n; b.dataset.n=n;
     b.addEventListener('click',()=>onNumber(n)); pad.appendChild(b); } }
 function padLock(l){ $('pad').classList.toggle('locked',l); }
 function padEnableAll(){ $('pad').querySelectorAll('.num').forEach(b=>b.classList.remove('dis','chosen')); }
@@ -620,9 +653,11 @@ function padEnableAll(){ $('pad').querySelectorAll('.num').forEach(b=>b.classLis
 function beginToss(){
   show('toss'); $('tossChoice').style.display='none'; $('tossFlip').style.display='';
   $('tossMsg').textContent='Tap to flip'; $('tossCoin').classList.remove('spin'); $('tossCoin').textContent='🪙';
-  $('gameTag').textContent = capitalize(G.type)+' · '+(G.mode==='crazy'?'Crazy':'Normal');
+  $('gameTag').textContent = capitalize(G.type)+' · '+modeLabel(G.mode,G.maxN);
 }
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+// "Crazy" / "Normal", plus the range when it's a custom (non-10) game
+function modeLabel(mode,maxN){ const r=mode==='crazy'?'Crazy':'Normal'; return (maxN&&maxN!==10)?(r+' 1–'+maxN):r; }
 
 $('tossFlip').addEventListener('click',()=>{
   const myE=EPOCH;                                   // guard against leaving mid-toss (tossBack)
@@ -691,7 +726,7 @@ function revealAndResolve(batNum,bowlNum){
 }
 
 function resolve(batNum,bowlNum,myE){
-  const ev=evalBall(G.mode,batNum,bowlNum);
+  const ev=evalBall(G.mode,batNum,bowlNum,G.maxN);
   const batSide=G.batting;
   if(ev.out){
     Sound.wicket(); shake(true); spawnParts(24,{colors:['#ff5252','#ff9a52','#fff'],spd:5}); fxStart();
@@ -768,8 +803,11 @@ $('brkNext').addEventListener('click',()=>{ Sound.click(); startInnings(); });
    ACROSS matches (SV.hist.bat / SV.hist.bowl, persisted). Harder difficulty =
    uses that prediction more often + sees more of your history, so if you keep
    playing e.g. 9, Expert will start bowling to get you out on 9. */
-function randNum(){ return rint(1,10); }
-function weightedHigh(){ const pool=[3,4,5,6,6,7,7,8,8,9,9,10,10]; return pool[(Math.random()*pool.length)|0]; }
+function randNum(){ return rint(1, G.maxN||10); }
+function weightedHigh(){ const N=G.maxN||10;
+  if(N===10){ const pool=[3,4,5,6,6,7,7,8,8,9,9,10,10]; return pool[(Math.random()*pool.length)|0]; }
+  return rint(Math.max(1,Math.ceil(N*0.4)), N);   // bias toward the upper end for big hits
+}
 function recordPick(kind,n){ const h=SV.hist[kind]; h.push(n); if(h.length>80)h.shift(); }
 // combined history for a role: persistent (older) + this match (most recent). depth caps how
 // far back weaker AIs look, so Expert has the sharpest read on your tendencies.
@@ -780,32 +818,34 @@ function combined(kind){
   return persistent.slice(-Math.max(0,depth-inmatch.length)).concat(inmatch);
 }
 function predict(hist){
+  const N=G.maxN||10;
   if(!hist.length) return randNum();
-  const w=new Array(11).fill(0);
-  hist.forEach((v,i)=>{ w[v]+=1+(i/hist.length)*2; });          // recent picks weighted much higher
-  const last=hist[hist.length-1]; w[last]+=0.8;                 // repeat bias (people repeat favourites)
-  let best=1,bv=-1; for(let n=1;n<=10;n++){ if(w[n]>bv){bv=w[n];best=n;} }
+  const w=new Array(N+1).fill(0);
+  hist.forEach((v,i)=>{ if(v>=1&&v<=N) w[v]+=1+(i/hist.length)*2; });   // recent picks weighted much higher (ignore out-of-range history)
+  const last=hist[hist.length-1]; if(last>=1&&last<=N) w[last]+=0.8;    // repeat bias (people repeat favourites)
+  let best=1,bv=-1; for(let n=1;n<=N;n++){ if(w[n]>bv){bv=w[n];best=n;} }
   return best;
 }
 const STR={easy:0,medium:.45,hard:.72,expert:.93}, BLUFF={easy:0,medium:.12,hard:.15,expert:.22};
 function aiBowl(){ // AI bowling, human batting -> try to get the human OUT on their likely number
-  const s=STR[G.ai], bl=BLUFF[G.ai];
+  const s=STR[G.ai], bl=BLUFF[G.ai], N=G.maxN||10;
   if(Math.random()>s || Math.random()<bl) return randNum();     // dumb tiers / occasional bluff
   const p=predict(combined('bat'));
-  if(G.mode==='normal') return p;                               // match their predicted number = out
-  // crazy: equal gives them a square! only ADJACENT (incl. 10↔1) is out — bowl a neighbour of p
-  const opts=[p-1,p+1].filter(x=>x>=1&&x<=10);
-  if(p===10)opts.push(1); if(p===1)opts.push(10);
+  if(G.mode==='normal') return clamp(p,1,N);                    // match their predicted number = out
+  // crazy: equal gives them a square! only ADJACENT (incl. max↔1) is out — bowl a neighbour of p
+  const opts=[p-1,p+1].filter(x=>x>=1&&x<=N);
+  if(p===N)opts.push(1); if(p===1)opts.push(N);
+  if(!opts.length) return randNum();
   return opts[(Math.random()*opts.length)|0];
 }
 function aiBat(){ // AI batting, human bowling -> dodge the human's likely ball, score big
-  const s=STR[G.ai], bl=BLUFF[G.ai];
+  const s=STR[G.ai], bl=BLUFF[G.ai], N=G.maxN||10;
   if(Math.random()>s || Math.random()<bl) return G.mode==='crazy'?weightedHigh():randNum();
   const pb=predict(combined('bowl'));
   let safe=[];
-  for(let n=1;n<=10;n++){
+  for(let n=1;n<=N;n++){
     if(G.mode==='normal'){ if(n!==pb)safe.push(n); }
-    else { if(!adj(n,pb))safe.push(n); }                        // equal(pb) is allowed — it's a square!
+    else { if(!adj(n,pb,N))safe.push(n); }                      // equal(pb) is allowed — it's a square!
   }
   if(!safe.length) return randNum();
   if(G.mode==='crazy'){
@@ -869,7 +909,7 @@ function endMatch(){
 $('resNext').addEventListener('click',()=>{ Sound.click();
   if(G.ctx){ advanceCtx(); }
   else if(G.online){ if(G.quick && MP.isHost){ hostQuickMatch(); } else { toast('Waiting for the host to rematch…'); } }
-  else { newMatch({mode:G.mode,type:G.type,opp:G.opp,ai:G.ai,bName:G.bName,bAv:G.bAv}); beginToss(); }
+  else { newMatch({mode:G.mode,maxN:G.maxN,type:G.type,opp:G.opp,ai:G.ai,bName:G.bName,bAv:G.bAv}); beginToss(); }
 });
 $('resMenu').addEventListener('click',()=>{ Sound.click(); $('resNext').style.display=''; if(G.online)leaveRoom(); show('menu'); });
 $('quitBtn').addEventListener('click',()=>{ if(confirm(G.tourney?'Leave the tournament?':'Quit this match?')){ EPOCH++; G.busy=false; clearAfk(); $('banner').classList.remove('show');
@@ -877,19 +917,36 @@ $('quitBtn').addEventListener('click',()=>{ if(confirm(G.tourney?'Leave the tour
 $('gMute').addEventListener('click',()=>{ SV.sound=!SV.sound; save(); $('gMute').textContent=SV.sound?'🔊':'🔇'; });
 
 /* ================= SETUP SCREEN (vs AI) ================= */
-let setupCfg={mode:'normal',diff:'easy',type:'quick'};
+// Custom mode: play with numbers 1..maxN. Options 1–9, then 10s up to 100 (min 2 — a
+// max of 1 would make every ball identical). "mode" stays the rule (normal|crazy); maxN
+// is the separate range so the whole engine + online sync only need one extra field.
+const MAXN_CHOICES=[2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100];
+function fillMaxSel(id){ const s=$(id); if(!s)return; s.innerHTML=MAXN_CHOICES.map(v=>'<option value="'+v+'"'+(v===10?' selected':'')+'>1 – '+v+'</option>').join(''); }
+function segVal(seg,attr){ const on=$(seg)&&$(seg).querySelector('.chip.on'); return on?on.getAttribute(attr):null; }
+let setupCfg={mode:'normal',custom:false,maxN:10,diff:'easy',type:'quick'};
 function openSetup(){
   $('setupTitle').textContent='Play vs AI';
   $('diffCard').style.display='block'; $('typeCard').style.display='block';
+  $('customCard').classList.toggle('on', setupCfg.custom);
   updateModeDesc(); updateTypeDesc();
   show('setup');
 }
-function updateModeDesc(){ $('modeDesc').textContent = setupCfg.mode==='crazy'
-  ? 'Same number = number²! (7+7 = 49). But if the bowler picks 1 above or below you — OUT! (10 and 1 are neighbours too.)'
+function ruleDesc(mode){ return mode==='crazy'
+  ? 'Same number = number²! (7+7 = 49). But if the bowler picks 1 above or below you — OUT! (the highest number and 1 are neighbours too.)'
   : 'Same number = OUT. Otherwise you score your batting number.'; }
+function updateModeDesc(){ let t=ruleDesc(setupCfg.mode);
+  if(setupCfg.custom) t='Playing with numbers 1–'+setupCfg.maxN+'.  '+t;
+  $('modeDesc').textContent=t; }
 function updateTypeDesc(){ const d={quick:'A single match.',league:'Round-robin — top the table.',tournament:'8-team knockout bracket.',worldcup:'Group stage + knockouts. The big one!'}; $('typeDesc').textContent=d[setupCfg.type]||''; }
 $('modeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(!b)return; Sound.click();
-  setupCfg.mode=b.dataset.mode; segOn('modeSeg',b); updateModeDesc(); });
+  segOn('modeSeg',b);
+  if(b.dataset.mode==='custom'){ setupCfg.custom=true; $('customCard').classList.add('on');
+    setupCfg.mode=segVal('customRuleSeg','data-crule')||'normal'; setupCfg.maxN=parseInt($('customMax').value,10)||10; }
+  else { setupCfg.custom=false; $('customCard').classList.remove('on'); setupCfg.mode=b.dataset.mode; setupCfg.maxN=10; }
+  updateModeDesc(); });
+$('customRuleSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-crule]'); if(!b)return; Sound.click();
+  segOn('customRuleSeg',b); setupCfg.mode=b.dataset.crule; updateModeDesc(); });
+$('customMax').addEventListener('change',()=>{ setupCfg.maxN=parseInt($('customMax').value,10)||10; updateModeDesc(); });
 $('diffSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-diff]'); if(!b)return; Sound.click();
   setupCfg.diff=b.dataset.diff; segOn('diffSeg',b); });
 $('typeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-type]'); if(!b)return; Sound.click();
@@ -902,7 +959,7 @@ $('setupPlay').addEventListener('click',()=>{ Sound.click();
 });
 
 function startQuick(opp){
-  newMatch({mode:setupCfg.mode,type:'quick',opp:opp,ai:setupCfg.diff,bName:'AI',bAv:'🤖'});
+  newMatch({mode:setupCfg.mode,maxN:setupCfg.maxN,type:'quick',opp:opp,ai:setupCfg.diff,bName:'AI',bAv:'🤖'});
   beginToss();
 }
 
@@ -944,7 +1001,7 @@ const STUCK_MS=70000, ROUND_HARD_CAP_MS=360000;
 // each client pings the host every ~4s (proves that player alive). We only conclude
 // someone is gone after this many ms of true silence AND presence agreeing they're absent.
 const HOST_SILENCE_MS=22000, PLAYER_SILENCE_MS=22000, PING_MS=4000;
-let roomMode='normal', R=null, RGEN=0, LWDog=null;
+let roomMode='normal', roomCustom=false, roomMaxN=10, R=null, RGEN=0, LWDog=null;
 
 const MP={
   sb:null, ch:null, code:null, isHost:false,
@@ -1010,12 +1067,21 @@ function hostDir(ev,payload){ payload.seq=++R.seq; R.lastDir={ev,payload}; MP.se
 function startHeartbeat(){ if(HB)return; const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!R||!R.isHost){ clearInterval(HB); HB=null; return; } if(R.lastDir) MP.send(R.lastDir.ev, R.lastDir.payload); }, 3500); }
 function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(LWDog){ clearInterval(LWDog); LWDog=null; } if(MP.ch)MP.leave(); R=null; G.online=false; G.tourney=false; }
 
-function openRoom(){ roomMode='normal'; segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]')); $('joinCode').value=''; show('room'); }
-$('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click(); roomMode=b.dataset.rmode; segOn('roomModeSeg',b); });
+function openRoom(){ roomMode='normal'; roomCustom=false; roomMaxN=10;
+  segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]'));
+  $('roomCustomCard').classList.remove('on'); $('joinCode').value=''; show('room'); }
+$('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click();
+  segOn('roomModeSeg',b);
+  if(b.dataset.rmode==='custom'){ roomCustom=true; $('roomCustomCard').classList.add('on');
+    roomMode=segVal('roomCustomRuleSeg','data-rcrule')||'normal'; roomMaxN=parseInt($('roomCustomMax').value,10)||10; }
+  else { roomCustom=false; $('roomCustomCard').classList.remove('on'); roomMode=b.dataset.rmode; roomMaxN=10; } });
+$('roomCustomRuleSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rcrule]'); if(!b)return; Sound.click();
+  segOn('roomCustomRuleSeg',b); roomMode=b.dataset.rcrule; });
+$('roomCustomMax').addEventListener('change',()=>{ roomMaxN=parseInt($('roomCustomMax').value,10)||10; });
 
 async function createRoomFlow(code){
   code=(typeof code==='string' && code.length>=4)?code:genCode();
-  R={ code, isHost:true, hostId:myId, mode:roomMode, phase:'lobby', players:[], format:null,
+  R={ code, isHost:true, hostId:myId, mode:roomMode, maxN:roomMaxN, phase:'lobby', players:[], format:null,
       schedule:[], roundIndex:0, results:{}, roundPairs:[], roundResults:{}, koSeeds:[], koBye:null, koStep:0, champion:null,
       seq:0, lastDir:null, lastHostMsg:performance.now(), seen:{}, startedAt:0 };
   showLobby(code,true);
@@ -1026,7 +1092,7 @@ $('joinRoomBtn').addEventListener('click',()=> joinRoom(($('joinCode').value||''
 async function joinRoom(code){
   if(!code || code.length<4){ toast('Enter the 4-letter code'); return; }
   Sound.click();
-  R={ code, isHost:false, hostId:null, mode:roomMode, phase:'lobby', players:[], lastSeq:0, lastHostMsg:performance.now(), seen:{} };
+  R={ code, isHost:false, hostId:null, mode:roomMode, maxN:roomMaxN, phase:'lobby', players:[], lastSeq:0, lastHostMsg:performance.now(), seen:{} };
   showLobby(code,false);
   try{ await MP.open(code,false); MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); startLiveWatch(); }
   catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
@@ -1047,23 +1113,24 @@ function showLobby(code,host){ $('lobbyCode').textContent=code; $('shareRow').st
   $('lobbyStart').style.display='none'; $('lobbyWait').style.display=host?'none':'block'; renderLobby(); show('lobby'); }
 function renderLobby(){
   const ps=(R&&R.players)||[]; $('lobbyCount').textContent=ps.length;
+  const lm=$('lobbyMode'); if(lm&&R) lm.textContent=modeLabel(R.mode,R.maxN);
   $('lobbyList').innerHTML = ps.map((p,i)=>'<div class="statrow" style="border:none;background:var(--card);border-radius:12px;padding:10px 12px">'+
     '<span>'+(i+1)+'. <span style="font-size:18px">'+p.av+'</span> <b>'+esc(p.name)+'</b>'+(p.id===R.hostId?' <span class="pill-tag">HOST</span>':'')+(p.id===myId?' <span style="color:var(--good);font-size:12px">• you</span>':'')+'</span></div>').join('');
   if(R&&R.isHost){ const n=ps.length; const b=$('lobbyStart'); b.style.display='block'; b.disabled=n<2;
     b.textContent = n<2?'Waiting for players…' : (n===2?'▶ Start Quick Match':'▶ Start Tournament ('+n+' players)'); }
 }
 function hostLobbyUpdate(){ if(!R||!R.isHost)return; R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId;
-  MP.send('lobby',{hostId:myId,mode:R.mode,players:R.players}); renderLobby(); }
+  MP.send('lobby',{hostId:myId,mode:R.mode,maxN:R.maxN,players:R.players}); renderLobby(); }
 $('lobbyStart').addEventListener('click',()=>{ if(!R||!R.isHost)return; Sound.click(); hostStart(); });
 
 /* ---- host: start ---- */
 function hostStart(){
-  R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId; R.mode=roomMode;
+  R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId; R.mode=roomMode; R.maxN=roomMaxN;
   if(R.players.length<2){ toast('Need at least 2 players'); return; }
   R.format = R.players.length===2 ? 'quick' : 'tourney';
   R.results={}; R.koStep=0;
   R.startedAt=performance.now(); R.seen={}; R.players.forEach(p=>R.seen[p.id]=performance.now());
-  hostDir('begin',{mode:R.mode,players:R.players,format:R.format,hostId:myId});
+  hostDir('begin',{mode:R.mode,maxN:R.maxN,players:R.players,format:R.format,hostId:myId});
   if(R.format==='quick'){ R.phase='quick'; hostQuickMatch(); }
   else { R.phase='group'; R.schedule=TL.roundRobin(R.players.map(p=>p.id)); R.roundIndex=0; hostStartRound(); }
 }
@@ -1071,8 +1138,8 @@ function hostQuickMatch(){
   R.players=MP.presenceList().slice(0,MAX_PLAYERS);         // re-check who's actually here (esp. on rematch)
   if(R.players.length<2){ toast('Your opponent left the room'); return; }
   const [a,b]=R.players, matchId='q'+(R.koStep++), batFirst=Math.random()<.5?'a':'b';
-  hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode});
-  beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,quick:true});
+  hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN});
+  beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN,quick:true});
 }
 /* ---- host: group rounds ---- */
 function hostStartRound(){
@@ -1084,7 +1151,7 @@ function hostStartRound(){
     if(aA&&bA) R.roundPairs.push({matchId:id,a:pr[0],b:pr[1],batFirst:Math.random()<.5?'a':'b'});
     else if(aA||bA){ const w=aA?pr[0]:pr[1]; R.roundResults[id]={matchId:id,aId:pr[0],bId:pr[1],aScore:aA?1:0,bScore:bA?1:0,winner:w,reason:'walkover'}; R.results[id]=R.roundResults[id]; }
   });
-  const pkt={stage:'group',roundName:'Round '+(R.roundIndex+1),roundNo:R.roundIndex+1,totalRounds:R.schedule.length,pairs:R.roundPairs,bye:R.roundBye,mode:R.mode,players:R.players};
+  const pkt={stage:'group',roundName:'Round '+(R.roundIndex+1),roundNo:R.roundIndex+1,totalRounds:R.schedule.length,pairs:R.roundPairs,bye:R.roundBye,mode:R.mode,maxN:R.maxN,players:R.players};
   hostDir('round',pkt); clientOnRound(pkt);
   scheduleRoundTimeout(); hostCheckRound();
 }
@@ -1158,7 +1225,7 @@ function hostStartKO(){
     else if(aA||bA){ const w=aA?pr[0]:pr[1]; R.roundResults[id]={matchId:id,aId:pr[0],bId:pr[1],aScore:1,bScore:0,winner:w,reason:'walkover'}; }
   });
   R.koStep++;
-  const pkt={stage:'ko',roundName:rd.name,pairs:R.roundPairs,bye:R.koBye,mode:R.mode,players:R.players,isFinal:rd.isFinal};
+  const pkt={stage:'ko',roundName:rd.name,pairs:R.roundPairs,bye:R.koBye,mode:R.mode,maxN:R.maxN,players:R.players,isFinal:rd.isFinal};
   hostDir('round',pkt); clientOnRound(pkt);
   scheduleRoundTimeout(); hostCheckRound();
 }
@@ -1191,9 +1258,9 @@ function onNet(kind,payload){
   if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
   if(kind==='leave'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }  // lobby only; in-game leaves handled by the liveness watchdog
   if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
-  if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.players=payload.players||[]; renderLobby(); } return; }
-  if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
-  if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,quick:true}); return; }
+  if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.maxN=payload.maxN||10; R.players=payload.players||[]; renderLobby(); } return; }
+  if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.maxN=payload.maxN||10; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
+  if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,maxN:payload.maxN,quick:true}); return; }
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
   if(kind==='result'){ if(payload&&payload.matchId){ delete LIVE[payload.matchId]; if(cur==='twait') renderTwaitLive(); } hostOnResult(payload); return; }
   if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
@@ -1229,7 +1296,7 @@ function clientOnRound(pkt){
   if(!R) return; if(pkt.players)R.players=pkt.players; R.roundNameNow=pkt.roundName;
   LIVE={};                                              // new round — clear last round's live scores
   const mine=(pkt.pairs||[]).find(p=>p.a===myId||p.b===myId);
-  if(mine){ beginNetMatch({matchId:mine.matchId,a:mine.a,b:mine.b,batFirst:mine.batFirst,mode:pkt.mode,ko:pkt.stage==='ko'}); }
+  if(mine){ beginNetMatch({matchId:mine.matchId,a:mine.a,b:mine.b,batFirst:mine.batFirst,mode:pkt.mode,maxN:pkt.maxN,ko:pkt.stage==='ko'}); }
   else { showTwait('🍿', pkt.bye===myId?'You have a bye this round':'Spectating', pkt.roundName+' — waiting for the matches to finish…'); }
 }
 function showTwait(ico,title,msg){ $('twaitIco').textContent=ico; $('twaitTitle').textContent=title; $('twaitMsg').textContent=msg||''; renderTwaitLive(); show('twait'); }
@@ -1261,13 +1328,13 @@ function clientOnDone(pkt){
 /* ---- a single networked match (reuses the match engine) ---- */
 function beginNetMatch(m){
   const myside = (myId===m.a)?'a':'b';
-  newMatch({mode:m.mode, type:'quick', opp:'friend', online:true, host:MP.isHost, myside});
+  newMatch({mode:m.mode, maxN:m.maxN||10, type:'quick', opp:'friend', online:true, host:MP.isHost, myside});
   G.matchId=m.matchId; G.matchAId=m.a; G.matchBId=m.b; G.oppId=(myside==='a'?m.b:m.a);
   G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko; G.moveHist={};
   G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
   G.firstBat=m.batFirst;
   MP.openMatch(m.matchId);                    // moves for this match go on their own channel
-  $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+(m.mode==='crazy'?'Crazy':'Normal');
+  $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+modeLabel(m.mode,m.maxN);
   startInnings();
 }
 // opponent's move (arrives on the per-match channel)
@@ -1429,7 +1496,7 @@ function koRoundsFor(q){ return q<=2?['Final']:q<=4?['Semi-Final','Final']:['Qua
 let COMP=null;
 function startCompetition(type){
   const cfg=COMP_CFG[type], teams=makeTeams(cfg.teams);
-  COMP={ type, cfg, mode:setupCfg.mode, diff:setupCfg.diff, teams,
+  COMP={ type, cfg, mode:setupCfg.mode, maxN:setupCfg.maxN, diff:setupCfg.diff, teams,
     table:{}, stage:'group', groupRound:0,
     fixtures: teams.filter(t=>!t.you).map(t=>t.name),   // you play everyone once (round-robin)
     ko:cfg.ko, koRounds:[], koRound:0, koOpps:[], champion:null, endReason:null };
@@ -1443,7 +1510,8 @@ function standRows(){ return Object.entries(COMP.table).sort((A,B)=>{
 function nextOpponentName(){ return COMP.stage==='group' ? COMP.fixtures[COMP.groupRound] : (COMP.koOpps[COMP.koRound]||'Rivals'); }
 function tally(A,B,as,bs,outA){ const t=COMP.table; t[A].p++; t[B].p++; t[A].rf+=as; t[B].rf+=bs;
   if(outA==='win'){ t[A].w++; t[A].pts+=2; } else if(outA==='tie'){ t[A].pts++; t[B].pts++; } else { t[B].w++; t[B].pts+=2; } }
-function simScore(){ return rint(15,110); }
+// simulated other-fixture scores — scale with the custom range so standings look sane (1–10 stays 15–110)
+function simScore(){ const f=(COMP&&COMP.maxN||10)/10; return rint(Math.max(2,Math.round(15*f)), Math.max(6,Math.round(110*f))); }
 function finishCtxMatch(outcome,aF,bF){
   if(COMP.stage==='group'){
     const opp=COMP.fixtures[COMP.groupRound];
@@ -1512,7 +1580,7 @@ function playCtxMatch(){
   const team=COMP.teams.find(t=>t.name===oppName)||{name:oppName,av:'🤖'};
   // knockouts are a notch tougher than the group stage
   const ai = (COMP.stage==='ko') ? ({easy:'medium',medium:'hard',hard:'expert',expert:'expert'}[COMP.diff]) : COMP.diff;
-  newMatch({mode:COMP.mode,type:COMP.type,opp:'ai',ai:ai,bName:oppName,bAv:team.av||'🤖',ctx:true});
+  newMatch({mode:COMP.mode,maxN:COMP.maxN,type:COMP.type,opp:'ai',ai:ai,bName:oppName,bAv:team.av||'🤖',ctx:true});
   G.aName=SV.name; G.aAv=SV.avatar;
   beginToss();
 }
@@ -1618,6 +1686,7 @@ window.addEventListener('keydown',e=>{
 });
 
 /* ================= boot ================= */
+fillMaxSel('customMax'); fillMaxSel('roomCustomMax');
 buildPad(); syncMenu(); show('menu');
 if(window.IGAuth)IGAuth.onChange&&IGAuth.onChange(()=>{});
 // auto-join from a shared link:  …/handcricket/?room=CODE
