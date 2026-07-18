@@ -1444,7 +1444,18 @@ function reportResult(){
   reportOrRematch(res, winner===myId);
 }
 function reportOrRematch(res, iWon){
-  MP.closeMatch();                            // match over — leave its move channel
+  // Keep the match channel open for a grace period instead of leaving instantly. If
+  // the opponent lost our FINAL move (heavy packet loss), they're still resending
+  // theirs and waiting — staying subscribed lets onMoveMsg's behind-a-ball branch
+  // answer with the move they're missing and pull them to the end, instead of
+  // freezing them until the 45s AFK. It's closed sooner by the next match (openMatch)
+  // or on leave; this timer is only a backstop so it can't linger.
+  // Guard on the channel OBJECT, not matchId: matchIds repeat across rooms (every
+  // first quick match is 'q0'), so a matchId guard could fire late and close the NEXT
+  // match's channel mid-play. openMatch() replaces MP.matchCh, so identity is unique —
+  // only close if this exact channel is still the current one.
+  const finishedCh=MP.matchCh;
+  setTimeout(()=>{ if(MP.matchCh===finishedCh) MP.closeMatch(); }, 30000);
   if(G.quick){ showQuickResult(res, iWon); return; }
   // tournament: report to host, then wait. Re-send a few times (result is on the room
   // channel; a single drop must not lose it) — host dedups by matchId.
