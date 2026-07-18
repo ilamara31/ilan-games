@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Draw Rush 🎨</title>
+<meta name="theme-color" content="#5b2be0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+/* ==================== DRAW RUSH ==================== */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#160a2e; --bg2:#2a1160; --panel:#22143f; --panel2:#2c1a52; --line:rgba(255,255,255,.12);
+  --ink:#f3eefe; --muted:#b39fe0;
+  --p1:#7c3aed; --p2:#ec4899; --p3:#06b6d4; --acc:#ffd23f;
+  --good:#22d39a; --bad:#ff5d7a;
+  --grad:linear-gradient(135deg,#7c3aed,#ec4899); --grad2:linear-gradient(135deg,#06b6d4,#7c3aed);
+}
+html,body{height:100%}
+body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(120% 90% at 50% -10%,#3a1a7a,#160a2e 65%);
+  min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.app{max-width:760px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+
+.screen{display:none;flex:1;flex-direction:column;animation:fade .25s ease}
+.screen.on{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:none;font-family:inherit;
+  font-weight:800;font-size:17px;border-radius:16px;padding:15px 22px;color:#fff;background:var(--grad);
+  box-shadow:0 6px 0 rgba(0,0,0,.28),0 10px 26px rgba(124,58,237,.4);transition:transform .08s,box-shadow .08s;line-height:1.1;text-decoration:none}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.btn.block{display:flex;width:100%}
+.btn.ghost{background:var(--panel);border:1.5px solid var(--line);box-shadow:0 4px 0 rgba(0,0,0,.25);color:var(--ink)}
+.btn.ghost:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn.sm{font-size:14px;padding:9px 15px;border-radius:12px;box-shadow:0 4px 0 rgba(0,0,0,.22)}
+.btn.sm:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.btn.cyan{background:var(--grad2);box-shadow:0 6px 0 rgba(0,0,0,.28),0 10px 26px rgba(6,182,212,.35)}
+.btn.gold{background:linear-gradient(135deg,#ffd23f,#ff9b3d);color:#3a1c00;box-shadow:0 6px 0 rgba(160,90,0,.5)}
+.btn:disabled{opacity:.45;pointer-events:none;filter:grayscale(.3)}
+
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:40px}
+.spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:7px 14px;font-weight:800;font-size:14px}
+
+/* ---------- main menu ---------- */
+#menu{align-items:center;justify-content:center;text-align:center}
+.logo{margin:8px 0 6px}
+.logo .em{font-size:64px;display:block;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
+.logo h1{font-size:clamp(40px,12vw,68px);font-weight:900;letter-spacing:1px;margin-top:2px;line-height:.95;
+  background:linear-gradient(135deg,#ffd23f,#ec4899 60%,#06b6d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo .tag{color:var(--muted);font-size:clamp(13px,3.6vw,16px);margin-top:8px;font-weight:600}
+.menu-btns{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;margin-top:26px}
+.menu-btns .btn{font-size:19px;padding:18px}
+.menu-foot{display:flex;gap:10px;margin-top:18px;width:100%;max-width:420px}
+.menu-foot .btn{flex:1}
+
+/* ---------- panels/forms ---------- */
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.h2{font-size:24px;font-weight:900;margin:4px 0 14px;display:flex;align-items:center;gap:10px}
+.sub{color:var(--muted);font-size:14.5px;line-height:1.55}
+.lbl{font-weight:800;font-size:14px;margin:14px 0 8px;display:block}
+.field{width:100%;background:var(--panel2);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;
+  padding:14px 16px;font-size:17px;font-weight:700;font-family:inherit;outline:none}
+.field:focus{border-color:var(--p2)}
+.codein{text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px;font-weight:900}
+
+.modegrid{display:grid;grid-template-columns:1fr;gap:10px}
+.modecard{cursor:pointer;text-align:left;border:2px solid var(--line);background:var(--panel2);border-radius:16px;padding:14px 16px;
+  display:flex;align-items:center;gap:14px;transition:.12s}
+.modecard:active{transform:scale(.98)}
+.modecard.on{border-color:var(--p2);background:linear-gradient(135deg,rgba(236,72,153,.16),rgba(124,58,237,.12))}
+.modecard .mi{font-size:34px;line-height:1}
+.modecard .mt{font-weight:900;font-size:17px}
+.modecard .md{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
+
+.seg{display:flex;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:800;font-size:15px;color:var(--muted);
+  background:transparent;border-radius:10px;padding:11px 8px;transition:.12s}
+.seg button.on{background:var(--grad);color:#fff}
+
+.codebox{text-align:center;background:var(--panel2);border:2px dashed var(--line);border-radius:16px;padding:16px;margin:6px 0 12px}
+.codebox .c{font-size:40px;font-weight:900;letter-spacing:10px;color:var(--acc)}
+.codebox .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+.players{display:flex;gap:10px;margin:10px 0}
+.pcard{flex:1;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.pcard .av{font-size:30px}
+.pcard .nm{font-weight:800;font-size:15px;margin-top:3px}
+.pcard .st{font-size:12px;color:var(--muted);margin-top:2px}
+.pcard.ready{border-color:var(--good)}
+.pcard.ready .st{color:var(--good)}
+
+/* ---------- GAME screen ---------- */
+#game{padding:0}
+.g-top{display:flex;align-items:center;gap:8px;padding:4px 2px 8px}
+.timer{font-weight:900;font-size:26px;min-width:64px;text-align:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:4px 6px}
+.timer.warn{border-color:var(--bad);color:#ffd0da;animation:pulse .6s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.scoreb{display:flex;gap:8px;flex:1}
+.sc{flex:1;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:5px 8px;text-align:center;overflow:hidden}
+.sc .n{font-size:12px;color:var(--muted);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc .v{font-size:20px;font-weight:900}
+.sc.me{border-color:var(--p2)}
+.roundtag{font-size:12px;color:var(--muted);font-weight:800;text-align:center;margin-bottom:4px}
+
+.wordbar{border-radius:14px;padding:11px 14px;text-align:center;font-weight:800;margin-bottom:8px;background:var(--panel);border:1.5px solid var(--line);font-size:15px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px}
+.wordbar .w{font-size:22px;font-weight:900;letter-spacing:3px;color:var(--acc)}
+.wordbar.draw{background:linear-gradient(135deg,rgba(255,210,63,.14),rgba(236,72,153,.1));border-color:rgba(255,210,63,.4)}
+
+.canvas-wrap{position:relative;width:100%;background:#fff;border-radius:16px;overflow:hidden;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);touch-action:none;aspect-ratio:4/3}
+#canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.canvas-wrap.rotated #canvas{}
+.disaster-tag{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,93,122,.92);
+  color:#fff;font-weight:900;font-size:13px;padding:6px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.4);
+  pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+.disaster-tag.show{opacity:1;animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(-50%)}25%{transform:translateX(-54%)}75%{transform:translateX(-46%)}}
+.viewonly{position:absolute;inset:0;z-index:4;display:none}   /* blocks drawing when you're the guesser */
+
+/* toolbar */
+.tools{display:none;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.tools.on{display:flex}
+.swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid rgba(255,255,255,.25);flex:0 0 auto}
+.swatch.on{border-color:#fff;transform:scale(1.12);box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+.tbtn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);
+  font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tbtn:active{transform:scale(.92)}
+.tbtn.on{background:var(--grad);border-color:transparent}
+.tbtn:disabled{opacity:.4;pointer-events:none}
+.sizewrap{display:flex;align-items:center;gap:8px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:6px 12px}
+.sizewrap input{width:96px}
+.sizedot{border-radius:50%;background:#fff;flex:0 0 auto}
+
+/* guesser input / feed */
+.guessbar{display:none;gap:8px;margin-top:8px}
+.guessbar.on{display:flex}
+.guessbar .field{flex:1}
+.feed{margin-top:8px;max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.feed .g{font-size:14px;padding:6px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);align-self:flex-start;max-width:90%}
+.feed .g.me{align-self:flex-end;background:var(--panel2)}
+.feed .g.correct{background:linear-gradient(135deg,#22d39a,#06b6d4);color:#052b22;font-weight:800;align-self:center}
+.feed .g.sys{color:var(--muted);font-style:italic;align-self:center;background:transparent;border:none}
+
+/* bluff options */
+.bluff{display:none;flex-direction:column;gap:8px;margin-top:8px}
+.bluff.on{display:flex}
+.bluff .opt{cursor:pointer;text-align:center;border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:14px;font-weight:800;font-size:16px}
+.bluff .opt:active{transform:scale(.98)}
+.bluff .opt.right{border-color:var(--good);background:linear-gradient(135deg,rgba(34,211,154,.2),transparent)}
+.bluff .opt.wrong{border-color:var(--bad);background:linear-gradient(135deg,rgba(255,93,122,.2),transparent)}
+
+/* stats */
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat .v{font-size:26px;font-weight:900;color:var(--acc)}
+.stat .l{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+
+/* settings rows */
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+
+/* overlays */
+.overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(6,3,18,.82);backdrop-filter:blur(3px)}
+.overlay.on{display:flex;animation:fade .2s ease}
+.sheet{background:var(--panel);border:1.5px solid var(--line);border-radius:22px;padding:24px;max-width:440px;width:100%;text-align:center;
+  max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.sheet h2{font-size:26px;margin-bottom:8px;font-weight:900}
+.sheet p{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:8px}
+.sheet .btns{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.big-emoji{font-size:62px;margin-bottom:6px;line-height:1}
+.reveal-word{font-size:30px;font-weight:900;color:var(--acc);letter-spacing:2px;margin:6px 0}
+.judge-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0}
+.judge-bar{flex:1;height:10px;border-radius:6px;background:var(--panel2);overflow:hidden;margin:0 10px}
+.judge-bar>span{display:block;height:100%;background:var(--grad)}
+.judge-score{font-weight:900;min-width:44px;text-align:right}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);z-index:80;opacity:0;pointer-events:none;
+  background:var(--panel);border:1.5px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:24px;font-weight:800;font-size:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);transition:.25s;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden;display:none}
+.confetti.on{display:block}
+.confetti i{position:absolute;top:-14px;width:10px;height:14px;opacity:.9;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.2}}
+
+.hidden{display:none!important}
+.center{text-align:center}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.small{font-size:12.5px;color:var(--muted)}
+a.link{color:var(--p2);font-weight:800;cursor:pointer;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ MAIN MENU ============ -->
+  <div id="menu" class="screen on">
+    <div class="logo">
+      <span class="em">🎨</span>
+      <h1>DRAW<br>RUSH</h1>
+      <div class="tag">Draw fast. Guess faster. Beat your friends! ✏️⚡</div>
+    </div>
+    <div class="menu-btns">
+      <button class="btn" data-go="online">🌐 Play Online</button>
+      <button class="btn cyan" data-go="ai">🤖 Play vs AI</button>
+      <div class="menu-foot">
+        <button class="btn ghost" data-go="stats">📊 Stats</button>
+        <button class="btn ghost" data-go="settings">⚙️ Settings</button>
+      </div>
+    </div>
+    <div class="small" style="margin-top:26px">🧪 Test build — feedback welcome</div>
+  </div>
+
+  <!-- ============ ONLINE ENTRY ============ -->
+  <div id="online" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🌐 Play Online</div>
+    <div class="card">
+      <p class="sub">Play with a friend on another device. Create a room and share the 4-letter code — just like Hand Cricket League.</p>
+      <button class="btn block mt16" id="createRoomBtn">➕ Create a Room</button>
+    </div>
+    <div class="card">
+      <label class="lbl">Join a friend's room</label>
+      <div class="row" style="border:none;padding:0;gap:10px">
+        <input id="joinCode" class="field codein" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false" style="flex:1">
+        <button class="btn" id="joinRoomBtn">Join</button>
+      </div>
+      <p class="small mt8">Needs internet. Nothing to install.</p>
+    </div>
+  </div>
+
+  <!-- ============ CREATE ROOM SETUP ============ -->
+  <div id="createSetup" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="online">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🎮 Choose a Mode</div>
+    <div class="modegrid" id="modeGrid">
+      <button class="modecard on" data-mode="secret"><span class="mi">🕵️</span><div><div class="mt">Secret Theme</div><div class="md">You get a secret word, draw it in 60s, your friend guesses.</div></div></button>
+      <button class="modecard" data-mode="bluff"><span class="mi">🎭</span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw anything, name it — can your friend spot the real title among fakes?</div></div></button>
+      <button class="modecard" data-mode="rush"><span class="mi">⚡</span><div><div class="mt">Draw Rush</div><div class="md">Fast &amp; frantic — 20 seconds to draw, quick guesses, more rounds!</div></div></button>
+    </div>
+    <div class="card">
+      <label class="lbl">Rounds (total)</label>
+      <div class="seg" id="roundsSeg"><button data-r="4">4</button><button data-r="6" class="on">6</button><button data-r="8">8</button></div>
+    </div>
+    <button class="btn block" id="doCreateBtn">Create Room ▶</button>
+  </div>
+
+  <!-- ============ LOBBY ============ -->
+  <div id="lobby" class="screen">
+    <div class="top"><button class="btn ghost sm" id="leaveLobbyBtn">‹ Leave</button><span class="spacer"></span><span id="lobbyConn" class="small">●</span></div>
+    <div class="h2">🛰️ Room Lobby</div>
+    <div class="codebox"><div class="c" id="lobbyCode">----</div><div class="l">Share this code with your friend</div></div>
+    <div class="row" style="border:none;padding:0;gap:8px;margin-bottom:10px">
+      <button class="btn ghost sm" id="shareBtn" style="flex:1">🔗 Share</button>
+      <button class="btn ghost sm" id="copyBtn" style="flex:1">📋 Copy code</button>
+    </div>
+    <div class="players" id="lobbyPlayers"></div>
+    <div class="chip center" id="lobbyMode" style="justify-content:center;margin:6px 0">Mode</div>
+    <div id="hostStartWrap"><button class="btn block gold" id="startGameBtn" style="margin-top:8px">▶ Start Game</button><p class="small center mt8" id="startHint">Waiting for a second player…</p></div>
+    <p class="small center mt8" id="waitHostMsg" style="display:none">Waiting for the host to start…</p>
+  </div>
+
+  <!-- ============ AI MENU ============ -->
+  <div id="ai" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🤖 Play vs AI</div>
+    <div class="modegrid">
+      <button class="modecard" data-ai="secret"><span class="mi">🕵️</span><div><div class="mt">Secret Theme</div><div class="md">You draw a secret word — the AI tries to guess it (with funny guesses!).</div></div></button>
+      <button class="modecard" data-ai="bluff"><span class="mi">🎭</span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw &amp; name it — the AI must pick your real title from the fakes.</div></div></button>
+      <button class="modecard" data-ai="disaster"><span class="mi">🌪️</span><div><div class="mt">Disaster Drawing</div><div class="md">Draw while chaos strikes — spinning canvas, wild brushes &amp; more!</div></div></button>
+      <button class="modecard" data-ai="judge"><span class="mi">⭐</span><div><div class="mt">AI Judge</div><div class="md">Pick a subject, draw it, and get rated on creativity, detail &amp; more.</div></div></button>
+    </div>
+  </div>
+
+  <!-- ============ GAME (shared) ============ -->
+  <div id="game" class="screen">
+    <div class="g-top">
+      <button class="btn ghost sm" id="quitGameBtn">‹ Quit</button>
+      <span class="spacer"></span>
+      <div class="timer" id="timer">–</div>
+    </div>
+    <div class="roundtag" id="roundTag"></div>
+    <div class="scoreb" id="scoreboard"></div>
+    <div class="wordbar" id="wordbar">…</div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+      <div class="viewonly" id="viewOnly"></div>
+      <div class="disaster-tag" id="disasterTag"></div>
+    </div>
+    <div class="tools" id="tools">
+      <div id="swatches" style="display:flex;gap:6px"></div>
+      <button class="tbtn" id="tBrush" title="Brush">🖌️</button>
+      <button class="tbtn" id="tEraser" title="Eraser">🧽</button>
+      <div class="sizewrap"><span class="sizedot" id="sizeDot" style="width:12px;height:12px"></span><input id="sizeSlider" type="range" min="2" max="42" value="8"></div>
+      <button class="tbtn" id="tUndo" title="Undo">↩️</button>
+      <button class="tbtn" id="tRedo" title="Redo">↪️</button>
+      <button class="tbtn" id="tClear" title="Clear">🗑️</button>
+    </div>
+    <div class="guessbar" id="guessbar">
+      <input id="guessInput" class="field" maxlength="40" placeholder="Type your guess…" autocomplete="off">
+      <button class="btn" id="guessSend">Guess</button>
+    </div>
+    <div id="titleInputWrap" style="display:none;margin-top:8px">
+      <input id="titleInput" class="field" maxlength="40" placeholder="Name your masterpiece…" autocomplete="off">
+      <button class="btn block mt8" id="titleSubmit">Submit Title ▶</button>
+    </div>
+    <div class="bluff" id="bluffOpts"></div>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <!-- ============ STATS ============ -->
+  <div id="stats" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">📊 Your Stats</div>
+    <div class="statgrid" id="statGrid"></div>
+    <div class="card mt12"><div class="row" style="border:none;padding:0"><span class="sub">⭐ Favorite mode</span><b id="favMode">—</b></div></div>
+    <button class="btn ghost block mt12" id="resetStats">Reset stats</button>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div id="settings" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">⚙️ Settings</div>
+    <div class="card">
+      <div class="row"><span class="lbl" style="margin:0">🔊 Sound effects</span><button class="btn ghost sm" id="tSound">On</button></div>
+      <div class="row"><span class="lbl" style="margin:0">🎵 Music</span><button class="btn ghost sm" id="tMusic">On</button></div>
+    </div>
+    <label class="lbl">Your name</label>
+    <input id="setName" class="field" maxlength="14" placeholder="Player">
+    <p class="small mt12">Draw Rush 🎨 — test build. Report anything weird!</p>
+  </div>
+</div>
+
+<!-- overlays -->
+<div class="overlay" id="ov"><div class="sheet" id="ovBox"></div></div>
+<div class="confetti" id="confetti"></div>
+<div id="toast"></div>
+
+<script src="../supabase-config.js"></script>
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
