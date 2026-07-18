@@ -534,11 +534,13 @@
   async function loadThread(otherKey) {
     const s = await ensureSb(); if (!s) return [];
     try {
-      const r = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at,reply_to,reply_name,reply_body").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: true }).limit(300);
-      if (!r.error && r.data) return r.data;
+      // load the LATEST 300 (descending), then flip to chronological — otherwise a thread with
+      // >300 messages would only ever show the OLDEST 300 and never the recent ones.
+      const r = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at,reply_to,reply_name,reply_body").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: false }).limit(300);
+      if (!r.error && r.data) return r.data.slice().reverse();
       // reply columns not migrated yet? fall back to base columns so chat still works
-      const r2 = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: true }).limit(300);
-      if (!r2.error && r2.data) return r2.data;
+      const r2 = await s.from("ig_chat").select("id,from_key,from_name,body,created_at,read_at").eq("pair_key", pairKey(myKey, otherKey)).order("created_at", { ascending: false }).limit(300);
+      if (!r2.error && r2.data) return r2.data.slice().reverse();
     } catch (e) {}
     return [];
   }
@@ -619,7 +621,9 @@
   }
   async function loadGroupMsgs(groupId) {
     const s = await ensureSb(); if (!s) return [];
-    try { const r = await s.from("ig_group_msg").select("id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body").eq("group_id", groupId).order("created_at", { ascending: true }).limit(300); if (!r.error && r.data) return r.data; } catch (e) {}
+    // latest 300 (descending) then flip to chronological — a group with >300 messages must still
+    // show the most RECENT ones, not the oldest 300.
+    try { const r = await s.from("ig_group_msg").select("id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body").eq("group_id", groupId).order("created_at", { ascending: false }).limit(300); if (!r.error && r.data) return r.data.slice().reverse(); } catch (e) {}
     return [];
   }
   async function markGroupRead(groupId) {
@@ -707,6 +711,29 @@
       await s.rpc("ig_play_bump", { p_name: myName, p_key: myKey, p_week: weekMeta().week });
     } catch (e) {}
   }
+  /* Anti-spam: a play only counts toward User of the Week after the player has
+     actually stayed on the game for IG_DWELL_MS. Opening then quickly closing a
+     game (to farm plays) no longer counts. Time spent with the tab hidden /
+     backgrounded is NOT counted, so leaving the tab open in the background
+     doesn't game it either. */
+  var IG_DWELL_MS = 25000;
+  function afterDwell(ms, cb) {
+    try {
+      var acc = 0, last = Date.now(), done = false;
+      var iv = setInterval(function () {
+        if (done) return;
+        var t = Date.now();
+        if (!document.hidden) acc += t - last;
+        last = t;
+        if (acc >= ms) { done = true; clearInterval(iv); try { cb(); } catch (e) {} }
+      }, 1000);
+      document.addEventListener("visibilitychange", function () { last = Date.now(); });
+    } catch (e) {}
+  }
+  function scheduleBumpPlay() {
+    if (gameSlug() === "home") return;
+    afterDwell(IG_DWELL_MS, function () { bumpPlay(); });
+  }
   var _weekWinnerKey = rd("ig_week_winner", "") || "";
   function isWeekWinner(n) { return !!_weekWinnerKey && nameKey(n) === _weekWinnerKey; }
   async function weeklyInfo() {
@@ -765,7 +792,7 @@
     ensureMyProfile();
     dbLoad(); loadUnread(); loadGroups();
     setInterval(function () { dbLoad(); loadUnread(); loadGroups(); }, 15000);
-    bumpPlay(); weeklyInfo();
+    scheduleBumpPlay(); weeklyInfo();
   }
   function onIncomingChat(msg) {
     if (!msg) { loadUnread(); return; }
@@ -1041,11 +1068,52 @@
     box.appendChild(div); box.scrollTop = box.scrollHeight;
     return div;
   }
-  function appendChatBubble(m) {
-    if (!_chatOv || !document.body.contains(_chatOv)) return;
-    const box = _chatOv.querySelector("#igf-msgs"); if (!box) return;
-    if (box.querySelector(".s")) box.innerHTML = "";   // clear "no messages yet" placeholder
-    renderBubble(box, m, _chatOpts || {});
+  function appendChatBubble(m) { showOpenBubble(m); }
+
+  /* ---- resilient open-chat delivery ----
+     Realtime channels can silently drop (phone sleep, network blip, idle timeout) with no
+     reconnect — after which the open chat just stops receiving. To guarantee messages ALWAYS
+     arrive, the currently-open chat (direct or group) is also polled every few seconds and any
+     unseen messages are appended, de-duplicated by id so realtime + poll never double-render. */
+  let _openChat = null;         // {kind:'direct'|'group', key, groupId, box, opts, shownIds:Set, lastTs}
+  let _openPollT = null;
+  function registerShown(m) { if (!_openChat || !m) return; if (m.id != null) _openChat.shownIds.add(m.id); const t = m.created_at; if (t && (!_openChat.lastTs || t > _openChat.lastTs)) _openChat.lastTs = t; }
+  function showOpenBubble(m) {
+    if (!_openChat || !m) return null;
+    if (m.id != null && _openChat.shownIds.has(m.id)) return null;   // already displayed
+    const box = _openChat.box; if (!box || !document.body.contains(box)) return null;
+    if (box.querySelector(".s")) box.innerHTML = "";                 // clear "no messages yet" placeholder
+    const d = renderBubble(box, m, _openChat.opts); registerShown(m); return d;
+  }
+  function setOpenChat(ctx, initialMsgs) { _openChat = ctx; ctx.shownIds = new Set(); ctx.lastTs = ""; (initialMsgs || []).forEach(registerShown); startOpenPoll(); }
+  function clearOpenChat() { _openChat = null; stopOpenPoll(); }
+  function startOpenPoll() { stopOpenPoll(); _openPollT = setInterval(pollOpenChat, 2500); }
+  function stopOpenPoll() { if (_openPollT) { clearInterval(_openPollT); _openPollT = null; } }
+  // fetch the most RECENT window of the open thread. We de-dup by shown id (not a timestamp
+  // high-water mark) — otherwise a newer message delivered by realtime would advance the cursor
+  // past our own still-unshown earlier messages and they'd be skipped forever.
+  async function fetchRecent(oc) {
+    const s = await ensureSb(); if (!s) return [];
+    const tbl = oc.kind === "direct" ? "ig_chat" : "ig_group_msg";
+    const eqCol = oc.kind === "direct" ? "pair_key" : "group_id";
+    const eqVal = oc.kind === "direct" ? pairKey(myKey, oc.key) : oc.groupId;
+    const full = "id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body";
+    try {
+      const r = await s.from(tbl).select(full).eq(eqCol, eqVal).order("created_at", { ascending: false }).limit(200);
+      if (!r.error && r.data) return r.data.slice().reverse();
+      const r2 = await s.from(tbl).select("id,from_key,from_name,body,created_at").eq(eqCol, eqVal).order("created_at", { ascending: false }).limit(200);
+      if (!r2.error && r2.data) return r2.data.slice().reverse();
+    } catch (e) {}
+    return [];
+  }
+  async function pollOpenChat() {
+    const oc = _openChat;
+    if (!oc || !oc.box || !document.body.contains(oc.box)) { if (oc) clearOpenChat(); return; }
+    const rows = await fetchRecent(oc);
+    if (_openChat !== oc) return;                                    // chat changed while awaiting
+    let appended = false;
+    rows.forEach(function (m) { if (showOpenBubble(m)) appended = true; });
+    if (appended) { if (oc.kind === "direct") markRead(oc.key); else markGroupRead(oc.groupId); }
   }
 
   /* ================= 1:1 chat modal ================= */
@@ -1068,7 +1136,7 @@
       const t = ov.querySelector("#igf-typing"); if (!t) return;
       if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = "";
     });
-    function closeChat() { if (ov.__stopRec) ov.__stopRec(); _chatOpenWith = null; _chatOv = null; _chatOpts = null; try { typer.close(); } catch (e) {} ov.remove(); disarmPause(); }
+    function closeChat() { if (ov.__stopRec) ov.__stopRec(); clearOpenChat(); _chatOpenWith = null; _chatOv = null; _chatOpts = null; try { typer.close(); } catch (e) {} ov.remove(); disarmPause(); }
     ov.addEventListener("click", function (e) { if (e.target === ov) closeChat(); });
     ov.querySelector("#igf-chat-close").onclick = closeChat;
     ov.querySelector("#igf-chat-hd").onclick = function () { closeChat(); openProfile(name, key); };
@@ -1081,20 +1149,21 @@
     if (!thread.length) box.innerHTML = '<div class="s" style="margin:auto;text-align:center">No messages yet — say hi! 👋</div>';
     else { box.innerHTML = ""; thread.forEach(function (m) { renderBubble(box, m, _chatOpts); }); }
     box.scrollTop = box.scrollHeight;
+    setOpenChat({ kind: "direct", key: key, box: box, opts: _chatOpts }, thread);
     markRead(key);
     if (_myProfile && _myProfile.chat_muted) { ov.querySelector("#igf-cin").disabled = true; ov.querySelector("#igf-csend").disabled = true; ov.querySelector("#igf-chat-warn").textContent = "🚫 Your chat is disabled due to repeated bad language."; }
     const inp = ov.querySelector("#igf-cin"), snd = ov.querySelector("#igf-csend");
     async function doSend() {
       const v = inp.value.trim(); if (!v) return; snd.disabled = true;
       const r = await sendChat(key, name, v, reply);
-      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, _chatOpts); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, _chatOpts); registerShown(r.row); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
       else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
       snd.disabled = false; inp.focus();
     }
     snd.onclick = doSend;
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
     inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
-    wireAttachments(ov, async function (body) { const r = await sendChat(key, name, body, null); if (r.ok) renderBubble(box, r.row, _chatOpts); else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
+    wireAttachments(ov, async function (body) { const r = await sendChat(key, name, body, null); if (r.ok) { renderBubble(box, r.row, _chatOpts); registerShown(r.row); } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
     inp.focus();
   }
 
@@ -1119,12 +1188,12 @@
     let sub = null;
     ensureSb().then(function (s) { if (!s) return; try {
       sub = s.channel("gmsg-" + groupId);
-      sub.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_msg", filter: "group_id=eq." + groupId }, function (p) { const m = p && p.new; if (!m || m.from_key === myKey) return; if (box.querySelector(".s")) box.innerHTML = ""; renderBubble(box, m, opts); markGroupRead(groupId); });
+      sub.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_msg", filter: "group_id=eq." + groupId }, function (p) { const m = p && p.new; if (!m || m.from_key === myKey) return; if (showOpenBubble(m)) markGroupRead(groupId); });
       sub.subscribe();
     } catch (e) {} });
     let typingHideT = null;
     const typer = makeTypingChannel("gtyp-" + groupId, function (who) { const t = ov.querySelector("#igf-typing"); if (!t) return; if (who) { t.textContent = who + " is typing…"; if (typingHideT) clearTimeout(typingHideT); typingHideT = setTimeout(function () { t.textContent = ""; }, 3000); } else t.textContent = ""; });
-    function close() { if (ov.__stopRec) ov.__stopRec(); try { typer.close(); } catch (e) {} try { if (sub) ensureSb().then(function (s) { try { s.removeChannel(sub); } catch (e) {} }); } catch (e) {} ov.remove(); disarmPause(); }
+    function close() { if (ov.__stopRec) ov.__stopRec(); clearOpenChat(); try { typer.close(); } catch (e) {} try { if (sub) ensureSb().then(function (s) { try { s.removeChannel(sub); } catch (e) {} }); } catch (e) {} ov.remove(); disarmPause(); }
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     ov.querySelector("#igf-g-close").onclick = close;
     ov.querySelector("#igf-g-hd").onclick = function () { close(); openGroupInfo(groupId); };
@@ -1135,20 +1204,21 @@
     if (!msgs.length) box.innerHTML = '<div class="s" style="margin:auto;text-align:center">No messages yet — start the conversation! 👋</div>';
     else { box.innerHTML = ""; msgs.forEach(function (m) { renderBubble(box, m, opts); }); }
     box.scrollTop = box.scrollHeight;
+    setOpenChat({ kind: "group", groupId: groupId, box: box, opts: opts }, msgs);
     markGroupRead(groupId);
     if (_myProfile && _myProfile.chat_muted) { ov.querySelector("#igf-cin").disabled = true; ov.querySelector("#igf-csend").disabled = true; ov.querySelector("#igf-chat-warn").textContent = "🚫 Your chat is disabled due to repeated bad language."; }
     const inp = ov.querySelector("#igf-cin"), snd = ov.querySelector("#igf-csend");
     async function doSend() {
       const v = inp.value.trim(); if (!v) return; snd.disabled = true;
       const r = await sendGroupMsg(groupId, v, reply);
-      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, opts); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, opts); registerShown(r.row); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
       else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
       snd.disabled = false; inp.focus();
     }
     snd.onclick = doSend;
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
     inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
-    wireAttachments(ov, async function (body) { const r = await sendGroupMsg(groupId, body, null); if (r.ok) renderBubble(box, r.row, opts); else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
+    wireAttachments(ov, async function (body) { const r = await sendGroupMsg(groupId, body, null); if (r.ok) { renderBubble(box, r.row, opts); registerShown(r.row); } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
     inp.focus();
   }
 
@@ -1350,6 +1420,8 @@
     onUpdate: onUpdate, reqInCount: function () { return _in.length; }, bellCount: bellCount,
     weeklyInfo: weeklyInfo, isWeekWinner: isWeekWinner, ready: function () { return started; }
   };
-  try { if (String(location.search).indexOf("cwtest") >= 0) window.IGFriends._t = { igCountLeading: igCountLeading, leadingHTML: leadingHTML, wireAttachments: wireAttachments, GAME_TITLES: GAME_TITLES, GAME_EMOJI: GAME_EMOJI, HIDDEN_GAMES: HIDDEN_GAMES }; } catch (e) {}
+  try { if (String(location.search).indexOf("cwtest") >= 0) window.IGFriends._t = { igCountLeading: igCountLeading, leadingHTML: leadingHTML, wireAttachments: wireAttachments, GAME_TITLES: GAME_TITLES, GAME_EMOJI: GAME_EMOJI, HIDDEN_GAMES: HIDDEN_GAMES,
+    sendChat: sendChat, sendGroupMsg: sendGroupMsg, loadThread: loadThread, loadGroupMsgs: loadGroupMsgs, openChat: openChat, openGroupChat: openGroupChat,
+    myKey: function () { return myKey; }, started: function () { return started; }, openChatInfo: function () { return _openChat ? { kind: _openChat.kind, key: _openChat.key, groupId: _openChat.groupId, shown: _openChat.shownIds.size } : null; } }; } catch (e) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
