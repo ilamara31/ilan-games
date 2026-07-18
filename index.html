@@ -48,7 +48,6 @@
   .karate  { background:linear-gradient(135deg,#ff8b3d,#7a1f12); }
   .thisorthat { background:linear-gradient(135deg,#ff7ad9,#7a2dff); }
   .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
-  .rescue  { background:linear-gradient(135deg,#4aa3ff,#13499e); }
   .paper   { background:linear-gradient(135deg,#2bbd5a,#0e3a22); }
   .stack   { background:linear-gradient(135deg,#ffb13d,#b8005a); }
   .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
@@ -242,11 +241,6 @@
       <span class="pcflag">💻 Best on PC</span>
       <p>Claim land with your trail, dodge rivals — own the most territory. Global leaderboard!</p>
     </a>
-    <a class="card rescue" href="rescue/">
-      <span class="emoji">🚒</span>
-      <h2>Rescue Bounce</h2>
-      <p>Bounce people off your trampoline into the ambulance — easy to learn, with a tutorial. Best in landscape!</p>
-    </a>
     <a class="card obby" href="obby/">
       <span class="emoji">🌈</span>
       <h2>Rainbow Obby</h2>
@@ -306,7 +300,7 @@
     // per-game goal challenge (falls back to "beat your best")
     const GOALS={ 'cricket':'chase down the target and win', 'catch':'catch 25 without missing', 'f1':'finish on the podium (top 3)',
       'football':'win the penalty shootout', 'pptour':'win a tournament match', 'fruit-arena':'slice 40 fruit, no bombs',
-      'paper':'claim 30% of the map', 'rescue':'rescue 15 people', 'obby':'reach stage 10', 'puzzles':'finish any puzzle',
+      'paper':'claim 30% of the map', 'obby':'reach stage 10', 'puzzles':'finish any puzzle',
       'try':'survive 5 rule-flips', 'anime-tycoon':'win a battle in the arena', 'tennis':'win a match', 'karate':'land a KO',
       'stack':'stack 15 blocks high', 'archer':'KO 3 rivals' };
     function goalFor(s){ return GOALS[s] || 'beat your best score'; }
@@ -321,7 +315,6 @@
       'fruit-arena':{t:200,txt:g=>'score '+g+' in a single run'},
       pptour:{t:12,txt:g=>'win '+g+' matches'},
       paper:{t:45,txt:g=>'claim '+g+'% of the map'},
-      rescue:{t:60,txt:g=>'rescue '+g+' people in one run'},
       obby:{t:30,txt:g=>'reach stage '+g},
       try:{t:15,txt:g=>'reach level '+g},
       tennis:{t:6,txt:g=>'win '+g+' trophies'},
@@ -343,7 +336,6 @@
         case 'karate': return lsNum('karateChamp_v1','wins');
         case 'obby': return lsNum('ilanObbySave_v1','bestStage');
         case 'try': return lsNum('omt_save_v1','best');
-        case 'rescue': return Math.max(lsNum('rescueBounce_guest','best'), (a&&a.rescue&&+a.rescue.best)||0);
         case 'paper': return lsNum('paperTerritory_v1','best');
         case 'stack': return lsNum('stackTower_v1','best');
         case 'archer': return lsNum('archerDuel_v1','best');
@@ -591,7 +583,6 @@
       'stack/':        { added:   '2026-06-29T12:10:00' },
       'archer/':       { added:   '2026-06-29T12:00:00' },
       'paper/':        { updated: '2026-07-09T20:00:00' },   // online multiplayer: rooms, up to 4 players + bots
-      'rescue/':       { added:   '2026-06-28T20:00:00' },
       'karate/':       { added:   '2026-06-28T12:00:00' },
       'pptour/':       { updated: '2026-07-14T12:00:00' },   // timed SMASH + combo/fire streak (single-player), tougher AI
       'tennis/':       { updated: '2026-06-29T22:37:26' },
@@ -627,7 +618,7 @@
     /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
     const REC = {
       'scoop/':'both', 'codewords/':'both', 'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'airhockey/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
-      'fruit-arena/':'both', 'paper/':'pc', 'rescue/':'both', 'obby/':'both', 'puzzles/':'both',
+      'fruit-arena/':'both', 'paper/':'pc', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both',
     };
@@ -714,9 +705,9 @@
   const CATS={ 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
     'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['3d','sports'], 'airhockey/':['arcade','sports'],
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
-    'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'rescue/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
+    'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','rescue/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
+  const DEV={ 'scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';

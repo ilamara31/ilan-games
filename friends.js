@@ -26,21 +26,21 @@
   const GN = { home: "the menu", stack: "Stack Tower", archer: "Archer Duel", paper: "Paper Territory", cricket: "Super Over Cricket",
     catch: "Basket Catch", f1: "Grand Prix", football: "Penalty Kings", obby: "Rainbow Obby", puzzles: "Puzzle Pad",
     try: "One More Try", "anime-tycoon": "Anime Tycoon", tennis: "Tennis Tour", pptour: "Ping Pong Tour", karate: "Karate",
-    "fruit-arena": "Fruit Arena", rescue: "Rescue Bounce", airhockey: "Air Hockey Arena", codebreaker: "Codebreaker", thisorthat: "This or That",
+    "fruit-arena": "Fruit Arena", airhockey: "Air Hockey Arena", codebreaker: "Codebreaker", thisorthat: "This or That",
     scoop: "Basket Scoop" };
   // maps used to show a player's scores on their profile (mirrors auth.js)
   const GAME_TITLES = { catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
-    tennis: "Tennis Tour", karate: "Karate", rescue: "Rescue Bounce", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
+    tennis: "Tennis Tour", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
     scoop: "Basket Scoop" };
   const GAME_METRIC = { catch: "Best score", cricket: "Career runs", f1: "Points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
-    tennis: "Trophies", karate: "Wins", rescue: "Best rescues", "fruit-arena": "Best score", pptour: "Matches won",
+    tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
     scoop: "Best in 60s" };
   const GAME_EMOJI = { catch: "🧺", cricket: "🏏", f1: "🏎️", football: "⚽", try: "🎯", puzzles: "🧩", obby: "🌈",
-    "anime-tycoon": "💴", tennis: "🎾", karate: "🥋", rescue: "🚑", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
+    "anime-tycoon": "💴", tennis: "🎾", karate: "🥋", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
     stack: "🧱", archer: "🏹", airhockey: "🏒", scoop: "🏀" };
   const HIDDEN_GAMES = { cricket2bowl: 1, cricket2bat: 1 };
 

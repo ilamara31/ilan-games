@@ -40,6 +40,6 @@ grant execute on function public.bump_play(text) to anon, authenticated;
 insert into public.game_plays(game, plays) values
   ('catch',16),('try',13),('stack',12),('obby',9),('tennis',9),
   ('fruit-arena',8),('f1',8),('cricket',8),('pptour',7),('puzzles',7),
-  ('anime-tycoon',6),('archer',5),('karate',5),('paper',5),('rescue',4),
+  ('anime-tycoon',6),('archer',5),('karate',5),('paper',5),
   ('football',4),('thisorthat',0)
 on conflict (game) do nothing;
