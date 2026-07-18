@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Meme Studio</title>
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0a0e1a; --bg2:#141a30; --panel:#16203a; --panel2:#1d2a49; --line:rgba(255,255,255,.10);
+    --ink:#eef3ff; --muted:#9fb0d0;
+    --accent:#ff5b8d; --accent2:#ff9b3d; --accentInk:#2a0012;
+    --good:#39d98a; --grad:linear-gradient(135deg,#ff5b8d,#ff9b3d);
+    --grad2:linear-gradient(135deg,#7c5cff,#3aa0ff);
+  }
+  html,body{height:100%}
+  body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;color:var(--ink);
+    background:radial-gradient(circle at 50% -10%, #23305a, #0a0e1a 70%);min-height:100vh;overflow-x:hidden}
+  #app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;
+    padding:max(10px,env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom))}
+  /* header */
+  .top{display:flex;align-items:center;gap:10px;padding:6px 0 12px;min-height:48px}
+  .top .ttl{font-weight:900;font-size:20px;flex:1;letter-spacing:.3px}
+  .iconbtn{border:none;background:var(--panel);color:var(--ink);width:42px;height:42px;border-radius:14px;
+    font-size:18px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .iconbtn:active{transform:scale(.94)}
+  .userchip{background:var(--panel);border-radius:20px;padding:7px 12px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer}
+  #screen{flex:1;display:flex;flex-direction:column;gap:14px;animation:fade .22s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* shared components */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+  .label{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .btn{border:none;border-radius:16px;font-weight:900;cursor:pointer;font-size:16px;padding:15px 18px;color:#fff;background:var(--panel2);width:100%}
+  .btn:active{transform:scale(.98)}
+  .btn.grad{background:var(--grad);color:var(--accentInk)}
+  .btn.grad2{background:var(--grad2)}
+  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink)}
+  .btn.sm{padding:10px 14px;font-size:14px;border-radius:12px;width:auto}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  input,textarea,select{width:100%;background:var(--bg2);border:2px solid var(--line);border-radius:14px;
+    color:var(--ink);font-size:16px;padding:13px 14px;font-family:inherit;outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  .chip{border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;
+    padding:12px 10px;font-weight:800;cursor:pointer;text-align:center;font-size:14px}
+  .chip.on{border-color:var(--accent);background:linear-gradient(150deg,rgba(255,91,141,.25),rgba(255,155,61,.18));box-shadow:0 0 14px rgba(255,91,141,.25)}
+  .chip .em{font-size:26px;display:block;margin-bottom:4px}
+  .muted{color:var(--muted);font-size:13px;line-height:1.5}
+  /* main menu */
+  .hero{text-align:center;padding:14px 0 4px}
+  .hero h1{font-size:clamp(30px,9vw,46px);font-weight:900;letter-spacing:.5px;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--muted);margin-top:4px;font-size:14px}
+  .menu{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .mtile{border:none;cursor:pointer;border-radius:22px;padding:22px 14px;color:#fff;text-align:left;
+    display:flex;flex-direction:column;gap:6px;min-height:120px;justify-content:flex-end;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+  .mtile:active{transform:scale(.97)}
+  .mtile .mi{font-size:34px}
+  .mtile .mn{font-weight:900;font-size:18px}
+  .mtile .md{font-size:12px;opacity:.85;font-weight:600}
+  .mtile.big{grid-column:1/3;min-height:96px;flex-direction:row;align-items:center;gap:16px}
+  .mtile.big .mi{font-size:40px}
+  .t-create{background:linear-gradient(135deg,#ff5b8d,#ff9b3d)}
+  .t-gallery{background:linear-gradient(135deg,#7c5cff,#3aa0ff)}
+  .t-profile{background:linear-gradient(135deg,#12c2a0,#0a6e8a)}
+  .t-stats{background:linear-gradient(135deg,#ffb13d,#e0552b)}
+  .t-settings{background:linear-gradient(135deg,#465a86,#2a3350)}
+  /* meme cards (gallery) */
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .memecard{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+  .memecard:active{transform:scale(.98)}
+  .memecard .thumb{position:relative}
+  .memecard .meta{padding:9px 11px}
+  .memecard .mt{font-weight:800;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .memecard .ms{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:10px}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+  .tab{border:none;background:var(--panel);color:var(--muted);border-radius:20px;padding:9px 15px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+  .tab.on{background:var(--grad);color:var(--accentInk)}
+  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:36px 10px;color:var(--muted)}
+  .spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center}
+  .stat .n{font-size:28px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px;font-weight:700}
+  .steps{display:flex;gap:6px;justify-content:center;margin-bottom:4px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--accent);width:22px;border-radius:5px}
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:#0b1122;border:1px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:24px;
+    font-weight:800;z-index:9999;transition:.25s;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="top">
+      <button class="iconbtn" id="backBtn" style="display:none">←</button>
+      <div class="ttl" id="topTitle">Meme Studio</div>
+      <div class="userchip" id="userChip">👤 …</div>
+    </div>
+    <main id="screen"></main>
+  </div>
+  <div id="toast"></div>
+
+  <script src="../supabase-config.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="db.js" defer></script>
+  <script src="engine.js" defer></script>
+  <script src="create.js" defer></script>
+  <script src="browse.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
