@@ -306,12 +306,41 @@ function buildLevel(n){
     if(R()<0.30){ for(let c2=0;c2<3;c2++) coins.push({x:x - space*0.5 + c2*22, y:surf + dir*46, got:false}); }
   }
 
-  const finishX = x + 160;
+  let finishX = x + 160;
   // fake finish: a decoy ribbon partway, with a sneaky spike right after it
   let fakeX = null;
   if(tw.fake){ fakeX = 440 + (finishX-440)*0.58; feats.push({type:'spike', x:fakeX+70, surf:gravSign}); }
   // fake portal: looks like a shortcut you leap into — actually flings you backwards
   if(tw.portal){ const px = 440 + (finishX-440)*(0.4+R()*0.2); feats.push({type:'portal', x:px, surf:gravSign, used:false, back:arc*1.3}); }
+
+  // ---- GUARANTEE THE LEVEL IS BEATABLE ----
+  // Inserted obstacles (the fake-finish spike, the fake portal) were placed at a
+  // fixed offset, ignoring nearby obstacles — so they could land in the "dead zone"
+  // that's too far to land between yet too close to clear in one jump, making a
+  // handful of levels impossible (109, 115, 204…). This pass enforces the same
+  // proven-safe spacing the generator already uses (1.18·arc leading-edge gap)
+  // between every timing-critical feature, nudging the later one right when needed.
+  // Fully deterministic, so a level is identical on every retry.
+  {
+    const SEP = arc*1.18;
+    const timing = f => f.type==='spike'||f.type==='ghost'||f.type==='gap'||f.type==='mover'||f.type==='portal';
+    const lead = f => f.type==='gap' ? f.x : f.x-16;
+    const shiftFrom = (x0,d)=>{ for(const f of feats) if(f.x>x0) f.x+=d; for(const c of coins) if(c.x>x0) c.x+=d; };
+    let guard=0;
+    for(;;){
+      const fs = feats.filter(timing).sort((a,b)=>a.x-b.x);
+      let moved=false;
+      for(let i=1;i<fs.length;i++){
+        const A=fs[i-1], B=fs[i];
+        const sameFam=(A.type==='spike'||A.type==='ghost')&&(B.type==='spike'||B.type==='ghost');
+        if(sameFam && (B.x-A.x)<=40) continue;          // intended tight spike clusters (doubles/triples)
+        if(lead(B)-lead(A) < SEP-0.5){ shiftFrom(B.x-0.01, SEP-(lead(B)-lead(A))); moved=true; break; }
+      }
+      if(!moved || ++guard>4000) break;
+    }
+    let maxx=440; for(const f of feats) maxx=Math.max(maxx, f.x+(f.w||0));
+    finishX = Math.max(finishX, maxx+160);
+  }
 
   // timed events that fire as the player passes an x
   const events = [];
