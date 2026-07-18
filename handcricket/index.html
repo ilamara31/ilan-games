@@ -1006,6 +1006,14 @@ const STUCK_MS=70000, ROUND_HARD_CAP_MS=360000;
 // each client pings the host every ~4s (proves that player alive). We only conclude
 // someone is gone after this many ms of true silence AND presence agreeing they're absent.
 const HOST_SILENCE_MS=22000, PLAYER_SILENCE_MS=22000, PING_MS=4000;
+// A 2-player QUICK match has no host-coordinator to force-resolve it, so a vanished
+// opponent used to leave you frozen on "Waiting for opponent…" for the full 45s AFK
+// timer — the recurring "match never progresses" bug. Presence is NO help here: a
+// hard-disconnected peer lingers in Supabase presenceState for 30s+ (measured). The
+// reliable signal is application silence — the guest's 4s pings (host watches
+// R.seen[opp]) and the host's 3.5s heartbeat (guest watches R.lastHostMsg). ~11s of
+// silence = 2-3 missed beats = genuinely gone → award the walkover in ~11s, not 45s.
+const OPP_GONE_MS=11000;
 let roomMode='normal', roomCustom=false, roomMaxN=10, R=null, RGEN=0, LWDog=null;
 
 const MP={
@@ -1055,7 +1063,14 @@ const MP={
     const ch=this.sb.channel('hcl-m-'+this.code+'-'+matchId,{config:{broadcast:{self:false}}}); ch._mid=matchId;
     ch.on('broadcast',{event:'move'},({payload})=>onMoveMsg(payload));
     ch.subscribe(()=>{}); this.matchCh=ch; },
-  sendMove(payload){ if(this.matchCh){ try{ this.matchCh.send({type:'broadcast',event:'move',payload:payload||{}}); }catch(e){} } },
+  // Stamp every move with its sender. self:false only suppresses echo WITHIN one
+  // channel instance — if a second subscription to the same match topic ever exists
+  // (e.g. the watchdog re-opens the channel before the old one is fully removed), a
+  // client receives its OWN move back and would set oppNum to its own number. In
+  // normal mode that resolves as (myNum,myNum) = a phantom OUT, silently desyncing
+  // the two scoreboards and freezing one side on "Waiting for opponent…". The
+  // from-tag lets onMoveMsg reject the echo, making the protocol immune to it.
+  sendMove(payload){ if(this.matchCh){ try{ payload=payload||{}; payload.from=myId; this.matchCh.send({type:'broadcast',event:'move',payload}); }catch(e){} } },
   closeMatch(){ if(this.matchCh){ try{ this.sb.removeChannel(this.matchCh); }catch(e){} } this.matchCh=null; this.matchId=null; },
 };
 
@@ -1140,7 +1155,14 @@ function hostStart(){
   else { R.phase='group'; R.schedule=TL.roundRobin(R.players.map(p=>p.id)); R.roundIndex=0; hostStartRound(); }
 }
 function hostQuickMatch(){
-  R.players=MP.presenceList().slice(0,MAX_PLAYERS);         // re-check who's actually here (esp. on rematch)
+  // Don't abort a rematch on an instantaneous presence read: presence blips (a peer
+  // can briefly vanish from presenceState while still connected), and this is exactly
+  // the "stuck on ⏳ Host may rematch" bug — the host aborted and sent no directive, so
+  // the guest waited forever. Fall back to the maintained player list; a genuinely-gone
+  // opponent is caught within ~11s by the in-match disconnect walkover.
+  let list=MP.presenceList().slice(0,MAX_PLAYERS);
+  if(list.length<2 && (R.players||[]).length>=2) list=R.players.slice(0,MAX_PLAYERS);
+  R.players=list;
   if(R.players.length<2){ toast('Your opponent left the room'); return; }
   const [a,b]=R.players, matchId='q'+(R.koStep++), batFirst=Math.random()<.5?'a':'b';
   hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN});
@@ -1298,7 +1320,8 @@ function renderTwaitLive(){
 
 /* ---- client: play a round ---- */
 function clientOnRound(pkt){
-  if(!R) return; if(pkt.players)R.players=pkt.players; R.roundNameNow=pkt.roundName;
+  if(!R) return; R.phase = pkt.stage==='ko'?'ko':'group';   // self-heal phase (a dropped 'begin' must not stop pings)
+  if(pkt.players)R.players=pkt.players; R.roundNameNow=pkt.roundName;
   LIVE={};                                              // new round — clear last round's live scores
   const mine=(pkt.pairs||[]).find(p=>p.a===myId||p.b===myId);
   if(mine){ beginNetMatch({matchId:mine.matchId,a:mine.a,b:mine.b,batFirst:mine.batFirst,mode:pkt.mode,maxN:pkt.maxN,ko:pkt.stage==='ko'}); }
@@ -1336,6 +1359,10 @@ function beginNetMatch(m){
   newMatch({mode:m.mode, maxN:m.maxN||10, type:'quick', opp:'friend', online:true, host:MP.isHost, myside});
   G.matchId=m.matchId; G.matchAId=m.a; G.matchBId=m.b; G.oppId=(myside==='a'?m.b:m.a);
   G.quick=!!m.quick; G.tourney=!m.quick; G.koMatch=!!m.ko; G.moveHist={};
+  // Set the room phase from the match itself (not just the 'begin' directive, which
+  // can be dropped): guarantees the client's liveness pings run and host-gone
+  // detection works. Also arm a fresh disconnect check for this match.
+  if(R){ R.phase = G.quick?'quick':(G.koMatch?'ko':'group'); R._quickWalk=false; }
   G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
   G.firstBat=m.batFirst;
   MP.openMatch(m.matchId);                    // moves for this match go on their own channel
@@ -1344,9 +1371,10 @@ function beginNetMatch(m){
 }
 // opponent's move (arrives on the per-match channel)
 function onMoveMsg(payload){ if(!G.online || !payload || payload.matchId!==G.matchId) return;
+  if(payload.from===myId) return;   // our OWN move echoed back by a duplicate subscription — never treat it as the opponent's
   if(payload.ball===G.ballIndex){
     if(G.busy){ G.pendingOpp={ball:payload.ball,num:payload.num}; }   // mid-reveal: buffer it (applied when this ball opens)
-    else { G.oppNum=payload.num; clearAfk(); tryResolveOnline(); }
+    else { G.oppNum=payload.num; clearAfk(); tryResolveOnline(); if(!G.busy && G.myNum==null) startAfk(); }  // re-arm: my inaction must still be bounded
   }
   else if(payload.ball>G.ballIndex){ G.pendingOpp={ball:payload.ball,num:payload.num}; }
   else if(G.moveHist && G.moveHist[payload.ball]!=null){ MP.sendMove({matchId:G.matchId, ball:payload.ball, num:G.moveHist[payload.ball]}); } // opponent a ball behind → re-send that ball
@@ -1358,7 +1386,7 @@ function onlineNextBall(){
   $('numBat').textContent='–'; $('numBowl').textContent='–';
   $('prompt').innerHTML = iBat ? 'You <span class="hl">bat</span> — pick your number' : 'You <span class="hl">bowl</span> — pick your number';
   startAfk();
-  if(G.pendingOpp && G.pendingOpp.ball===G.ballIndex){ G.oppNum=G.pendingOpp.num; G.pendingOpp=null; clearAfk(); tryResolveOnline(); }
+  if(G.pendingOpp && G.pendingOpp.ball===G.ballIndex){ G.oppNum=G.pendingOpp.num; G.pendingOpp=null; clearAfk(); tryResolveOnline(); if(!G.busy && G.myNum==null) startAfk(); }
 }
 function onlinePick(n){
   if(G.busy || G.myNum!=null) return;
@@ -1375,6 +1403,10 @@ setInterval(()=>{ if(G.online && cur==='game' && !G.busy && G.myNum!=null && G.o
   MP.sendMove({matchId:G.matchId, ball:G.ballIndex, num:G.myNum}); } }, 1200);
 // client -> host liveness ping (proves this player is still here, independent of presence)
 setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.phase==='quick')) MP.send('ping',{from:myId}); }, PING_MS);
+// lobby: keep re-announcing until the match starts. A single dropped 'hello' plus a
+// missed presence-join used to leave the HOST stuck on "Waiting for players…" with the
+// guest invisible; this idempotent re-send heals it within a few seconds.
+setInterval(()=>{ if(R && !R.isHost && cur==='lobby') MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }, 3000);
 // live spectate: active tournament players broadcast a lightweight score so WAITING
 // players can watch the other matches. Only in tournaments (quick 2-player has no waiters).
 setInterval(()=>{ if(R && G.online && G.tourney && !G.quick && cur==='game' && G.matchId){
@@ -1452,6 +1484,14 @@ function startLiveWatch(){ if(LWDog) clearInterval(LWDog); const g=RGEN;
     if(s!=='joined'&&s!=='joining'){ MP.reopen(); R.lastHostMsg=now; if(R.seen)R.players&&R.players.forEach(p=>R.seen[p.id]=now); return; }
     // 2) heal a dropped per-match channel so a live match can't soft-lock on lost moves
     if(G.online && cur==='game' && G.matchId && (!MP.matchCh || MP.matchCh._mid!==G.matchId || (MP.matchCh.state!=='joined' && MP.matchCh.state!=='joining'))){ MP.openMatch(G.matchId); }
+    // 3) QUICK match: a vanished opponent has no host to force-resolve the match, so
+    //    detect them via application silence (NOT presence, which is 30s+ slow) and end
+    //    the match in ~11s instead of the 45s "Waiting for opponent…" freeze. The host
+    //    watches the guest's pings; the guest watches the host's heartbeat.
+    if(G.online && G.quick && cur==='game' && G.oppId && !R._quickWalk){
+      const silentMs = R.isHost ? (now-(R.seen&&R.seen[G.oppId]||R.startedAt||now)) : (now-(R.lastHostMsg||now));
+      if(silentMs > OPP_GONE_MS){ R._quickWalk=true; netMatchWalkover(); return; }
+    }
     if(R.isHost){
       if(R.phase==='group'||R.phase==='ko'){
         const present=new Set(MP.presenceList().map(p=>p.id));
