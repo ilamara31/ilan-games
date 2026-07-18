@@ -34,13 +34,14 @@ grant select on public.ig_warnings to anon, authenticated;
 -- ============================================================
 
 -- (a) reset this spammer's User-of-the-Week plays to zero (every week)
+--     "DA GOAT" -> da_goat
 update public.ig_weekly
    set plays = 0
- where user_key = 'dagoat';
+ where user_key = 'da_goat';
 
 -- (b) send the warning banner to that account
 insert into public.ig_warnings (user_key, title, body, level) values
-  ('dagoat',
+  ('da_goat',
    '⚠️ Warning — stop spamming',
    'Opening and closing games to farm plays has been detected. Your User-of-the-Week score was reset to 0. From now on a play only counts after 25 seconds in a game. Keep it fair and have fun! 🎮',
    'warning');
