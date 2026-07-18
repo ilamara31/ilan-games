@@ -255,6 +255,8 @@ function renderGame(){
   const bluffOn = !amDrawer() && G.phase==='choose' && G.mode==='bluff';
   $('bluffOpts').classList.toggle('on', bluffOn);
   if(bluffOn) renderBluffOptions();
+  // universal "Done" button — whoever is drawing can finish early (bluff uses its own Submit Title)
+  $('doneBtn').style.display = (amDrawer() && G.phase==='draw' && G.mode!=='bluff') ? 'block' : 'none';
 }
 function renderBluffOptions(){
   const box=$('bluffOpts'); if(box.getAttribute('data-r')===String(G.round)+G.phase && box.children.length){return;}
@@ -282,7 +284,7 @@ const MP={
   _sub(){return new Promise((res,rej)=>{
     if(this.ch){try{this.sb.removeChannel(this.ch);}catch(e){}}
     const ch=this.sb.channel('dr-room-'+this.code,{config:{broadcast:{self:false},presence:{key:myId}}});
-    ['hello','lobby','start','state','stroke','snap','guess','guessfeed','title','choose','ping','bye'].forEach(ev=>ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
+    ['hello','lobby','start','state','stroke','snap','guess','guessfeed','title','choose','drawerdone','ping','bye'].forEach(ev=>ch.on('broadcast',{event:ev},({payload})=>onNet(ev,payload)));
     ch.on('presence',{event:'sync'},()=>onNet('presence'));
     ch.on('presence',{event:'join'},()=>onNet('presence'));
     ch.on('presence',{event:'leave'},()=>onNet('presence'));
@@ -315,6 +317,7 @@ function onNet(ev,payload){
   if(ev==='guessfeed'){ if(!R.isHost&&G&&payload&&payload.mid===G.mid) showGuess(payload.from,payload.txt,payload.correct); return; }
   if(ev==='title'){ if(R.isHost&&G) hostOnTitle(payload); return; }
   if(ev==='choose'){ if(R.isHost&&G) hostOnChoose(payload); return; }
+  if(ev==='drawerdone'){ if(R.isHost&&G&&payload&&payload.mid===G.mid&&G.phase==='draw'&&payload.from===G.drawerId){ if(G.mode==='bluff')hostBeginChoose(); else hostReveal(false); } return; }
   if(ev==='bye'){ if(R&&R.isHost&&G&&G.phase!=='over'){ hostPresence(); } return; }
 }
 
@@ -688,6 +691,7 @@ function boot(){
   $('quitGameBtn').onclick=()=>{ Sound.click(); openOv('<h2>Quit game?</h2><p>Your current game will end.</p><div class="btns"><button class="btn ghost" id="ovNo">Stay</button><button class="btn" id="ovYes">Quit</button></div>'); $('ovNo').onclick=closeOv; $('ovYes').onclick=()=>{closeOv();stopAI();quitGame();}; };
   $('guessSend').onclick=()=>{ Sound.click(); sendGuess(); };
   $('guessInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendGuess(); } });
+  $('doneBtn').onclick=()=>{ Sound.click(); if(!G)return; if(G.vsAI){ stopAI(); aiFinish(); } else if(G.online){ if(G.isHost)hostReveal(false); else MP.send('drawerdone',{mid:G.mid,from:myId}); } };
   $('titleSubmit').onclick=()=>{ Sound.click(); if(G&&G.vsAI)submitTitleAI(); else submitTitle(); };
   $('titleInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ if(G&&G.vsAI)submitTitleAI(); else submitTitle(); } });
   // settings
