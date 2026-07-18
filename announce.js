@@ -124,4 +124,41 @@
       if (next) render(next);
     })
     .catch(function () {});
+
+  // ---- per-user warnings (Supabase-driven) --------------------------------
+  // Lets the arcade owner warn ONE specific account without shipping code:
+  // just INSERT a row into public.ig_warnings (see warnings-setup.sql). The
+  // targeted player sees a banner on their next load; dismissing it is per-id
+  // so it won't nag forever, but a new row (new id) shows again.
+  function nameKey(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+  }
+  (function fetchWarnings() {
+    try {
+      var name = (window.IG && window.IG.player) || null;
+      if (!name) return;                          // only signed-in players have a key
+      var key = nameKey(name);
+      if (!key) return;
+      var url = window.SUPABASE_URL || 'https://xanrofecdpoljnerpsow.supabase.co';
+      var apiKey = window.SUPABASE_KEY || 'sb_publishable_jff4Q2OLVzIf0Cr1FILZyQ_vgy8xRrT';
+      var q = url + '/rest/v1/ig_warnings?user_key=eq.' + encodeURIComponent(key)
+        + '&select=id,title,body,level&order=created.desc';
+      fetch(q, { headers: { apikey: apiKey, Authorization: 'Bearer ' + apiKey }, cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          if (!Array.isArray(rows) || !rows.length) return;
+          for (var i = 0; i < rows.length; i++) {
+            var w = rows[i];
+            var msg = {
+              id: 'ig_warn_' + w.id,               // stable, unique id → dismiss sticks
+              title: w.title || '⚠️ Warning',
+              body: w.body || '',
+              level: w.level || 'warning'
+            };
+            if (eligible(msg)) { render(msg); break; } // one at a time, newest first
+          }
+        })
+        .catch(function () {});
+    } catch (e) {}
+  })();
 })();
