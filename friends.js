@@ -1068,7 +1068,7 @@
     box.appendChild(div); box.scrollTop = box.scrollHeight;
     return div;
   }
-  function appendChatBubble(m) { showOpenBubble(m); }
+  function appendChatBubble(m) { if (!m || !_openChat || _openChat.kind !== "direct" || _openChat.key !== m.from_key) return; showOpenBubble(m); }
 
   /* ---- resilient open-chat delivery ----
      Realtime channels can silently drop (phone sleep, network blip, idle timeout) with no
@@ -1085,34 +1085,39 @@
     if (box.querySelector(".s")) box.innerHTML = "";                 // clear "no messages yet" placeholder
     const d = renderBubble(box, m, _openChat.opts); registerShown(m); return d;
   }
-  function setOpenChat(ctx, initialMsgs) { _openChat = ctx; ctx.shownIds = new Set(); ctx.lastTs = ""; (initialMsgs || []).forEach(registerShown); startOpenPoll(); }
+  function setOpenChat(ctx, initialMsgs) { _openChat = ctx; ctx.shownIds = new Set(); ctx.lastTs = ""; (initialMsgs || []).forEach(registerShown); ctx.pollCursor = ctx.lastTs || ""; startOpenPoll(); }
   function clearOpenChat() { _openChat = null; stopOpenPoll(); }
   function startOpenPoll() { stopOpenPoll(); _openPollT = setInterval(pollOpenChat, 2500); }
   function stopOpenPoll() { if (_openPollT) { clearInterval(_openPollT); _openPollT = null; } }
-  // fetch the most RECENT window of the open thread. We de-dup by shown id (not a timestamp
-  // high-water mark) — otherwise a newer message delivered by realtime would advance the cursor
-  // past our own still-unshown earlier messages and they'd be skipped forever.
-  async function fetchRecent(oc) {
+  // fetch the thread forward from a LAGGING cursor (`pollCursor`) that only the poll advances —
+  // never realtime. This scans every message contiguously (own + others), so nothing can be
+  // skipped, and de-dups by shown id so realtime + poll never double-render. (A recent-window
+  // fetch could drop a still-unshown message that scrolled out of the window under a heavy burst.)
+  async function fetchAfter(oc) {
     const s = await ensureSb(); if (!s) return [];
     const tbl = oc.kind === "direct" ? "ig_chat" : "ig_group_msg";
     const eqCol = oc.kind === "direct" ? "pair_key" : "group_id";
     const eqVal = oc.kind === "direct" ? pairKey(myKey, oc.key) : oc.groupId;
+    const since = oc.pollCursor || "1970-01-01T00:00:00Z";
     const full = "id,from_key,from_name,body,created_at,reply_to,reply_name,reply_body";
     try {
-      const r = await s.from(tbl).select(full).eq(eqCol, eqVal).order("created_at", { ascending: false }).limit(200);
-      if (!r.error && r.data) return r.data.slice().reverse();
-      const r2 = await s.from(tbl).select("id,from_key,from_name,body,created_at").eq(eqCol, eqVal).order("created_at", { ascending: false }).limit(200);
-      if (!r2.error && r2.data) return r2.data.slice().reverse();
+      const r = await s.from(tbl).select(full).eq(eqCol, eqVal).gte("created_at", since).order("created_at", { ascending: true }).limit(300);
+      if (!r.error && r.data) return r.data;
+      const r2 = await s.from(tbl).select("id,from_key,from_name,body,created_at").eq(eqCol, eqVal).gte("created_at", since).order("created_at", { ascending: true }).limit(300);
+      if (!r2.error && r2.data) return r2.data;
     } catch (e) {}
     return [];
   }
   async function pollOpenChat() {
     const oc = _openChat;
     if (!oc || !oc.box || !document.body.contains(oc.box)) { if (oc) clearOpenChat(); return; }
-    const rows = await fetchRecent(oc);
+    const rows = await fetchAfter(oc);
     if (_openChat !== oc) return;                                    // chat changed while awaiting
     let appended = false;
-    rows.forEach(function (m) { if (showOpenBubble(m)) appended = true; });
+    rows.forEach(function (m) {
+      if (showOpenBubble(m)) appended = true;
+      if (m.created_at && (!oc.pollCursor || m.created_at > oc.pollCursor)) oc.pollCursor = m.created_at;   // advance the cursor past every scanned message
+    });
     if (appended) { if (oc.kind === "direct") markRead(oc.key); else markGroupRead(oc.groupId); }
   }
 
@@ -1156,14 +1161,14 @@
     async function doSend() {
       const v = inp.value.trim(); if (!v) return; snd.disabled = true;
       const r = await sendChat(key, name, v, reply);
-      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, _chatOpts); registerShown(r.row); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      if (r.ok) { inp.value = ""; clearReply(); if (r.row && r.row.id != null) { renderBubble(box, r.row, _chatOpts); registerShown(r.row); } if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
       else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
       snd.disabled = false; inp.focus();
     }
     snd.onclick = doSend;
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
     inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
-    wireAttachments(ov, async function (body) { const r = await sendChat(key, name, body, null); if (r.ok) { renderBubble(box, r.row, _chatOpts); registerShown(r.row); } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
+    wireAttachments(ov, async function (body) { const r = await sendChat(key, name, body, null); if (r.ok) { if (r.row && r.row.id != null) { renderBubble(box, r.row, _chatOpts); registerShown(r.row); } } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
     inp.focus();
   }
 
@@ -1188,7 +1193,7 @@
     let sub = null;
     ensureSb().then(function (s) { if (!s) return; try {
       sub = s.channel("gmsg-" + groupId);
-      sub.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_msg", filter: "group_id=eq." + groupId }, function (p) { const m = p && p.new; if (!m || m.from_key === myKey) return; if (showOpenBubble(m)) markGroupRead(groupId); });
+      sub.on("postgres_changes", { event: "INSERT", schema: "public", table: "ig_group_msg", filter: "group_id=eq." + groupId }, function (p) { const m = p && p.new; if (!m || m.from_key === myKey) return; if (!_openChat || _openChat.kind !== "group" || _openChat.groupId !== groupId) return; if (showOpenBubble(m)) markGroupRead(groupId); });
       sub.subscribe();
     } catch (e) {} });
     let typingHideT = null;
@@ -1211,14 +1216,14 @@
     async function doSend() {
       const v = inp.value.trim(); if (!v) return; snd.disabled = true;
       const r = await sendGroupMsg(groupId, v, reply);
-      if (r.ok) { inp.value = ""; clearReply(); renderBubble(box, r.row, opts); registerShown(r.row); if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
+      if (r.ok) { inp.value = ""; clearReply(); if (r.row && r.row.id != null) { renderBubble(box, r.row, opts); registerShown(r.row); } if (r.warn) ov.querySelector("#igf-chat-warn").textContent = r.warn; try { typer.stop(); } catch (e) {} }
       else { ov.querySelector("#igf-chat-warn").textContent = r.msg || ""; if (r.blocked) inp.disabled = true; }
       snd.disabled = false; inp.focus();
     }
     snd.onclick = doSend;
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") doSend(); });
     inp.addEventListener("input", function () { try { typer.typing(); } catch (e) {} });
-    wireAttachments(ov, async function (body) { const r = await sendGroupMsg(groupId, body, null); if (r.ok) { renderBubble(box, r.row, opts); registerShown(r.row); } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
+    wireAttachments(ov, async function (body) { const r = await sendGroupMsg(groupId, body, null); if (r.ok) { if (r.row && r.row.id != null) { renderBubble(box, r.row, opts); registerShown(r.row); } } else if (r.msg) ov.querySelector("#igf-chat-warn").textContent = r.msg; }, !!(_myProfile && _myProfile.chat_muted));
     inp.focus();
   }
 
