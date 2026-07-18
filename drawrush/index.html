@@ -189,6 +189,41 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:var(--ink);
 .confetti i{position:absolute;top:-14px;width:10px;height:14px;opacity:.9;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.2}}
 
+/* ---------- community gallery ---------- */
+.gbar{display:flex;gap:8px;margin-bottom:10px}
+.gsearch{flex:1;background:var(--panel2);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;font-family:inherit;outline:none;min-width:0}
+.gsearch:focus{border-color:var(--p2)}
+.gtabs{display:flex;gap:6px;margin-bottom:10px}
+.gtabs button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:800;font-size:13px;color:var(--muted);background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:10px 6px}
+.gtabs button.on{background:var(--grad);color:#fff;border-color:transparent}
+.gchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
+.gchip{flex:0 0 auto;cursor:pointer;border:1.5px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:800;white-space:nowrap}
+.gchip.on{background:var(--p3);color:#04202a;border-color:transparent}
+.ggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .1s}
+.gcard:active{transform:scale(.97)}
+.gcard .thumb{width:100%;aspect-ratio:4/3;background:#fff;object-fit:cover;display:block}
+.gcard .gc-b{padding:9px 10px}
+.gcard .gc-t{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcard .gc-c{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcard .gc-m{display:flex;gap:10px;font-size:12px;font-weight:800;margin-top:5px;color:var(--muted)}
+.gcat{display:inline-block;font-size:10px;font-weight:800;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:2px 7px;color:var(--p3);margin-top:5px}
+.gmore{text-align:center;padding:16px;color:var(--muted);font-weight:700}
+.gempty{text-align:center;color:var(--muted);padding:44px 10px;font-weight:700}
+.dimg{width:100%;background:#fff;border-radius:16px;aspect-ratio:4/3;object-fit:contain;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.dmeta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.dstat{background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:800;font-size:14px}
+.dcreator{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;margin-top:8px}
+.dcreator .av{width:40px;height:40px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto}
+.likebtn.liked{background:linear-gradient(135deg,#ff5d7a,#ec4899)}
+.phead{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.pav{width:64px;height:64px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:32px;flex:0 0 auto}
+.pstats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.pstat{flex:1;min-width:80px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.pstat .v{font-size:20px;font-weight:900;color:var(--acc)}
+.pstat .l{font-size:11px;color:var(--muted);font-weight:700}
+.spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--p2);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none!important}
 .center{text-align:center}
 .mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
@@ -209,6 +244,7 @@ a.link{color:var(--p2);font-weight:800;cursor:pointer;text-decoration:none}
     <div class="menu-btns">
       <button class="btn" data-go="online">🌐 Play Online</button>
       <button class="btn cyan" data-go="ai">🤖 Play vs AI</button>
+      <button class="btn gold" id="galleryOpenBtn">🖼️ Community Gallery</button>
       <div class="menu-foot">
         <button class="btn ghost" data-go="stats">📊 Stats</button>
         <button class="btn ghost" data-go="settings">⚙️ Settings</button>
@@ -336,6 +372,29 @@ a.link{color:var(--p2);font-weight:800;cursor:pointer;text-decoration:none}
     <input id="setName" class="field" maxlength="14" placeholder="Player">
     <p class="small mt12">Draw Rush 🎨 — test build. Report anything weird!</p>
   </div>
+
+  <!-- ============ COMMUNITY GALLERY ============ -->
+  <div id="gallery" class="screen">
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span><button class="btn ghost sm" id="myProfileBtn">👤 My Profile</button></div>
+    <div class="h2">🖼️ Community Gallery</div>
+    <div class="gbar"><input id="gSearch" class="gsearch" placeholder="🔍 Search title, creator, category…" autocomplete="off" spellcheck="false"><button class="btn sm" id="gSearchBtn">Go</button></div>
+    <div class="gtabs" id="gTabs"><button data-sort="likes" class="on">🔥 Most Liked</button><button data-sort="views">👁 Most Viewed</button><button data-sort="new">🆕 Newest</button></div>
+    <div class="gchips" id="gChips"></div>
+    <div class="ggrid" id="gGrid"></div>
+    <div class="gmore" id="gMore" style="display:none"></div>
+  </div>
+
+  <!-- ============ DRAWING DETAIL ============ -->
+  <div id="detail" class="screen">
+    <div class="top"><button class="btn ghost sm" id="detailBack">‹ Back</button><span class="spacer"></span></div>
+    <div id="detailBody"><div class="spin"></div></div>
+  </div>
+
+  <!-- ============ CREATOR PROFILE ============ -->
+  <div id="profile" class="screen">
+    <div class="top"><button class="btn ghost sm" id="profileBack">‹ Back</button><span class="spacer"></span></div>
+    <div id="profileBody"><div class="spin"></div></div>
+  </div>
 </div>
 
 <!-- overlays -->
@@ -346,5 +405,6 @@ a.link{color:var(--p2);font-weight:800;cursor:pointer;text-decoration:none}
 <script src="../supabase-config.js"></script>
 <script src="data.js"></script>
 <script src="game.js"></script>
+<script src="gallery.js"></script>
 </body>
 </html>

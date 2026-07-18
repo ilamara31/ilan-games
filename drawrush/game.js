@@ -636,8 +636,16 @@ function endAIResult(emoji,title,body,good){
 }
 function finishAIButtons(){ SV.stats.played=SV.stats.played; SV.stats.modes[G.aimode]=(SV.stats.modes[G.aimode]||0)+1; if(G.aimode==='bluff'||G.aimode==='judge'||G.aimode==='disaster'){ SV.stats.played++; } save();
   const am=G.aimode;
+  galleryBtn(G.word||'');
   $('ovAgain').onclick=()=>{ Sound.click(); closeOv(); startAI(am); };
   $('ovMenu').onclick=()=>{ Sound.click(); closeOv(); quitGame(); };
+}
+// add a "Save to Gallery" button to a result overlay (only if the gallery module is loaded).
+function galleryBtn(defTitle){ if(!window.Gallery||!window.Gallery.openSave)return; const box=$('ovBox'); const btns=box.querySelector('.btns'); if(!btns||box.querySelector('#ovSaveGal'))return;
+  if(Draw.isEmpty())return;   // nothing drawn -> nothing to save
+  const b=document.createElement('button'); b.id='ovSaveGal'; b.className='btn cyan block'; b.style.marginBottom='8px';
+  b.innerHTML='🖼️ Save to Gallery'; b.onclick=()=>{ Sound.click(); const img=window.DrawRushAPI.imageDataURL(); window.Gallery.openSave(img,defTitle||''); };
+  btns.parentNode.insertBefore(b,btns);
 }
 /* disaster events */
 function fireDisaster(){
@@ -727,6 +735,21 @@ startGuestNet=function(){ stopAllTimers(); pingTimer=setInterval(()=>{ if(!R){cl
 },3500); };
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
+
+/* ---- public API for the (isolated) Community Gallery module. Read-only helpers;
+   does NOT expose or alter any gameplay/multiplayer state. ---- */
+window.DrawRushAPI={
+  show:show, openOv:openOv, closeOv:closeOv, toast:toast, esc:esc, sound:Sound,
+  userName:()=>myName(),
+  getClient:()=>MP.ensure(),                      // shared Supabase client (lazy)
+  strokes:()=>Draw.snapshot(),
+  imageDataURL:()=>{ try{ const c=$('canvas'); const t=document.createElement('canvas'); t.width=c.width||600; t.height=c.height||450; const x=t.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,t.width,t.height); x.drawImage(c,0,0); return t.toDataURL('image/png'); }catch(e){ return null; } },
+  // render a strokes-array into an arbitrary <canvas> (used for gallery previews if needed)
+  renderStrokesTo:(canvas,list)=>{ try{ const ctx=canvas.getContext('2d'); const W=canvas.width,H=canvas.height; ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      (list||[]).forEach(s=>{ ctx.lineWidth=Math.max(1,s.w*W); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=s.c; ctx.fillStyle=s.c; ctx.globalCompositeOperation=s.t==='eraser'?'destination-out':'source-over';
+        const p=s.pts; if(!p||!p.length)return; if(p.length===1){ctx.beginPath();ctx.arc(p[0].x*W,p[0].y*H,Math.max(.6,s.w*W/2),0,7);ctx.fill();return;}
+        ctx.beginPath();ctx.moveTo(p[0].x*W,p[0].y*H); for(let i=1;i<p.length-1;i++){const m={x:(p[i].x+p[i+1].x)/2,y:(p[i].y+p[i+1].y)/2};ctx.quadraticCurveTo(p[i].x*W,p[i].y*H,m.x*W,m.y*H);} ctx.lineTo(p[p.length-1].x*W,p[p.length-1].y*H); ctx.stroke(); }); }catch(e){} }
+};
 
 /* test hook (inert unless ?cwtest) */
 try{ if(String(location.search).indexOf('cwtest')>=0){ window.DR_T={ myId, getG:()=>G, getR:()=>R, MP, Draw, createRoom, joinRoom, hostStartGame, sendGuess, startAI, submitTitle, submitChoose, roster:()=>MP.roster(),
