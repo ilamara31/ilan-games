@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v99';
+const CACHE = 'ilan-arcade-v100';
 const ASSETS = [
   './',
   './index.html',
@@ -130,8 +130,8 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(req).catch(() => new Response('{"messages":[]}', { headers: { 'Content-Type': 'application/json' } })));
     return;
   }
-  // auth/config scripts change often — always try the network first (fall back to cache offline)
-  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js') || path.endsWith('/friends.js')) {
+  // auth/config/analytics scripts change often — always try the network first (fall back to cache offline)
+  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js') || path.endsWith('/friends.js') || path.endsWith('/analytics.js') || path.endsWith('/announce.js')) {
     e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; }).catch(() => caches.match(req)));
     return;
   }
