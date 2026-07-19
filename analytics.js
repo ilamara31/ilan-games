@@ -99,8 +99,7 @@
       // ---- Session Replay (bundled in the SDK, v2.50+) ----
       record_sessions_percent: 100,  // record every session
       record_canvas: true,           // capture <canvas> gameplay (f1, football, obby, …) — else it's blank
-      record_heatmap_data: true,     // capture clicks to power Heatmaps
-      record_min_ms: 3000            // skip trivially short (<3s) replays
+      record_heatmap_data: true      // capture clicks to power Heatmaps
     });
 
     // tag every event with the game slug so you can break down by game
