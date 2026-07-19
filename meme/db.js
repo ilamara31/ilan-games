@@ -58,18 +58,33 @@
     return { key: guest ? ("guest_" + nameKey(name)) : nameKey(name), name: name, guest: guest };
   }
 
-  // Upload an image/voice blob to the public avatars bucket under meme/<kind>/<key>/<ts>.<ext>
+  // Upload an image/voice blob to the public avatars bucket under meme/<kind>/<key>/<ts>.<ext>.
+  // Uses a DIRECT REST call (not the SDK storage client) — proven reliable for audio + images,
+  // avoids an SDK quirk that made voice uploads fail on some devices, and surfaces the real error.
   async function uploadMedia(blob, kind, ext, contentType) {
-    var s = await client(); if (!s) throw new Error("Not connected — check your internet and try again.");
-    if (!blob || !blob.size) throw new Error("Nothing to upload.");
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) throw new Error("Not connected — try again.");
+    if (!blob || !blob.size) throw new Error("Nothing to upload — the recording was empty.");
     var u = me();
-    var path = "meme/" + (kind || "img") + "/" + u.key + "/" + Date.now() + "." + (ext || "bin");
-    var up = await s.storage.from("avatars").upload(path, blob, { upsert: true, contentType: contentType, cacheControl: "3600" });
-    if (up.error) throw new Error("Upload failed: " + (up.error.message || "storage error"));
-    var pub = s.storage.from("avatars").getPublicUrl(path);
-    var url = pub && pub.data && pub.data.publicUrl;
-    if (!url) throw new Error("Couldn't get the file URL.");
-    return url;
+    var path = "meme/" + (kind || "img") + "/" + u.key + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + (ext || "bin");
+    var ep = window.SUPABASE_URL + "/storage/v1/object/avatars/" + path;
+    var res;
+    try {
+      res = await fetch(ep, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer " + window.SUPABASE_KEY,
+          apikey: window.SUPABASE_KEY,
+          "content-type": contentType || "application/octet-stream",
+          "x-upsert": "true", "cache-control": "3600"
+        },
+        body: blob
+      });
+    } catch (e) { throw new Error("Upload failed — check your internet and try again."); }
+    if (!res.ok) {
+      var msg = ""; try { var j = await res.json(); msg = j.message || j.error || ""; } catch (e) {}
+      throw new Error("Upload failed (" + res.status + ")" + (msg ? ": " + msg : ""));
+    }
+    return window.SUPABASE_URL + "/storage/v1/object/public/avatars/" + path;
   }
 
   async function saveMeme(m) {

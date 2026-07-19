@@ -30,15 +30,24 @@
     { id: "funny",     label: "Funny Faces", emoji: "🤪", grad: ["#ff9bd0", "#a12dff"] },
     { id: "random",    label: "Random",      emoji: "🎲", grad: ["#9fe0ff", "#5b2a86"] }
   ];
+  // Spoken memes use the device's real text-to-speech voice (not robotic beeps);
+  // sound-effects are synthesized. For an exact viral clip, record your own voice.
   var SOUNDS = [
-    { id: "bruh",     label: "Bruh" },
-    { id: "aiyo",     label: "Aiyo" },
-    { id: "laugh",    label: "Laugh" },
-    { id: "wow",      label: "Wow" },
-    { id: "boom",     label: "Boom" },
-    { id: "violin",   label: "Sad Violin" },
-    { id: "victory",  label: "Victory" },
-    { id: "clap",     label: "Clap" }
+    { id: "bruh",      label: "Bruh 💀" },
+    { id: "getout",    label: "Get Out! 🚪" },
+    { id: "sixseven",  label: "6 7 🔥" },
+    { id: "emotional", label: "Emotional Damage" },
+    { id: "sigma",     label: "What the Sigma" },
+    { id: "aiyo",      label: "Aiyyo" },
+    { id: "nope",      label: "Nope 🙅" },
+    { id: "wow",       label: "Wow 😮" },
+    { id: "boom",      label: "Boom 💥" },
+    { id: "fart",      label: "Fart 💨" },
+    { id: "airhorn",   label: "Air Horn 📢" },
+    { id: "clap",      label: "Clap 👏" },
+    { id: "laugh",     label: "Laugh 😂" },
+    { id: "violin",    label: "Sad Violin 🎻" },
+    { id: "victory",   label: "Victory 🏆" }
   ];
   var EFFECTS = [
     { id: "zoomin",   label: "Zoom In" },
@@ -102,16 +111,44 @@
     src.connect(g); g.connect(a.destination); src.start(t0);
   }
   var SYNTH = {
-    bruh:    function (a, t) { tone(a, t, 150, 70, 0.45, "sawtooth", 0.35); },
-    aiyo:    function (a, t) { tone(a, t, 620, 880, 0.18, "square", 0.25); tone(a, t + 0.2, 880, 420, 0.28, "square", 0.25); },
-    laugh:   function (a, t) { for (var i = 0; i < 5; i++) tone(a, t + i * 0.13, 400 + (i % 2 ? 120 : 0), 300, 0.1, "triangle", 0.28); },
-    wow:     function (a, t) { tone(a, t, 300, 900, 0.28, "sine", 0.3); tone(a, t + 0.28, 900, 500, 0.25, "sine", 0.25); },
-    boom:    function (a, t) { tone(a, t, 140, 40, 0.6, "sine", 0.5); noise(a, t, 0.25, 0.4); },
-    violin:  function (a, t) { tone(a, t, 440, 220, 1.1, "sawtooth", 0.22); tone(a, t + 0.03, 445, 223, 1.1, "sawtooth", 0.16); },
+    laugh:   function (a, t) { for (var i = 0; i < 6; i++) tone(a, t + i * 0.12, 420 + (i % 2 ? 130 : 0), 300, 0.1, "triangle", 0.3); },
+    boom:    function (a, t) { tone(a, t, 120, 28, 0.75, "sine", 0.7); tone(a, t, 60, 20, 0.75, "sine", 0.5); noise(a, t, 0.18, 0.35); },   // deep "vine boom" style hit
+    fart:    function (a, t) { var o = a.createOscillator(), g = a.createGain(); o.type = "sawtooth";
+               o.frequency.setValueAtTime(140, t); o.frequency.linearRampToValueAtTime(70, t + 0.12); o.frequency.linearRampToValueAtTime(95, t + 0.28); o.frequency.linearRampToValueAtTime(55, t + 0.5);
+               g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+               o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.6); noise(a, t, 0.5, 0.12); },
+    airhorn: function (a, t) { [370, 466, 554].forEach(function (f) { tone(a, t, f, f, 0.7, "sawtooth", 0.18); tone(a, t, f * 1.005, f * 1.005, 0.7, "square", 0.1); }); },
+    violin:  function (a, t) { tone(a, t, 440, 220, 1.2, "sawtooth", 0.22); tone(a, t + 0.03, 445, 223, 1.2, "sawtooth", 0.16); },
     victory: function (a, t) { [523, 659, 784, 1046].forEach(function (f, i) { tone(a, t + i * 0.13, f, f, 0.3, "triangle", 0.32); }); },
-    clap:    function (a, t) { for (var i = 0; i < 4; i++) noise(a, t + i * 0.12, 0.09, 0.4); }
+    clap:    function (a, t) { for (var i = 0; i < 4; i++) noise(a, t + i * 0.11, 0.08, 0.45); }
   };
-  function playSound(id) { var a = ac(); if (!a || !SYNTH[id]) return; try { SYNTH[id](a, a.currentTime + 0.02); } catch (e) {} }
+  // spoken memes -> real device voice (Web Speech). {t:text, rate, pitch}
+  var TTS = {
+    bruh:      { t: "bruh",             rate: 0.7, pitch: 0.4 },
+    getout:    { t: "get out!",         rate: 1.0, pitch: 0.6 },
+    sixseven:  { t: "six... seven!",    rate: 0.85, pitch: 1.0 },
+    emotional: { t: "emotional damage!",rate: 1.05, pitch: 0.9 },
+    sigma:     { t: "what the sigma",   rate: 1.0, pitch: 0.7 },
+    aiyo:      { t: "aiyyo",            rate: 1.0, pitch: 1.3 },
+    nope:      { t: "nope",             rate: 1.0, pitch: 0.9 },
+    wow:       { t: "wow",              rate: 0.9, pitch: 1.2 }
+  };
+  function speak(o) {
+    try {
+      var ss = window.speechSynthesis;
+      if (!ss || !window.SpeechSynthesisUtterance) { fallbackBeep(); return; }
+      ss.cancel();
+      var u = new SpeechSynthesisUtterance(o.t);
+      u.rate = o.rate || 1; u.pitch = o.pitch || 1; u.volume = 1; u.lang = "en-US";
+      ss.speak(u);
+    } catch (e) { fallbackBeep(); }
+  }
+  function fallbackBeep() { var a = ac(); if (a) try { tone(a, a.currentTime + 0.02, 300, 500, 0.2, "square", 0.25); } catch (e) {} }
+  function playSound(id) {
+    if (TTS[id]) { speak(TTS[id]); return; }
+    var a = ac(); if (a && SYNTH[id]) { try { SYNTH[id](a, a.currentTime + 0.02); } catch (e) {} }
+  }
+  function stopSpeech() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} }
 
   /* ---------- voice playback ---------- */
   var curAudio = null;
@@ -121,7 +158,7 @@
     try { curAudio = new Audio(url); curAudio.play().catch(function () {}); } catch (e) { curAudio = null; }
   }
 
-  function stopAll() { stopVoice(); }
+  function stopAll() { stopVoice(); stopSpeech(); }
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
 
@@ -180,12 +217,12 @@
       if (a.type === "builtin" && a.value) playSound(a.value);
       else if (a.type === "voice" && a.value) playVoice(a.value);
       if (endT) clearTimeout(endT);
-      endT = setTimeout(function () { stopVoice(); if (opt.onEnd) try { opt.onEnd(); } catch (e) {} }, dur * 1000);
+      endT = setTimeout(function () { stopVoice(); stopSpeech(); if (opt.onEnd) try { opt.onEnd(); } catch (e) {} }, dur * 1000);
     }
     run();
     return {
       replay: run,
-      stop: function () { if (endT) clearTimeout(endT); stopVoice(); refs.bg.style.animation = "none"; }
+      stop: function () { if (endT) clearTimeout(endT); stopVoice(); stopSpeech(); refs.bg.style.animation = "none"; }
     };
   }
 
