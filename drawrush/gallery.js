@@ -16,8 +16,10 @@ const PAGE=12;
 function userKey(){ let k; try{k=localStorage.getItem('dr_gallery_key');}catch(e){} if(!k){ k='dg'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); try{localStorage.setItem('dr_gallery_key',k);}catch(e){} } return k; }
 function userName(){ return (API.userName&&API.userName())||'Artist'; }
 
-let sb=null, sbFail=false;
-async function client(){ if(sb)return sb; if(sbFail)return null; try{ sb=await API.getClient(); }catch(e){ sbFail=true; } return sb; }
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let sb=null, warming=null;
+async function client(){ if(sb)return sb; if(warming)return warming; warming=(async()=>{ for(let i=0;i<3;i++){ try{ const c=await API.getClient(); if(c){ sb=c; return sb; } }catch(e){} await wait(400); } return sb; })(); const r=await warming; warming=null; return r; }
+function warm(){ try{ client(); }catch(e){} }   // pre-load the Supabase client + CDN so the first save isn't a cold start
 function fmtDate(t){ try{ return new Date(t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }catch(e){ return ''; } }
 function safeSearch(s){ return String(s||'').replace(/[%,()"\\*]/g,' ').trim().slice(0,40); }   // strip chars that could break the PostgREST or() filter
 function loading(el){ el.innerHTML='<div class="spin"></div>'; }
@@ -155,6 +157,7 @@ async function loadProfileDrawings(reset){
 function dataURLtoBlob(d){ const p=d.split(','); const mime=(p[0].match(/:(.*?);/)||[])[1]||'image/png'; const bin=atob(p[1]); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i); return new Blob([a],{type:mime}); }
 function openSave(dataURL, defTitle){
   if(!dataURL){ API.toast('Nothing to save yet'); return; }
+  warm();                                   // start loading the client now, before the user fills the form
   let cat=CATS[0];
   API.openOv('<div class="big-emoji">🖼️</div><h2>Save to Gallery</h2>'
     +'<img src="'+dataURL+'" style="width:62%;border-radius:12px;background:#fff;margin:4px auto 8px;display:block;box-shadow:0 6px 18px rgba(0,0,0,.4)">'
@@ -165,9 +168,10 @@ function openSave(dataURL, defTitle){
   $('gvCats').querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{ cat=b.getAttribute('data-c'); $('gvCats').querySelectorAll('.gchip').forEach(x=>x.classList.toggle('on',x===b)); });
   $('gvCancel').onclick=()=>API.closeOv();
   $('gvSave').onclick=async()=>{ const t=($('gvTitle').value.trim()||defTitle||'Untitled').slice(0,40); const btn=$('gvSave'); btn.disabled=true; btn.textContent='Saving…';
-    const ok=await saveDrawing(t,cat,dataURL);
+    let ok=false;
+    for(let i=0;i<4&&!ok;i++){ if(i){ btn.textContent='Saving…'; await wait(400+i*300); } ok=await saveDrawing(t,cat,dataURL); }   // self-heal a cold first attempt
     if(ok){ API.closeOv(); API.sound&&API.sound.win&&API.sound.win(); API.toast('🎉 Saved to Gallery!'); }
-    else { btn.disabled=false; btn.textContent='Save ▶'; API.toast('Save failed — is the gallery set up in Supabase?'); } };
+    else { btn.disabled=false; btn.textContent='Save ▶'; API.toast('😕 Couldn\'t save right now — please try once more.'); } };
 }
 async function saveDrawing(title, category, dataURL){
   const s=await client(); if(!s)return false;
@@ -213,6 +217,6 @@ function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
 
 /* public API (used by game.js result overlays + tests) */
-window.Gallery={ openSave, openGallery, openDetail, openProfile,
+window.Gallery={ openSave, openGallery, openDetail, openProfile, warm,
   _t: (String(location.search).indexOf('cwtest')>=0) ? { saveDrawing, loadGallery, userKey, gs, ps, client } : undefined };
 })();

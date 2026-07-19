@@ -643,6 +643,7 @@ function finishAIButtons(){ SV.stats.played=SV.stats.played; SV.stats.modes[G.ai
 // add a "Save to Gallery" button to a result overlay (only if the gallery module is loaded).
 function galleryBtn(defTitle){ if(!window.Gallery||!window.Gallery.openSave)return; const box=$('ovBox'); const btns=box.querySelector('.btns'); if(!btns||box.querySelector('#ovSaveGal'))return;
   if(Draw.isEmpty())return;   // nothing drawn -> nothing to save
+  try{ window.Gallery.warm&&window.Gallery.warm(); }catch(e){}   // pre-warm Supabase so the first save is instant
   const b=document.createElement('button'); b.id='ovSaveGal'; b.className='btn cyan block'; b.style.marginBottom='8px';
   b.innerHTML='🖼️ Save to Gallery'; b.onclick=()=>{ Sound.click(); const img=window.DrawRushAPI.imageDataURL(); window.Gallery.openSave(img,defTitle||''); };
   btns.parentNode.insertBefore(b,btns);
