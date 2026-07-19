@@ -190,8 +190,20 @@ async function saveDrawing(title, category, dataURL){
       const ins2=await s.from('dr_drawings').insert({user_key:userKey(),creator_name:userName(),title,category,image_url:url}).select('id').maybeSingle();
       if(ins2.error)return false;
     }
+    submitDrawScore();   // update the arcade leaderboard (ranked by drawings published)
     return true;
   }catch(e){ return false; }
+}
+
+// ---- Arcade leaderboard: an artist's score = how many drawings they've published ----
+async function submitDrawScore(){
+  try{
+    if(!(window.IGAuth && IGAuth.submitScore)) return;
+    const s=await client(); if(!s) return;
+    let n=0;
+    try{ const r=await s.rpc('dr_profile_stats',{p_user:userKey()}); if(r&&!r.error&&r.data) n=r.data.drawings|0; }catch(e){}
+    if(n>0) IGAuth.submitScore('drawrush', n);
+  }catch(e){}
 }
 
 /* ============================================================
@@ -213,6 +225,7 @@ function boot(){
     if(galCur==='gallery' && !gs.busy && !gs.done && gs.offset>0) loadGallery(false);
     else if(galCur==='profile' && !ps.busy && !ps.done && ps.offset>0) loadProfileDrawings(false);
   },{passive:true});
+  setTimeout(submitDrawScore, 2500);   // post this artist's published-drawing count to the arcade leaderboard once connected
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
 

@@ -56,9 +56,20 @@
   function openProfile(key) { render("profile", key, true); }
   function onSaved(id) {
     toast("🎉 Meme saved!");
+    submitMemeScore();          // update the arcade leaderboard (ranked by memes published)
     // replace create in the stack, then open the freshly-saved meme
     stack.pop();
     openMeme(id);
+  }
+
+  // ---- Arcade leaderboard: a creator's score = how many memes they've published ----
+  async function submitMemeScore() {
+    try {
+      if (!(window.IGAuth && IGAuth.submitScore)) return;
+      var st = await MemeDB.myStats();
+      var n = (st && st.memes) || 0;
+      if (n > 0) IGAuth.submitScore("meme", n);
+    } catch (e) {}
   }
 
   /* ---------------- main menu ---------------- */
@@ -162,6 +173,7 @@
     try { if (window.IGAuth && IGAuth.onChange) IGAuth.onChange(function () { refreshChip(); }); } catch (e) {}
     window.MemeApp = { toast: toast, openMeme: openMeme, openProfile: openProfile, go: go, back: back, setHeader: setHeader };
     render("menu", null, true);
+    setTimeout(submitMemeScore, 2500);   // post this creator's published-meme count to the arcade leaderboard once connected
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })();

@@ -281,6 +281,7 @@ renderCats();
 ['click','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('../sw.js').catch(()=>{}); }
 </script>
+<script src="../analytics.js" defer></script>
 <script src="../rec.js" defer></script>
 </body>
 </html>
