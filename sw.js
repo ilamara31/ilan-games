@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v96';
+const CACHE = 'ilan-arcade-v97';
 const ASSETS = [
   './',
   './index.html',
@@ -83,7 +83,14 @@ const ASSETS = [
   './codewords/game.js',
   './codewords/data.js',
   './scoop/',
-  './scoop/index.html'
+  './scoop/index.html',
+  './meme/',
+  './meme/index.html',
+  './meme/db.js',
+  './meme/engine.js',
+  './meme/create.js',
+  './meme/browse.js',
+  './meme/app.js'
 ];
 
 // pre-cache the app shell (resilient: one bad URL won't fail the whole install)
