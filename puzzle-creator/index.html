@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Puzzle Creator</title>
+<link rel="manifest" href="../manifest.webmanifest" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Puzzle Creator" />
+<link rel="apple-touch-icon" href="../icon-180.png" />
+<link rel="icon" href="../icon-192.png" />
+<style>
+  :root{
+    --bg:#0a0e1a; --bg2:#0e1830; --card:#151f38; --card2:#1b2a4a;
+    --line:#26375f; --line2:#324a7d;
+    --txt:#eaf1ff; --muted:#94a7cf; --muted2:#6f83ad;
+    --accent:#7c5cff; --accent2:#9b7bff; --cyan:#38e8ff; --good:#3ddc84; --gold:#ffd54a; --warn:#ff9b3d; --bad:#ff5c72;
+    --pink:#ff6bce;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{ background:radial-gradient(circle at 50% 0%, #16234a, #0a0e1a 70%); color:var(--txt);
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; overscroll-behavior-y:none;
+    -webkit-user-select:none; user-select:none; }
+  #app{ max-width:640px; margin:0 auto; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 8px) 0 0; }
+
+  /* top bar */
+  #topbar{ display:flex; align-items:center; gap:10px; padding:8px 14px; position:sticky; top:0; z-index:40;
+    background:linear-gradient(180deg, rgba(10,14,26,.96), rgba(10,14,26,.72) 80%, transparent); backdrop-filter:blur(6px); }
+  #topbar .back{ width:40px; height:40px; flex:0 0 40px; border:none; border-radius:12px; background:var(--card);
+    color:var(--txt); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  #topbar .back:active{ transform:scale(.94); }
+  #topbar h1{ font-size:19px; font-weight:800; flex:1; text-align:left; letter-spacing:.3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #topbar .coins{ font-size:13px; font-weight:800; color:var(--gold); background:rgba(0,0,0,.28); border-radius:12px; padding:6px 10px; white-space:nowrap; }
+
+  /* views */
+  #view{ flex:1; padding:8px 14px calc(env(safe-area-inset-bottom) + 90px); }
+  .view{ display:none; animation:fade .18s ease; }
+  .view.on{ display:block; }
+  @keyframes fade{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
+
+  /* brand / hero */
+  .brand{ text-align:center; padding:14px 0 6px; }
+  .brand h2{ font-size:clamp(30px,9vw,46px); font-weight:900; letter-spacing:.5px; line-height:1;
+    background:linear-gradient(90deg,#38e8ff,#7c5cff 55%,#ff6bce); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .brand p{ color:var(--muted); font-size:14px; margin-top:8px; }
+
+  /* buttons */
+  .btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:none; border-radius:16px;
+    padding:16px; font-size:16px; font-weight:800; cursor:pointer; font-family:inherit; color:#0a0e1a;
+    background:linear-gradient(135deg,#8b6bff,#6a48f0); box-shadow:0 6px 18px rgba(124,92,255,.34); color:#fff; }
+  .btn:active{ transform:translateY(2px); }
+  .btn.sec{ background:var(--card); color:var(--txt); box-shadow:none; border:1px solid var(--line); }
+  .btn.cyan{ background:linear-gradient(135deg,#38e8ff,#3a7bff); color:#04121f; box-shadow:0 6px 18px rgba(56,232,255,.28); }
+  .btn.good{ background:linear-gradient(135deg,#4dffa0,#1ea85a); color:#04220f; box-shadow:0 6px 18px rgba(61,220,132,.28); }
+  .btn.gold{ background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#241600; }
+  .btn.ghost{ background:transparent; color:var(--muted); box-shadow:none; border:1px solid var(--line); font-weight:700; }
+  .btn.sm{ padding:10px 14px; font-size:14px; border-radius:12px; width:auto; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .row{ display:flex; gap:10px; }
+  .row > *{ flex:1; }
+
+  /* menu grid */
+  .menu{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .menu .tile{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px 12px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; transition:transform .1s, border-color .1s; }
+  .menu .tile:active{ transform:scale(.96); }
+  .menu .tile .ico{ font-size:34px; line-height:1; }
+  .menu .tile b{ font-size:15px; }
+  .menu .tile.wide{ grid-column:1 / -1; flex-direction:row; justify-content:center; padding:16px;
+    background:linear-gradient(135deg,#7c5cff,#6a48f0); border-color:transparent; }
+  .menu .tile.wide .ico{ font-size:26px; }
+  .menu .tile.wide b{ font-size:17px; color:#fff; }
+
+  /* cards / lists */
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .card.pad0{ padding:0; overflow:hidden; }
+  .hd{ font-size:15px; font-weight:800; color:var(--muted); margin:16px 2px 8px; letter-spacing:.4px; text-transform:uppercase; }
+  .hd:first-child{ margin-top:6px; }
+
+  /* puzzle list item */
+  .pz{ display:flex; gap:12px; align-items:center; background:var(--card); border:1px solid var(--line);
+    border-radius:16px; padding:12px; margin-bottom:10px; cursor:pointer; transition:transform .08s,border-color .1s; }
+  .pz:active{ transform:scale(.985); }
+  .pz .thumb{ width:52px; height:52px; flex:0 0 52px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; background:linear-gradient(135deg,#22325a,#15203a); border:1px solid var(--line2); }
+  .pz .meta{ flex:1; min-width:0; }
+  .pz .meta .t{ font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pz .meta .s{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; }
+  .pz .meta .s .by{ color:var(--cyan); }
+  .pz .go{ color:var(--muted2); font-size:20px; flex:0 0 auto; }
+
+  .pill{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; border-radius:20px; padding:3px 9px;
+    background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--muted); }
+  .pill.easy{ color:#7dffb0; border-color:rgba(61,220,132,.4); }
+  .pill.medium{ color:#8fd0ff; border-color:rgba(56,140,255,.4); }
+  .pill.hard{ color:#ffc06b; border-color:rgba(255,155,61,.4); }
+  .pill.expert{ color:#ff8fa3; border-color:rgba(255,92,114,.4); }
+  .pill.star{ color:var(--gold); border-color:rgba(255,213,74,.4); }
+
+  /* inputs */
+  label.fl{ display:block; font-size:13px; font-weight:800; color:var(--muted); margin:12px 2px 6px; }
+  input.in, textarea.in, select.in{ width:100%; background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    padding:13px; color:var(--txt); font-size:16px; font-family:inherit; -webkit-user-select:text; user-select:text; }
+  textarea.in{ min-height:84px; resize:vertical; line-height:1.45; }
+  input.in:focus, textarea.in:focus, select.in:focus{ outline:none; border-color:var(--accent2); }
+  .hint{ font-size:12px; color:var(--muted2); margin-top:5px; line-height:1.45; }
+
+  /* segmented chips */
+  .seg{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ border:1px solid var(--line); background:var(--card); color:var(--muted); border-radius:20px; padding:9px 15px;
+    font-size:13.5px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .chip.on{ background:linear-gradient(135deg,#8b6bff,#6a48f0); color:#fff; border-color:transparent; }
+
+  /* step header */
+  .steps{ display:flex; gap:6px; margin:4px 0 14px; }
+  .steps .dot{ flex:1; height:5px; border-radius:3px; background:var(--line); }
+  .steps .dot.on{ background:var(--accent); }
+  .steptitle{ font-size:12px; font-weight:800; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+
+  /* stat grid */
+  .stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; text-align:center; }
+  .stat .v{ font-size:26px; font-weight:900; color:var(--gold); }
+  .stat .k{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+  /* stars */
+  .stars{ display:flex; gap:6px; justify-content:center; }
+  .stars .st{ font-size:34px; cursor:pointer; filter:grayscale(1) opacity(.5); transition:transform .08s; }
+  .stars .st.on{ filter:none; }
+  .stars .st:active{ transform:scale(1.2); }
+  .starsmini{ color:var(--gold); font-size:13px; letter-spacing:1px; }
+
+  /* toast + modal */
+  #toast{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 92px); transform:translateX(-50%) translateY(20px);
+    background:#101a30; border:1px solid var(--line2); color:var(--txt); font-weight:700; font-size:14px;
+    padding:12px 18px; border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.5); opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s; z-index:120; max-width:88%; text-align:center; }
+  #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast.err{ border-color:var(--bad); color:#ffd0d6; }
+  #toast.ok{ border-color:var(--good); color:#c8ffe0; }
+
+  #modal{ position:fixed; inset:0; z-index:130; background:rgba(4,7,16,.72); display:none; align-items:center; justify-content:center; padding:18px; }
+  #modal.on{ display:flex; }
+  #modal .box{ background:var(--card); border:1px solid var(--line2); border-radius:20px; padding:20px; max-width:420px; width:100%; text-align:center; }
+  #modal .box h3{ font-size:20px; margin-bottom:8px; }
+  #modal .box p{ color:var(--muted); font-size:14px; line-height:1.5; margin-bottom:16px; }
+
+  /* bottom nav */
+  #nav{ position:fixed; left:0; right:0; bottom:0; z-index:50; max-width:640px; margin:0 auto;
+    background:linear-gradient(180deg, rgba(14,20,38,.6), rgba(10,14,26,.98)); backdrop-filter:blur(10px);
+    border-top:1px solid var(--line); display:flex; padding:8px 6px calc(env(safe-area-inset-bottom) + 8px); }
+  #nav button{ flex:1; background:none; border:none; color:var(--muted2); font-family:inherit; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 0; font-size:10.5px; font-weight:800; }
+  #nav button .ico{ font-size:21px; line-height:1; }
+  #nav button.on{ color:var(--accent2); }
+  #nav button.create .ico{ background:linear-gradient(135deg,#8b6bff,#6a48f0); color:#fff; width:44px; height:44px;
+    border-radius:14px; display:flex; align-items:center; justify-content:center; margin-top:-14px; box-shadow:0 6px 16px rgba(124,92,255,.45); }
+
+  .empty{ text-align:center; color:var(--muted2); padding:40px 20px; font-size:14px; line-height:1.6; }
+  .empty .big{ font-size:44px; display:block; margin-bottom:10px; }
+  .center{ text-align:center; }
+  .muted{ color:var(--muted); } .small{ font-size:12.5px; }
+  a.lnk{ color:var(--cyan); text-decoration:none; }
+  .spin{ width:30px; height:30px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%;
+    animation:sp .8s linear infinite; margin:30px auto; } @keyframes sp{ to{ transform:rotate(360deg) } }
+  .banner{ font-size:12px; text-align:center; padding:8px; border-radius:10px; margin-bottom:10px; }
+  .banner.local{ background:rgba(255,155,61,.12); border:1px solid rgba(255,155,61,.3); color:#ffca8f; }
+  .banner.cloud{ background:rgba(61,220,132,.1); border:1px solid rgba(61,220,132,.3); color:#a8ffce; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <button class="back" id="backBtn" style="display:none">‹</button>
+    <h1 id="ttl">Puzzle Creator</h1>
+    <span class="coins" id="userChip">👤 …</span>
+  </div>
+  <div id="view"></div>
+</div>
+
+<nav id="nav">
+  <button data-nav="home" class="on"><span class="ico">🏠</span>Home</button>
+  <button data-nav="play"><span class="ico">🧩</span>Play</button>
+  <button data-nav="create" class="create"><span class="ico">＋</span>Create</button>
+  <button data-nav="search"><span class="ico">🔍</span>Search</button>
+  <button data-nav="profile"><span class="ico">👤</span>Profile</button>
+</nav>
+
+<div id="toast"></div>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+
+<script src="../supabase-config.js"></script>
+<script>
+/* =====================================================================
+   PUZZLE CREATOR — a community-driven puzzle platform.
+   Single self-contained file. Data layer works LOCALLY out of the box
+   (localStorage) and upgrades to Supabase automatically once the tables
+   from puzzle-creator-setup.sql exist. Isolated: touches nothing else.
+   ===================================================================== */
+'use strict';
+const $ = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.prototype.slice.call((r||document).querySelectorAll(s));
+const el = (tag,cls,html)=>{ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = ()=> 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const nowISO = ()=> new Date().toISOString();
+
+function toast(msg, kind){ if(kind==='bad')kind='err'; if(kind==='good')kind='ok';
+  const t=$('#toast'); t.textContent=msg; t.className='on'+(kind?' '+kind:'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='', 2400); }
+function modal(html, actions){
+  const box=$('#modalBox'); box.innerHTML=html;
+  const row=el('div','row'); (actions||[{label:'OK'}]).forEach(a=>{ const b=el('button','btn '+(a.cls||'sec')+' sm',a.label);
+    b.onclick=()=>{ if(a.onClick&&a.onClick()===false) return; $('#modal').classList.remove('on'); }; row.appendChild(b); });
+  box.appendChild(row); $('#modal').classList.add('on');
+}
+function closeModal(){ $('#modal').classList.remove('on'); }
+
+/* ---------------- CONSTANTS ---------------- */
+const CATEGORIES = ['Brain Teaser','Math','Words','Mazes','Codes','Logic','Kids','Trivia','Science','Puzzles'];
+const DIFFS = ['Easy','Medium','Hard','Expert'];
+const SORTS = [['featured','⭐ Featured'],['newest','🆕 Newest'],['played','🔥 Most Played'],['rated','🏆 Highest Rated'],['trending','📈 Trending']];
+
+/* =====================================================================
+   DATA LAYER — one async API. Local mode (localStorage) works offline now;
+   Supabase mode activates automatically when the tables exist. Callers never
+   change: every method returns a Promise.
+   ===================================================================== */
+const LS = {
+  get(k, d){ try{ const v=localStorage.getItem('pcreator_'+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('pcreator_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+const DB = {
+  mode:'local', _me:null, remote:null,
+
+  async init(){
+    // identity: a local profile with a stable id + editable display name
+    let me = LS.get('me', null);
+    if(!me){ me = { id:'u'+Math.random().toString(36).slice(2,10), name:randomName(), createdAt:nowISO() }; LS.set('me', me); }
+    this._me = me;
+    // one-time sample seed so the gallery isn't empty on a fresh device
+    if(!LS.get('seeded', false)){ try{ seedSamples(); }catch(e){} LS.set('seeded', true); }
+    // best-effort: probe Supabase; if the puzzle tables are live, use them (community across devices)
+    try{ await this._probeSupabase(); }catch(e){ this.mode='local'; }
+    return this.mode;
+  },
+  async _probeSupabase(){
+    if(!window.SUPABASE_URL || !window.SUPABASE_KEY) return;
+    if(!(window.supabase && window.supabase.createClient)){
+      await new Promise((res)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        s.onload=res; s.onerror=res; document.head.appendChild(s); setTimeout(res, 4000); });
+    }
+    if(!(window.supabase && window.supabase.createClient)) return;
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, { auth:{ persistSession:false } });
+    // a lightweight existence check: select 0 rows from pc_puzzles
+    const { error } = await sb.from('pc_puzzles').select('id').limit(1);
+    if(!error){ this.remote = sb; this.mode='supabase';       // tables exist → go cloud
+      this._flushPending();                                   // retry anything a previous session couldn't sync
+    }
+  },
+  // Call an RPC with retries. A transient failure (cold-start, network blip, 5xx) has
+  // NO Postgres error.code — retry those. A definite server answer (error.code present,
+  // e.g. a duplicate rejection or missing function) is returned as-is, no retry. This is
+  // the fix for "cannot submit rating" on the first tries then success — a blip on the
+  // first call used to surface as a hard failure instead of quietly retrying.
+  // SQLSTATEs that are transient on a cold/loaded Supabase instance — retry these too
+  // even though they carry a code (statement timeout, pool exhaustion, deadlock, conn loss).
+  _TRANSIENT: new Set(['57014','53300','53400','40001','40P01','08006','08003','08000']),
+  async _rpc(fn, args, tries){
+    tries = tries||3; let lastErr=null;
+    for(let a=0; a<tries; a++){
+      try{
+        const { error } = await this.remote.rpc(fn, args);
+        if(!error) return { ok:true };
+        if(error.code && !this._TRANSIENT.has(error.code)) return { ok:false, error, fatal:true };  // definite answer — don't retry
+        lastErr = error;                                          // no code / transient code → retry
+      }catch(e){ lastErr = e; }                                   // thrown (network) → transient, retry
+      if(a<tries-1) await new Promise(r=> setTimeout(r, 300*(a+1)));   // backoff 300/600ms; none after the last try
+    }
+    return { ok:false, error:lastErr, fatal:false };
+  },
+  // Reads retry the same way (a transient blip must not empty the gallery / hide a puzzle).
+  // build() must construct a FRESH query each call (supabase builders are single-use).
+  async _read(build, tries){
+    tries = tries||3; let lastErr=null;
+    for(let a=0; a<tries; a++){
+      try{
+        const { data, error } = await build();
+        if(!error) return { data };
+        if(error.code && !this._TRANSIENT.has(error.code)) return { error };  // definite (incl. PGRST116 no-rows) — stop
+        lastErr = error;
+      }catch(e){ lastErr = e; }
+      if(a<tries-1) await new Promise(r=> setTimeout(r, 300*(a+1)));
+    }
+    return { error:lastErr };
+  },
+  // writes that couldn't reach the cloud are queued and retried later, so a blip
+  // never loses a rating and the user never has to re-submit.
+  _queuePending(item){ const q=LS.get('pending',[]); q.push(item);
+    if(q.length>50){ try{ console.warn('[PuzzleCreator] pending sync queue over 50 — oldest dropped'); }catch(e){} }
+    LS.set('pending', q.slice(-50)); },
+  async _flushPending(){
+    if(this.mode!=='supabase') return;
+    const q=LS.get('pending',[]); if(!q.length) return; const keep=[];
+    for(const it of q){ try{ const r=await this._rpc(it.fn, it.args, 2); if(!r.ok && !r.fatal) keep.push(it); }catch(e){ keep.push(it); } }
+    // don't clobber items queued DURING this flush: only drop what we actually processed.
+    const dropped = q.filter(it=> !keep.includes(it));
+    const cur = LS.get('pending',[]);
+    LS.set('pending', cur.filter(it=> !dropped.includes(it)));
+  },
+  // serialize per-key so rapid on/off toggles apply IN ORDER (last tap wins) instead of racing.
+  _chain:{},
+  _serial(key, fn){ const prev=this._chain[key]||Promise.resolve(); const next=prev.then(fn, fn); this._chain[key]=next.catch(()=>{}); return next; },
+
+  me(){ return this._me; },
+  setName(name){ name=(name||'').trim().slice(0,20)||this._me.name; this._me.name=name; LS.set('me', this._me);
+    // reflect on my own puzzles' displayed creator name in local mode
+    if(this.mode==='local'){ const ps=LS.get('puzzles',[]); ps.forEach(p=>{ if(p.creatorId===this._me.id) p.creatorName=name; }); LS.set('puzzles',ps); }
+    return this._me; },
+
+  /* ---- puzzles ---- */
+  async publishPuzzle(p){
+    const rec = Object.assign({
+      id:uid(), creatorId:this._me.id, creatorName:this._me.name, createdAt:nowISO(),
+      plays:0, solves:0, ratingSum:0, ratingCount:0, featured:false
+    }, p);
+    if(this.mode==='supabase'){
+      const args={ p:{ id:rec.id, type:rec.type, title:rec.title, category:rec.category, difficulty:rec.difficulty,
+        data:rec.data, creator_id:this._me.id, creator_name:this._me.name } };
+      const r=await this._rpc('pc_publish', args);
+      if(!r.ok){
+        if(r.fatal) throw r.error;                              // e.g. duplicate/empty — a real rejection
+        this._queuePending({ fn:'pc_publish', args });          // transient after retries → queue so it still lands
+      }
+      return rec;
+    }
+    const ps=LS.get('puzzles',[]); ps.unshift(rec); LS.set('puzzles',ps); return rec;
+  },
+  async listPuzzles(opt){
+    opt=opt||{};
+    let list;
+    if(this.mode==='supabase'){
+      const { data, error } = await this._read(()=>{
+        let q=this.remote.from('pc_puzzles').select('*').order('created_at',{ascending:false});   // deterministic 300
+        if(opt.type) q=q.eq('type',opt.type);
+        if(opt.category) q=q.eq('category',opt.category);
+        if(opt.difficulty) q=q.eq('difficulty',opt.difficulty);
+        if(opt.creatorId) q=q.eq('creator_id',opt.creatorId);
+        return q.limit(300);
+      });
+      list = error? [] : (data||[]).map(fromRow);
+    } else {
+      list = LS.get('puzzles',[]).slice();
+      if(opt.type) list=list.filter(p=>p.type===opt.type);
+      if(opt.category) list=list.filter(p=>p.category===opt.category);
+      if(opt.difficulty) list=list.filter(p=>p.difficulty===opt.difficulty);
+      if(opt.creatorId) list=list.filter(p=>p.creatorId===opt.creatorId);
+    }
+    if(opt.q){ const q=opt.q.toLowerCase();
+      list=list.filter(p=>(p.title||'').toLowerCase().includes(q) || (p.creatorName||'').toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q)); }
+    list = sortPuzzles(list, opt.sort||'newest');
+    if(opt.limit) list=list.slice(0,opt.limit);
+    return list;
+  },
+  async getPuzzle(id){
+    if(this.mode==='supabase'){ const { data, error } = await this._read(()=> this.remote.from('pc_puzzles').select('*').eq('id',id).single());
+      return error? null : fromRow(data); }
+    return LS.get('puzzles',[]).find(p=>p.id===id) || null;
+  },
+  async recordPlay(id){
+    if(this.mode==='supabase'){ this._rpc('pc_bump_play',{ pid:id }, 2).catch(()=>{}); return; }   // fire-and-forget, retried
+    const ps=LS.get('puzzles',[]); const p=ps.find(x=>x.id===id); if(p){ p.plays=(p.plays||0)+1; LS.set('puzzles',ps); }
+  },
+  async recordSolve(id, success){
+    const solved=LS.get('solved',{}); const attempts=LS.get('attempts',{});
+    attempts[id]=(attempts[id]||0)+1; LS.set('attempts',attempts);
+    if(success && !solved[id]){ solved[id]=nowISO(); LS.set('solved',solved);
+      if(this.mode==='supabase'){ this._rpc('pc_bump_solve',{ pid:id }, 2).catch(()=>{}); }
+      else { const ps=LS.get('puzzles',[]); const p=ps.find(x=>x.id===id); if(p){ p.solves=(p.solves||0)+1; LS.set('puzzles',ps); } }
+    }
+  },
+  didSolve(id){ return !!LS.get('solved',{})[id]; },
+
+  /* ---- ratings (one per user per puzzle) ---- */
+  async ratePuzzle(id, stars, feedback){
+    stars=Math.max(1,Math.min(5,stars|0)); feedback=(feedback||'').slice(0,300);
+    // Save locally FIRST so the rating is never lost and the UI reflects it immediately.
+    const prevMine=LS.get('myratings',{})[id];   // remembered for rollback on a fatal reject
+    LS.set('myratings', Object.assign(LS.get('myratings',{}), { [id]:{ stars, feedback } }));
+    if(this.mode==='supabase'){
+      const args={ pid:id, uid:this._me.id, stars, fb:feedback };
+      const r=await this._rpc('pc_rate', args);
+      if(!r.ok){
+        if(r.fatal){                               // a real rejection → roll back the optimistic local save
+          const m=LS.get('myratings',{}); if(prevMine) m[id]=prevMine; else delete m[id]; LS.set('myratings',m);
+          throw r.error;
+        }
+        this._queuePending({ fn:'pc_rate', args }); // transient after retries → queue + succeed for the user
+      }
+      return;
+    }
+    {
+      const ratings=LS.get('ratings',{}); ratings[id]=ratings[id]||{};
+      const prev=ratings[id][this._me.id];
+      ratings[id][this._me.id]={ stars, feedback:(feedback||'').slice(0,300), at:nowISO(), name:this._me.name };
+      LS.set('ratings',ratings);
+      const ps=LS.get('puzzles',[]); const p=ps.find(x=>x.id===id);
+      if(p){ if(prev){ p.ratingSum += stars-prev.stars; } else { p.ratingSum=(p.ratingSum||0)+stars; p.ratingCount=(p.ratingCount||0)+1; } LS.set('puzzles',ps); }
+    }
+    LS.set('myratings', Object.assign(LS.get('myratings',{}), { [id]:{ stars, feedback:(feedback||'') } }));
+  },
+  myRating(id){ return LS.get('myratings',{})[id] || null; },
+  async listRatings(id){
+    if(this.mode==='supabase'){ const { data } = await this._read(()=> this.remote.from('pc_ratings').select('*').eq('puzzle_id',id).order('created_at',{ascending:false}).limit(50));
+      return (data||[]).map(r=>({ name:r.user_name, stars:r.stars, feedback:r.feedback, at:r.created_at })); }
+    const ratings=LS.get('ratings',{})[id]||{}; return Object.values(ratings).sort((a,b)=> (b.at||'').localeCompare(a.at||''));
+  },
+
+  /* ---- bookmarks ---- */
+  isBookmarked(id){ return LS.get('bookmarks',[]).includes(id); },
+  async toggleBookmark(id){ const b=LS.get('bookmarks',[]); const i=b.indexOf(id);
+    if(i>=0) b.splice(i,1); else b.unshift(id); LS.set('bookmarks',b);
+    if(this.mode==='supabase'){ const args={ pid:id, uid:this._me.id, on_:i<0 };
+      this._serial('bm_'+id, ()=> this._rpc('pc_bookmark', args, 2).then(r=>{ if(!r.ok && !r.fatal) this._queuePending({fn:'pc_bookmark',args}); })); }
+    return i<0; },
+  async listBookmarks(){ const ids=LS.get('bookmarks',[]); const out=[]; for(const id of ids){ const p=await this.getPuzzle(id); if(p)out.push(p); } return out; },
+
+  /* ---- follows ---- */
+  isFollowing(cid){ return LS.get('follows',[]).includes(cid); },
+  async toggleFollow(cid){ if(cid===this._me.id) return false; const f=LS.get('follows',[]); const i=f.indexOf(cid);
+    if(i>=0) f.splice(i,1); else f.unshift(cid); LS.set('follows',f);
+    if(this.mode==='supabase'){ const args={ target:cid, uid:this._me.id, on_:i<0 };
+      this._serial('fl_'+cid, ()=> this._rpc('pc_follow', args, 2).then(r=>{ if(!r.ok && !r.fatal) this._queuePending({fn:'pc_follow',args}); })); }
+    return i<0; },
+  async listFollowing(){ return LS.get('follows',[]); },
+
+  /* ---- profiles ---- */
+  async getProfile(cid){
+    const puzzles = await this.listPuzzles({ creatorId:cid, sort:'newest' });
+    let plays=0, likes=0, best=null, bestScore=-1, followers=0;
+    puzzles.forEach(p=>{ plays+=p.plays||0; const avg=ratingAvg(p); likes+=Math.round(avg*(p.ratingCount||0));
+      const sc=avg*10+(p.plays||0)*0.1; if(sc>bestScore){ bestScore=sc; best=p; } });
+    if(this.mode==='supabase'){ try{ const { count } = await this.remote.from('pc_follows').select('*',{count:'exact',head:true}).eq('target_id',cid); followers=count||0; }catch(e){} }
+    else { // local: count how many of MY follows point here + a small deterministic base for samples
+      followers = (SAMPLE_FOLLOWERS[cid]||0) + (this.isFollowing(cid)?1:0);
+    }
+    const name = (puzzles[0] && puzzles[0].creatorName) || (cid===this._me.id? this._me.name : (SAMPLE_NAMES[cid]||'Creator'));
+    return { id:cid, name, puzzles, totalPuzzles:puzzles.length, totalPlays:plays, totalLikes:likes, followers, best };
+  },
+  async myStats(){
+    const mine = await this.listPuzzles({ creatorId:this._me.id });
+    const solvedMap=LS.get('solved',{}), attempts=LS.get('attempts',{});
+    const solvedIds=Object.keys(solvedMap);
+    let attemptCount=0; Object.values(attempts).forEach(n=>attemptCount+=n);
+    const cats={}; mine.forEach(p=>cats[p.category]=(cats[p.category]||0)+1);
+    let favCat='—', mx=0; for(const c in cats){ if(cats[c]>mx){ mx=cats[c]; favCat=c; } }
+    let avgRating=0, rc=0; mine.forEach(p=>{ if(p.ratingCount){ avgRating+=ratingAvg(p); rc++; } });
+    return {
+      created: mine.length,
+      solved: solvedIds.length,
+      successRate: attemptCount? Math.round(solvedIds.length/attemptCount*100) : 0,
+      favCat, avgRating: rc? (avgRating/rc).toFixed(1) : '—',
+      totalPlays: mine.reduce((s,p)=>s+(p.plays||0),0)
+    };
+  }
+};
+
+/* ---- helpers over rows ---- */
+function ratingAvg(p){ return (p.ratingCount>0)? (p.ratingSum/p.ratingCount) : 0; }
+function fromRow(r){ return { id:r.id, type:r.type, title:r.title, category:r.category, difficulty:r.difficulty,
+  data:r.data, creatorId:r.creator_id, creatorName:r.creator_name, createdAt:r.created_at,
+  plays:r.plays||0, solves:r.solves||0, ratingSum:r.rating_sum||0, ratingCount:r.rating_count||0, featured:!!r.featured }; }
+function sortPuzzles(list, sort){
+  const now=Date.now();
+  const score={
+    newest:  p=> new Date(p.createdAt||0).getTime(),
+    played:  p=> p.plays||0,
+    rated:   p=> ratingAvg(p)*1000 + (p.ratingCount||0),
+    trending:p=> (p.plays||0) / Math.max(1, (now-new Date(p.createdAt||0).getTime())/3600000 + 2),
+    featured:p=> (p.featured?1e9:0) + ratingAvg(p)*1000 + (p.plays||0),
+  }[sort] || (p=> new Date(p.createdAt||0).getTime());
+  return list.slice().sort((a,b)=> score(b)-score(a));
+}
+function randomName(){ const a=['Swift','Clever','Brave','Cosmic','Quiet','Lucky','Neon','Puzzle','Mystic','Sharp'];
+  const b=['Fox','Owl','Otter','Comet','Sphinx','Maker','Mind','Raven','Panda','Sage'];
+  return a[(Math.random()*a.length)|0]+b[(Math.random()*b.length)|0]+(Math.random()*90+10|0); }
+
+/* sample creators + puzzles (local mode only, so a fresh install has content) */
+const SAMPLE_NAMES={ s_ada:'AdaLogic', s_max:'MaxMazes', s_rio:'RiddleRio' };
+const SAMPLE_FOLLOWERS={ s_ada:128, s_max:74, s_rio:203 };
+
+/* =====================================================================
+   PUZZLE TYPE REGISTRY — the plugin contract every type implements.
+     create(host, initialData) -> { getData(), validate() -> {ok,error} }
+     play(host, data, cb)      -> cb.onSolve() / cb.onFail() / cb.setStatus(html)
+     preview(data)             -> short html for cards
+   The engine drives the create flow and play screen through these only, so
+   types stay isolated and one broken type can't destabilise the rest.
+   ===================================================================== */
+const PuzzleTypes = (()=>{
+  const map={}, order=[];
+  return {
+    register(def){ map[def.id]=def; if(!order.includes(def.id)) order.push(def.id); },
+    get(id){ return map[id]; },
+    all(){ return order.map(id=>map[id]).filter(Boolean); },
+    has(id){ return !!map[id]; }
+  };
+})();
+// safe wrapper: a type throwing during play/preview shows an error instead of breaking the app
+function safeType(id){ const t=PuzzleTypes.get(id); return t || {
+  id, name:'Unknown', emoji:'❓', blurb:'',
+  create(host){ host.innerHTML='<div class="empty">This puzzle type isn\'t available.</div>'; return { getData:()=>({}), validate:()=>({ok:false,error:'Type unavailable'}) }; },
+  play(host,data,cb){ host.innerHTML='<div class="empty">This puzzle type isn\'t available on this version.</div>'; },
+  preview(){ return ''; }
+}; }
+
+/* small shared UI helpers for type authors */
+function fieldLabel(t){ const l=el('label','fl'); l.textContent=t; return l; }
+function textInput(ph, val, opts){ const i=el('input','in'); i.type=(opts&&opts.type)||'text'; i.placeholder=ph||''; if(val!=null)i.value=val;
+  if(opts&&opts.maxLength)i.maxLength=opts.maxLength; if(opts&&opts.inputmode)i.setAttribute('inputmode',opts.inputmode); return i; }
+function textArea(ph, val){ const t=el('textarea','in'); t.placeholder=ph||''; if(val!=null)t.value=val; return t; }
+
+/* ---------------- NUMBER PUZZLE ---------------- */
+PuzzleTypes.register({
+  id:'number', name:'Number Puzzle', emoji:'🔢',
+  blurb:'Sequences & missing numbers. Players work out what comes next.',
+  create(host, init){
+    init=init||{};
+    host.innerHTML='';
+    host.appendChild(fieldLabel('The sequence (use ? for the blank to solve)'));
+    const seq=textInput('e.g. 2, 4, 8, 16, ?', init.seq!=null?init.seq:'', {}); host.appendChild(seq);
+    host.appendChild(hintEl('Separate values with commas. Exactly one ? marks the answer.'));
+    host.appendChild(fieldLabel('The answer (what replaces ?)'));
+    const ans=textInput('e.g. 32', init.answer!=null?init.answer:'', {}); host.appendChild(ans);
+    host.appendChild(fieldLabel('Optional hint for players'));
+    const hint=textInput('e.g. Each number doubles', init.hint||'', {maxLength:120}); host.appendChild(hint);
+    return {
+      getData:()=>({ seq:seq.value.trim(), answer:ans.value.trim(), hint:hint.value.trim() }),
+      validate(){ const parts=seq.value.split(',').map(s=>s.trim());
+        if(parts.length<3) return {ok:false,error:'Add at least 3 items in the sequence.'};
+        const blanks=parts.filter(p=>p==='?').length;
+        if(blanks!==1) return {ok:false,error:'Use exactly one ? to mark the blank.'};
+        if(!ans.value.trim()) return {ok:false,error:'Enter the answer that replaces the ?.'};
+        return {ok:true}; }
+    };
+  },
+  play(host, data, cb){
+    host.innerHTML='';
+    const shown = (data.seq||'').split(',').map(s=>s.trim()).map(s=> s==='?'? '<b style="color:var(--accent2)">?</b>' : esc(s)).join('<span class="muted">,</span> ');
+    host.appendChild(el('div','card center','<div style="font-size:22px;font-weight:800;line-height:1.7">'+shown+'</div>'));
+    if(data.hint) host.appendChild(el('div','hint center','💡 '+esc(data.hint)));
+    host.appendChild(fieldLabel('Your answer'));
+    const ans=textInput('Replace the ?', '', {}); host.appendChild(ans);
+    const go=el('button','btn','Check answer'); host.appendChild(go);
+    go.onclick=()=>{ const norm=s=>String(s).trim().toLowerCase().replace(/\s+/g,'');
+      if(!ans.value.trim()) return toast('Type your answer first');
+      if(norm(ans.value)===norm(data.answer)) cb.onSolve(); else { cb.onFail(); toast('Not quite — try again','err'); } };
+    setTimeout(()=>ans.focus(),50);
+  },
+  preview(data){ return esc((data.seq||'').replace(/\s+/g,' ')); }
+});
+
+/* ---------------- CODE PUZZLE (Mastermind-style deduction) ---------------- */
+PuzzleTypes.register({
+  id:'code', name:'Code Puzzle', emoji:'🔐',
+  blurb:'Crack a secret code from digit hints. Auto-validates.',
+  create(host, init){
+    init=init||{};
+    host.innerHTML='';
+    host.appendChild(fieldLabel('Secret code (3–6 digits)'));
+    const code=textInput('e.g. 4285', init.code!=null?init.code:'', {inputmode:'numeric', maxLength:6}); host.appendChild(code);
+    host.appendChild(hintEl('Players never see this — they deduce it from your hints below.'));
+    host.appendChild(fieldLabel('Hints (one per line)'));
+    const hints=textArea('First digit is 4\nThe code contains an 8\nNo digit is 0', (init.hints||[]).join('\n')); host.appendChild(hints);
+    host.appendChild(hintEl('Write clues that lead to exactly one code. We auto-check your code obeys them.'));
+    return {
+      getData:()=>({ code:code.value.replace(/\D/g,''), hints:hints.value.split('\n').map(s=>s.trim()).filter(Boolean) }),
+      validate(){ const c=code.value.replace(/\D/g,'');
+        if(c.length<3||c.length>6) return {ok:false,error:'Code must be 3–6 digits.'};
+        if(hints.value.split('\n').map(s=>s.trim()).filter(Boolean).length<1) return {ok:false,error:'Add at least one hint.'};
+        return {ok:true}; }
+    };
+  },
+  play(host, data, cb){
+    host.innerHTML='';
+    const len=(data.code||'').length;
+    host.appendChild(el('div','hint','🔐 Crack the <b>'+len+'-digit</b> code using the hints.'));
+    const hbox=el('div','card'); hbox.innerHTML='<div class="steptitle">Hints</div>'+
+      (data.hints||[]).map(h=>'<div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:14px">• '+esc(h)+'</div>').join('');
+    host.appendChild(hbox);
+    host.appendChild(fieldLabel('Enter the code'));
+    const g=textInput('•'.repeat(len), '', {inputmode:'numeric', maxLength:len}); host.appendChild(g);
+    const go=el('button','btn','Submit code'); host.appendChild(go);
+    let tries=0;
+    go.onclick=()=>{ const v=g.value.replace(/\D/g,''); if(v.length!==len) return toast('Enter all '+len+' digits');
+      tries++;
+      if(v===data.code){ cb.onSolve(); }
+      else { cb.onFail(); // Mastermind feedback: how many digits are exactly right
+        let right=0; for(let i=0;i<len;i++) if(v[i]===data.code[i]) right++;
+        cb.setStatus('<div class="banner local">'+right+' / '+len+' digits in the right place · attempt '+tries+'</div>');
+        toast('Keep going','err'); } };
+    setTimeout(()=>g.focus(),50);
+  },
+  preview(data){ return '🔐 '+((data.code||'').length)+'-digit code · '+((data.hints||[]).length)+' hints'; }
+});
+
+/* ---------------- WORD PUZZLE (scramble / riddle / guess) ---------------- */
+PuzzleTypes.register({
+  id:'word', name:'Word Puzzle', emoji:'🔤',
+  blurb:'Riddles, scrambles & guess-the-word with a clue.',
+  create(host, init){
+    init=init||{};
+    host.innerHTML='';
+    host.appendChild(fieldLabel('Style'));
+    const seg=el('div','seg'); const styles=[['riddle','🧠 Riddle'],['scramble','🔀 Scramble'],['clue','💬 Clue']];
+    let style=init.style||'riddle';
+    styles.forEach(([v,l])=>{ const c=el('button','chip'+(v===style?' on':''),l); c.onclick=()=>{ style=v; $$('.chip',seg).forEach(x=>x.classList.remove('on')); c.classList.add('on'); syncPh(); }; seg.appendChild(c); });
+    host.appendChild(seg);
+    const qL=fieldLabel('Riddle / clue'); host.appendChild(qL);
+    const q=textArea('', init.clue||''); host.appendChild(q);
+    host.appendChild(fieldLabel('The answer word'));
+    const ans=textInput('e.g. ECHO', init.answer||'', {maxLength:40}); host.appendChild(ans);
+    const note=el('div','hint',''); host.appendChild(note);
+    function syncPh(){ qL.textContent = style==='riddle'?'The riddle':(style==='scramble'?'Extra clue (optional — the scrambled letters are shown automatically)':'The clue');
+      q.placeholder = style==='riddle'?'I speak without a mouth and hear without ears. What am I?':(style==='scramble'?'Optional: a themed hint':'A device that reflects sound');
+      note.innerHTML = style==='scramble'? 'Players see the answer\'s letters shuffled and must unscramble them.' : 'Players read this and type the answer.'; }
+    syncPh();
+    return {
+      getData:()=>({ style, clue:q.value.trim(), answer:ans.value.trim() }),
+      validate(){ const a=ans.value.trim();
+        if(!a) return {ok:false,error:'Enter the answer word.'};
+        if(style!=='scramble' && !q.value.trim()) return {ok:false,error:'Write the riddle / clue.'};
+        if(style==='scramble' && a.replace(/\s/g,'').length<3) return {ok:false,error:'Scramble needs a word of 3+ letters.'};
+        return {ok:true}; }
+    };
+  },
+  play(host, data, cb){
+    host.innerHTML='';
+    if(data.style==='scramble'){
+      const letters=(data.answer||'').replace(/\s/g,'').toUpperCase().split('');
+      const shuffled=letters.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+      host.appendChild(el('div','card center','<div style="font-size:30px;font-weight:900;letter-spacing:8px">'+esc(shuffled.join(''))+'</div>'));
+      if(data.clue) host.appendChild(el('div','hint center','💡 '+esc(data.clue)));
+    } else {
+      host.appendChild(el('div','card', '<div style="font-size:17px;line-height:1.6">'+esc(data.clue)+'</div>'));
+    }
+    host.appendChild(fieldLabel('Your answer'));
+    const ans=textInput('Type the word', '', {}); host.appendChild(ans);
+    const go=el('button','btn','Check'); host.appendChild(go);
+    go.onclick=()=>{ const norm=s=>String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(!ans.value.trim()) return toast('Type your answer');
+      if(norm(ans.value)===norm(data.answer)) cb.onSolve(); else { cb.onFail(); toast('Not it — try again','err'); } };
+    setTimeout(()=>ans.focus(),50);
+  },
+  preview(data){ return (data.style==='scramble'?'🔀 Unscramble a word':'🧠 '+esc((data.clue||'').slice(0,60))); }
+});
+
+/* ---------------- PATTERN PUZZLE (what comes next) ---------------- */
+PuzzleTypes.register({
+  id:'pattern', name:'Pattern Puzzle', emoji:'🔺',
+  blurb:'Shape, colour & symbol sequences. Pick what comes next.',
+  create(host, init){
+    init=init||{};
+    host.innerHTML='';
+    host.appendChild(fieldLabel('The pattern so far (emojis or symbols, space-separated)'));
+    const seq=textInput('🔺 🔺🔺 🔺🔺🔺 ?', init.seq!=null?init.seq:'', {}); host.appendChild(seq);
+    host.appendChild(hintEl('End with ? for the missing item. Try emojis: 🔺 🟦 🟢 ⭐ or letters.'));
+    host.appendChild(fieldLabel('Answer choices (comma-separated — the first is the correct one)'));
+    const opts=textInput('🔺🔺🔺🔺, 🔺🔺, 🟦, ⭐', (init.options||[]).join(', '), {}); host.appendChild(opts);
+    host.appendChild(hintEl('We shuffle these for players. The FIRST one you type is the correct answer.'));
+    host.appendChild(fieldLabel('Optional hint'));
+    const hint=textInput('e.g. Each step adds one', init.hint||'', {maxLength:120}); host.appendChild(hint);
+    return {
+      getData:()=>{ const o=opts.value.split(',').map(s=>s.trim()).filter(Boolean); return { seq:seq.value.trim(), options:o, answer:o[0]||'', hint:hint.value.trim() }; },
+      validate(){ const o=opts.value.split(',').map(s=>s.trim()).filter(Boolean);
+        if(!seq.value.trim()) return {ok:false,error:'Enter the pattern.'};
+        if(o.length<2) return {ok:false,error:'Give at least 2 answer choices (first = correct).'};
+        return {ok:true}; }
+    };
+  },
+  play(host, data, cb){
+    host.innerHTML='';
+    const shown=esc(data.seq||'').replace(/\?/g,'<b style="color:var(--accent2)">?</b>');   // esc first — creator text is untrusted
+    host.appendChild(el('div','card center','<div style="font-size:26px;line-height:1.6;word-break:break-word">'+shown+'</div>'));
+    if(data.hint) host.appendChild(el('div','hint center','💡 '+esc(data.hint)));
+    host.appendChild(fieldLabel('What comes next?'));
+    const opts=(data.options||[]).slice(); for(let i=opts.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [opts[i],opts[j]]=[opts[j],opts[i]]; }
+    const grid=el('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px';
+    opts.forEach(o=>{ const b=el('button','btn sec','<span style="font-size:22px">'+esc(o)+'</span>'); b.style.padding='18px';
+      b.onclick=()=>{ if(o===data.answer){ cb.onSolve(); } else { cb.onFail(); b.style.borderColor='var(--bad)'; toast('Not that one','err'); } };
+      grid.appendChild(b); });
+    host.appendChild(grid);
+  },
+  preview(data){ return esc((data.seq||'').slice(0,40)); }
+});
+
+function hintEl(t){ return el('div','hint',t); }
+
+/* ---------------- MAZE PUZZLE (grid editor + BFS solvability + playable) ---------------- */
+PuzzleTypes.register({
+  id:'maze', name:'Maze Puzzle', emoji:'🌀',
+  blurb:'Design a maze — walls, traps, checkpoints. Must be solvable to publish.',
+
+  create(host, initialData){
+    host.innerHTML='';
+    const TOOLS=[
+      {k:1,name:'Wall',ch:'🧱'},
+      {k:0,name:'Path',ch:'⬜'},
+      {k:2,name:'Start',ch:'🚩'},
+      {k:3,name:'Finish',ch:'🏁'},
+      {k:4,name:'Checkpoint',ch:'⭐'},
+      {k:5,name:'Trap',ch:'💀'},
+      {k:6,name:'Decoration',ch:'🌿'}
+    ];
+    const COL={0:'#0d1730',1:'#41527d',2:'rgba(61,220,132,.22)',3:'rgba(230,190,90,.22)',4:'rgba(124,92,255,.24)',5:'rgba(255,92,114,.22)',6:'rgba(61,220,132,.12)'};
+    const GLY={2:'🚩',3:'🏁',4:'⭐',5:'💀',6:'🌿'};
+    const BTN='padding:12px 10px;font-size:15px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);cursor:pointer;min-height:46px;touch-action:manipulation';
+
+    function blank(n){const a=[];for(let r=0;r<n;r++){const row=[];for(let c=0;c<n;c++)row.push(0);a.push(row);}return a;}
+
+    let size=8, cells;
+    if(initialData && Array.isArray(initialData.cells) && initialData.size){
+      size=Math.max(4,Math.min(20,initialData.size|0));
+      cells=blank(size);
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const v=initialData.cells[r] && initialData.cells[r][c];
+        cells[r][c]=(typeof v==='number'&&v>=0&&v<=6)?v:0;
+      }
+    } else { cells=blank(size); }
+    let tool=1;
+
+    const wrap=el('div','maze-editor');
+    wrap.style.cssText='max-width:460px';
+
+    const sizeRow=el('div');
+    sizeRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px';
+    sizeRow.appendChild(fieldLabel('Grid size'));
+    const sbtns=[];
+    [6,8,10,12].forEach(n=>{
+      const b=el('button','',n+'×'+n); b.style.cssText=BTN; b._n=n;
+      b.addEventListener('click',()=>{ setSize(n); });
+      sbtns.push(b); sizeRow.appendChild(b);
+    });
+    wrap.appendChild(sizeRow);
+
+    const palette=el('div');
+    palette.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin:8px 0';
+    const pbtns=[];
+    TOOLS.forEach(t=>{
+      const b=el('button','',t.ch+' '+t.name); b.style.cssText=BTN; b._k=t.k;
+      b.addEventListener('click',()=>{ tool=t.k; markTool(); });
+      pbtns.push(b); palette.appendChild(b);
+    });
+    wrap.appendChild(palette);
+    wrap.appendChild(hintEl('Tap or drag to paint. Start 🚩 and Finish 🏁 are unique — placing a new one moves it.'));
+
+    const canvas=el('canvas');
+    canvas.style.cssText='width:100%;max-width:440px;aspect-ratio:1;display:block;margin:10px auto;border:1px solid var(--line);border-radius:12px;touch-action:none;background:#0d1730';
+    const ctx=canvas.getContext('2d');
+    wrap.appendChild(canvas);
+    host.appendChild(wrap);
+
+    function setSize(n){
+      const old=cells, o=size; size=n; cells=blank(n);
+      for(let r=0;r<Math.min(o,n);r++)for(let c=0;c<Math.min(o,n);c++)cells[r][c]=old[r][c];
+      markSize(); layout(); draw();
+    }
+    function markSize(){ sbtns.forEach(b=>{ const a=b._n===size; b.style.borderColor=a?'var(--accent)':'var(--line)'; b.style.background=a?'rgba(124,92,255,.18)':'var(--card)'; }); }
+    function markTool(){ pbtns.forEach(b=>{ const a=b._k===tool; b.style.borderColor=a?'var(--accent)':'var(--line)'; b.style.background=a?'rgba(124,92,255,.18)':'var(--card)'; }); }
+
+    function layout(){ const res=64*size; canvas.width=res; canvas.height=res; }
+    function draw(){
+      const px=canvas.width, cs=px/size;
+      ctx.clearRect(0,0,px,px);
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const v=cells[r][c], x=c*cs, y=r*cs;
+        ctx.fillStyle=COL[v]!==undefined?COL[v]:'#0d1730';
+        ctx.fillRect(x,y,cs,cs);
+        ctx.strokeStyle='#26375f'; ctx.lineWidth=1;
+        ctx.strokeRect(x+.5,y+.5,cs-1,cs-1);
+        if(GLY[v]){ ctx.font=Math.floor(cs*0.56)+'px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(GLY[v],x+cs/2,y+cs/2+cs*0.04); }
+      }
+    }
+
+    function removeAll(k){ for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(cells[r][c]===k)cells[r][c]=0; }
+    function paint(r,c){
+      if(r<0||c<0||r>=size||c>=size)return;
+      if(tool===2)removeAll(2);
+      if(tool===3)removeAll(3);
+      cells[r][c]=tool; draw();
+    }
+    function cellAt(e){
+      const rect=canvas.getBoundingClientRect();
+      const c=Math.floor((e.clientX-rect.left)/rect.width*size);
+      const r=Math.floor((e.clientY-rect.top)/rect.height*size);
+      return [r,c];
+    }
+    let painting=false;
+    canvas.addEventListener('pointerdown',e=>{ painting=true; try{canvas.setPointerCapture(e.pointerId);}catch(_){} const p=cellAt(e); paint(p[0],p[1]); e.preventDefault(); });
+    canvas.addEventListener('pointermove',e=>{ if(!painting)return; const p=cellAt(e); paint(p[0],p[1]); e.preventDefault(); });
+    const stop=()=>{ painting=false; };
+    canvas.addEventListener('pointerup',stop);
+    canvas.addEventListener('pointercancel',stop);
+    canvas.addEventListener('pointerleave',stop);
+
+    markSize(); markTool(); layout(); draw();
+
+    return {
+      getData(){
+        return { size:size, cells:cells.map(row=>row.slice()) };
+      },
+      validate(){
+        let start=null, finish=null; const checks=[];
+        for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+          const v=cells[r][c];
+          if(v===2)start=[r,c];
+          else if(v===3)finish=[r,c];
+          else if(v===4)checks.push([r,c]);
+        }
+        if(!start)return {ok:false,error:'Place a Start cell (🚩).'};
+        if(!finish)return {ok:false,error:'Place a Finish cell (🏁).'};
+        const seen=blank(size);
+        const q=[start]; seen[start[0]][start[1]]=1;
+        const D=[[1,0],[-1,0],[0,1],[0,-1]];
+        while(q.length){
+          const cur=q.shift();
+          for(let i=0;i<4;i++){
+            const nr=cur[0]+D[i][0], nc=cur[1]+D[i][1];
+            if(nr<0||nc<0||nr>=size||nc>=size)continue;
+            if(cells[nr][nc]===1)continue;
+            if(seen[nr][nc])continue;
+            seen[nr][nc]=1; q.push([nr,nc]);
+          }
+        }
+        if(!seen[finish[0]][finish[1]])return {ok:false,error:'This maze has no path from start to finish.'};
+        for(let i=0;i<checks.length;i++){ if(!seen[checks[i][0]][checks[i][1]])return {ok:false,error:'A checkpoint (⭐) is unreachable from the start.'}; }
+        return {ok:true};
+      }
+    };
+  },
+
+  play(host, data, cb){
+    cb=cb||{};
+    const onSolve=cb.onSolve||function(){};
+    const onFail=cb.onFail||function(){};
+    const setStatus=cb.setStatus||function(){};
+    const toastFn=(typeof toast==='function')?toast:function(){};
+
+    if(window.__mazeKeyHandler){ try{window.removeEventListener('keydown',window.__mazeKeyHandler);}catch(_){} window.__mazeKeyHandler=null; }
+    host.innerHTML='';
+
+    function blank(n){const a=[];for(let r=0;r<n;r++){const row=[];for(let c=0;c<n;c++)row.push(0);a.push(row);}return a;}
+
+    let size=8, cells;
+    if(data && Array.isArray(data.cells) && data.size){
+      size=Math.max(4,Math.min(20,data.size|0));
+      cells=blank(size);
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const v=data.cells[r] && data.cells[r][c];
+        cells[r][c]=(typeof v==='number'&&v>=0&&v<=6)?v:0;
+      }
+    } else {
+      cells=blank(size); cells[0][0]=2; cells[size-1][size-1]=3;
+    }
+
+    const COL={0:'#0d1730',1:'#41527d',2:'rgba(61,220,132,.22)',3:'rgba(230,190,90,.22)',4:'rgba(124,92,255,.24)',5:'rgba(255,92,114,.22)',6:'rgba(61,220,132,.12)'};
+    const GLY={2:'🚩',3:'🏁',4:'⭐',5:'💀',6:'🌿'};
+
+    let start=null; const need={}; let total=0;
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+      const v=cells[r][c];
+      if(v===2)start={r:r,c:c};
+      else if(v===4){ need[r+'_'+c]=1; total++; }
+    }
+    if(!start){
+      outer: for(let r=0;r<size;r++)for(let c=0;c<size;c++){ if(cells[r][c]!==1){ start={r:r,c:c}; break outer; } }
+      if(!start)start={r:0,c:0};
+    }
+
+    let pos={r:start.r,c:start.c};
+    let collected={};
+    let won=false;
+
+    const wrap=el('div'); wrap.style.cssText='max-width:460px;margin:0 auto';
+    const canvas=el('canvas');
+    canvas.style.cssText='width:100%;max-width:440px;aspect-ratio:1;display:block;margin:6px auto 12px;border:1px solid var(--line);border-radius:12px;touch-action:none;background:#0d1730';
+    const ctx=canvas.getContext('2d');
+    const res=64*size; canvas.width=res; canvas.height=res;
+    wrap.appendChild(canvas);
+
+    const pad=el('div');
+    pad.style.cssText='display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,64px);gap:8px;justify-content:center;margin:4px auto 8px';
+    const PBTN='font-size:24px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center';
+    function mkbtn(sym,dr,dc,col,row){
+      const b=el('button','',sym); b.style.cssText=PBTN; b.style.gridColumn=col; b.style.gridRow=row;
+      b.addEventListener('click',()=>tryMove(dr,dc));
+      return b;
+    }
+    pad.appendChild(mkbtn('▲',-1,0,'2','1'));
+    pad.appendChild(mkbtn('◀',0,-1,'1','2'));
+    pad.appendChild(mkbtn('▼',1,0,'2','2'));
+    pad.appendChild(mkbtn('▶',0,1,'3','2'));
+    wrap.appendChild(pad);
+    host.appendChild(wrap);
+
+    function draw(){
+      const px=canvas.width, cs=px/size;
+      ctx.clearRect(0,0,px,px);
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const v=cells[r][c], x=c*cs, y=r*cs;
+        ctx.fillStyle=COL[v]!==undefined?COL[v]:'#0d1730';
+        ctx.fillRect(x,y,cs,cs);
+        ctx.strokeStyle='#26375f'; ctx.lineWidth=1; ctx.strokeRect(x+.5,y+.5,cs-1,cs-1);
+        const collectedHere=(v===4 && collected[r+'_'+c]);
+        if(GLY[v] && !collectedHere){
+          ctx.globalAlpha=1;
+          ctx.font=Math.floor(cs*0.56)+'px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(GLY[v],x+cs/2,y+cs/2+cs*0.04);
+        }
+        if(collectedHere){
+          ctx.fillStyle='rgba(61,220,132,.5)'; ctx.font=Math.floor(cs*0.5)+'px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('✓',x+cs/2,y+cs/2+cs*0.04);
+        }
+      }
+      const cx=pos.c*cs+cs/2, cy=pos.r*cs+cs/2;
+      ctx.beginPath(); ctx.arc(cx,cy,cs*0.30,0,Math.PI*2);
+      ctx.fillStyle=won?'#3ddc84':'#7c5cff'; ctx.shadowColor=won?'#3ddc84':'#7c5cff'; ctx.shadowBlur=cs*0.35;
+      ctx.fill(); ctx.shadowBlur=0;
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx,cy,cs*0.12,0,Math.PI*2); ctx.fill();
+    }
+
+    function status(){
+      if(won){ setStatus('<b style="color:var(--good)">Solved! 🎉</b>'); return; }
+      const rem=total-Object.keys(collected).length;
+      if(total===0){ setStatus('Reach the Finish 🏁'); }
+      else setStatus('Checkpoints left: <b style="color:var(--accent)">'+rem+'</b> / '+total+' — then reach 🏁');
+    }
+
+    function tryMove(dr,dc){
+      if(won)return;
+      const nr=pos.r+dr, nc=pos.c+dc;
+      if(nr<0||nc<0||nr>=size||nc>=size)return;
+      if(cells[nr][nc]===1)return;
+      pos={r:nr,c:nc};
+      const v=cells[nr][nc];
+      if(v===5){
+        try{onFail();}catch(_){}
+        toastFn('💀 Trap! Back to start.','bad');
+        pos={r:start.r,c:start.c};
+        draw(); status(); return;
+      }
+      if(v===4){ collected[nr+'_'+nc]=1; }
+      if(v===3){
+        if(Object.keys(collected).length>=total){
+          won=true; draw(); status();
+          toastFn('🎉 You reached the finish!','good');
+          try{onSolve();}catch(_){}
+          return;
+        } else {
+          toastFn('Collect all checkpoints ⭐ first!','bad');
+        }
+      }
+      draw(); status();
+    }
+
+    let sx=0, sy=0, sactive=false;
+    canvas.addEventListener('pointerdown',e=>{ sactive=true; sx=e.clientX; sy=e.clientY; });
+    canvas.addEventListener('pointerup',e=>{
+      if(!sactive)return; sactive=false;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      const ax=Math.abs(dx), ay=Math.abs(dy);
+      if(ax<18 && ay<18)return;
+      if(ax>ay)tryMove(0,dx>0?1:-1); else tryMove(dy>0?1:-1,0);
+    });
+    canvas.addEventListener('pointercancel',()=>{ sactive=false; });
+
+    const keyH=function(e){
+      let dr=0,dc=0;
+      if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')dr=-1;
+      else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')dr=1;
+      else if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')dc=-1;
+      else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')dc=1;
+      else return;
+      e.preventDefault(); tryMove(dr,dc);
+    };
+    window.__mazeKeyHandler=keyH;
+    window.addEventListener('keydown',keyH);
+
+    draw(); status();
+  },
+
+  preview(data){
+    try{
+      const s=(data&&data.size)?data.size:'?';
+      let ch=0,tr=0;
+      if(data&&Array.isArray(data.cells))data.cells.forEach(row=>{ if(row)row.forEach(v=>{ if(v===4)ch++; else if(v===5)tr++; }); });
+      return '🌀 '+esc(String(s))+'×'+esc(String(s))+' maze · '+ch+' checkpoint'+(ch===1?'':'s')+' · '+tr+' trap'+(tr===1?'':'s');
+    }catch(e){ return '🌀 Maze puzzle'; }
+  }
+});
+
+/* ---------------- LOGIC PUZZLE (multiple-choice + grid deduction) ---------------- */
+PuzzleTypes.register({
+  id:'logic', name:'Logic Puzzle', emoji:'🧠',
+  blurb:'Riddles of deduction — question, clues, and a verified answer.',
+  create(host, initialData){
+    var data = (initialData && typeof initialData==='object') ? initialData : {};
+    var format = data.format==='grid' ? 'grid' : 'mc';
+    host.innerHTML='';
+
+    var chipRow = el('div','row');
+    chipRow.style.display='flex'; chipRow.style.gap='8px'; chipRow.style.marginBottom='12px';
+    var chipMC = el('button','chip','Multiple choice');
+    var chipGrid = el('button','chip','Grid deduction');
+    [chipMC,chipGrid].forEach(function(c){ c.type='button'; c.style.flex='1'; });
+    chipRow.appendChild(chipMC); chipRow.appendChild(chipGrid);
+    host.appendChild(chipRow);
+
+    var body = el('div'); host.appendChild(body);
+
+    function markChips(){
+      chipMC.classList.toggle('on', format==='mc');
+      chipGrid.classList.toggle('on', format==='grid');
+    }
+
+    var qInput, clueArea;
+    var mcOptWrap, mcCorrect=-1, mcOptInputs=[];
+    var gridN, gridSubjInputs=[], gridAttrInputs=[], gridSolWrap, gridSolSelects=[];
+
+    function buildMC(){
+      body.innerHTML='';
+      body.appendChild(fieldLabel('Question'));
+      qInput = textInput('e.g. Who is the tallest?', (data.format==='mc'&&data.question)?data.question:'');
+      body.appendChild(qInput);
+      body.appendChild(fieldLabel('Clues (one per line)'));
+      clueArea = textArea('Ben is taller than Anna\nCara is shorter than Ben', (data.format==='mc'&&Array.isArray(data.clues))?data.clues.join('\n'):'');
+      body.appendChild(clueArea);
+      body.appendChild(fieldLabel('Options (2–5). Tap the circle to mark the correct one.'));
+      mcOptWrap = el('div'); body.appendChild(mcOptWrap);
+      mcOptInputs=[]; mcCorrect=-1;
+      var startOpts = (data.format==='mc'&&Array.isArray(data.options)&&data.options.length)?data.options.slice(0,5):['',''];
+      if(data.format==='mc' && typeof data.answerIndex==='number') mcCorrect=data.answerIndex;
+      function renderOpts(list){
+        mcOptWrap.innerHTML=''; mcOptInputs=[];
+        list.forEach(function(val,i){
+          var rowEl = el('div'); rowEl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+          var mark = el('button','',''); mark.type='button';
+          mark.style.cssText='flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--good);font-size:20px;cursor:pointer';
+          (function(idx){ mark.onclick=function(){ mcCorrect=idx; paintMarks(); }; })(i);
+          var inp = textInput('Option '+(i+1), val||''); inp.style.flex='1'; mcOptInputs.push(inp);
+          var del = el('button','','✕'); del.type='button';
+          del.style.cssText='flex:0 0 auto;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--bad);cursor:pointer';
+          (function(idx){ del.onclick=function(){ var cur=collectOpts(); if(cur.length<=2){ toast('Need at least 2 options','bad'); return; }
+            cur.splice(idx,1); if(mcCorrect===idx) mcCorrect=-1; else if(mcCorrect>idx) mcCorrect--; renderOpts(cur); }; })(i);
+          rowEl.appendChild(mark); rowEl.appendChild(inp); rowEl.appendChild(del); mcOptWrap.appendChild(rowEl);
+        });
+        paintMarks();
+      }
+      function paintMarks(){ var marks=mcOptWrap.querySelectorAll('button'); var idx=0;
+        var rows=mcOptWrap.children;
+        for(var i=0;i<rows.length;i++){ var m=rows[i].firstChild;
+          if(i===mcCorrect){ m.textContent='✓'; m.style.borderColor='var(--accent)'; m.style.background='rgba(124,92,255,.18)'; }
+          else { m.textContent=''; m.style.borderColor='var(--line)'; m.style.background='var(--card)'; } }
+      }
+      function collectOpts(){ return mcOptInputs.map(function(i){ return i.value; }); }
+      renderOpts(startOpts);
+      var addBtn = el('button','btn sec sm','+ Add option'); addBtn.type='button'; addBtn.style.width='auto';
+      addBtn.onclick=function(){ var cur=collectOpts(); if(cur.length>=5){ toast('Max 5 options','bad'); return; } cur.push(''); renderOpts(cur); };
+      body.appendChild(addBtn);
+      body.appendChild(hintEl('Write clues that make the answer deducible, then mark the single correct option.'));
+    }
+
+    function buildGrid(){
+      body.innerHTML='';
+      body.appendChild(fieldLabel('Question'));
+      qInput = textInput('e.g. Who owns the cat?', (data.format==='grid'&&data.question)?data.question:'');
+      body.appendChild(qInput);
+      body.appendChild(fieldLabel('Clues (one per line)'));
+      clueArea = textArea('Anna does not own the dog\nBen owns a pet with fur', (data.format==='grid'&&Array.isArray(data.clues))?data.clues.join('\n'):'');
+      body.appendChild(clueArea);
+      var savedSubj = (data.format==='grid'&&Array.isArray(data.subjects))?data.subjects:[];
+      var savedAttr = (data.format==='grid'&&Array.isArray(data.attributes))?data.attributes:[];
+      var startN = Math.min(4, Math.max(2, savedSubj.length||3));
+      body.appendChild(fieldLabel('Number of pairs (2–4)'));
+      var nRow = el('div','seg'); nRow.style.marginBottom='10px';
+      [2,3,4].forEach(function(n){ var b=el('button','chip',''+n); b.type='button'; b.dataset.n=n;
+        b.onclick=function(){ gridN=n; renderRows(); }; nRow.appendChild(b); });
+      body.appendChild(nRow);
+      var rowsWrap = el('div'); body.appendChild(rowsWrap);
+      body.appendChild(fieldLabel('Correct solution (assign one attribute per subject)'));
+      gridSolWrap = el('div'); body.appendChild(gridSolWrap);
+      body.appendChild(hintEl('Ensure your clues make it uniquely solvable — this editor checks a valid one-to-one solution exists.'));
+      gridN = startN;
+      function paintNRow(){ var btns=nRow.querySelectorAll('button');
+        for(var i=0;i<btns.length;i++){ btns[i].classList.toggle('on', parseInt(btns[i].dataset.n,10)===gridN); } }
+      function renderRows(){ paintNRow();
+        var prevSubj = gridSubjInputs.map(function(i){return i.value;});
+        var prevAttr = gridAttrInputs.map(function(i){return i.value;});
+        rowsWrap.innerHTML=''; gridSubjInputs=[]; gridAttrInputs=[];
+        for(var i=0;i<gridN;i++){
+          var pair = el('div'); pair.style.cssText='display:flex;gap:8px;margin-bottom:8px';
+          var s = textInput('Subject '+(i+1), prevSubj[i]!==undefined?prevSubj[i]:(savedSubj[i]||'')); s.style.flex='1';
+          var a = textInput('Attribute '+(i+1), prevAttr[i]!==undefined?prevAttr[i]:(savedAttr[i]||'')); a.style.flex='1';
+          gridSubjInputs.push(s); gridAttrInputs.push(a); pair.appendChild(s); pair.appendChild(a); rowsWrap.appendChild(pair);
+          s.addEventListener('input', renderSol); a.addEventListener('input', renderSol);
+        }
+        renderSol();
+      }
+      function renderSol(){
+        var subj = gridSubjInputs.map(function(i){return i.value;});
+        var attr = gridAttrInputs.map(function(i){return i.value;});
+        var savedSol = (data.format==='grid'&&data.solution&&typeof data.solution==='object')?data.solution:{};
+        var prevSel = gridSolSelects.map(function(s){return s.value;});
+        gridSolWrap.innerHTML=''; gridSolSelects=[];
+        subj.forEach(function(sName,i){
+          var rowEl = el('div'); rowEl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+          var lab = el('div','',esc(sName||('Subject '+(i+1)))); lab.style.cssText='flex:1;color:var(--muted)';
+          var sel = document.createElement('select'); sel.className='in'; sel.style.flex='1';
+          var ph = document.createElement('option'); ph.value=''; ph.textContent='— pick —'; sel.appendChild(ph);
+          attr.forEach(function(aName,ai){ var o=document.createElement('option'); o.value=String(ai); o.textContent=aName||('Attribute '+(ai+1)); sel.appendChild(o); });
+          var want = prevSel[i];
+          if(want===undefined || want===''){ var savedVal = savedSol[sName]; if(savedVal!==undefined){ var idx=attr.indexOf(savedVal); if(idx>=0) want=String(idx); } }
+          if(want!==undefined && want!=='') sel.value=want;
+          gridSolSelects.push(sel); rowEl.appendChild(lab); rowEl.appendChild(sel); gridSolWrap.appendChild(rowEl);
+        });
+      }
+      renderRows();
+    }
+
+    function rebuild(){ markChips(); if(format==='mc') buildMC(); else buildGrid(); }
+    chipMC.onclick=function(){ format='mc'; rebuild(); };
+    chipGrid.onclick=function(){ format='grid'; rebuild(); };
+    rebuild();
+
+    function splitClues(txt){ return String(txt||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;}); }
+
+    return {
+      getData:function(){
+        if(format==='mc'){
+          var rawOpts = mcOptInputs.map(function(i){return i.value.trim();});
+          var keep=[], ansIdx=-1;
+          rawOpts.forEach(function(v,i){ if(v.length){ if(i===mcCorrect) ansIdx=keep.length; keep.push(v); } });
+          return { format:'mc', question:(qInput?qInput.value.trim():''), clues:splitClues(clueArea?clueArea.value:''), options:keep, answerIndex:ansIdx };
+        } else {
+          var subjects = gridSubjInputs.map(function(i){return i.value.trim();});
+          var attributes = gridAttrInputs.map(function(i){return i.value.trim();});
+          var solution={};
+          subjects.forEach(function(s,i){ var sel=gridSolSelects[i];
+            if(s && sel && sel.value!==''){ var ai=parseInt(sel.value,10); if(!isNaN(ai) && attributes[ai]) solution[s]=attributes[ai]; } });
+          return { format:'grid', question:(qInput?qInput.value.trim():''), clues:splitClues(clueArea?clueArea.value:''),
+            subjects:subjects.filter(function(v){return v.length;}), attributes:attributes.filter(function(v){return v.length;}), solution:solution };
+        }
+      },
+      validate:function(){
+        var d=this.getData();
+        if(!d.question) return {ok:false,error:'Question is required.'};
+        if(d.format==='mc'){
+          if(!d.options || d.options.length<2) return {ok:false,error:'Provide at least 2 non-empty options.'};
+          if(d.options.length>5) return {ok:false,error:'No more than 5 options.'};
+          if(typeof d.answerIndex!=='number' || d.answerIndex<0 || d.answerIndex>=d.options.length) return {ok:false,error:'Mark which option is correct.'};
+          return {ok:true};
+        } else {
+          if(!d.subjects || d.subjects.length<2) return {ok:false,error:'Provide at least 2 subjects.'};
+          if(!d.attributes || d.attributes.length<2) return {ok:false,error:'Provide at least 2 attributes.'};
+          if(d.subjects.length!==d.attributes.length) return {ok:false,error:'Number of subjects and attributes must match.'};
+          var uniq=function(a){var s={};for(var i=0;i<a.length;i++){if(s[a[i]])return false;s[a[i]]=1;}return true;};
+          if(!uniq(d.subjects)) return {ok:false,error:'Subjects must be distinct.'};
+          if(!uniq(d.attributes)) return {ok:false,error:'Attributes must be distinct.'};
+          var usedAttr={};
+          for(var i=0;i<d.subjects.length;i++){ var s=d.subjects[i]; var v=d.solution[s];
+            if(v===undefined) return {ok:false,error:'Assign an attribute to every subject in the solution.'};
+            if(d.attributes.indexOf(v)<0) return {ok:false,error:'Solution uses an unknown attribute.'};
+            if(usedAttr[v]) return {ok:false,error:'Solution must be one-to-one — each attribute used once.'};
+            usedAttr[v]=1;
+          }
+          return {ok:true};
+        }
+      }
+    };
+  },
+
+  play(host, data, cb){
+    cb = cb || {};
+    var onSolve = (cb.onSolve||function(){}), onFail = (cb.onFail||function(){}), setStatus = (cb.setStatus||function(){});
+    host.innerHTML=''; data = (data && typeof data==='object') ? data : {};
+    function emptyState(msg){ host.appendChild(el('div','empty', esc(msg||'This puzzle is not set up correctly.'))); }
+    var question = typeof data.question==='string' ? data.question : '';
+    var clues = Array.isArray(data.clues) ? data.clues : [];
+    if(!question){ emptyState('No question provided.'); return; }
+    var qEl = el('div','card','<div style="font-size:18px;font-weight:800;line-height:1.5">'+esc(question)+'</div>'); host.appendChild(qEl);
+    if(clues.length){
+      var cWrap = el('div','card'); cWrap.innerHTML='<div class="steptitle">Clues</div>'+
+        clues.map(function(c){ return '<div style="padding:5px 0;border-bottom:1px solid var(--line);font-size:14px">• '+esc(String(c))+'</div>'; }).join('');
+      host.appendChild(cWrap);
+    }
+    var fmt = data.format==='grid' ? 'grid' : (data.format==='mc' ? 'mc' : null);
+    if(fmt==='mc'){
+      var options = Array.isArray(data.options)?data.options:[];
+      var ansIdx = typeof data.answerIndex==='number'?data.answerIndex:-1;
+      if(options.length<2 || ansIdx<0 || ansIdx>=options.length){ emptyState('This multiple-choice puzzle is incomplete.'); return; }
+      var solved=false; var wrap=el('div');
+      options.forEach(function(opt,i){
+        var b=el('button','btn sec', esc(String(opt))); b.type='button';
+        b.style.cssText='display:block;width:100%;text-align:left;padding:16px;margin-bottom:10px';
+        b.onclick=function(){ if(solved) return;
+          if(i===ansIdx){ solved=true; b.style.borderColor='var(--good)'; b.style.background='rgba(61,220,132,.18)';
+            setStatus('<span style="color:var(--good)">Correct!</span>'); toast('Correct!','good'); onSolve(); }
+          else { b.style.borderColor='var(--bad)'; b.style.background='rgba(255,92,114,.18)'; toast('Not quite — try again.','bad'); onFail(); } };
+        wrap.appendChild(b);
+      });
+      host.appendChild(wrap); return;
+    }
+    if(fmt==='grid'){
+      var subjects = Array.isArray(data.subjects)?data.subjects.slice():[];
+      var attributes = Array.isArray(data.attributes)?data.attributes.slice():[];
+      var solution = (data.solution && typeof data.solution==='object')?data.solution:{};
+      if(subjects.length<2 || attributes.length!==subjects.length){ emptyState('This grid puzzle is incomplete.'); return; }
+      var okSol=true, seen={};
+      for(var si=0; si<subjects.length; si++){ var want=solution[subjects[si]];
+        if(want===undefined || attributes.indexOf(want)<0 || seen[want]){ okSol=false; break; } seen[want]=1; }
+      if(!okSol){ emptyState('This grid puzzle has no valid solution set.'); return; }
+      var assign={}; var grid=el('div'); var rowEls={};
+      function paint(){ subjects.forEach(function(s){ var btns=rowEls[s].querySelectorAll('button');
+        for(var k=0;k<btns.length;k++){ var at=btns[k].dataset.attr;
+          if(assign[s]===at){ btns[k].style.borderColor='var(--accent)'; btns[k].style.background='rgba(124,92,255,.18)'; }
+          else { btns[k].style.borderColor='var(--line)'; btns[k].style.background='var(--card)'; } } }); }
+      subjects.forEach(function(s){
+        var rowEl=el('div'); rowEl.style.marginBottom='14px';
+        rowEl.appendChild(el('div','',' <b>'+esc(String(s))+'</b>'));
+        var btnRow=el('div'); btnRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:6px';
+        attributes.forEach(function(a){ var b=el('button','btn sec', esc(String(a))); b.type='button'; b.dataset.attr=a;
+          b.style.cssText='flex:1 1 auto;min-width:72px;padding:14px';
+          b.onclick=function(){ for(var os in assign){ if(assign.hasOwnProperty(os) && assign[os]===a && os!==s) delete assign[os]; }
+            if(assign[s]===a) delete assign[s]; else assign[s]=a; paint(); };
+          btnRow.appendChild(b); });
+        rowEl.appendChild(btnRow); rowEls[s]=btnRow; grid.appendChild(rowEl);
+      });
+      host.appendChild(grid);
+      var checkBtn=el('button','btn','Check'); checkBtn.type='button';
+      checkBtn.onclick=function(){ var right=0, total=subjects.length;
+        subjects.forEach(function(s){ if(assign[s]!==undefined && assign[s]===solution[s]) right++; });
+        var assignedCount=0; for(var s in assign){ if(assign.hasOwnProperty(s)) assignedCount++; }
+        if(assignedCount<total){ toast('Assign an attribute to every subject.','bad'); return; }
+        if(right===total){ setStatus('<span style="color:var(--good)">Solved!</span>'); toast('Solved!','good'); onSolve(); }
+        else { toast(right+' of '+total+' correct — keep trying.','bad'); onFail(); } };
+      host.appendChild(checkBtn); return;
+    }
+    emptyState('Unknown puzzle format.');
+  },
+  preview(data){
+    data = (data && typeof data==='object') ? data : {};
+    var q = typeof data.question==='string' && data.question ? esc(data.question) : 'Logic puzzle';
+    if(data.format==='grid'){ var n = Array.isArray(data.subjects)?data.subjects.length:0; return '🧠 '+q+' · grid ('+n+' pairs)'; }
+    if(data.format==='mc'){ var o = Array.isArray(data.options)?data.options.length:0; return '🧠 '+q+' · '+o+' options'; }
+    return '🧠 '+q;
+  }
+});
+
+/* =====================================================================
+   SAMPLE CONTENT — seeded once locally so a fresh device has puzzles to play.
+   ===================================================================== */
+function seedSamples(){
+  const mk=(o)=> Object.assign({ id:uid(), plays:(Math.random()*400|0)+20, solves:(Math.random()*120|0),
+    ratingCount:(Math.random()*40|0)+3, createdAt:new Date(Date.now()-(Math.random()*20+1)*86400000).toISOString(), featured:false }, o,
+    { ratingSum: 0 });
+  const withRating=(p,avg)=>{ p.ratingSum=Math.round(avg*p.ratingCount); return p; };
+  const list=[
+    withRating(mk({ type:'number', title:'Doubling Trouble', category:'Math', difficulty:'Easy', creatorId:'s_ada', creatorName:'AdaLogic', featured:true,
+      data:{ seq:'2, 4, 8, 16, ?', answer:'32', hint:'Each number doubles' } }),4.6),
+    withRating(mk({ type:'code', title:'Vault 4285', category:'Codes', difficulty:'Medium', creatorId:'s_ada', creatorName:'AdaLogic',
+      data:{ code:'4285', hints:['First digit is 4','The last digit is 5','No digit repeats','The second digit is even'] } }),4.2),
+    withRating(mk({ type:'word', title:'Riddle of Sound', category:'Words', difficulty:'Easy', creatorId:'s_rio', creatorName:'RiddleRio', featured:true,
+      data:{ style:'riddle', clue:'I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?', answer:'echo' } }),4.8),
+    withRating(mk({ type:'pattern', title:'Growing Triangles', category:'Brain Teaser', difficulty:'Easy', creatorId:'s_rio', creatorName:'RiddleRio',
+      data:{ seq:'🔺 🔺🔺 🔺🔺🔺 ?', options:['🔺🔺🔺🔺','🔺🔺','🟦','⭐'], answer:'🔺🔺🔺🔺', hint:'Each step adds one triangle' } }),4.1),
+    withRating(mk({ type:'word', title:'Unscramble: Planet', category:'Words', difficulty:'Medium', creatorId:'s_rio', creatorName:'RiddleRio',
+      data:{ style:'scramble', clue:'We live on it', answer:'EARTH' } }),3.9),
+    withRating(mk({ type:'number', title:'Prime Time', category:'Math', difficulty:'Hard', creatorId:'s_ada', creatorName:'AdaLogic',
+      data:{ seq:'2, 3, 5, 7, 11, ?', answer:'13', hint:'Only divisible by 1 and itself' } }),4.4),
+  ];
+  LS.set('puzzles', list);
+}
+
+/* =====================================================================
+   APP FRAMEWORK — router, top bar, bottom nav.
+   ===================================================================== */
+const App = {
+  view:'home', stack:[], params:{}, _gen:0,
+  routes:{},   // id -> { title, render(params, host, gen), nav?:navKey }
+  route(id, def){ this.routes[id]=def; },
+  stale(gen){ return gen!==this._gen; },   // async routes check this after an await before writing to #view
+  async go(id, params, opts){
+    const r=this.routes[id]; if(!r) return;
+    opts=opts||{};
+    if(!opts.replace && this.view && this.view!==id) this.stack.push({ view:this.view, params:this.params, scroll:$('#view').scrollTop||window.scrollY });
+    else if(opts.reset){ this.stack=[]; }
+    const gen = ++this._gen;                // any newer navigation invalidates this render
+    this.view=id; this.params=params||{};
+    const host=$('#view'); host.innerHTML='';
+    $('#ttl').textContent = r.title(this.params);
+    $('#backBtn').style.display = this.stack.length? 'flex':'none';
+    const navKey = r.nav || id;
+    $$('#nav button').forEach(b=> b.classList.toggle('on', b.dataset.nav===navKey));
+    window.scrollTo(0,0);
+    try{ await r.render(this.params, host, gen); }catch(e){ if(!this.stale(gen)) host.innerHTML='<div class="empty"><span class="big">😵</span>Something went wrong loading this screen.<br><span class="small">'+esc(e.message||e)+'</span></div>'; }
+  },
+  back(){ const prev=this.stack.pop(); if(!prev){ this.go('home',{},{replace:true}); return; }
+    this.view=null; this.go(prev.view, prev.params, {replace:true}); }
+};
+$('#backBtn').onclick=()=>App.back();
+$$('#nav button').forEach(b=> b.onclick=()=>{ App.stack=[];
+  if(b.dataset.nav==='create'){ resetCreator(); App.go('create',{fresh:true},{replace:true}); }
+  else App.go(b.dataset.nav, {}, {replace:true}); });
+
+/* ---------------- shared render bits ---------------- */
+function diffPill(d){ return '<span class="pill '+(d||'').toLowerCase()+'">'+esc(d||'')+'</span>'; }
+function starsStr(avg){ const f=Math.round(avg); return '★★★★★'.slice(0,f)+'☆☆☆☆☆'.slice(0,5-f); }
+function puzzleCard(p){
+  const t=safeType(p.type); const avg=ratingAvg(p);
+  const c=el('div','pz');
+  c.innerHTML=
+    '<div class="thumb">'+(t.emoji||'🧩')+'</div>'+
+    '<div class="meta">'+
+      '<div class="t">'+esc(p.title||'Untitled')+(DB.isBookmarked(p.id)?' <span style="color:var(--gold)">🔖</span>':'')+(DB.didSolve(p.id)?' <span style="color:var(--good)">✓</span>':'')+'</div>'+
+      '<div class="s">'+
+        '<span class="by">@'+esc(p.creatorName||'anon')+'</span>'+
+        diffPill(p.difficulty)+
+        (p.ratingCount?'<span class="pill star">'+starsStr(avg)+' '+avg.toFixed(1)+'</span>':'<span class="pill">new</span>')+
+        '<span class="pill">🔥 '+(p.plays||0)+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="go">›</div>';
+  c.onclick=()=> App.go('play-puzzle',{ id:p.id });
+  return c;
+}
+function listInto(host, puzzles, emptyMsg){
+  if(!puzzles.length){ host.appendChild(el('div','empty','<span class="big">🧩</span>'+(emptyMsg||'No puzzles yet.'))); return; }
+  puzzles.forEach(p=> host.appendChild(puzzleCard(p)));
+}
+
+/* ---------------- HOME ---------------- */
+App.route('home', { title:()=> 'Puzzle Creator', nav:'home', async render(_, host, gen){
+  const brand=el('div','brand','<h2>Puzzle Creator</h2><p>Create it. Play it. Share it. A community of puzzles.</p>');
+  host.appendChild(brand);
+  host.appendChild(dataBanner());
+  const menu=el('div','menu');
+  const tiles=[
+    ['create','＋','Create Puzzle','wide'],
+    ['play','🧩','Play Puzzles'],
+    ['featured','⭐','Featured'],
+    ['search','🔍','Search'],
+    ['profile','👤','My Profile'],
+    ['stats','📊','Statistics'],
+    ['settings','⚙️','Settings'],
+  ];
+  tiles.forEach(([id,ico,label,cls])=>{ const tile=el('div','tile'+(cls?' '+cls:''),'<span class="ico">'+ico+'</span><b>'+label+'</b>');
+    tile.onclick=()=>App.go(id,{}); menu.appendChild(tile); });
+  host.appendChild(menu);
+  // featured strip
+  const feat=await DB.listPuzzles({ sort:'featured', limit:4 });
+  if(App.stale(gen)) return;                 // navigated away while loading — don't paint over the new view
+  host.appendChild(el('div','hd','⭐ Featured'));
+  const fwrap=el('div'); listInto(fwrap, feat, 'Be the first to publish a puzzle!'); host.appendChild(fwrap);
+}});
+function dataBanner(){
+  if(DB.mode==='supabase') return el('div','banner cloud','☁️ Connected — puzzles sync across everyone.');
+  return el('div','banner local','📱 Local mode — puzzles save on this device. Run the Supabase setup to go community-wide.');
+}
+
+/* ---------------- PLAY / BROWSE ---------------- */
+App.route('play', { title:()=> 'Play Puzzles', nav:'play', async render(_, host){
+  const bar=el('div'); bar.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch';
+  let sort = App.params._sort || 'featured';
+  SORTS.forEach(([v,l])=>{ const c=el('button','chip'+(v===sort?' on':''),l); c.style.whiteSpace='nowrap';
+    c.onclick=()=>{ App.params._sort=v; App.go('play',{_sort:v},{replace:true}); }; bar.appendChild(c); });
+  host.appendChild(bar);
+  const wrap=el('div'); host.appendChild(wrap); wrap.innerHTML='<div class="spin"></div>';
+  const list=await DB.listPuzzles({ sort, limit:100 });
+  wrap.innerHTML=''; listInto(wrap, list, 'No puzzles here yet — create one!');
+}});
+
+/* ---------------- FEATURED ---------------- */
+App.route('featured', { title:()=> 'Featured', nav:'play', async render(_, host, gen){
+  const sections=[['featured','⭐ Editor’s Picks'],['rated','🏆 Highest Rated'],['played','🔥 Most Played'],['trending','📈 Trending'],['newest','🆕 Newest']];
+  for(const [sort,label] of sections){
+    const list=await DB.listPuzzles({ sort, limit:3 });
+    if(App.stale(gen)) return;
+    host.appendChild(el('div','hd',label));
+    const w=el('div'); listInto(w, list, 'Nothing here yet.'); host.appendChild(w);
+  }
+}});
+
+/* ---------------- SEARCH ---------------- */
+App.route('search', { title:()=> 'Search', nav:'search', async render(_, host){
+  const s=LS.get('searchState',{ q:'', type:'', difficulty:'', category:'' });
+  const inp=textInput('Search by name, creator, category…', s.q, {}); inp.classList.add('in'); host.appendChild(inp);
+  const filt=el('div'); filt.style.marginTop='10px'; host.appendChild(filt);
+  function chipRow(label, key, values){
+    filt.appendChild(el('div','steptitle',label));
+    const row=el('div','seg'); row.style.marginBottom='8px';
+    const all=el('button','chip'+(!s[key]?' on':''),'All'); all.onclick=()=>{ s[key]=''; refresh(); }; row.appendChild(all);
+    values.forEach(([v,l])=>{ const c=el('button','chip'+(s[key]===v?' on':''),l); c.onclick=()=>{ s[key]=v; refresh(); }; row.appendChild(c); });
+    filt.appendChild(row);
+  }
+  const results=el('div'); results.style.marginTop='6px';
+  function build(){ filt.innerHTML='';
+    chipRow('Type','type', PuzzleTypes.all().map(t=>[t.id,t.emoji+' '+t.name.replace(' Puzzle','')]));
+    chipRow('Difficulty','difficulty', DIFFS.map(d=>[d,d]));
+    chipRow('Category','category', CATEGORIES.slice(0,6).map(c=>[c,c]));
+  }
+  async function refresh(){ s.q=inp.value; LS.set('searchState',s); build();
+    results.innerHTML='<div class="spin"></div>';
+    const list=await DB.listPuzzles({ q:s.q, type:s.type, difficulty:s.difficulty, category:s.category, sort:'rated', limit:60 });
+    results.innerHTML=''; results.appendChild(el('div','hd', list.length+' result'+(list.length===1?'':'s')));
+    listInto(results, list, 'No matches. Try fewer filters.');
+  }
+  let deb; inp.oninput=()=>{ clearTimeout(deb); deb=setTimeout(refresh,250); };
+  host.appendChild(results); build(); refresh();
+}});
+
+/* ---------------- CREATE FLOW (wizard) ---------------- */
+const Creator = { step:0, typeId:null, iface:null, draft:null, title:'', category:CATEGORIES[0], difficulty:'Easy', tested:false };
+function resetCreator(){ Object.assign(Creator,{ step:0, typeId:null, iface:null, draft:null, title:'', category:CATEGORIES[0], difficulty:'Easy', tested:false }); }
+App.route('create', { title:()=> 'Create Puzzle', nav:'create', async render(_, host){
+  if(App.params.fresh){ resetCreator(); }
+  renderCreator(host);
+}});
+function stepDots(n){ let h='<div class="steps">'; for(let i=0;i<6;i++) h+='<div class="dot'+(i<=n?' on':'')+'"></div>'; return h+'</div>'; }
+function renderCreator(host){
+  host.innerHTML=''; host.appendChild(el('div',null,stepDots(Creator.step)));
+  const body=el('div'); host.appendChild(body);
+  const c=Creator;
+  if(c.step===0){ // choose type
+    body.appendChild(el('div','steptitle','Step 1 · Choose a type'));
+    const grid=el('div','menu');
+    PuzzleTypes.all().forEach(t=>{ const tile=el('div','tile','<span class="ico">'+t.emoji+'</span><b>'+esc(t.name.replace(' Puzzle',''))+'</b><span class="small muted" style="font-size:11px">'+esc(t.blurb)+'</span>');
+      tile.onclick=()=>{ c.typeId=t.id; c.iface=null; c.draft=null; c.tested=false; c.step=1; renderCreator(host); }; grid.appendChild(tile); });
+    body.appendChild(grid);
+  }
+  else if(c.step===1){ // build
+    const t=safeType(c.typeId);
+    body.appendChild(el('div','steptitle','Step 2 · Build your '+t.name));
+    const editor=el('div','card'); body.appendChild(editor);
+    try{ c.iface = t.create(editor, c.draft); }catch(e){ editor.innerHTML='<div class="empty">Editor error: '+esc(e.message)+'</div>'; c.iface=null; }
+    const nav=el('div','row'); nav.style.marginTop='6px';
+    const back=el('button','btn ghost','‹ Type'); back.onclick=()=>{ c.step=0; renderCreator(host); };
+    const next=el('button','btn','Details ›'); next.onclick=()=>{
+      if(!c.iface) return toast('Editor not ready','err');
+      const v=c.iface.validate(); if(!v.ok){ return toast(v.error||'Finish the puzzle first','err'); }
+      c.draft=c.iface.getData(); c.tested=false; c.step=2; renderCreator(host); };
+    nav.appendChild(back); nav.appendChild(next); body.appendChild(nav);
+  }
+  else if(c.step===2){ // details
+    body.appendChild(el('div','steptitle','Step 3 · Details'));
+    const card=el('div','card');
+    card.appendChild(fieldLabel('Puzzle name'));
+    const title=textInput('Give it a catchy name', c.title, {maxLength:50}); card.appendChild(title);
+    card.appendChild(fieldLabel('Category'));
+    const catSeg=el('div','seg'); CATEGORIES.forEach(cat=>{ const b=el('button','chip'+(cat===c.category?' on':''),cat);
+      b.onclick=()=>{ c.category=cat; $$('.chip',catSeg).forEach(x=>x.classList.remove('on')); b.classList.add('on'); }; catSeg.appendChild(b); });
+    card.appendChild(catSeg);
+    card.appendChild(fieldLabel('Difficulty'));
+    const dSeg=el('div','seg'); DIFFS.forEach(d=>{ const b=el('button','chip'+(d===c.difficulty?' on':''),d);
+      b.onclick=()=>{ c.difficulty=d; $$('.chip',dSeg).forEach(x=>x.classList.remove('on')); b.classList.add('on'); }; dSeg.appendChild(b); });
+    card.appendChild(dSeg);
+    body.appendChild(card);
+    const nav=el('div','row');
+    const back=el('button','btn ghost','‹ Build'); back.onclick=()=>{ c.title=title.value; c.step=1; renderCreator(host); };
+    const next=el('button','btn','Test ›'); next.onclick=()=>{ c.title=title.value.trim();
+      if(!c.title) return toast('Give your puzzle a name','err'); c.step=3; renderCreator(host); };
+    nav.appendChild(back); nav.appendChild(next); body.appendChild(nav);
+  }
+  else if(c.step===3){ // test (mandatory)
+    body.appendChild(el('div','steptitle','Step 4 · Test it — a puzzle must be solvable to publish'));
+    const t=safeType(c.typeId);
+    const v = (()=>{ try{ return t.create(document.createElement('div'), c.draft).validate(); }catch(e){ return {ok:true}; } })();
+    const playCard=el('div','card'); body.appendChild(playCard);
+    const status=el('div');
+    const cb={ onSolve:()=>{ c.tested=true; status.innerHTML='<div class="banner cloud">✅ Solved! This puzzle works. You can publish it.</div>'; toast('Nice — it works!','ok'); pubBtn.disabled=false; },
+               onFail:()=>{}, setStatus:(h)=>{ statusLine.innerHTML=h||''; } };
+    const statusLine=el('div');
+    try{ t.play(playCard, c.draft, cb); }catch(e){ playCard.innerHTML='<div class="empty">Play error: '+esc(e.message)+'</div>'; }
+    body.appendChild(statusLine); body.appendChild(status);
+    body.appendChild(el('div','hint','Solve your own puzzle once to confirm it has a working answer. This blocks broken puzzles from being published.'));
+    const nav=el('div','row'); nav.style.marginTop='6px';
+    const back=el('button','btn ghost','‹ Details'); back.onclick=()=>{ c.step=2; renderCreator(host); };
+    const pubBtn=el('button','btn good','Publish 🚀'); pubBtn.disabled=!c.tested;
+    pubBtn.onclick=async()=>{ pubBtn.disabled=true; pubBtn.textContent='Publishing…';
+      try{
+        const rec=await DB.publishPuzzle({ type:c.typeId, title:c.title, category:c.category, difficulty:c.difficulty, data:c.draft });
+        toast('Published! 🎉','ok'); resetCreator();
+        App.stack=[]; App.go('play-puzzle',{ id:rec.id, justPublished:true }, {replace:true});
+      }catch(e){ toast('Publish failed: '+(e.message||e),'err'); pubBtn.disabled=false; pubBtn.textContent='Publish 🚀'; } };
+    nav.appendChild(back); nav.appendChild(pubBtn); body.appendChild(nav);
+    if(!v.ok){ status.innerHTML='<div class="banner local">⚠️ '+esc(v.error||'This puzzle may not be solvable.')+'</div>'; }
+  }
+}
+
+/* ---------------- PLAY A PUZZLE ---------------- */
+App.route('play-puzzle', { title:()=> 'Puzzle', nav:'play', async render(params, host, gen){
+  host.innerHTML='<div class="spin"></div>';
+  const p=await DB.getPuzzle(params.id);
+  if(App.stale(gen)) return;
+  if(!p){ host.innerHTML='<div class="empty"><span class="big">🚫</span>Puzzle not found.</div>'; return; }
+  DB.recordPlay(p.id);
+  host.innerHTML='';
+  const t=safeType(p.type); const avg=ratingAvg(p);
+  // header card
+  const head=el('div','card');
+  head.innerHTML='<div style="display:flex;gap:12px;align-items:center">'+
+    '<div class="thumb" style="width:48px;height:48px;flex:0 0 48px;font-size:24px">'+t.emoji+'</div>'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:18px">'+esc(p.title)+'</div>'+
+    '<div class="s" style="font-size:12px;color:var(--muted);margin-top:3px">'+t.name+' · '+esc(p.category)+' '+diffPill(p.difficulty)+'</div></div>';
+  const bm=el('button','back'); bm.style.cssText='width:44px;height:44px;flex:0 0 44px;font-size:20px'; bm.innerHTML=DB.isBookmarked(p.id)?'🔖':'🏷️';
+  bm.onclick=async()=>{ const on=await DB.toggleBookmark(p.id); bm.innerHTML=on?'🔖':'🏷️'; toast(on?'Bookmarked':'Removed'); };
+  head.firstChild.appendChild(bm);
+  host.appendChild(head);
+  // creator line
+  const cl=el('div','card'); cl.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 14px';
+  cl.innerHTML='<span class="small">by <a class="lnk" style="font-weight:800">@'+esc(p.creatorName)+'</a></span>'+
+    '<span class="small muted">'+(p.ratingCount? starsStr(avg)+' '+avg.toFixed(1)+' ('+p.ratingCount+')' : 'No ratings yet')+' · 🔥 '+(p.plays||0)+'</span>';
+  cl.querySelector('a').onclick=()=>App.go('creator',{ id:p.creatorId });
+  host.appendChild(cl);
+  // play area
+  const area=el('div'); host.appendChild(area);
+  const statusLine=el('div'); host.appendChild(statusLine);
+  let done=false;
+  const cb={
+    onSolve:()=>{ if(done)return; done=true; DB.recordSolve(p.id, true); showSolved(host, p); },
+    onFail:()=>{ DB.recordSolve(p.id, false); },
+    setStatus:(h)=>{ statusLine.innerHTML=h||''; }
+  };
+  try{ t.play(area, p.data, cb); }catch(e){ area.innerHTML='<div class="empty">This puzzle could not load.<br><span class="small">'+esc(e.message)+'</span></div>'; }
+  // give-up / skip
+  const giveRow=el('div'); giveRow.style.marginTop='14px';
+  const give=el('button','btn ghost','I give up — show it worked');
+  give.onclick=()=> modal('<h3>Give up?</h3><p>You can still rate the puzzle. Reveal that it has a valid answer?</p>',
+    [{label:'Keep trying'},{label:'Give up', cls:'ghost', onClick:()=>{ if(!done){ done=true; DB.recordSolve(p.id,false); showSolved(host,p,true); } }}]);
+  giveRow.appendChild(give); host.appendChild(giveRow);
+}});
+function showSolved(host, p, gaveUp){
+  const box=el('div','card'); box.style.borderColor= gaveUp? 'var(--line2)':'var(--good)';
+  box.innerHTML='<div class="center"><div style="font-size:44px">'+(gaveUp?'🤝':'🎉')+'</div>'+
+    '<div style="font-size:20px;font-weight:900;margin:4px 0">'+(gaveUp?'Maybe next time!':'Solved!')+'</div>'+
+    '<div class="small muted">'+(gaveUp?'Rate this puzzle to help others.':'Great work. How was it?')+'</div></div>';
+  host.appendChild(box);
+  // rating
+  const mine=DB.myRating(p.id);
+  const rc=el('div','card');
+  rc.appendChild(el('div','steptitle','Rate this puzzle'));
+  const stars=el('div','stars'); let val=mine?mine.stars:0;
+  for(let i=1;i<=5;i++){ const s=el('span','st'+(i<=val?' on':''),'⭐'); s.dataset.v=i;
+    s.onclick=()=>{ val=i; $$('.st',stars).forEach((x,ix)=>x.classList.toggle('on',ix<val)); }; stars.appendChild(s); }
+  rc.appendChild(stars);
+  const fb=textArea('Optional feedback for the creator…', mine?mine.feedback:''); fb.style.marginTop='10px'; rc.appendChild(fb);
+  const submit=el('button','btn gold', mine?'Update rating':'Submit rating'); submit.style.marginTop='10px';
+  submit.onclick=async()=>{ if(!val) return toast('Tap the stars first','err');
+    try{ await DB.ratePuzzle(p.id, val, fb.value); toast('Thanks for rating!','ok'); submit.textContent='Rating saved ✓'; submit.disabled=true; }
+    catch(e){ toast('Could not save rating','err'); } };
+  rc.appendChild(submit);
+  host.appendChild(rc);
+  const more=el('div','row'); more.style.marginTop='4px';
+  const again=el('button','btn sec','More puzzles'); again.onclick=()=>{ App.stack=[]; App.go('play',{},{replace:true}); };
+  const prof=el('button','btn sec','@'+esc(p.creatorName)); prof.onclick=()=>App.go('creator',{id:p.creatorId});
+  more.appendChild(again); more.appendChild(prof); host.appendChild(more);
+}
+
+/* ---------------- PROFILE (mine) + CREATOR (others) ---------------- */
+function renderProfile(host, prof, isMe){
+  const head=el('div','card'); head.style.textAlign='center';
+  head.innerHTML='<div style="font-size:46px">👤</div><div style="font-size:22px;font-weight:900">@'+esc(prof.name)+'</div>'+
+    '<div class="small muted">'+(isMe?'This is you':'Puzzle creator')+'</div>';
+  host.appendChild(head);
+  const g=el('div','stats');
+  [['🧩 '+prof.totalPuzzles,'Puzzles'],['🔥 '+prof.totalPlays,'Total plays'],['❤️ '+prof.totalLikes,'Likes'],['👥 '+prof.followers,'Followers']]
+    .forEach(([v,k])=>{ const s=el('div','stat'); s.innerHTML='<div class="v" style="font-size:20px">'+v+'</div><div class="k">'+k+'</div>'; g.appendChild(s); });
+  host.appendChild(g);
+  if(!isMe){
+    const f=el('button','btn'+(DB.isFollowing(prof.id)?' sec':''), DB.isFollowing(prof.id)?'✓ Following':'+ Follow'); f.style.marginTop='12px';
+    f.onclick=async()=>{ const on=await DB.toggleFollow(prof.id); f.textContent=on?'✓ Following':'+ Follow'; f.className='btn'+(on?' sec':''); toast(on?'Following @'+prof.name:'Unfollowed'); };
+    host.appendChild(f);
+  } else {
+    const b=el('button','btn sec','🔖 My Bookmarks'); b.style.marginTop='12px'; b.onclick=()=>App.go('bookmarks',{}); host.appendChild(b);
+  }
+  if(prof.best){ host.appendChild(el('div','hd','🏆 Highest rated'));
+    host.appendChild(puzzleCard(prof.best)); }
+  host.appendChild(el('div','hd','🧩 '+(isMe?'My puzzles':'Their puzzles')));
+  const w=el('div'); listInto(w, prof.puzzles, isMe?'You haven’t published a puzzle yet — tap Create!':'No puzzles yet.'); host.appendChild(w);
+}
+App.route('profile', { title:()=> 'My Profile', nav:'profile', async render(_, host, gen){
+  host.innerHTML='<div class="spin"></div>';
+  const prof=await DB.getProfile(DB.me().id); if(App.stale(gen)) return; host.innerHTML='';
+  renderProfile(host, prof, true);
+}});
+App.route('creator', { title:(p)=> '@'+((SAMPLE_NAMES[p.id])||'Creator'), nav:'play', async render(params, host, gen){
+  host.innerHTML='<div class="spin"></div>';
+  const prof=await DB.getProfile(params.id); if(App.stale(gen)) return; host.innerHTML='';
+  $('#ttl').textContent='@'+prof.name;
+  renderProfile(host, prof, params.id===DB.me().id);
+}});
+App.route('bookmarks', { title:()=> 'Bookmarks', nav:'profile', async render(_, host, gen){
+  host.innerHTML='<div class="spin"></div>';
+  const list=await DB.listBookmarks(); if(App.stale(gen)) return; host.innerHTML='';
+  listInto(host, list, 'No bookmarks yet. Tap 🏷️ on any puzzle to save it.');
+}});
+
+/* ---------------- STATISTICS ---------------- */
+App.route('stats', { title:()=> 'Statistics', nav:'profile', async render(_, host, gen){
+  host.innerHTML='<div class="spin"></div>';
+  const s=await DB.myStats(); if(App.stale(gen)) return; host.innerHTML='';
+  const g=el('div','stats');
+  [['🧩 '+s.created,'Puzzles created'],['✅ '+s.solved,'Puzzles solved'],['🎯 '+s.successRate+'%','Success rate'],
+   ['🔥 '+s.totalPlays,'Plays on my puzzles'],['⭐ '+s.avgRating,'My avg rating'],['📁 '+esc(s.favCat),'Favorite category']]
+    .forEach(([v,k])=>{ const st=el('div','stat'); st.innerHTML='<div class="v" style="font-size:20px">'+v+'</div><div class="k">'+k+'</div>'; g.appendChild(st); });
+  host.appendChild(g);
+  host.appendChild(el('div','hint center','Success rate = puzzles you solved ÷ your total attempts. Keep creating and solving to grow your stats!'));
+}});
+
+/* ---------------- SETTINGS ---------------- */
+App.route('settings', { title:()=> 'Settings', nav:'profile', async render(_, host){
+  const card=el('div','card');
+  card.appendChild(fieldLabel('Display name'));
+  const name=textInput('Your creator name', DB.me().name, {maxLength:20}); card.appendChild(name);
+  const save=el('button','btn sm','Save name'); save.style.cssText='width:auto;margin-top:8px';
+  save.onclick=()=>{ DB.setName(name.value); toast('Name updated','ok'); $('#userChip').textContent='👤 '+DB.me().name; };
+  card.appendChild(save);
+  host.appendChild(card);
+
+  host.appendChild(el('div','hd','Data'));
+  const dc=el('div','card');
+  dc.appendChild(dataBanner());
+  dc.appendChild(el('div','hint', DB.mode==='supabase'
+    ? 'Your puzzles are stored in the cloud and visible to everyone.'
+    : 'Puzzles are stored on this device. To make Puzzle Creator community-wide (shared puzzles, real followers), run the one-time database setup — ask the developer for <b>puzzle-creator-setup.sql</b>.'));
+  host.appendChild(dc);
+
+  host.appendChild(el('div','hd','About'));
+  host.appendChild(el('div','card','<div class="small muted" style="line-height:1.6">Puzzle Creator · v1<br>Create, play, rate & share puzzles: mazes, codes, logic, patterns, numbers & words.<br>A part of Ilan Games.</div>'));
+
+  const reset=el('button','btn ghost','Reset my local data'); reset.style.marginTop='14px';
+  reset.onclick=()=> modal('<h3>Reset local data?</h3><p>This clears your local puzzles, bookmarks, ratings and progress on this device. Cannot be undone.</p>',
+    [{label:'Cancel'},{label:'Reset', cls:'ghost', onClick:()=>{ ['puzzles','ratings','bookmarks','follows','solved','attempts','myratings','searchState','seeded'].forEach(k=>{ try{ localStorage.removeItem('pcreator_'+k); }catch(e){} }); toast('Local data reset'); setTimeout(()=>location.reload(),600); }}]);
+  host.appendChild(reset);
+  const home=el('a','lnk center','🏠 All Ilan Games'); home.href='../'; home.style.cssText='display:block;text-align:center;margin-top:18px';
+  host.appendChild(home);
+}});
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+(async function boot(){
+  try{
+    const mode=await DB.init();
+    $('#userChip').textContent='👤 '+DB.me().name;
+    // deep-link ?p=<id> opens a puzzle
+    const qp=new URLSearchParams(location.search); const pid=qp.get('p');
+    if(pid){ App.view='home'; await App.go('play-puzzle',{id:pid}); }
+    else await App.go('home',{},{replace:true});
+  }catch(e){
+    document.getElementById('view').innerHTML='<div class="empty"><span class="big">😵</span>Failed to start.<br><span class="small">'+esc(e.message||e)+'</span></div>';
+  }
+})();
+</script>
+</body>
+</html>
