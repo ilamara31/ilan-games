@@ -9,6 +9,7 @@
   'use strict';
 
   var CLARITY_PROJECT_ID = 'xde3a1kje3'; // Microsoft Clarity project id
+  var MIXPANEL_TOKEN = '2495c27a558d30fdf6a138078c25414d'; // Mixpanel project token
 
   // ---- home vs game detection (no allow-list, so new games just work) ------
   // The arcade home page carries <body data-arcade-home> and renders the game
@@ -63,6 +64,9 @@
         clarity('event', event);
         if (props) Object.keys(props).forEach(function (k) { clarity('set', k, String(props[k])); });
       }
+      if (window.mixpanel && mixpanel.track) {
+        mixpanel.track(event, props || {});
+      }
       // Future: if you add PostHog/GA4, forward here too.
       // if (window.posthog) posthog.capture(event, props);
     } catch (e) {}
@@ -82,6 +86,19 @@
     if (nm) clarity('set', 'player', nm);
   } else if (location.hostname && location.hostname !== 'localhost') {
     console.info('[analytics] Add your Microsoft Clarity project id in analytics.js to enable analytics.');
+  }
+
+  // ---- load Mixpanel -------------------------------------------------------
+  if (MIXPANEL_TOKEN) {
+    // Official Mixpanel loader snippet (creates a stub queue until the CDN loads).
+    (function (f, b) { if (!b.__SV) { var e, g, i, h; window.mixpanel = b; b._i = []; b.init = function (e, f, c) { function g(a, d) { var b = d.split('.'); 2 == b.length && (a = a[b[0]], d = b[1]); a[d] = function () { a.push([d].concat(Array.prototype.slice.call(arguments, 0))); }; } var a = b; 'undefined' !== typeof c ? a = b[c] = [] : c = 'mixpanel'; a.people = a.people || []; a.toString = function (a) { var d = 'mixpanel'; 'mixpanel' !== c && (d += '.' + c); a || (d += ' (stub)'); return d; }; a.people.toString = function () { return a.toString(1) + '.people (stub)'; }; i = 'disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove'.split(' '); for (h = 0; h < i.length; h++) g(a, i[h]); var j = 'set set_once union unset remove delete'.split(' '); a.get_group = function () { function b(c) { d[c] = function () { call2_args = arguments; call2 = [c].concat(Array.prototype.slice.call(call2_args, 0)); a.push([e, call2]); }; } for (var d = {}, e = ['get_group'].concat(Array.prototype.slice.call(arguments, 0)), c = 0; c < j.length; c++) b(j[c]); return d; }; b._i.push([e, f, c]); }; b.__SV = 1.2; e = f.createElement('script'); e.type = 'text/javascript'; e.async = !0; e.src = 'undefined' !== typeof MIXPANEL_CUSTOM_LIB_URL ? MIXPANEL_CUSTOM_LIB_URL : 'file:' === f.location.protocol && '//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js'.match(/^\/\//) ? 'https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js' : '//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js'; g = f.getElementsByTagName('script')[0]; g.parentNode.insertBefore(e, g); } })(document, window.mixpanel || []);
+
+    mixpanel.init(MIXPANEL_TOKEN, { track_pageview: true, persistence: 'localStorage' });
+
+    // tag every event with the game slug so you can break down by game
+    mixpanel.register({ game: GAME_ID });
+    var mpName = window.IG.player;
+    if (mpName) { mixpanel.identify(mpName); mixpanel.people.set({ $name: mpName }); }
   }
 
   // ---- automatic events ----------------------------------------------------
