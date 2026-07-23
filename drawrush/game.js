@@ -19,7 +19,11 @@ function defSave(){return{name:'',sound:true,music:false,
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SKEY));if(s&&s.stats){const d=defSave();return Object.assign(d,s,{stats:Object.assign(d.stats,s.stats)});}}catch(e){}return defSave();}
 let SV=loadSave();
 function save(){try{localStorage.setItem(SKEY,JSON.stringify(SV));}catch(e){}}
-function myName(){return (SV.name&&SV.name.trim())?SV.name.trim().slice(0,14):('Player'+myId.slice(-3).toUpperCase());}
+// the ILAN account name (or a chosen guest name) — the same identity used across the
+// arcade; ignore the auto "Guest-1234" default so it can fall back to a nicer name.
+function accountName(){ try{ if(window.IGAuth&&IGAuth.getUser){ var u=IGAuth.getUser(); if(u&&u.name&&!/^Guest-\d+$/.test(u.name)) return String(u.name).trim().slice(0,20); } }catch(e){} return ''; }
+function myName(){ var a=accountName(); if(a) return a;
+  return (SV.name&&SV.name.trim())?SV.name.trim().slice(0,14):('Player'+myId.slice(-3).toUpperCase()); }
 
 /* ---------- sound (WebAudio) ---------- */
 const Sound=(function(){

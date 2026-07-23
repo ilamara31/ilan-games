@@ -206,6 +206,22 @@ async function submitDrawScore(){
   }catch(e){}
 }
 
+// ---- Retroactively stamp this device's old drawings with the artist's real ILAN
+// username. Old rows were saved as "PlayerXXX"; the moment a named user opens the
+// gallery, their own past drawings (matched by this browser's device key) get their
+// real name. Safe: keyed to the device key only this browser holds. Runs once when
+// the name is known and differs from what's stored.
+async function migrateMyName(){
+  try{
+    const nm=userName(); if(!nm || /^Player[A-Z0-9]{3}$/.test(nm) || /^Artist$/.test(nm)) return;
+    const s=await client(); if(!s) return;
+    const k=userKey();
+    // only update rows that still carry a different name (idempotent, cheap)
+    await s.from('dr_drawings').update({creator_name:nm}).eq('user_key',k).neq('creator_name',nm);
+    await s.from('dr_profiles').upsert({user_key:k,name:nm},{onConflict:'user_key'});
+  }catch(e){}
+}
+
 /* ============================================================
    WIRING
    ============================================================ */
@@ -226,6 +242,7 @@ function boot(){
     else if(galCur==='profile' && !ps.busy && !ps.done && ps.offset>0) loadProfileDrawings(false);
   },{passive:true});
   setTimeout(submitDrawScore, 2500);   // post this artist's published-drawing count to the arcade leaderboard once connected
+  setTimeout(migrateMyName, 3000);      // stamp this artist's old drawings with their real username
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
 
