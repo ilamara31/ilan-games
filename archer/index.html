@@ -38,8 +38,10 @@
 const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1,PW=0,X0=0;
 /* PW/X0: logical duel band, capped at phone-ish width so shot distances and the
    pixel-space physics feel the same on desktop as on mobile; X0 centres it. */
-function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H*0.82;PW=Math.min(W,560);X0=(W-PW)/2;}
-addEventListener('resize',resize);
+let skyGrad=null;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H*0.82;PW=Math.min(W,560);X0=(W-PW)/2;
+  skyGrad=ctx.createLinearGradient(0,0,0,H);skyGrad.addColorStop(0,'#1d3a63');skyGrad.addColorStop(1,'#4a78b0');}
+addEventListener('resize',()=>{resize();wakeLoop();});
 const rand=(a,b)=>a+Math.random()*(b-a);
 /* per-account save: each logged-in account keeps its own progress.
    The device's existing save is inherited once, by the primary (first) account. */
@@ -63,7 +65,7 @@ const TSTEPS=[
 ];
 function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutStep=0;tutPhase='brief';tut={};coachMsg='';
   level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};foes=[{x:X0+PW*0.66,y:groundY,hp:100,maxhp:100,arrow:null,reload:0,acc:60,invuln:true}];
-  pArrow=null;pReload=0;hearts=[];heartT=99;aim=null;parts=[];floats=[];shake=0;msg='';msgT=0;tutBrief();}
+  pArrow=null;pReload=0;hearts=[];heartT=99;aim=null;parts=[];floats=[];shake=0;msg='';msgT=0;tutBrief();wakeLoop();}
 function tutBrief(){tutPhase='brief';coachMsg=TSTEPS[tutStep].brief;}
 function tutContinue(){if(tutPhase!=='brief')return;const s=TSTEPS[tutStep];if(s.end){tutFinish();return;}if(s.act){tutPhase='act';if(s.enter)s.enter();}else tutAdvance();}
 function tutAdvance(){tutStep++;if(tutStep>=TSTEPS.length){tutFinish();return;}tutBrief();}
@@ -83,7 +85,7 @@ function setupLevel(n){
   banner('LEVEL '+n+(two?'  •  2 RIVALS!':''));
 }
 function start(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=false;
-  level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};parts=[];floats=[];shake=0;msg='';msgT=0;aim=null;leveling=false;setupLevel(1);}
+  level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};parts=[];floats=[];shake=0;msg='';msgT=0;aim=null;leveling=false;setupLevel(1);wakeLoop();}
 function gameOver(){state='over';if(level>best){best=level;saveBest();}
   try{if(window.IGAuth)IGAuth.submitScore('archer',best);}catch(e){}
   const ov=document.getElementById('ov');ov.querySelector('h1').textContent='💀 DEFEATED';ov.querySelector('.sub').innerHTML='A rival got you on level '+level+'.';
@@ -103,11 +105,11 @@ function hitMe(ax,ay){ if(Math.hypot(ax-me.x,ay-(me.y-42))<13){ me.hp-=FOE_HEAD;
   if(Math.hypot(ax-me.x,ay-(me.y-20))<20){ me.hp-=FOE_BODY; flt(me.x,me.y-50,'-'+FOE_BODY,'#ffb0b0'); boom(ax,ay,'#ffb0b0',8); shake=.2; return true; } return false; }
 function boom(x,y,c,n){for(let i=0;i<n;i++)parts.push({x,y,vx:rand(-220,220),vy:rand(-300,40),life:.6,c});}
 
-let last=0;
-function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;
+let last=0,rafId=null;
+function loop(now){rafId=null;const dt=Math.min(.04,(now-last)/1000||0);last=now;
   if(shake>0)shake=Math.max(0,shake-dt*1.6);
   const sx=shake>0?(Math.random()*2-1)*shake*9:0,sy=shake>0?(Math.random()*2-1)*shake*9:0;ctx.setTransform(DPR,0,0,DPR,sx*DPR,sy*DPR);
-  const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#1d3a63');sky.addColorStop(1,'#4a78b0');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=skyGrad;ctx.fillRect(0,0,W,H);
   ctx.fillStyle='#3a6b3a';ctx.fillRect(0,groundY,W,H-groundY);ctx.fillStyle='#2f5a2f';ctx.fillRect(0,groundY,W,6);
   if(X0>0){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(0,0,X0,H);ctx.fillRect(X0+PW,0,X0,H);ctx.fillStyle='rgba(255,255,255,.07)';ctx.fillRect(X0,0,2,H);ctx.fillRect(X0+PW-2,0,2,H);}
   if(state==='menu'||!me){ ctx.setTransform(DPR,0,0,DPR,0,0); return; }
@@ -161,7 +163,10 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   if(msgT>0){msgT-=dt;ctx.globalAlpha=Math.min(1,msgT);ctx.fillStyle='#ffd54a';ctx.font='900 30px Trebuchet MS';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.34);ctx.globalAlpha=1;}
   if(tutMode)drawCoach();
   ctx.setTransform(DPR,0,0,DPR,0,0);
+  /* park the loop while the scene is static (menu; settled game-over) to save battery */
+  if(state==='play'||shake>0||msgT>0||(parts&&parts.length)||(floats&&floats.length))rafId=requestAnimationFrame(loop);
 }
+function wakeLoop(){if(rafId==null)rafId=requestAnimationFrame(loop);}
 function drawArcher(s,col,face){const x=s.x,y=s.y;
   ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(x,y,18,6,0,0,6.28);ctx.fill();
   ctx.fillStyle=col;ctx.fillRect(x-10,y-34,20,32);                                   // body
@@ -188,7 +193,7 @@ addEventListener('keydown',e=>{ if(tutMode&&tutPhase==='brief'){e.preventDefault
 document.getElementById('start').onclick=start;
 document.getElementById('tutBtn').onclick=startTut;
 document.getElementById('best').innerHTML=best?('Best: level '+best):'';
-requestAnimationFrame(loop);
+wakeLoop();
 try{ if(!localStorage.getItem('archerTut')) startTut(); }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>

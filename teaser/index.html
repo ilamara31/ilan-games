@@ -300,15 +300,23 @@
     for(var i=0;i<n;i++){var a=Math.random()*6.28,s=(Math.random()*power+power*.3)*DPR;
       parts.push({x:W/2,y:H/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,dl:Math.random()*.012+.008,
         r:(Math.random()*3+1.5)*DPR,c:COL[(Math.random()*COL.length)|0]});}}
+  var drawTick=0;
   (function loop(){requestAnimationFrame(loop);
-    ctx.clearRect(0,0,W,H);
-    for(var i=0;i<stars.length;i++){var s=stars[i];s.y+=s.z*.3*DPR;if(s.y>H)s.y=0;
-      ctx.globalAlpha=.35*s.z;ctx.fillStyle="#bcd4ff";ctx.fillRect(s.x,s.y,1.5*DPR*s.z,1.5*DPR*s.z);}
+    // physics steps every frame (keeps motion speed identical) …
+    for(var i=0;i<stars.length;i++){var s=stars[i];s.y+=s.z*.3*DPR;if(s.y>H)s.y=0;}
     for(var j=parts.length-1;j>=0;j--){var p=parts[j];p.x+=p.vx;p.y+=p.vy;p.vx*=.965;p.vy*=.965;p.vy+=.03*DPR;p.life-=p.dl;
-      if(p.life<=0){parts.splice(j,1);continue;}
-      ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.shadowBlur=14;ctx.shadowColor=p.c;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,6.28);ctx.fill();}
-    ctx.shadowBlur=0;ctx.globalAlpha=1;})();
+      if(p.life<=0)parts.splice(j,1);}
+    // … but painting is throttled to ~30fps to save battery on this always-animating page
+    drawTick^=1; if(drawTick)return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle="#bcd4ff";
+    for(var k=0;k<stars.length;k++){var s2=stars[k];ctx.globalAlpha=.35*s2.z;ctx.fillRect(s2.x,s2.y,1.5*DPR*s2.z,1.5*DPR*s2.z);}
+    if(parts.length){ctx.shadowBlur=14;                       // set once for all particles, reset once after
+      for(var m=0;m<parts.length;m++){var p2=parts[m];
+        ctx.globalAlpha=Math.max(0,p2.life);ctx.fillStyle=p2.c;ctx.shadowColor=p2.c;
+        ctx.beginPath();ctx.arc(p2.x,p2.y,p2.r*p2.life,0,6.28);ctx.fill();}
+      ctx.shadowBlur=0;}
+    ctx.globalAlpha=1;})();
 
   /* ---------------- AUDIO: user's track "Zero Hour" ---------------- */
   var muted=false, TRACKVOL=0.85, fadeRAF=null;
@@ -543,6 +551,11 @@
   document.getElementById("skip").addEventListener("click",function(){clearAll();stopTrack();
     show("outro");scenes.outro.querySelector(".outLogo").classList.add("spinIn");
     document.getElementById("skip").classList.add("hidden");});
+  // pause the music while the tab is hidden; resume only if it was playing
+  var resumeOnShow=false;
+  document.addEventListener("visibilitychange",function(){ if(!track)return;
+    if(document.hidden){ if(!track.paused){ resumeOnShow=true; track.pause(); } }
+    else if(resumeOnShow){ resumeOnShow=false; var pr=track.play(); if(pr&&pr.catch)pr.catch(function(){}); } });
   var muteBtn=document.getElementById("mute");
   muteBtn.addEventListener("click",function(){muted=!muted;muteBtn.textContent=muted?"🔇":"🔊";
     if(track)track.muted=muted;});

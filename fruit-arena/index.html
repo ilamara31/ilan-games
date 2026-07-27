@@ -336,7 +336,7 @@ function drawWood(){ wood.width=W; wood.height=H;
   const v=wctx.createRadialGradient(W/2,H*.42,H*.2,W/2,H*.5,H*.85); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.45)');
   wctx.fillStyle=v; wctx.fillRect(0,0,W,H);
 }
-function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; drawWood(); }
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; drawWood(); wakeLoop(); }   // wake: re-render one frame if the loop is parked
 window.addEventListener('resize', resize);
 
 /* ============================================================
@@ -503,8 +503,10 @@ function triggerEvent(){ const e=EVENTS[Math.random()*EVENTS.length|0]; e.on(); 
 function banner(t){ const b=$('eventBanner'); b.textContent=t; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 
 /* ---------------- loop ---------------- */
+let rafId=null;
+function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
 function loop(now){
-  requestAnimationFrame(loop);
+  rafId=null;
   let dt=Math.min(0.04,(now-last)/1000||0); last=now;
   const playing = state==='play';
   const tdt = playing ? dt*(slowT>0?0.4:1) : 0;
@@ -591,6 +593,8 @@ function loop(now){
 
   if(tutMode) drawCoachText();
   ctx.setTransform(1,0,0,1,0,0);
+  /* park the loop while idle (menu / pause / game-over are static DOM overlays) to save battery */
+  if(state==='play'||blade_.length) rafId=requestAnimationFrame(loop);
 }
 
 /* ---------------- drawing ---------------- */
@@ -671,10 +675,10 @@ function refreshMenu(){ const lv=levelOf(S.xp);
   $('mTitle').textContent=titleObj(S.title).name; }
 
 function gotoMenu(){ state='menu'; tutMode=false; coachMsg=''; boss=null; objects=[]; halves=[]; juices=[]; floats=[]; blade_=[];
-  $('bossBar').style.display='none'; showScreen('menu'); refreshMenu(); }
+  $('bossBar').style.display='none'; showScreen('menu'); refreshMenu(); wakeLoop(); }
 
 /* ---- play ---- */
-function startGame(){ state='play'; tutMode=false; coachMsg=''; showScreen(null); $('hud').classList.remove('hidden'); resetGame(); }
+function startGame(){ state='play'; tutMode=false; coachMsg=''; showScreen(null); $('hud').classList.remove('hidden'); resetGame(); wakeLoop(); }
 function endGame(byBomb){ if(state==='over')return; state='over';
   if(byBomb){ Sfx.bomb(); shakeT=.45; } else Sfx.miss();
   // bank rewards
@@ -698,7 +702,7 @@ function stat(k,v){ return '<div class="stat"><div class="v">'+v+'</div><div cla
 
 /* ---- pause ---- */
 function pauseGame(){ if(state!=='play')return; state='paused'; showScreen('pause'); }
-function resumeGame(){ if(state!=='paused')return; state='play'; showScreen(null); $('hud').classList.remove('hidden'); last=performance.now(); }
+function resumeGame(){ if(state!=='paused')return; state='play'; showScreen(null); $('hud').classList.remove('hidden'); last=performance.now(); wakeLoop(); }
 
 /* ---- tutorial ---- */
 const TUT=[
@@ -741,7 +745,7 @@ const TUT_STEPS=[
   { brief:"🎉 That's everything — you're ready! Tap to go to the menu, then hit ▶ PLAY whenever you like.",
     act:"", spawn(){}, tick(){}, done(){ return true; }, end:true },
 ];
-function startInteractiveTutorial(){ state='play'; tutMode=true; showScreen(null); $('hud').classList.remove('hidden');
+function startInteractiveTutorial(){ state='play'; tutMode=true; showScreen(null); $('hud').classList.remove('hidden'); wakeLoop();
   resetGame(); tutStep=0; tutBrief(); }
 function tutBrief(){ objects.length=0; boss=null; $('bossBar').style.display='none'; tutPhase='brief';
   coachMsg=TUT_STEPS[tutStep].brief+"\n\n👉 Tap the screen to continue"; }
@@ -872,7 +876,7 @@ checkMissionReset();
 resize();
 gotoMenu();
 last=performance.now();
-requestAnimationFrame(loop);
+wakeLoop();
 
 if('serviceWorker' in navigator){ let _r=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_r)return; _r=true; location.reload(); });

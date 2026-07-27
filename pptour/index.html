@@ -103,7 +103,8 @@
 /* ============================================================ SETUP ============================================================ */
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
-function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=window.innerWidth; H=window.innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }
+let bgGrad=null,bgSpots=null,tableGrad=null,oppGrad=null;   // size-dependent gradients, cached until the next resize
+function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=window.innerWidth; H=window.innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); bgGrad=bgSpots=tableGrad=oppGrad=null; }
 window.addEventListener('resize',resize); resize();
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -204,7 +205,7 @@ const SENSX=0.0150, SENSY=0.0135;
 /* ============================================================ SCREEN MANAGEMENT ============================================================ */
 function hideScreens(){ ['home','shop','card','over','mp'].forEach(s=>$(s).classList.add('hidden')); }
 function showScreen(id){ hideScreens(); $(id).classList.remove('hidden'); screen=id; document.body.classList.remove('playing'); releaseLock(); }
-function goPlay(){ hideScreens(); screen=null; document.body.classList.add('playing'); requestLock(); }
+function goPlay(){ hideScreens(); screen=null; document.body.classList.add('playing'); requestLock(); wakeLoop(); }
 function showHome(){ $('homeCoins').textContent=S.coins; showScreen('home'); }
 
 $('btnTournament').onclick=()=>{ mode='tournament'; pickBracket(); roundIdx=0; showCard(); };
@@ -433,17 +434,19 @@ function render(){ setupCam();
   if(screen===null) drawHUD();
   if(screen===null && phase==='tutorial') drawCoach();
 }
-function drawBG(){ const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0e1b3e'); g.addColorStop(.42,'#16264f'); g.addColorStop(.4201,'#0c1733'); g.addColorStop(1,'#070d20');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  for(let i=0;i<5;i++){ const x=W*(0.12+i*0.19); const r=ctx.createRadialGradient(x,H*0.05,2,x,H*0.05,55); r.addColorStop(0,'rgba(255,255,255,.5)'); r.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=r; ctx.beginPath(); ctx.arc(x,H*0.05,55,0,6.28); ctx.fill(); }
+function drawBG(){
+  if(!bgGrad){ bgGrad=ctx.createLinearGradient(0,0,0,H); bgGrad.addColorStop(0,'#0e1b3e'); bgGrad.addColorStop(.42,'#16264f'); bgGrad.addColorStop(.4201,'#0c1733'); bgGrad.addColorStop(1,'#070d20');
+    bgSpots=[]; for(let i=0;i<5;i++){ const x=W*(0.12+i*0.19); const r=ctx.createRadialGradient(x,H*0.05,2,x,H*0.05,55); r.addColorStop(0,'rgba(255,255,255,.5)'); r.addColorStop(1,'rgba(255,255,255,0)'); bgSpots.push({x,g:r}); } }
+  ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
+  for(const s of bgSpots){ ctx.fillStyle=s.g; ctx.beginPath(); ctx.arc(s.x,H*0.05,55,0,6.28); ctx.fill(); }
 }
 function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255; r=Math.min(255,r*f)|0;g=Math.min(255,g*f)|0;b=Math.min(255,b*f)|0; return `rgb(${r},${g},${b})`; }
 function drawTable(){ const col='#1f5fb0';
   const A=proj(-HALFW,0,0),B=proj(HALFW,0,0),C=proj(HALFW,0,TL),D=proj(-HALFW,0,TL); const TH=0.45,A2=proj(-HALFW,-TH,0),B2=proj(HALFW,-TH,0);
   ctx.strokeStyle='rgba(8,12,28,.9)'; [[-HALFW+0.3,0.5],[HALFW-0.3,0.5],[-HALFW+0.3,TL-0.5],[HALFW-0.3,TL-0.5]].forEach(([lx,lz])=>{ const a=proj(lx,-TH,lz),b=proj(lx,-2.4,lz); ctx.lineWidth=Math.max(3,8*a.s/40); ctx.beginPath(); ctx.moveTo(a.X,a.Y); ctx.lineTo(b.X,b.Y); ctx.stroke(); });
   ctx.fillStyle=shade(col,0.5); ctx.beginPath(); ctx.moveTo(A.X,A.Y); ctx.lineTo(B.X,B.Y); ctx.lineTo(B2.X,B2.Y); ctx.lineTo(A2.X,A2.Y); ctx.closePath(); ctx.fill();
-  const grd=ctx.createLinearGradient(0,C.Y,0,A.Y); grd.addColorStop(0,shade(col,1.25)); grd.addColorStop(1,col);
-  ctx.fillStyle=grd; ctx.beginPath(); ctx.moveTo(A.X,A.Y); ctx.lineTo(B.X,B.Y); ctx.lineTo(C.X,C.Y); ctx.lineTo(D.X,D.Y); ctx.closePath(); ctx.fill();
+  if(!tableGrad){ tableGrad=ctx.createLinearGradient(0,C.Y,0,A.Y); tableGrad.addColorStop(0,shade(col,1.25)); tableGrad.addColorStop(1,col); }
+  ctx.fillStyle=tableGrad; ctx.beginPath(); ctx.moveTo(A.X,A.Y); ctx.lineTo(B.X,B.Y); ctx.lineTo(C.X,C.Y); ctx.lineTo(D.X,D.Y); ctx.closePath(); ctx.fill();
   ctx.strokeStyle='#fff'; const ln=(x1,z1,x2,z2,w)=>{ const p=proj(x1,0,z1),q=proj(x2,0,z2); ctx.lineWidth=Math.max(1.5,(w||3)*(p.s+q.s)/2/70); ctx.beginPath(); ctx.moveTo(p.X,p.Y); ctx.lineTo(q.X,q.Y); ctx.stroke(); };
   ln(-HALFW,0,HALFW,0,5); ln(-HALFW,TL,HALFW,TL,5); ln(-HALFW,0,-HALFW,TL,4); ln(HALFW,0,HALFW,TL,4); ln(0,0,0,TL,3);
 }
@@ -456,7 +459,7 @@ function drawNet(){ const lx=-HALFW-0.15,rx=HALFW+0.15; const pl=proj(lx,0,NETZ)
 function drawOppPaddle(){ const p=proj(aiPad.x,aiPad.y,AZ); const r=Math.max(8,0.62*p.s); const sw=aiPad.swing;
   const sh=proj(aiPad.x,0,AZ); ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(sh.X,sh.Y,r*0.7,r*0.3,0,0,6.28); ctx.fill();
   ctx.save(); ctx.translate(p.X,p.Y); ctx.rotate(sw*0.2);
-  const bg=ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.2,0,0,r); bg.addColorStop(0,'#555'); bg.addColorStop(1,'#222'); ctx.fillStyle=bg;
+  if(!oppGrad){ oppGrad=ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.2,0,0,r); oppGrad.addColorStop(0,'#555'); oppGrad.addColorStop(1,'#222'); } ctx.fillStyle=oppGrad;
   ctx.beginPath(); ctx.ellipse(0,0,r*0.82,r,0,0,6.28); ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=1.5; ctx.stroke();
   ctx.strokeStyle='#6b4226'; ctx.lineWidth=Math.max(2,r*0.22); ctx.beginPath(); ctx.moveTo(0,r*0.9); ctx.lineTo(0,r*1.5); ctx.stroke();
   ctx.restore();
@@ -691,8 +694,14 @@ function reflectFar(){ const power=NET.aiPower; const vz=-(power?11:7.4), vy=pow
 try{ const rc=new URLSearchParams(location.search).get('room'); if(rc){ const c=rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); if(c.length===4){ refreshName(); setTimeout(()=>{ openRoom(); joinRoom(c); }, 600); } } }catch(e){}
 
 /* ============================================================ LOOP ============================================================ */
-let last=0; function loop(t){ const dt=Math.min(.05,(t-last)/1000||0); last=t; update(dt); render(); requestAnimationFrame(loop); }
-showHome(); requestAnimationFrame(loop);
+let last=0, rafId=null;
+/* park the loop when an overlay screen is up and nothing on the canvas animates (battery) */
+function needsFrame(){ return screen===null || NET.on || ball.active || shake>0 || flash>0 || msgT>0 || qT>0
+  || pad.swing>0 || aiPad.swing>0 || Math.abs(pad.x-pad.tx)>0.003 || Math.abs(pad.y-pad.ty)>0.003; }
+function loop(t){ rafId=null; const dt=Math.min(.05,(t-last)/1000||0); last=t; update(dt); render(); if(needsFrame()) rafId=requestAnimationFrame(loop); }
+function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
+window.addEventListener('resize',()=>wakeLoop());   // re-render once after a resize while parked
+showHome(); wakeLoop();
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>

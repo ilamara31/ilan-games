@@ -143,7 +143,7 @@ const VH = 360;
 const FLOOR = 300, CEIL = 60;     // surfaces
 let SCALE = 1, VW = 640, DPR = 1; // recomputed on resize
 function resize(){
-  DPR = Math.min(window.devicePixelRatio||1, 2.5);
+  DPR = Math.min(window.devicePixelRatio||1, 2);
   const w = window.innerWidth, h = window.innerHeight;
   cv.width = Math.round(w*DPR); cv.height = Math.round(h*DPR);
   SCALE = (h*DPR)/VH;
@@ -433,11 +433,12 @@ function burst(x,y,color,n,pw){
    =================================================================== */
 let last = performance.now();
 function frame(now){
+  requestAnimationFrame(frame);
+  if(state==='home' && now-last<28) return;   // home screen animates (sparkles) but only needs ~30fps
   let dt = (now-last)/1000; last = now;
   if(dt>0.05) dt = 0.05;            // clamp after tab switch
   update(dt);
   render();
-  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
@@ -567,16 +568,18 @@ function circleRect(cx,cy,r, rx,ry,rw,rh){
 /* ===================================================================
    RENDER
    =================================================================== */
+let _bgKey='', _bgGrad=null;
 function render(){
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,cv.width,cv.height);
 
   const tw = (state==='play'||state==='dead'||state==='win') && L ? L.tw : TWISTS.spikes;
 
-  // background gradient
-  const grd = ctx.createLinearGradient(0,0,0,cv.height);
-  grd.addColorStop(0, tw.bg[0]); grd.addColorStop(1, tw.bg[1]);
-  ctx.fillStyle = grd; ctx.fillRect(0,0,cv.width,cv.height);
+  // background gradient (cached — rebuilt only when the twist palette or canvas height changes)
+  const bgKey = tw.bg[0]+tw.bg[1]+'@'+cv.height;
+  if(bgKey!==_bgKey){ _bgGrad = ctx.createLinearGradient(0,0,0,cv.height);
+    _bgGrad.addColorStop(0, tw.bg[0]); _bgGrad.addColorStop(1, tw.bg[1]); _bgKey = bgKey; }
+  ctx.fillStyle = _bgGrad; ctx.fillRect(0,0,cv.width,cv.height);
 
   if(state==='home'){ renderHomeBg(); return; }
   if(!L) return;
@@ -920,7 +923,7 @@ document.getElementById('daily').onclick = ()=>{
 };
 
 // little ambient sparkle on the home screen
-setInterval(()=>{ if(state==='home'){ parts.push({x:Math.random()*cv.width, y:cv.height, vx:(Math.random()-.5)*30, vy:-60-Math.random()*60, life:2, t:0, color:['#ffd54a','#ff7b3d','#39ff88','#7cc0ff'][Math.floor(Math.random()*4)], r:2+Math.random()*2}); } }, 180);
+setInterval(()=>{ if(state==='home' && !document.hidden && parts.length<400){ parts.push({x:Math.random()*cv.width, y:cv.height, vx:(Math.random()-.5)*30, vy:-60-Math.random()*60, life:2, t:0, color:['#ffd54a','#ff7b3d','#39ff88','#7cc0ff'][Math.floor(Math.random()*4)], r:2+Math.random()*2}); } }, 180);
 
 showHome();
 checkAch();

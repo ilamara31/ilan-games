@@ -266,7 +266,7 @@ const Sound = (function(){
     o.type='triangle'; o.frequency.value=freq; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol||0.12,t+0.03);
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.02); }
   const MEL=[0,4,7,11,7,4, 2,5,9,12,9,5];   // gentle loop (semitones from A3)
-  function musicTick(){ if(!musicOn||!save.music){ return; } const base=220;
+  function musicTick(){ if(!musicOn||!save.music||document.hidden){ return; } const base=220;   // silent no-op while the tab is hidden; resumes on its own when visible
     const semi=MEL[musStep%MEL.length]; note(base*Math.pow(2,semi/12), 0.5, 0.06);
     if(musStep%2===0) note(base/2*Math.pow(2,(MEL[(musStep+3)%MEL.length])/12), 0.9, 0.04);
     musStep++; }
@@ -279,7 +279,7 @@ const Sound = (function(){
     lose(){ [392,330,262].forEach((f,i)=>setTimeout(()=>note(f,0.4,0.12),i*160)); },
     click(){ blip(520,0.04,'square',0.1); },
     startMusic(){ ensure(); musicOn=true; if(!musTimer) musTimer=setInterval(musicTick,500); },
-    stopMusic(){ musicOn=false; },
+    stopMusic(){ musicOn=false; if(musTimer){ clearInterval(musTimer); musTimer=null; } },
   };
 })();
 
@@ -358,6 +358,7 @@ function startMatch(diffKey, mode, bot){
   resetPuck(0);
   fx.confetti.length=0; fx.trophyT=0; fx.shake=0; fx.popup=null;
   showMatch();
+  wakeLoop();
 }
 function resetPuck(serveTo){
   puck.x=CX; puck.y=CY; puck.vx=0; puck.vy=0;
@@ -564,6 +565,7 @@ function updateFx(dt){
   if(fx.flashBot>0) fx.flashBot=Math.max(0,fx.flashBot-dt*2);
   fx.trophyT+=dt;
   for(const c of fx.confetti){ c.vy+=200*dt; c.x+=c.vx*dt; c.y+=c.vy*dt; c.rot+=c.vr*dt; }
+  if(fx.confetti.length) fx.confetti=fx.confetti.filter(c=>c.y<LH+40);   // prune pieces that fell off the table
 }
 
 /* ---------------- rendering ---------------- */
@@ -575,7 +577,7 @@ function resize(){
   const s=Math.min(w/LW, h/LH);
   VIEW.s=s*dpr; VIEW.ox=(w-LW*s)/2*dpr; VIEW.oy=(h-LH*s)/2*dpr;
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', ()=>{ resize(); wakeLoop(); });   // wake: repaint one frame if the loop is parked
 function arena(){ return ARENAS[save.arena] || ARENAS.classic; }
 function paddleSkin(){ return PADDLES[save.paddle] || PADDLES.classic; }
 
@@ -701,9 +703,10 @@ function drawResult(){
 function drawConfetti(){ for(const c of fx.confetti){ ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.fillStyle=c.col; ctx.fillRect(-c.s/2,-c.s/2,c.s,c.s*0.6); ctx.restore(); } }
 
 /* ---------------- main loop ---------------- */
-let last=performance.now(), paused=false;
+let last=performance.now(), paused=false, rafId=null;
+function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
 function loop(now){
-  requestAnimationFrame(loop);
+  rafId=null;
   let dt=(now-last)/1000; last=now; dt=Math.max(1e-4, Math.min(dt, 0.05));   // clamp both ends (dt=0 => NaN)
   if(match && !paused){
     if(match.phase!=='over'){
@@ -719,6 +722,9 @@ function loop(now){
     $('matchInfo').textContent = `${match.diff.name||''}${match.bot? ' · '+match.bot.name:''}`;
   }
   if(match) draw();
+  /* park the loop while idle: menus are DOM overlays (canvas untouched) and pause is a static frame.
+     A running match — including the animated result screen — keeps looping. */
+  if(match && !paused) rafId=requestAnimationFrame(loop);
 }
 
 /* ---------------- screens / UI ---------------- */
@@ -802,7 +808,7 @@ function buildSettings(){
 document.querySelectorAll('[data-go]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); showScreen(b.dataset.go); });
 document.querySelectorAll('#s-shop .tab').forEach(t=> t.onclick=()=>{ shopTab=t.dataset.tab; Sound.click(); buildShop(); });
 $('pauseBtn').onclick=()=>{ if(match&&match.phase!=='over'){ paused=true; releaseLock(); $('pauseOv').classList.add('on'); updateLockHint(); } };
-$('resumeBtn').onclick=()=>{ paused=false; $('pauseOv').classList.remove('on'); updateLockHint(); requestLock(); };
+$('resumeBtn').onclick=()=>{ paused=false; $('pauseOv').classList.remove('on'); updateLockHint(); requestLock(); wakeLoop(); };
 $('quitBtn').onclick=()=>{ showScreen('menu'); };
 $('sw-music').onclick=()=>{ save.music=!save.music; persist(); buildSettings(); if(save.music){ Sound.resume(); Sound.startMusic(); } else Sound.stopMusic(); };
 $('sw-sfx').onclick=()=>{ save.sfx=!save.sfx; persist(); buildSettings(); };
@@ -825,7 +831,7 @@ function showResult(won, coins){
 /* ---------------- boot ---------------- */
 resize();
 showScreen('menu');
-requestAnimationFrame(loop);
+wakeLoop();
 </script>
 
 <script src="../supabase-config.js"></script>
