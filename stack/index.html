@@ -35,8 +35,10 @@
 </div>
 <script>
 "use strict";
-const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1;
-function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);}
+const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1,PW=0,X0=0;
+/* PW/X0: logical playfield band, capped at phone-ish width so the block's travel
+   range feels the same on desktop as on mobile; X0 centres the band on screen. */
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);PW=Math.min(W,480);X0=(W-PW)/2;}
 addEventListener('resize',resize);resize();
 /* per-account save: each logged-in account keeps its own progress.
    The device's existing save is inherited once, by the primary (first) account. */
@@ -51,7 +53,7 @@ let state='menu',stack,cur,camY,score,combo,parts,speed,shake,flash;
 let tutMode=false,tutCount=0,coachMsg='';
 function hue(i){return (i*9+200)%360;}
 function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutCount=0;
-  const w=Math.min(W*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=2.6;parts=[];shake=0;flash=0;
+  const w=Math.min(PW*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=2.6;parts=[];shake=0;flash=0;
   coachMsg='Tap / SPACE to drop the block right over the one below. Line up 3 to finish!';spawn();}
 function tutFinish(){tutMode=false;coachMsg='';state='menu';try{localStorage.setItem('stackTut','1');}catch(e){}
   const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ STACK TOWER';ov.querySelector('.sub').innerHTML="You're ready! Hit STACK to play.";ov.querySelector('#start').textContent='STACK ▶';ov.querySelector('#best').innerHTML=best?('Best: '+best):'';ov.classList.remove('hidden');}
@@ -64,7 +66,7 @@ function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=14,
   ctx.font='26px serif';ctx.fillText('🧑',bx+10,by+pad+4);
   ctx.fillStyle='#fff';ctx.font='600 17px Trebuchet MS';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);}
 function start(){document.getElementById('ov').classList.add('hidden');state='play';
-  const w=Math.min(W*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=3.0;parts=[];shake=0;flash=0;spawn();}
+  const w=Math.min(PW*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=3.0;parts=[];shake=0;flash=0;spawn();}
 function spawn(){const top=stack[stack.length-1];cur={x:0,w:top.w,y:(stack.length)*BH,dir:1};speed=3.0+score*0.06;}
 function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=Math.min(cur.x+cur.w,top.x+top.w),ov=R-L;
   if(ov<=0){ // miss
@@ -74,7 +76,7 @@ function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=
   const off=Math.abs(cur.x-top.x);
   if(off<7){ // perfect
     combo++;score++;flash=.4;sfx(500+Math.min(12,combo)*60,.07,'square');
-    const nw=Math.min(top.w+ (combo>=3?6:0), W*0.6);const nx=top.x-(nw-top.w)/2;
+    const nw=Math.min(top.w+ (combo>=3?6:0), PW*0.6);const nx=top.x-(nw-top.w)/2;
     stack.push({x:nx,w:nw,y:cur.y});
     parts.push({x:cur.x,y:cur.y,w:cur.w,perfect:true,life:.5});
   } else { combo=0;score++;sfx(320,.06,'sine');
@@ -95,7 +97,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   if(shake>0)shake=Math.max(0,shake-dt*1.5);if(flash>0)flash=Math.max(0,flash-dt*2.5);
   const sx=shake>0?(Math.random()*2-1)*shake*10:0,sy=shake>0?(Math.random()*2-1)*shake*10:0;ctx.setTransform(DPR,0,0,DPR,sx*DPR,sy*DPR);
   const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#10204a');bg.addColorStop(1,'#0a0f24');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-  if(state==='play'){ cur.x+=cur.dir*speed*60*dt; if(cur.x<10){cur.x=10;cur.dir=1;} if(cur.x+cur.w>W-10){cur.x=W-10-cur.w;cur.dir=-1;} }
+  if(X0>0){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,0,X0,H);ctx.fillRect(X0+PW,0,X0,H);ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(X0,0,2,H);ctx.fillRect(X0+PW-2,0,2,H);}
+  if(state==='play'){ cur.x+=cur.dir*speed*60*dt; if(cur.x<X0+10){cur.x=X0+10;cur.dir=1;} if(cur.x+cur.w>X0+PW-10){cur.x=X0+PW-10-cur.w;cur.dir=-1;} }
   const targetCam=Math.max(0,(stack.length)*BH - H*0.55);camY+=(targetCam-camY)*Math.min(1,dt*6);
   function sy2(y){return H-60 - (y-camY);}
   if(stack)for(let i=0;i<stack.length;i++){const b=stack[i];const yy=sy2(b.y);if(yy>H+40||yy<-40)continue;

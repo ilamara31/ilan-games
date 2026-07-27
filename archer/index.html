@@ -35,8 +35,10 @@
 </div>
 <script>
 "use strict";
-const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1;
-function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H*0.82;}
+const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1,PW=0,X0=0;
+/* PW/X0: logical duel band, capped at phone-ish width so shot distances and the
+   pixel-space physics feel the same on desktop as on mobile; X0 centres it. */
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H*0.82;PW=Math.min(W,560);X0=(W-PW)/2;}
 addEventListener('resize',resize);
 const rand=(a,b)=>a+Math.random()*(b-a);
 /* per-account save: each logged-in account keeps its own progress.
@@ -56,11 +58,11 @@ let tutMode=false,tutStep=0,tutPhase='brief',coachMsg='',tut={};
 const TSTEPS=[
   { brief:"👋 Hi! I'm your coach. Drag BACK from your archer and release to fire an arrow. Try to hit the rival!", act:true, hint:"fire & hit the rival", done:()=>tut.hit },
   { brief:"💥 Nice! Hit the rival's BODY for damage — but hit the HEAD for a HEADSHOT (double damage!)." },
-  { brief:"❤️ Hearts fall from the sky — shoot one with an arrow to heal up. Try it!", act:true, hint:"shoot the falling heart", done:()=>tut.heart, enter:()=>{ hearts.push({x:rand(W*0.4,W*0.7),y:-20,vy:34,r:16}); } },
+  { brief:"❤️ Hearts fall from the sky — shoot one with an arrow to heal up. Try it!", act:true, hint:"shoot the falling heart", done:()=>tut.heart, enter:()=>{ hearts.push({x:rand(X0+PW*0.4,X0+PW*0.7),y:-20,vy:34,r:16}); } },
   { brief:"⚔️ In the real duel you AND your rival fire freely — after your arrow lands you can shoot again. Land more good shots to win each level. Tap to start!", end:true },
 ];
 function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutStep=0;tutPhase='brief';tut={};coachMsg='';
-  level=1;me={x:W*0.12,y:groundY,hp:100,maxhp:100};foes=[{x:W*0.66,y:groundY,hp:100,maxhp:100,arrow:null,reload:0,acc:60,invuln:true}];
+  level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};foes=[{x:X0+PW*0.66,y:groundY,hp:100,maxhp:100,arrow:null,reload:0,acc:60,invuln:true}];
   pArrow=null;pReload=0;hearts=[];heartT=99;aim=null;parts=[];floats=[];shake=0;msg='';msgT=0;tutBrief();}
 function tutBrief(){tutPhase='brief';coachMsg=TSTEPS[tutStep].brief;}
 function tutContinue(){if(tutPhase!=='brief')return;const s=TSTEPS[tutStep];if(s.end){tutFinish();return;}if(s.act){tutPhase='act';if(s.enter)s.enter();}else tutAdvance();}
@@ -71,17 +73,17 @@ function tutFinish(){tutMode=false;coachMsg='';state='menu';try{localStorage.set
 
 /* ---------- levels ---------- */
 function setupLevel(n){
-  const baseX = Math.min(W-60, W*(0.46 + Math.min(0.42, n*0.075)));   // farther each level
+  const baseX = X0 + Math.min(PW-60, PW*(0.46 + Math.min(0.42, n*0.075)));   // farther each level
   const two = n>=5;
   foes=[]; const acc=Math.max(10,130-n*13), reload=Math.max(0.9,2.3-n*0.16);
-  if(two){ foes.push({x:Math.min(W-50,baseX-W*0.06),y:groundY,hp:100,maxhp:100,arrow:null,reload:rand(.5,1.5),acc:acc+15,invuln:false});
-           foes.push({x:Math.min(W-30,baseX+W*0.05),y:groundY,hp:100,maxhp:100,arrow:null,reload:rand(1,2),acc:acc+15,invuln:false}); }
+  if(two){ foes.push({x:Math.min(X0+PW-50,baseX-PW*0.06),y:groundY,hp:100,maxhp:100,arrow:null,reload:rand(.5,1.5),acc:acc+15,invuln:false});
+           foes.push({x:Math.min(X0+PW-30,baseX+PW*0.05),y:groundY,hp:100,maxhp:100,arrow:null,reload:rand(1,2),acc:acc+15,invuln:false}); }
   else foes.push({x:baseX,y:groundY,hp:100,maxhp:100,arrow:null,reload:rand(1,2),acc,invuln:false});
   pArrow=null;pReload=0;hearts=[];heartT=rand(3,6);
   banner('LEVEL '+n+(two?'  •  2 RIVALS!':''));
 }
 function start(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=false;
-  level=1;me={x:W*0.12,y:groundY,hp:100,maxhp:100};parts=[];floats=[];shake=0;msg='';msgT=0;aim=null;leveling=false;setupLevel(1);}
+  level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};parts=[];floats=[];shake=0;msg='';msgT=0;aim=null;leveling=false;setupLevel(1);}
 function gameOver(){state='over';if(level>best){best=level;saveBest();}
   try{if(window.IGAuth)IGAuth.submitScore('archer',best);}catch(e){}
   const ov=document.getElementById('ov');ov.querySelector('h1').textContent='💀 DEFEATED';ov.querySelector('.sub').innerHTML='A rival got you on level '+level+'.';
@@ -107,12 +109,13 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   const sx=shake>0?(Math.random()*2-1)*shake*9:0,sy=shake>0?(Math.random()*2-1)*shake*9:0;ctx.setTransform(DPR,0,0,DPR,sx*DPR,sy*DPR);
   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#1d3a63');sky.addColorStop(1,'#4a78b0');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   ctx.fillStyle='#3a6b3a';ctx.fillRect(0,groundY,W,H-groundY);ctx.fillStyle='#2f5a2f';ctx.fillRect(0,groundY,W,6);
+  if(X0>0){ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(0,0,X0,H);ctx.fillRect(X0+PW,0,X0,H);ctx.fillStyle='rgba(255,255,255,.07)';ctx.fillRect(X0,0,2,H);ctx.fillRect(X0+PW-2,0,2,H);}
   if(state==='menu'||!me){ ctx.setTransform(DPR,0,0,DPR,0,0); return; }
 
   if(state==='play'){
     if(pReload>0)pReload-=dt;
     // hearts
-    if(!tutMode){ heartT-=dt; if(heartT<=0){ heartT=rand(6,11); hearts.push({x:rand(W*0.3,W*0.85),y:-20,vy:rand(30,45),r:16}); } }
+    if(!tutMode){ heartT-=dt; if(heartT<=0){ heartT=rand(6,11); hearts.push({x:rand(X0+PW*0.3,X0+PW*0.85),y:-20,vy:rand(30,45),r:16}); } }
     for(const h of hearts){ h.y+=h.vy*dt; }
     hearts=hearts.filter(h=>h.y<H+30);
     // player arrow
@@ -142,7 +145,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   if(aim&&!pArrow&&pReload<=0&&state==='play'){ const vx=(me.x-aim.x)*4.2,vy=(me.y-30-aim.y)*4.2;
     ctx.fillStyle='rgba(255,255,255,.7)';let px=me.x,py=me.y-30,pvx=vx,pvy=vy;
     for(let i=0;i<26;i++){pvy+=G*0.04;px+=pvx*0.04;py+=pvy*0.04;if(py>groundY)break;if(i%2===0){ctx.beginPath();ctx.arc(px,py,3,0,6.28);ctx.fill();}}
-    const p=Math.min(1,Math.hypot(me.x-aim.x,me.y-30-aim.y)/170);ctx.fillStyle=p>0.9?'#ff5a5a':'#ffd54a';ctx.fillRect(20,H-28,200*p,10);ctx.strokeStyle='#fff';ctx.strokeRect(20,H-28,200,10);}
+    const p=Math.min(1,Math.hypot(me.x-aim.x,me.y-30-aim.y)/170);ctx.fillStyle=p>0.9?'#ff5a5a':'#ffd54a';ctx.fillRect(X0+20,H-28,200*p,10);ctx.strokeStyle='#fff';ctx.strokeRect(X0+20,H-28,200,10);}
   // arrows
   if(pArrow)drawArrow(pArrow);
   for(const f of foes)if(f.arrow)drawArrow(f.arrow);
@@ -152,8 +155,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/
   for(const f of floats){f.y-=40*dt;f.life-=dt;}floats=floats.filter(f=>f.life>0);
   for(const f of floats){ctx.globalAlpha=Math.max(0,f.life);ctx.fillStyle=f.c;ctx.font='900 20px Trebuchet MS';ctx.textAlign='center';ctx.fillText(f.t,f.x,f.y);ctx.globalAlpha=1;}
   // HUD
-  if(state!=='menu'){ hpBar(20,16,me.hp,me.maxhp,'#3a86ff','YOU');
-    let fx=W-180; for(const f of foes){ if(f.hp>0){ hpBar(fx,16,f.hp,f.maxhp,'#e0503a','RIVAL'); fx-=Math.min(170,W*0.42); } }
+  if(state!=='menu'){ hpBar(X0+20,16,me.hp,me.maxhp,'#3a86ff','YOU');
+    let fx=X0+PW-180; for(const f of foes){ if(f.hp>0){ hpBar(fx,16,f.hp,f.maxhp,'#e0503a','RIVAL'); fx-=Math.min(170,PW*0.42); } }
     ctx.fillStyle='#fff';ctx.font='700 14px Trebuchet MS';ctx.textAlign='center';ctx.fillText((tutMode?'Tutorial':'Level '+level)+'   •   best Lv '+best,W/2,20);}
   if(msgT>0){msgT-=dt;ctx.globalAlpha=Math.min(1,msgT);ctx.fillStyle='#ffd54a';ctx.font='900 30px Trebuchet MS';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.34);ctx.globalAlpha=1;}
   if(tutMode)drawCoach();
