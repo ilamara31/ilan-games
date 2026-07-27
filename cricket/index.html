@@ -911,6 +911,7 @@ function tutCoachSet(html){ const b=document.getElementById('tutBubble'); if(!b)
 function tutDuck(on){ const c=document.getElementById('tutCoach'); if(c) c.classList.toggle('ducked', !!on); }
 function tutorialDone(){
   if(!tutorialMode) return; tutorialMode=false;
+  if(M) M.state='ending';   // nothing left to animate behind scr-tutdone
   try{ speechSynthesis.cancel(); }catch(e){}
   document.getElementById('goBtn').classList.add('hidden');
   document.getElementById('tutCoach').classList.add('hidden');
@@ -1146,7 +1147,7 @@ function startMatch(opp, fmt){
   setTimeout(()=>speak(pick([
     `We are all set for a cracker here! ${myTeam.name} need ${target} to win. Strap in, it is going to be a humdinger!`,
     `Here we go! ${myTeam.name} chasing ${target}. Let us see if they have got the firepower, my friend!`]), false), 500);
-  if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
+  wakeLoop();
 }
 function rotateStrike(){ const t=M.strikerIdx; M.strikerIdx=M.nonStrikerIdx; M.nonStrikerIdx=t; }
 function striker(){ return M.batters[M.strikerIdx]; }
@@ -1614,6 +1615,8 @@ function loadVoices(){
   if(tag) tag.textContent = '🎙 '+(chosenVoice ? chosenVoice.name+' ('+chosenVoice.lang+')' : 'no voice');
 }
 if(comOn){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+// commentary must not keep talking in a hidden tab
+document.addEventListener('visibilitychange',()=>{ if(document.hidden && comOn){ try{ speechSynthesis.cancel(); }catch(e){} } });
 function maybeShowGo(){ if(M && M.state==='between' && !commentaryActive) showGo(true); }
 /* speak a line with VARIED intonation so it isn't monotone/robotic:
    each clause gets its own pitch/rate, and anything ending in "!" is
@@ -1679,12 +1682,17 @@ function crowdClap(){
 /* ============================================================
    GAME LOOP + RENDER (2.5D pitch view)
    ============================================================ */
-let loopRunning=false, lastTs=0;
+let rafId=null, lastTs=0;
 function loop(ts){
+  rafId=null;
   const dt=Math.min(40, ts-lastTs||16); lastTs=ts;
   if(M){ update(dt); render(); }
-  requestAnimationFrame(loop);
+  // once the match has ended the canvas is static behind the DOM screens — park the loop
+  if(M && M.state!=='ending') rafId=requestAnimationFrame(loop);
 }
+function wakeLoop(){ if(rafId==null) rafId=requestAnimationFrame(loop); }
+// a resize while parked must still repaint the (static) frame once
+window.addEventListener('resize', ()=>{ if(M && rafId==null) render(); });
 
 function update(dt){
   if(M.state==='runup'){
@@ -1751,10 +1759,19 @@ function ballScreenPos(b){
   return {x, y:y-lift, t:b.t};
 }
 
+/* sky/grass gradients use fixed colors — rebuild only when H changes, not per frame */
+let skyGrad=null, fieldGrad=null, gradH=-1;
+function ensureGrads(){
+  if(gradH===H) return; gradH=H;
+  skyGrad=ctx.createLinearGradient(0,0,0,H);
+  skyGrad.addColorStop(0,'#0e2a55'); skyGrad.addColorStop(0.45,'#13386e');
+  fieldGrad=ctx.createLinearGradient(0,H*0.30,0,H);
+  fieldGrad.addColorStop(0,'#1e7a36'); fieldGrad.addColorStop(1,'#14672b');
+}
 function render(){
+  ensureGrads();
   // sky
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#0e2a55'); g.addColorStop(0.45,'#13386e'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,W,H);
   drawStands();
   drawField();
   drawPitch();
@@ -1792,9 +1809,7 @@ function drawStands(){
 function drawField(){
   // grass below stands
   const gy=H*0.30;
-  const g=ctx.createLinearGradient(0,gy,0,H);
-  g.addColorStop(0,'#1e7a36'); g.addColorStop(1,'#14672b');
-  ctx.fillStyle=g; ctx.fillRect(0,gy,W,H-gy);
+  ctx.fillStyle=fieldGrad; ctx.fillRect(0,gy,W,H-gy);
   // mow stripes
   for(let i=0;i<10;i++){ if(i%2){ ctx.fillStyle='rgba(255,255,255,0.03)';
     ctx.fillRect(0, gy+(H-gy)*i/10, W,(H-gy)/10); } }

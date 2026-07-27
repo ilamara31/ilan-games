@@ -236,8 +236,14 @@ const Audio=(()=>{ let ac=null,master=null,musicTimer=null,mStep=0;
     if(gl)o.frequency.exponentialRampToValueAtTime(gl,t+d); ga.gain.setValueAtTime(.0001,t); ga.gain.exponentialRampToValueAtTime(g,t+.02); ga.gain.exponentialRampToValueAtTime(.0001,t+d);
     o.connect(ga); ga.connect(master); o.start(t); o.stop(t+d+.05); }
   const NOTES=[60,64,67,72,67,64,67,71,69,65,62,67];
-  function tickMusic(){ if(!S.music||!ac)return; const t=ac.currentTime+0.02,n=NOTES[mStep%NOTES.length];
+  function tickMusic(){ if(!S.music||!ac||document.hidden)return; const t=ac.currentTime+0.02,n=NOTES[mStep%NOTES.length];
     tone(440*Math.pow(2,(n-69)/12),t,0.28,'triangle',0.045); if(mStep%4===0) tone(440*Math.pow(2,(n-81)/12),t,0.5,'sine',0.035); mStep++; }
+  // battery: stop the music interval + suspend audio while the tab is hidden; restore on return
+  let musicWas=false;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ musicWas=!!musicTimer; if(musicTimer){clearInterval(musicTimer);musicTimer=null;} if(ac&&ac.state==='running')ac.suspend().catch(()=>{}); }
+    else { if(ac&&ac.state==='suspended')ac.resume().catch(()=>{}); if(musicWas&&S.music&&!musicTimer){ musicTimer=setInterval(tickMusic,300); } }
+  });
   return { ensure, startCrowd(){}, crowdLevel(){}, roar(){},
     startMusic(){ ensure(); if(musicTimer)return; mStep=0; musicTimer=setInterval(tickMusic,300); },
     stopMusic(){ if(musicTimer){clearInterval(musicTimer);musicTimer=null;} },
@@ -648,8 +654,10 @@ $('moMenu').onclick=()=>{ showHud(false); showScreen('menu'); refreshMenu(); pha
 /* BOOT */
 buildStadium(); makeBall(); makeAimMarker(); snapCam();
 refreshMenu(); showScreen('menu'); $('loading').classList.add('hidden');
-let last=performance.now();
-function loop(now){ requestAnimationFrame(loop); const dt=Math.min(0.04,(now-last)/1000); last=now; const time=now*0.001;
+let last=performance.now(), frameNo=0;
+function loop(now){ requestAnimationFrame(loop);
+  if((phase==='menu'||phase==='over') && ((frameNo++)&1)) return;   // menu/match-over backdrop at ~30fps
+  const dt=Math.min(0.04,(now-last)/1000); last=now; const time=now*0.001;
   if(phase!=='menu' && phase!=='over' && M) update(dt,time); else { updateCrowd(time); updateCam(dt); }
   if(shake>0){ shake-=dt; camera.position.x+=(Math.random()-0.5)*shake*0.5; camera.position.y+=(Math.random()-0.5)*shake*0.5; }
   renderer.render(scene,camera); }

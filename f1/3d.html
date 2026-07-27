@@ -281,6 +281,12 @@ const Engine = (function(){
     noiseG = ctx.createGain(); noiseG.gain.value=0; noise.connect(nf); nf.connect(noiseG); noiseG.connect(master);
     osc.start(); sub.start(); noise.start();
   }
+  // battery: silence the always-running synth oscillators while the tab is hidden
+  document.addEventListener('visibilitychange', ()=>{
+    if (!ctx) return;
+    if (document.hidden){ if (ctx.state==='running') ctx.suspend().catch(()=>{}); }
+    else if (ctx.state==='suspended') ctx.resume().catch(()=>{});
+  });
   return {
     resume(){ ensure(); if (ctx && ctx.state==='suspended') ctx.resume(); },
     start(){ ensure(); running=true; },
@@ -1003,9 +1009,10 @@ function updateHud(){
 }
 
 /* ---------------- main loop ---------------- */
-let last = performance.now();
+let last = performance.now(), frameNo = 0;
 function loop(now){
   requestAnimationFrame(loop);
+  if (state !== 'countdown' && state !== 'race' && ((frameNo++)&1)) return;   // menu/finish showcase at ~30fps
   let dt = (now - last)/1000; last = now;
   if (dt > 0.05) dt = 0.05;               // clamp to avoid tunneling on lag/tab-switch
 

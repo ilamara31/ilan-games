@@ -378,6 +378,7 @@ const Engine=(()=>{
     ready=true;
   }
   function resume(){ init(); if(ac&&ac.state==='suspended') ac.resume(); }
+  function suspend(){ if(ac&&ac.state==='running') ac.suspend(); }   // oscillators must not burn CPU on menus
   function set(sp,active){                 // sp = 0..1 speed fraction
     if(!ready) return;
     const t=ac.currentTime, s=Math.max(0,Math.min(1,sp));
@@ -400,14 +401,19 @@ const Engine=(()=>{
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     o.start(t); o.stop(t+dur+0.03);
   }
-  return {resume,set,beep};
+  return {resume,set,beep,suspend};
 })();
 
 /* ---- main loop ---- */
-let last=0, running=false;
-function loop(ts){ const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts; if(state==='race') update(dt); render();
+let last=0, rafId=null;
+function loop(ts){ rafId=null; const dt=Math.min(1/30,(ts-last)/1000||1/60); last=ts; if(state==='race') update(dt); render();
   Engine.set(maxSpeed?speed/maxSpeed:0, state==='race'||state==='countdown');
-  if(running) requestAnimationFrame(loop); }
+  // menu/garage/finish screens are opaque DOM overlays over a static canvas — park the loop
+  if(state==='race'||state==='countdown') rafId=requestAnimationFrame(loop);
+  else Engine.suspend(); }
+function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
+// a resize while parked must still repaint the (static) frame once
+window.addEventListener('resize',()=>{ if(rafId==null) render(); });
 function update(dt){
   raceTime+=dt;
   const seg=findSegment(position+playerZ), sp=speed/maxSpeed, dx=dt*2*sp;
@@ -431,9 +437,11 @@ function update(dt){
 function lapsFor(){ return curLoc.laps||LAPS_TOTAL; }   // short tracks (Japan/Singapore) run an extra lap
 function onLap(){ const t=raceTime-lapStart; lapStart=raceTime; if(t>0&&(fastestLap===0||t<fastestLap)) fastestLap=t; lap++; if(lap>lapsFor()) finishRace(); }
 
+let skyGrad=null, skyKey='';   // sky gradient only changes with circuit theme or height
 function render(){
-  const sky=ctx.createLinearGradient(0,0,0,H*0.62); sky.addColorStop(0,theme.sky[0]); sky.addColorStop(1,theme.sky[1]);
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  const sk=theme.sky[0]+theme.sky[1]+'@'+H;
+  if(skyKey!==sk){ skyKey=sk; skyGrad=ctx.createLinearGradient(0,0,0,H*0.62); skyGrad.addColorStop(0,theme.sky[0]); skyGrad.addColorStop(1,theme.sky[1]); }
+  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,W,H);
   ctx.fillStyle='rgba(255,245,210,0.85)'; ctx.beginPath(); ctx.arc(W*0.74,H*0.15,Math.min(W,H)*0.06,0,7); ctx.fill();
   ctx.fillStyle=theme.hill; ctx.beginPath(); ctx.moveTo(0,H*0.52);
   for(let i=0;i<=10;i++) ctx.lineTo(W*i/10,H*(0.47-0.035*Math.sin(i*1.6+1))); ctx.lineTo(W,H*0.52); ctx.closePath(); ctx.fill();
@@ -556,7 +564,7 @@ function enterRace(L){
   document.getElementById('steerhint').classList.remove('hidden');
   state='countdown';
   Engine.resume();                          // unlock audio on this tap/click
-  if(!running){ running=true; last=performance.now(); requestAnimationFrame(loop); }
+  wakeLoop();
   // 3 .. 2 .. 1 .. GO! — each number gets a beep, GO gets a higher longer tone
   setLights('red','3');                                       Engine.beep(660,0.16,0.11);
   setTimeout(()=>{ if(state==='countdown'){ setLights('red','2');    Engine.beep(660,0.16,0.11); } },900);

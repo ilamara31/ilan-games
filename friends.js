@@ -216,7 +216,14 @@
 
   /* ---- chat blocking (live multiplayer matches call IGFriends.blockChat(true) so you can't chat mid-match) ---- */
   let _chatBlocked = false;
-  function blockChat(b) { _chatBlocked = !!b; S(function () { const btn = document.getElementById("igf-bell"); if (btn) btn.style.display = _chatBlocked ? "none" : "flex"; }); if (_chatBlocked) S(function () { document.querySelectorAll(".igf-ov").forEach(function (o) { if (o.__stopRec) o.__stopRec(); o.remove(); }); }); }
+  function blockChat(b) { _chatBlocked = !!b; S(function () { const btn = document.getElementById("igf-bell"); if (btn) btn.style.display = _chatBlocked ? "none" : "flex"; }); if (_chatBlocked) S(function () {
+    document.querySelectorAll(".igf-ov").forEach(function (o) { if (o.__stopRec) o.__stopRec(); o.remove(); });
+    // The overlays above were removed without their close() handlers, so unwind
+    // the game-pause refcount too — otherwise requestAnimationFrame stays stubbed
+    // and the game is frozen for good.
+    if (_pauseRefs > 0 || _pausedByChat) { _pauseRefs = 0; _pausedByChat = false; if (_resumeT) { clearTimeout(_resumeT); _resumeT = null; } if (_pauser) _pauser.resume(); }
+    clearOpenChat(); _chatOpenWith = null;
+  }); }
 
   /* ---- media messages (voice + photo) — encoded in the text body, stored in the avatars bucket (no schema change) ---- */
   const MED = "\u0001";   // invisible sentinel prefixing media message bodies
@@ -791,7 +798,11 @@
     } catch (e) {}
     ensureMyProfile();
     dbLoad(); loadUnread(); loadGroups();
-    setInterval(function () { dbLoad(); loadUnread(); loadGroups(); }, 15000);
+    // Fallback refresh only — realtime (above) already delivers requests/chat
+    // instantly. Poll gently, never while the tab is hidden (background polling
+    // keeps the radio awake and drains batteries), and catch up on return.
+    setInterval(function () { if (document.hidden) return; dbLoad(); loadUnread(); loadGroups(); }, 60000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) { dbLoad(); loadUnread(); loadGroups(); } });
     scheduleBumpPlay(); weeklyInfo();
   }
   function onIncomingChat(msg) {
@@ -870,7 +881,22 @@
     b.innerHTML = '💬<span class="cnt" id="igf-bell-cnt">0</span>';
     b.onclick = openInbox;
     S(function () { document.body.appendChild(b); if (_chatBlocked) b.style.display = "none"; });
+    setTimeout(bellAvoidOverlap, 600); setTimeout(bellAvoidOverlap, 2500);
     refreshBell();
+  }
+  // if a game page already has a link/button in the top-right corner (e.g. a home
+  // button), slide the bell down below it instead of covering it
+  function bellAvoidOverlap() {
+    S(function () {
+      const b = document.getElementById("igf-bell"); if (!b || b.style.display === "none") return;
+      const r = b.getBoundingClientRect(); if (!r.width) return;
+      const under = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        .find(function (el) {
+          return el !== b && !b.contains(el) && (el.tagName === "A" || el.tagName === "BUTTON")
+            && el.getBoundingClientRect().width < 220;
+        });
+      if (under) b.style.top = Math.round(under.getBoundingClientRect().bottom + 8) + "px";
+    });
   }
   function refreshBell() {
     S(function () {

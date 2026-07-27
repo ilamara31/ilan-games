@@ -97,8 +97,13 @@
       autocapture: true,             // auto-track page views + clicks (no code needed)
       persistence: 'localStorage',
       // ---- Session Replay (bundled in the SDK, v2.50+) ----
-      record_sessions_percent: 100,  // record every session
-      record_canvas: true,           // capture <canvas> gameplay (f1, football, obby, …) — else it's blank
+      // Replay is expensive: with record_canvas it re-serializes the game canvas
+      // continuously, which drains batteries ("Using Significant Energy") and can
+      // starve the game loop on phones until the game stutters or hangs. Clarity
+      // (above) already records every session cheaply, so keep Mixpanel replay as
+      // a small sample and never capture canvas frames.
+      record_sessions_percent: 10,   // sample 1 in 10 sessions (was 100)
+      record_canvas: false,          // canvas capture is the #1 battery cost — leave off
       record_heatmap_data: true      // capture clicks to power Heatmaps
     });
 

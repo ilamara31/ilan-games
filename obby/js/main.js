@@ -160,6 +160,19 @@ hud.onContinue(() => startGame(true));
 hud.onExit(() => { Save.save(); location.reload(); });   // back to home menu; stage is saved -> Continue resumes it
 document.getElementById('musicBtn').addEventListener('click', () => { document.getElementById('musicBtn').textContent = music.toggle() ? '🔊' : '🔇'; });
 
+// battery: stop music + suspend audio while the tab is hidden; resume only if it was playing
+let musicWasPlaying = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    musicWasPlaying = !!music.timer;
+    music.stop();
+    if (music.ac && music.ac.state === 'running') music.ac.suspend().catch(() => {});
+  } else {
+    if (music.ac && music.ac.state === 'suspended') music.ac.resume().catch(() => {});
+    if (musicWasPlaying && music.on) music.start();
+  }
+});
+
 // ---------- leaderboard ----------
 function buildLeaderboard() {
   const list = [{ name: player.name, stage: player.stage, color: player.char.color, you: true }];
@@ -186,9 +199,10 @@ function tickEvents(dt) {
 
 // ---------- loop ----------
 const clock = new THREE.Clock();
-let rosterTick = 0;
+let rosterTick = 0, frameNo = 0;
 function loop() {
   requestAnimationFrame(loop);
+  if (!running && ((frameNo++) & 1)) return;   // menu backdrop orbit at ~30fps (gameplay untouched)
   const dt = Math.min(0.05, clock.getDelta());
   if (running && !paused && player) {
     time += dt;

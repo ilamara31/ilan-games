@@ -1164,6 +1164,7 @@ function startGame(mode){
   $('hint').style.opacity = S.seenTut ? '0' : '1';
   syncHud();
   Sound.startMusic('game');
+  wakeLoop();
 }
 
 function endGame(reason){
@@ -1509,7 +1510,13 @@ function syncHud(){
   $('livesHud').textContent = (G.mode==='time') ? '' : '❤️'.repeat(Math.max(0, Math.min(5, G.lives)));
   syncTime();
 }
-function syncTime(){ $('timeHud').textContent = G.mode==='time' ? Math.ceil(G.timeLeft)+'s' : ''; }
+let _timeTxt = null;
+function syncTime(){
+  // called every frame — only touch the DOM when the text actually changes,
+  // otherwise each frame emits a mutation that session recorders must process
+  const txt = G.mode==='time' ? Math.ceil(G.timeLeft)+'s' : '';
+  if (txt !== _timeTxt){ _timeTxt = txt; $('timeHud').textContent = txt; }
+}
 
 /* ---------------- screens ---------------- */
 const SCREENS = ['scrMenu','scrModes','scrShop','scrStats','scrSettings','scrPause','scrOver','scrTut'];
@@ -1665,7 +1672,7 @@ $('tgShake').onclick = () => { S.shake = !S.shake; save(); syncToggles(); Sound.
 $('tgLeft').onclick  = () => { S.lefty = !S.lefty; save(); syncToggles(); Sound.click(); syncHint(); };
 
 $('pauseBtn').onclick = () => { if (!G.running) return; G.paused = true; drag = null; Sound.stopMusic(); showScreen('scrPause'); };
-$('btnResume').onclick = () => { G.paused = false; hideScreens(); $('hud').classList.remove('hidden'); Sound.startMusic('game'); };
+$('btnResume').onclick = () => { G.paused = false; hideScreens(); $('hud').classList.remove('hidden'); Sound.startMusic('game'); wakeLoop(); };
 $('btnRestart').onclick= () => { Sound.click(); startGame(G.mode); };
 $('btnQuit').onclick   = () => { Sound.click(); if (G.running){ commitRunStats(); save(); } G.running=false; toMenu(); };
 $('btnAgain').onclick  = () => { Sound.click(); startGame(G.mode); };
@@ -1674,17 +1681,28 @@ $('btnOverModes').onclick = () => { Sound.click(); toModes(); };
 $('btnOverMenu').onclick  = () => { Sound.click(); toMenu(); };
 
 /* ---------------- loop ---------------- */
-let last = 0;
+/* The loop parks itself when there is nothing to animate (menu / shop / pause /
+   game over with the effects drained) instead of rendering the full arena at
+   60fps behind a static screen — that idle rendering is pure battery burn.
+   wakeLoop() restarts it whenever gameplay (re)starts. */
+let last = 0, rafId = null;
+function loopActive(){
+  return (G.running && !G.paused) || pops.length > 0 || parts.length > 0 || shake > 0.05 || flashT > 0;
+}
 function loop(t){
-  requestAnimationFrame(loop);
+  rafId = null;
   const dt = Math.min(0.05, (t - last)/1000 || 0);
   last = t;
   update(dt);
   render();
+  if (loopActive()) rafId = requestAnimationFrame(loop);
 }
+function wakeLoop(){ if (rafId == null){ last = performance.now(); rafId = requestAnimationFrame(loop); } }
+// a resize while parked would leave a cleared canvas behind the pause/game-over veil
+addEventListener('resize', () => { if (rafId == null) render(); });
 syncHint();
 toMenu();
-requestAnimationFrame(loop);
+wakeLoop();
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>

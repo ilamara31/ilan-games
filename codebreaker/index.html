@@ -64,7 +64,7 @@ body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI
 .back{background:var(--panel);border:1px solid rgba(120,170,255,.2);color:var(--ink);border-radius:12px;
   padding:10px 14px;cursor:pointer;font-weight:800;font-family:inherit;font-size:14px}
 .back:active{transform:scale(.95)}
-.exit{position:fixed;top:12px;right:12px;z-index:50;background:var(--panel);border:1px solid rgba(120,170,255,.2);
+.exit{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 62px);z-index:50;background:var(--panel);border:1px solid rgba(120,170,255,.2);
   color:var(--dim);border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:800;font-size:12px;text-decoration:none}
 
 /* ---- missions list ---- */
@@ -394,6 +394,8 @@ function startMusic(){ if(!S.music)return; const c=actx(); if(!c||musicNodes)ret
   o1.connect(gain); o2.connect(gain); o1.start(); o2.start(); lfo.start();
   musicNodes={gain,o1,o2,lfo}; }
 function stopMusic(){ if(musicNodes){ try{musicNodes.o1.stop();musicNodes.o2.stop();musicNodes.lfo.stop();}catch(e){} musicNodes=null; } }
+let _musicHeld=false;
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ _musicHeld=!!musicNodes; stopMusic(); } else if(_musicHeld){ _musicHeld=false; if(S.music) startMusic(); } });
 
 /* =========================================================
    CLUE ENGINE — guarantees a unique, solvable code
@@ -583,7 +585,7 @@ function _beginMission(idx,m){
   go('game');
   actx(); startMusic();
   clearInterval(tick);
-  tick=setInterval(()=>{ if(G.over)return; if(G.frozen>0){G.frozen--; updTimer(); return;} G.time--; updTimer();
+  tick=setInterval(()=>{ if(document.hidden)return; if(G.over)return; if(G.frozen>0){G.frozen--; updTimer(); return;} G.time--; updTimer();
     if(G.time<=0){ G.time=0; failMission(); } }, 1000);
 }
 function renderObjs(){

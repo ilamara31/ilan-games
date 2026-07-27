@@ -253,7 +253,7 @@ GAMEFN.wordle=function(root,G){
     const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr);
   }
   const keyh=e=>{ if(done)return; if(e.key==='Enter')press('⏎'); else if(e.key==='Backspace')press('⌫'); else if(/^[a-zA-Z]$/.test(e.key))press(e.key.toLowerCase()); };
-  window.addEventListener('keydown',keyh); window._cleanup=()=>window.removeEventListener('keydown',keyh);
+  window.addEventListener('keydown',keyh); if(window._cleanup)window._cleanup(); window._cleanup=()=>window.removeEventListener('keydown',keyh);
   GAMEFN.wordle._eval=evalGuess;
 };
 
@@ -357,9 +357,9 @@ GAMEFN.scramble=function(root,G){
   ok.onclick=checkWord;
   const keyh=e=>{ const k=(e.key||'').toLowerCase(); if(/^[a-z]$/.test(k)){ typeLetter(k); e.preventDefault(); } else if(e.key==='Backspace'){ undo(); e.preventDefault(); } else if(e.key==='Enter'){ checkWord(); e.preventDefault(); } };
   window.addEventListener('keydown',keyh);
-  timer=setInterval(()=>{ timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); window.removeEventListener('keydown',keyh); setBest('scrambleBest',score); igaSubmit();
+  timer=setInterval(()=>{ if(document.hidden)return; timeLeft--; $('stm').textContent=timeLeft; if(timeLeft<=0){ clearInterval(timer); window.removeEventListener('keydown',keyh); setBest('scrambleBest',score); igaSubmit();
     wrap.innerHTML='<div class="big">⏱ Time up!</div><div class="sub2">You unscrambled <b>'+score+'</b> words</div>'; const r=el('button','btn','Play again'); r.style.marginTop='10px'; r.onclick=()=>{ root.innerHTML=''; GAMEFN.scramble(root,G); }; wrap.appendChild(r); } },1000);
-  window._cleanup=()=>{ clearInterval(timer); window.removeEventListener('keydown',keyh); };
+  if(window._cleanup)window._cleanup(); window._cleanup=()=>{ clearInterval(timer); window.removeEventListener('keydown',keyh); };
   newWord();
 };
 
@@ -389,7 +389,7 @@ GAMEFN.g2048=function(root,G){
   window.addEventListener('keydown',keyh);
   let sx,sy; board.addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
   board.addEventListener('touchend',e=>{ if(sx==null)return; const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; if(Math.max(Math.abs(dx),Math.abs(dy))<24)return; if(Math.abs(dx)>Math.abs(dy))move(dx>0?'R':'L'); else move(dy>0?'D':'U'); sx=null; });
-  window._cleanup=()=>window.removeEventListener('keydown',keyh);
+  if(window._cleanup)window._cleanup(); window._cleanup=()=>window.removeEventListener('keydown',keyh);
   add();add();draw();
   GAMEFN.g2048._slide=slide;
 };

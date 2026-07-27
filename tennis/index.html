@@ -95,7 +95,7 @@
 </head>
 <body>
 <canvas id="game"></canvas>
-<a id="homeBtn" href="../" title="All games" style="position:fixed;top:10px;right:10px;z-index:100;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(6,16,30,.78);border:1.5px solid rgba(255,255,255,.18);font-size:20px;text-decoration:none;backdrop-filter:blur(6px)">🏠</a>
+<a id="homeBtn" href="../" title="All games" style="position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 62px);z-index:100;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(6,16,30,.78);border:1.5px solid rgba(255,255,255,.18);font-size:20px;text-decoration:none;backdrop-filter:blur(6px)">🏠</a>
 
 <!-- MENU -->
 <div id="menu" class="scr">
@@ -373,9 +373,10 @@ let trailI=0;
 
 /* ---------- particles ---------- */
 const parts=[];
-function burst(pos,color,n=14,spd=5,life=0.5){ for(let i=0;i<n;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.12,6,6),new THREE.MeshBasicMaterial({color,transparent:true}));
+const PART_GEO=new THREE.SphereGeometry(0.12,6,6);
+function burst(pos,color,n=14,spd=5,life=0.5){ for(let i=0;i<n;i++){ const m=new THREE.Mesh(PART_GEO,new THREE.MeshBasicMaterial({color,transparent:true}));
   m.position.copy(pos); const a=Math.random()*Math.PI*2,e=Math.random()*Math.PI; m.userData.v=new THREE.Vector3(Math.sin(e)*Math.cos(a),Math.abs(Math.cos(e)),Math.sin(e)*Math.sin(a)).multiplyScalar(spd*(0.4+Math.random())); m.userData.life=life; m.userData.max=life; scene.add(m); parts.push(m); } }
-function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const m=parts[i]; m.userData.life-=dt; if(m.userData.life<=0){ scene.remove(m); parts.splice(i,1); continue; } m.userData.v.y-=12*dt; m.position.addScaledVector(m.userData.v,dt); m.material.opacity=m.userData.life/m.userData.max; } }
+function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const m=parts[i]; m.userData.life-=dt; if(m.userData.life<=0){ scene.remove(m); m.material.dispose(); parts.splice(i,1); continue; } m.userData.v.y-=12*dt; m.position.addScaledVector(m.userData.v,dt); m.material.opacity=m.userData.life/m.userData.max; } }
 
 /* ---------- entities ---------- */
 let player=null, opp=null;
@@ -559,9 +560,12 @@ function sfx(type){ if(!actx||!S.sfx) return; const o=actx.createOscillator(),gn
   else if(type==='cheer'){ o.type='triangle'; o.frequency.setValueAtTime(300,now); o.frequency.linearRampToValueAtTime(520,now+0.3); dur=0.3; }
   gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.25,now+0.01); gn.gain.exponentialRampToValueAtTime(0.0001,now+dur); o.start(now); o.stop(now+dur+0.02); }
 const SC=[0,4,7,9,12]; let mstep=0;
-function startMusic(){ if(musicTimer) clearInterval(musicTimer); musicTimer=setInterval(()=>{ if(!actx||!S.music) return; const f=196*Math.pow(2,SC[mstep%SC.length]/12);
+function startMusic(){ if(musicTimer) clearInterval(musicTimer); musicTimer=setInterval(()=>{ if(!actx||!S.music||document.hidden) return; const f=196*Math.pow(2,SC[mstep%SC.length]/12);
   const o=actx.createOscillator(),gn=actx.createGain(); o.type='triangle'; o.frequency.value=f; o.connect(gn); gn.connect(musicGain); const now=actx.currentTime;
   gn.gain.setValueAtTime(0.0001,now); gn.gain.exponentialRampToValueAtTime(0.5,now+0.04); gn.gain.exponentialRampToValueAtTime(0.0001,now+0.4); o.start(now); o.stop(now+0.45); mstep++; },360); }
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ stopMusic(); if(actx&&actx.state==='running') actx.suspend(); }
+  else { if(actx&&actx.state==='suspended') actx.resume(); if(S.music&&actx&&!musicTimer) startMusic(); } });
 let cheerT=0; function crowdCheer(){ sfx('cheer'); cheerT=0.6; }
 
 /* ============================================================ UI ============================================================ */
@@ -650,15 +654,17 @@ document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('n
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
 $('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden');
-$('swMusic').onclick=function(){ S.music=!S.music; this.classList.toggle('on',S.music); if(musicGain) musicGain.gain.value=S.music?0.1:0; save(); };
+$('swMusic').onclick=function(){ S.music=!S.music; this.classList.toggle('on',S.music); if(musicGain) musicGain.gain.value=S.music?0.1:0; if(!S.music) stopMusic(); else if(actx&&!musicTimer) startMusic(); save(); };
 $('swSfx').onclick=function(){ S.sfx=!S.sfx; this.classList.toggle('on',S.sfx); save(); };
 $('resetBtn').onclick=()=>{ if(confirm('Reset all progress?')){ localStorage.removeItem(SK); location.reload(); } };
 refreshMenu();
 ['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
 
 /* ============================================================ LOOP ============================================================ */
-let last=performance.now(), shake=0;
-function tick(now){ requestAnimationFrame(tick); const dt=Math.min(0.05,(now-last)/1000); last=now; const t=now/1000;
+let last=performance.now(), shake=0, frameNo=0;
+function tick(now){ requestAnimationFrame(tick);
+  if(!M.active && ((frameNo++)&1)) return;   // menu/career/result backdrop at ~30fps (matches untouched)
+  const dt=Math.min(0.05,(now-last)/1000); last=now; const t=now/1000;
   updateParts(dt);
   if(M.active){
     // player move

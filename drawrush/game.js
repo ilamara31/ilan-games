@@ -81,7 +81,7 @@ const Draw=(function(){
 
   function resize(){
     const wrap=canvas.parentElement, r=wrap.getBoundingClientRect();
-    dpr=Math.min(window.devicePixelRatio||1,2.5);
+    dpr=Math.min(window.devicePixelRatio||1,2);
     W=Math.max(2,Math.round(r.width*dpr)); H=Math.max(2,Math.round(r.height*dpr));
     canvas.width=W; canvas.height=H;
     renderAll();

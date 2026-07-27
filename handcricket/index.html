@@ -1406,7 +1406,7 @@ setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.pha
 // lobby: keep re-announcing until the match starts. A single dropped 'hello' plus a
 // missed presence-join used to leave the HOST stuck on "Waiting for players…" with the
 // guest invisible; this idempotent re-send heals it within a few seconds.
-setInterval(()=>{ if(R && !R.isHost && cur==='lobby') MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }, 3000);
+setInterval(()=>{ if(R && !R.isHost && cur==='lobby' && !document.hidden) MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }, 3000);
 // live spectate: active tournament players broadcast a lightweight score so WAITING
 // players can watch the other matches. Only in tournaments (quick 2-player has no waiters).
 setInterval(()=>{ if(R && G.online && G.tourney && !G.quick && cur==='game' && G.matchId){

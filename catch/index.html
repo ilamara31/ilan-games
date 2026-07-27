@@ -624,7 +624,7 @@ function refreshShieldBtn(){
     lbl.textContent = shieldActive(now) ? 'ON' : '';
   }
 }
-setInterval(refreshShieldBtn, 200);
+setInterval(()=>{ if (!running || document.hidden) return; refreshShieldBtn(); }, 200);
 
 /* ============================================================
    FLOW: start / game over / shop
