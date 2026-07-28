@@ -61,7 +61,9 @@
     background:radial-gradient(circle at 50% 55%, transparent 45%, rgba(60,120,255,.28) 100%); }
   #vignette.on { opacity:1; }
 
-  .home { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:50; font-size:22px; width:46px; height:46px;
+  /* shown mid-race: sits ABOVE the touch controls (brake/boost run bottom:16-102px) so
+     slamming the brake on a narrow phone can never hit the home link */
+  .home { position:absolute; bottom:118px; left:50%; transform:translateX(-50%); z-index:50; font-size:22px; width:46px; height:46px;
     border-radius:50%; background:rgba(255,255,255,.8); color:#111; display:flex; align-items:center; justify-content:center;
     text-decoration:none; box-shadow:0 2px 6px rgba(0,0,0,.35); pointer-events:auto; }
 
@@ -126,6 +128,34 @@
   .pv-nose { position:absolute; top:-12px; left:27px; width:20px; height:26px; border-radius:8px 8px 3px 3px; }
   .pv-stripe { position:absolute; top:6px; left:31px; width:12px; height:120px; border-radius:6px; opacity:.92; }
   .pv-cockpit { position:absolute; top:44px; left:24px; width:26px; height:34px; border-radius:12px; background:#0d1116; }
+  /* ---- multiplayer ---- */
+  .rooms { max-width:480px; width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0; }
+  .room { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:11px 14px; text-align:left; }
+  .room.racing { opacity:.55; }
+  .room .rfl { font-size:28px; }
+  .room .rinfo { flex:1; min-width:0; }
+  .room .rcode { font-weight:900; font-size:17px; letter-spacing:3px; color:#ffd54a; }
+  .room .rmeta { font-size:12.5px; color:#9fb3d8; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .codein { display:flex; gap:8px; justify-content:center; margin:6px 0 2px; }
+  .codein input { width:150px; text-align:center; background:#0c1426; border:2px solid #2a3c63; color:#ffd54a; padding:12px;
+    border-radius:12px; font-size:20px; font-weight:900; letter-spacing:5px; text-transform:uppercase; font-family:inherit; outline:none; }
+  .codein input:focus { border-color:#ffd54a; }
+  #mpRoomCode { font-size:clamp(34px,10vw,52px); font-weight:900; letter-spacing:10px; color:#ffd54a;
+    background:rgba(255,213,74,.1); border:2px dashed rgba(255,213,74,.5); border-radius:18px; padding:8px 22px; margin:4px 0 2px; }
+  .plist { max-width:420px; width:100%; display:flex; flex-direction:column; gap:7px; margin:8px 0; }
+  .prow { display:flex; align-items:center; gap:10px; background:#16243f; border-radius:12px; padding:9px 13px; font-size:15px; text-align:left; }
+  .prow .pc { width:16px; height:16px; border-radius:4px; flex:0 0 auto; }
+  .prow .pn { flex:1; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prow .ph { font-size:12px; color:#ffd54a; }
+  .prow.bot { opacity:.6; }
+  #mpMsg { min-height:20px; font-size:14px; color:#ff9b9b; font-weight:bold; margin:4px 0; }
+  #mpRoomMaps .mapcard { pointer-events:auto; }
+  /* announce.js pins its banner to bottom:12px at z-index 99999 — on the multiplayer
+     screens that lands exactly on the START/LEAVE buttons and swallows their taps.
+     Hide it while in multiplayer; the solo menu still shows announcements. */
+  body.mpui div[role="status"] { display:none !important; }
+  #mpRoomMaps.guestview .mapcard { pointer-events:none; opacity:.75; }
+  #mpRoomMaps.guestview .mapcard.sel { opacity:1; }
 </style>
 </head>
 <body>
@@ -165,6 +195,7 @@
     <div class="cars" id="carList"></div>
     <div class="row">
       <button class="btn green" id="startBtn">🏁 START RACE</button>
+      <button class="btn" id="mpBtn">🌐 MULTIPLAYER</button>
       <button class="btn alt" id="customBtn">🎨 CUSTOMIZE CAR</button>
     </div>
     <div class="row">
@@ -194,6 +225,41 @@
     </div>
   </div>
 
+  <!-- MULTIPLAYER LOBBY -->
+  <div id="scr-mplobby" class="screen hidden">
+    <div class="tag">🌐 ONLINE MULTIPLAYER</div>
+    <h1>🏁 RACE ROOMS</h1>
+    <div class="sub">Join a room to race real people, or create your own and share the code with friends. Empty seats are filled with 🤖 bots — up to <b>7 racers</b> per room.</div>
+    <div id="mpWho" class="sub" style="color:#ffd54a;margin-top:-6px"></div>
+    <button class="btn green" id="mpCreateBtn">➕ CREATE A ROOM</button>
+    <div class="secttl">🔑 HAVE A CODE?</div>
+    <div class="codein">
+      <input id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="btn" id="mpJoinCodeBtn" style="margin:0">JOIN</button>
+    </div>
+    <div id="mpMsg"></div>
+    <div class="secttl">🚪 OPEN ROOMS · tap to join</div>
+    <div class="rooms" id="mpRoomList"><div class="sub">Looking for rooms…</div></div>
+    <button class="btn alt" id="mpLobbyBack" style="margin-top:10px">⬅ BACK</button>
+  </div>
+
+  <!-- MULTIPLAYER ROOM -->
+  <div id="scr-mproom" class="screen hidden">
+    <div class="tag">🌐 RACE ROOM</div>
+    <div class="sub" style="margin:2px 0 0">Friends join with this code (or the invite link):</div>
+    <div id="mpRoomCode">----</div>
+    <button class="btn alt" id="mpShareBtn" style="padding:10px 20px;font-size:14px">📋 COPY INVITE</button>
+    <div class="secttl">🌍 CIRCUIT · <span id="mpMapWho"></span></div>
+    <div class="maps" id="mpRoomMaps"></div>
+    <div class="secttl">🏎️ RACERS · <span id="mpSeats"></span></div>
+    <div class="plist" id="mpPlayers"></div>
+    <div class="row">
+      <button class="btn green hidden" id="mpStartBtn">🏁 START RACE</button>
+      <button class="btn alt" id="mpLeaveBtn">🚪 LEAVE ROOM</button>
+    </div>
+    <div class="hintbar" id="mpRoomHint"></div>
+  </div>
+
   <!-- FINISH -->
   <div id="scr-finish" class="screen hidden">
     <h1 id="finTitle">FINISH</h1>
@@ -201,6 +267,8 @@
     <div id="finBoard"></div>
     <button class="btn" id="againBtn">🔁 RACE AGAIN</button>
     <button class="btn green" id="menuBtn">🏠 MENU</button>
+    <button class="btn hidden" id="mpAgainBtn">🚪 BACK TO ROOM</button>
+    <button class="btn green hidden" id="mpFinLeaveBtn">🌐 LEAVE ROOM</button>
     <a class="btn alt" href="../">ALL GAMES</a>
   </div>
 </div>
@@ -248,14 +316,20 @@ function migrateEconomy(f){
   if (f.money===undefined){ f.money=300; f.owned=['kart']; f.car='kart'; }
   if (f.unlocked===undefined) f.unlocked=1;         // India unlocked to start
   if (!Array.isArray(f.owned)) f.owned=['kart'];
+  // lifetime prize money — the leaderboard metric (never decreases, unlike the spendable
+  // balance). Seed old saves from what we can prove: current balance + everything spent on cars.
+  if (f.earned===undefined) f.earned=Math.max(0,(f.money||0)+f.owned.reduce((s,id)=>s+(getCar(id).price||0),0));
   if (!f.paint) f.paint={};                          // per-car custom paint (3D only): {carId:{body,accent,stripe}}
   return f;
 }
-if (acct && acct.f1){ migrateEconomy(acct.f1); }
-const guestF1 = migrateEconomy({races:0,wins:0,podiums:0,points:0,bestPos:99});
+if (acct && acct.f1){ migrateEconomy(acct.f1); igSave(); }
+const guestF1 = migrateEconomy({races:0,wins:0,podiums:0,points:0,bestPos:99,earned:0});
 function career(){ return acct ? acct.f1 : guestF1; }
 function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(acctStore)); }catch(e){} }
-function saveF1(){ if (acct) igSave(); }             // guest career lives only for the session
+// write only OUR game's slice into a freshly-read store, so a stale tab (e.g. the 2D
+// mode open alongside) can't clobber money won elsewhere with its old snapshot.
+// Guest career lives only for the session.
+function saveF1(){ if (!acct) return; try{ const s=igLoad(); const a=s.accounts.find(x=>x.id===acctStore.activeId); if(a){ a.f1=acct.f1; localStorage.setItem(STORE_KEY, JSON.stringify(s)); return; } }catch(e){} igSave(); }
 const POINTS = [25,18,15,12,10,8,6,4,2,1];   // F1 points by finishing position
 // the car you own & drive comes from the shared career; default to a car you actually own
 let chosenCar = getCar(career().car);
@@ -764,7 +838,7 @@ function startRace(){
   if (!chosenCountry.free && f.money < chosenCountry.fee){
     flashWallet(`💸 Need ₹${chosenCountry.fee} entry — race the free 🇦🇫 practice to earn.`); return;
   }
-  if (!chosenCountry.free){ f.money -= chosenCountry.fee; saveF1(); }   // pay the entry fee
+  // entry fee is settled in finishRace() — quitting/reloading mid-race must not eat money
   buildTrack(chosenCountry);                 // rebuild the selected country's circuit
   raceLaps = chosenCountry.laps || 3;
   makeRacers();
@@ -804,7 +878,8 @@ function finishRace(){
   const prize = chosenCountry.free ? chosenCountry.win : prizeFor(myPos, all.length, chosenCountry);
   const net = prize - (chosenCountry.free ? 0 : chosenCountry.fee);
   c.points = (c.points||0) + pts; c.races = (c.races||0) + 1;
-  c.money  = (c.money||0) + prize;
+  c.money  = (c.money||0) + net;                          // fee is settled here, not at race start
+  c.earned = (c.earned||0) + prize;                       // lifetime prize money (leaderboard metric)
   if (myPos===1) c.wins = (c.wins||0) + 1;
   if (myPos<=3) c.podiums = (c.podiums||0) + 1;
   // unlock the next circuit in order (same rule the 2D World Tour uses)
@@ -815,10 +890,10 @@ function finishRace(){
     if (nx && !nx.free) unlockedNew = nx;
   }
   saveF1();
-  if (window.IGAuth) IGAuth.submitScore('f1', c.points);   // career points (higher is better)
+  if (window.IGAuth) IGAuth.submitScore('f1', c.earned);   // lifetime prize money (matches the wallet progression players see)
   const medal = myPos===1?'🥇':myPos===2?'🥈':myPos===3?'🥉':'🏁';
   $('finTitle').textContent = myPos===1 ? '🏆 YOU WON!' : (medal+' P'+myPos);
-  const earned = `💰 Prize <b>+₹${prize}</b> · balance <b>₹${c.money}</b> · <b>+${pts}</b> pts`
+  const earned = `💰 Prize <b>+₹${prize}</b>` + (chosenCountry.free ? '' : ` · entry <b>−₹${chosenCountry.fee}</b>`) + ` · balance <b>₹${c.money}</b> · <b>+${pts}</b> pts`
     + (unlockedNew ? `<br>🔓 New circuit unlocked: <b>${unlockedNew.flag} ${unlockedNew.name}</b>!` : '');
   $('finSub').innerHTML = (myPos===1
     ? `Fantastic driving — you won ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`
@@ -856,6 +931,11 @@ function updateCountdown(dt){
 }
 
 function updatePlayer(dt){
+  if (player.finished){                            // crossed the line — coast to a stop (multiplayer keeps simulating others)
+    player.speed += (0 - player.speed) * Math.min(1, dt*1.2);
+    player.prog += player.speed * dt;
+    return;
+  }
   const f = sampleAt(player.prog);                 // curvature under the car (only .curv used here)
   const steer = (rightHeld?1:0) - (leftHeld?1:0);
   player._steer = steer;
@@ -901,7 +981,8 @@ function updateRival(r, dt){
   // pace: hold cruise; a mild pull toward the player keeps the pack tight & the
   // race exciting without teleporting (bounded, so it can't cause bugs).
   const rel = wrapDelta(player.prog - r.prog);           // >0: player ahead
-  const rubber = THREE.MathUtils.clamp(rel*0.02, -6, 8); // catch up if far behind
+  // online bots hold their own pace — rubber-banding toward one player would be unfair to the rest
+  const rubber = r.mpBot ? 0 : THREE.MathUtils.clamp(rel*0.02, -6, 8); // catch up if far behind
   const target = THREE.MathUtils.clamp(r.cruise + rubber, 60, 118);
   r.speed += (target - r.speed) * 1.2 * dt;
   r.prog += r.speed * dt;
@@ -920,6 +1001,7 @@ function resolveCollisions(){
   for (let i=0;i<all.length;i++){
     for (let j=i+1;j<all.length;j++){
       const A=all[i], B=all[j];
+      if (A.finished || B.finished) continue;   // cars that have taken the flag are ghosts — never a roadblock
       const along = wrapDelta(B.prog - A.prog);
       if (Math.abs(along) >= CAR_LEN) continue;
       const lat = B.lateral - A.lateral;
@@ -938,18 +1020,25 @@ function resolveCollisions(){
 }
 
 function clampLaterals(){
-  // the player may run wide onto the grass (penalised in updatePlayer); rivals hold the tarmac
+  // the player may run wide onto the grass (penalised in updatePlayer); rivals hold the tarmac.
+  // remote humans get the player limit — they really can be on the grass on their own screen.
   for (const r of all){
-    const lim = r.isPlayer ? PLAYER_MAX_LAT : MAX_LAT;
+    const lim = (r.isPlayer || (r.isRemote && !r.mpBot)) ? PLAYER_MAX_LAT : MAX_LAT;
     r.lateral = THREE.MathUtils.clamp(r.lateral, -lim, lim);
   }
 }
 
 function checkFinish(){
   for (const r of all){
+    if (MP.on && r.isRemote) continue;         // remote racers finish via the network, on their own clock
     if (!r.finished && r.prog >= raceLaps*TRACK_LEN){
       r.finished = true; r.finishTime = raceTime; r.speed *= 0.4;
     }
+  }
+  if (MP.on){
+    if (player.finished && !MP.done) mpPlayerFinished();
+    if (MP.done && all.every(r => r.finished || r.gone)) mpEndRaceSim();
+    return;
   }
   if (player.finished && state==='race') finishRace();
 }
@@ -1023,8 +1112,10 @@ function loop(now){
   } else if (state === 'race'){
     raceTime += dt;
     updatePlayer(dt);
-    for (const r of rivals) if (!r.finished) updateRival(r, dt);
-    resolveCollisions();
+    // finished rivals coast onward at their cool-down speed instead of parking ON the
+    // finish line, where they used to form a wall of stationary cars on your last lap
+    for (const r of rivals){ if (!r.finished) updateRival(r, dt); else r.prog += r.speed * dt; }
+    if (MP.on){ mpRaceTick(dt); mpResolveCollisions(); } else resolveCollisions();
     clampLaterals();
     all.forEach(updateCarMesh);
     placeCamera(0);
@@ -1161,11 +1252,571 @@ $('customBack').onclick = ()=>{                       // discard edits made this
 let soundOff = false;
 $('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); $('muteBtn').textContent = soundOff?'🔇':'🔊'; };
 
+/* ============================================================
+   MULTIPLAYER — rooms over Supabase Realtime (presence + broadcast).
+   A room IS a channel ('f1mp-'+CODE); it dies by itself when everyone
+   leaves. Hosts also advertise their room on a shared lobby channel
+   ('f1mp-lobby') via presence, which is what powers the room list —
+   an ad vanishes automatically the moment the host disconnects.
+   The host simulates the bots and streams them with its own position,
+   so every screen sees identical bots. Everyone drives an equal-spec
+   car (own paint) — winning is racing skill, not garage money.
+   ============================================================ */
+const MP_MAXN = 7, MP_TOP = 106;              // max racers per room; equal car spec (≈360 km/h)
+const MPDBG = location.search.indexOf('mptest')>=0;
+const mpdbg = (...a)=>{ if (MPDBG) console.log('MPDBG', ...a); };
+const BOT_NAMES = ['Blitz','Nitro','Vortex','Comet','Dash','Zoom'];
+const myId = 'u' + Math.random().toString(36).slice(2, 9);
+const MP = {
+  on:false, done:false,                       // in an MP race; my run is over (still spectating the sim)
+  sb:null, lobbyCh:null, ch:null,
+  code:null, isHost:false, hostId:null, myT:0, roomT:0,
+  circuit:'india', started:false, members:[],
+  netCars:{}, bots:[], country:null,
+  seq:0, lastSeq:-1, sendAcc:0, raceGen:0, finTimes:{},
+};
+let RGEN = 0;
+function roomTimer(fn, ms){ const g = RGEN; setTimeout(()=>{ if (g === RGEN) fn(); }, ms); }
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r1 = v => Math.round(v*10)/10, r2 = v => Math.round(v*100)/100;
+const cleanCode = v => String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for (let i=0;i<4;i++) s+=A[(Math.random()*A.length)|0]; return s; }
+
+function mpName(){
+  try{ if (window.IGAuth && IGAuth.displayName){ const n=IGAuth.displayName(); if (n) return String(n).trim().slice(0,14); } }catch(e){}
+  try{ const s=JSON.parse(localStorage.getItem('soc_store_v1'));
+       const a=s && s.accounts && (s.accounts.find(x=>x.id===s.activeId) || s.accounts[0]);
+       if (a && a.name) return String(a.name).trim().slice(0,14); }catch(e){}
+  try{ const g=localStorage.getItem('iglb_guestname'); if (g) return String(g).slice(0,14); }catch(e){}
+  let n=null; try{ n=localStorage.getItem('f1mp_name'); }catch(e){}
+  if (!n){ n='Racer-'+(100+((Math.random()*900)|0)); try{ localStorage.setItem('f1mp_name', n); }catch(e){} }
+  return n;
+}
+async function mpEnsure(){
+  if (!(window.supabase && window.supabase.createClient)){
+    await new Promise((res, rej)=>{ const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); });
+  }
+  if (!MP.sb) MP.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY,
+    { auth:{ persistSession:false }, realtime:{ params:{ eventsPerSecond: 30 } } });
+  return MP.sb;
+}
+function mpSend(ev, payload){ if (MP.ch){ try{ MP.ch.send({ type:'broadcast', event:ev, payload:payload||{} }); }catch(e){} } }
+function mpToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#0f1d36;'
+    +'border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:bold;'
+    +'box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center';
+  t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 4000);
+}
+function showScreenMp(id){
+  ['scr-menu','scr-custom','scr-finish','scr-mplobby','scr-mproom'].forEach(s=>$(s).classList.add('hidden'));
+  $(id).classList.remove('hidden');
+}
+
+/* ---- lobby: the room list ---- */
+async function mpOpenLobby(){
+  document.body.classList.add('mpui');
+  state='mplobby'; showScreenMp('scr-mplobby');
+  $('mpWho').textContent='👤 Racing as '+mpName();
+  $('mpMsg').textContent='';
+  try{
+    const sb=await mpEnsure();
+    if (!MP.lobbyCh){
+      MP.lobbyCh=sb.channel('f1mp-lobby',{ config:{ broadcast:{ self:false }, presence:{ key:myId } } });
+      MP.lobbyCh.on('presence',{event:'sync'},mpRenderRooms);
+      MP.lobbyCh.subscribe(st=>{ if (st==='SUBSCRIBED'){ mpAdvertise(); mpRenderRooms(); } });
+    } else mpRenderRooms();
+  }catch(e){ $('mpRoomList').innerHTML='<div class="sub">⚠️ Couldn’t connect — check your internet and try again.</div>'; }
+}
+// hosts advertise their room on the lobby channel; the ad dies with the host's connection
+function mpAdvertise(){
+  if (!MP.lobbyCh) return;
+  try{
+    if (MP.code && MP.isHost)
+      MP.lobbyCh.track({ room:MP.code, host:mpName(), n:Math.max(1,MP.members.length), max:MP_MAXN,
+                         started:MP.started?1:0, circuit:MP.circuit, t:MP.roomT });
+    else MP.lobbyCh.untrack();
+  }catch(e){}
+}
+function mpRenderRooms(){
+  const el=$('mpRoomList'); if (!el || state!=='mplobby') return;
+  let rooms=[];
+  try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{};
+       for (const k in st){ const p=st[k]&&st[k][0]; if (p&&p.room) rooms.push(p); } }catch(e){}
+  rooms.sort((a,b)=>(a.t||0)-(b.t||0));
+  if (!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite your friends! 🏎️</div>'; return; }
+  el.innerHTML=rooms.map(r=>{
+    const c=COUNTRIES.find(x=>x.id===r.circuit)||COUNTRIES[0];
+    const full=(r.n|0)>=MP_MAXN, racing=!!r.started;
+    const act = racing ? '<span class="pill lock">🏁 RACING</span>'
+             : full   ? '<span class="pill lock">FULL</span>'
+             : `<button class="btn green" data-join="${esc(r.room)}" style="padding:9px 18px;font-size:14px;margin:0">JOIN</button>`;
+    return `<div class="room ${racing?'racing':''}"><div class="rfl">${c.flag}</div>
+      <div class="rinfo"><div class="rcode">${esc(r.room)}</div>
+      <div class="rmeta">👑 ${esc(r.host||'?')} · ${Math.min(r.n|0,MP_MAXN)}/${MP_MAXN} racers · ${c.name}${racing?' · race in progress':''}</div></div>${act}</div>`;
+  }).join('');
+  el.querySelectorAll('[data-join]').forEach(b=> b.onclick=()=>mpJoin(b.dataset.join));
+}
+function mpExitLobby(){
+  mpCloseRoom();
+  if (MP.lobbyCh){ try{ MP.sb.removeChannel(MP.lobbyCh); }catch(e){} MP.lobbyCh=null; }
+  document.body.classList.remove('mpui');
+  toMenu();
+}
+
+/* ---- create / join ---- */
+async function mpCreate(){
+  $('mpMsg').textContent='Creating your room…';
+  try{
+    await mpEnsure();
+    let code=genCode();                       // avoid a code already advertised in the lobby
+    try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{}; const ads={};
+         for (const k in st){ const p=st[k]&&st[k][0]; if (p&&p.room) ads[p.room]=1; }
+         let n=0; while (ads[code] && n++<20) code=genCode(); }catch(e){}
+    await mpOpenRoom(code, true);
+    try{ if (window.track) window.track('mp_room_create',{ code:code }); }catch(e){}
+  }catch(e){ $('mpMsg').textContent='⚠️ Couldn’t create the room — try again.'; }
+}
+async function mpJoin(code){
+  code=cleanCode(code);
+  if (code.length<4){ $('mpMsg').textContent='Enter the 4-letter room code.'; return; }
+  try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{};   // pre-checks when the ad is visible
+       for (const k in st){ const p=st[k]&&st[k][0];
+         if (p && p.room===code){
+           if (p.started){ $('mpMsg').textContent='🏁 That race has already started — join another room.'; return; }
+           if ((p.n|0)>=MP_MAXN){ $('mpMsg').textContent='That room is full ('+MP_MAXN+'/'+MP_MAXN+').'; return; }
+         } } }catch(e){}
+  $('mpMsg').textContent='Joining '+code+'…';
+  try{ await mpEnsure(); await mpOpenRoom(code, false);
+       try{ if (window.track) window.track('mp_room_join',{ code:code }); }catch(e){} }
+  catch(e){ $('mpMsg').textContent='⚠️ Couldn’t join '+code+' — try again.'; }
+}
+
+/* ---- the room channel ---- */
+/* Presence tracks are coalesced: several state changes in one tick (teardown +
+   back-to-room + advertise) become ONE track message ~150ms later, reading the
+   freshest state. Rapid-fire re-tracks have been seen to make the server drop
+   the channel, and they also spam every peer with presence diffs. */
+let _trackT=null;
+function mpTrackSelf(){
+  if (!MP.ch || _trackT) return;
+  _trackT=setTimeout(()=>{ _trackT=null;
+    if (!MP.ch) return;
+    mpdbg('trackSelf', MP.ch.state, 'racing:', (MP.on && !MP.done)?1:0);
+    const s=playerStyle();
+    const meta={ id:myId, name:mpName(), host:MP.isHost?1:0, body:s.body,
+                 accent:(s.accent!=null?s.accent:s.body), stripe:s.stripe?1:0, t:MP.myT,
+                 racing:(MP.on && !MP.done)?1:0 };
+    if (MP.isHost){ meta.circuit=MP.circuit; meta.started=MP.started?1:0; }
+    try{ MP.ch.track(meta); }catch(e){}
+  }, 150);
+}
+// (re)create + subscribe + track the room channel — used on join AND to self-heal a drop
+async function mpConnectRoom(code){
+  const sb=await mpEnsure();
+  if (MP.ch){ try{ sb.removeChannel(MP.ch); }catch(e){} MP.ch=null; }
+  const ch=sb.channel('f1mp-'+code,{ config:{ broadcast:{ self:false }, presence:{ key:myId } } });
+  MP.ch=ch;
+  ch.on('presence',{event:'sync'},mpOnPresence);
+  ch.on('presence',{event:'leave'},({leftPresences})=>mpOnLeave(leftPresences||[]));
+  ['start','pos','fin','bye'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
+  await new Promise((res,rej)=>{
+    let done=false;
+    ch.subscribe(st=>{
+      if (st==='SUBSCRIBED' && !done){ done=true; mpTrackSelf(); res(); }
+      else if ((st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED') && !done){ done=true; rej(new Error(st)); }
+    });
+    setTimeout(()=>{ if (!done){ done=true; rej(new Error('timeout')); } }, 8000);
+  });
+}
+async function mpOpenRoom(code, asHost){
+  mpCloseRoom();
+  RGEN++;
+  MP.code=code; MP.isHost=asHost; MP.hostId=asHost?myId:null;
+  MP.started=false; MP.members=[]; MP.seq=0; MP.lastSeq=-1;
+  MP.myT=Date.now(); MP.roomT=MP.myT;
+  if (asHost) MP.circuit=(chosenCountry.free?'india':chosenCountry.id);
+  await mpConnectRoom(code);
+  state='mproom'; showScreenMp('scr-mproom');
+  mpRenderRoom();
+  if (asHost) mpAdvertise();
+  else roomTimer(()=>{        // joined a code with nobody hosting it → not found
+    if (state==='mproom' && MP.code===code && !MP.members.some(m=>m.host)){
+      mpToast('Room '+code+' was not found — maybe it closed.'); mpLeaveRoom();
+    } }, 5000);
+  mpRoomWatch();
+}
+function mpOnPresence(){
+  if (!MP.ch) return;
+  let arr=[];
+  try{ const st=MP.ch.presenceState();
+       for (const k in st){ const p=st[k]&&st[k][0]; if (p&&p.id) arr.push(p); } }catch(e){}
+  arr.sort((a,b)=>(a.t||0)-(b.t||0)||(a.id<b.id?-1:1));
+  MP.members=arr;
+  const h=arr.find(m=>m.host);
+  if (h){
+    MP.hostId=h.id;
+    if (!MP.isHost){ if (h.circuit) MP.circuit=h.circuit; MP.started=!!h.started; }
+  }
+  if (MP.isHost){
+    // capacity: politely turn away joiners beyond the 7th seat
+    arr.slice(MP_MAXN).forEach(m=>{ if (m.id!==myId) mpSend('bye',{ to:m.id }); });
+    mpAdvertise();
+  }
+  if (state==='mproom') mpRenderRoom();
+}
+function mpOnLeave(lefts){
+  for (const p of lefts){
+    if (!p || !p.id) continue;
+    if (MP.on){                                  // mid-race: their car pulls over (DNF)
+      const r=MP.netCars[p.id];
+      if (r && !r.finished){ r.gone=true; r.netV=0; MP.finTimes[p.id]=-1; mpMaybeRefreshBoard(); }
+    }
+    if (p.host && !MP.isHost && !MP.on && state==='mproom'){
+      // presence can blip — confirm the host is really gone before closing
+      roomTimer(()=>{
+        if (state==='mproom' && MP.ch && !MP.members.some(m=>m.host)){
+          mpToast('👑 The host closed the room.'); mpLeaveRoom();
+        } }, 6000);
+    }
+  }
+}
+function mpRoomWatch(){
+  const g=RGEN;
+  let failures=0;
+  const iv=setInterval(()=>{
+    if (g!==RGEN || !MP.ch){ clearInterval(iv); return; }
+    const s=MP.ch.state;
+    if (s!=='joined' && s!=='joining'){
+      // channels DO drop (phone sleep, network blip, server hiccup) — self-heal by
+      // resubscribing the same topic; only give up after repeated failures.
+      if (MP.reopening) return;
+      mpdbg('watch: channel', s, '— reopening');
+      MP.reopening=true;
+      const code=MP.code;
+      mpConnectRoom(code).then(()=>{
+        MP.reopening=false; failures=0;
+        if (g!==RGEN || MP.code!==code) return;
+        mpTrackSelf(); if (MP.isHost) mpAdvertise();
+        mpdbg('watch: reopened OK');
+      }).catch(()=>{
+        MP.reopening=false; failures++;
+        if (g!==RGEN || MP.code!==code) return;
+        if (failures>=2){ clearInterval(iv);
+          if (MP.on){ /* mid-race: keep racing offline; results still show local sim */ }
+          else { mpToast('⚠️ Connection lost — left the room.'); mpLeaveRoom(); } }
+      });
+      return;
+    }
+    failures=0;
+    if (!MP.isHost && state==='mproom' && MP.members.length && !MP.members.some(m=>m.host)){
+      clearInterval(iv); mpToast('👑 The host closed the room.'); mpLeaveRoom();
+    }
+  }, 5000);
+}
+function mpRenderRoom(){
+  $('mpRoomCode').textContent=MP.code||'----';
+  const n=MP.members.length, botsN=Math.max(0,MP_MAXN-n);
+  $('mpSeats').textContent=n+'/'+MP_MAXN+' player'+(n===1?'':'s')+(botsN?' · '+botsN+' 🤖 bot'+(botsN===1?'':'s')+' will fill in':'');
+  $('mpPlayers').innerHTML=
+    MP.members.map(m=>`<div class="prow"><span class="pc" style="background:#${((m.body!=null?m.body:0xe10600)>>>0).toString(16).padStart(6,'0')}"></span>
+      <span class="pn">${esc(m.name||'Racer')}${m.id===myId?' (you)':''}</span>${m.host?'<span class="ph">👑 HOST</span>':''}</div>`).join('')
+    + Array.from({length:botsN},()=>'<div class="prow bot"><span class="pc" style="background:#666"></span><span class="pn">🤖 Bot</span></div>').join('');
+  const maps=$('mpRoomMaps');
+  maps.classList.toggle('guestview', !MP.isHost);
+  $('mpMapWho').textContent=MP.isHost?'you pick — everyone races it':'the host picks';
+  maps.innerHTML=COUNTRIES.filter(c=>!c.free).map(c=>
+    `<div class="mapcard ${c.id===MP.circuit?'sel':''}" data-id="${c.id}">
+      <div class="fl">${c.flag}</div><div class="mn">${c.name}</div>
+      <div class="md">${c.laps||3} laps${c.theme.night?' · 🌙':''}</div></div>`).join('');
+  if (MP.isHost) maps.querySelectorAll('.mapcard').forEach(el=>
+    el.onclick=()=>{ MP.circuit=el.dataset.id; mpTrackSelf(); mpAdvertise(); mpRenderRoom(); });
+  const b=$('mpStartBtn');
+  b.classList.toggle('hidden', !MP.isHost);
+  b.disabled = n<2;
+  b.textContent = n<2 ? '🏁 START — waiting for 1 more player' : '🏁 START RACE';
+  $('mpRoomHint').innerHTML=((MP.started && !MP.on) ? '🏁 <b>A race is in progress</b> — you’ll be on the grid for the next one!<br>' : '')
+    + (MP.isHost
+    ? 'You are the host 👑 — pick the circuit and start when your friends are in.'
+    : 'Waiting for the host 👑 to start the race…')
+    + ' Empty seats become 🤖 bots. <b>Everyone drives an equal car</b> — pure racing skill.';
+}
+function mpLeaveRoom(){
+  mpCloseRoom();
+  if (state!=='mplobby') mpOpenLobby();
+}
+function mpCloseRoom(){
+  if (MPDBG) mpdbg('closeRoom from:', new Error().stack.split('\n').slice(2,4).join(' | '));
+  RGEN++; MP.raceGen++;
+  if (_trackT){ clearTimeout(_trackT); _trackT=null; }
+  MP.reopening=false;
+  if (MP.on) mpTeardownRace();
+  if (MP.ch){ try{ MP.sb.removeChannel(MP.ch); }catch(e){} }
+  MP.ch=null; MP.code=null; MP.isHost=false; MP.hostId=null;
+  MP.members=[]; MP.started=false;
+  mpAdvertise();                                   // clears our lobby ad
+}
+
+/* ---- race start (host builds the grid, everyone runs the same one) ---- */
+function mpStart(){
+  if (!MP.isHost || MP.started || MP.on) return;
+  const ready=MP.members.filter(m=>!m.racing).slice(0,MP_MAXN);
+  if (ready.length<2) return;
+  const members=ready.map((m,i)=>({ id:m.id, name:m.name||'Racer', body:m.body, accent:m.accent, stripe:m.stripe?1:0, slot:i }));
+  const bots=Array.from({length:Math.max(0,MP_MAXN-members.length)},(_,i)=>({
+    name:'🤖 '+BOT_NAMES[i%BOT_NAMES.length], color:RIVAL_COLORS[(i*3+1)%RIVAL_COLORS.length],
+    top:90+i*3.2, slot:members.length+i }));
+  const msg={ seq:++MP.seq, circuit:MP.circuit, members, bots };
+  MP.started=true; mpTrackSelf(); mpAdvertise();
+  mpSend('start', msg);
+  mpBeginRace(msg);                                // broadcast is self:false — run it locally too
+}
+function mpBeginRace(msg){
+  MP.raceGen++;
+  MP.on=true; MP.done=false; MP.started=true;
+  MP.finTimes={}; MP.netCars={}; MP.bots=[];
+  MP.country=COUNTRIES.find(c=>c.id===msg.circuit)||COUNTRIES[0];
+  buildTrack(MP.country); raceLaps=MP.country.laps||3;
+  all.forEach(r=>{ if (r.mesh){ scene.remove(r.mesh); disposeObj(r.mesh); } });
+  rivals=[]; all=[];
+  for (const m of msg.members){
+    const style={ accent:(m.accent!=null?m.accent:null), stripe:!!m.stripe };
+    const body=(m.body!=null?m.body:0xe10600);
+    if (m.id===myId){
+      player=mkRacer(body, true, style);
+      player.name=m.name; player.top=MP_TOP; player.netId=m.id;
+      gridPlace(player, m.slot); all.push(player);
+    } else {
+      const r=mkRacer(body, false, style);
+      r.name=m.name; r.top=MP_TOP; r.isRemote=true; r.netId=m.id;
+      gridPlace(r, m.slot);
+      r.netP=r.prog; r.netL=r.lateral; r.netV=0; r.netT=0;
+      addNameTag(r.mesh, m.name);
+      MP.netCars[m.id]=r; all.push(r);
+    }
+  }
+  for (const b of msg.bots){
+    const r=mkRacer(b.color, false);
+    r.name=b.name; r.top=b.top; r.cruise=b.top; r.mpBot=true;
+    gridPlace(r, b.slot);
+    addNameTag(r.mesh, b.name);
+    if (MP.isHost) rivals.push(r);                 // the host simulates the bots…
+    else { r.isRemote=true; r.netP=r.prog; r.netL=r.lateral; r.netV=0; r.netT=0; }  // …everyone else receives them
+    MP.bots.push(r); all.push(r);
+  }
+  raceTime=0; boostE=100; MP.sendAcc=0;
+  state='countdown'; cdTimer=0; cdStep=0;
+  ['scr-menu','scr-custom','scr-finish','scr-mplobby','scr-mproom'].forEach(s=>$(s).classList.add('hidden'));
+  $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
+  $('lamps').classList.add('on');
+  [...$('lamps').children].forEach(l=>l.classList.remove('lit','go'));
+  Engine.resume();
+  mpTrackSelf();                                    // racing:1 — can't be pulled into another race
+  updateCarMesh(player); placeCamera(1);
+  try{ if (window.track) window.track('mp_race_start',{ n:msg.members.length, circuit:msg.circuit, host:MP.isHost?1:0 }); }catch(e){}
+}
+// floating name tag above a car (remote players + bots), so you know who you're overtaking
+function addNameTag(mesh, name){
+  const cvs=document.createElement('canvas'); cvs.width=256; cvs.height=64;
+  const c=cvs.getContext('2d');
+  c.fillStyle='rgba(8,14,28,0.62)';
+  if (c.roundRect){ c.beginPath(); c.roundRect(8,10,240,44,14); c.fill(); } else c.fillRect(8,10,240,44);
+  c.font='bold 30px "Trebuchet MS", sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#fff'; c.fillText(String(name).slice(0,14), 128, 33);
+  const tex=new THREE.CanvasTexture(cvs);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true, depthTest:false }));
+  sp.scale.set(7.4, 1.85, 1); sp.position.set(0, 3.2, 0);
+  mesh.add(sp);
+}
+
+/* ---- per-frame network tick (called from the race loop) ---- */
+function mpRaceTick(dt){
+  const now=performance.now();
+  for (const id in MP.netCars) mpDrive(MP.netCars[id], now, dt);
+  if (!MP.isHost) for (const b of MP.bots) mpDrive(b, now, dt);
+  MP.sendAcc+=dt;
+  if (MP.sendAcc>=0.2){                            // ~5 Hz — dead-reckoning smooths the rest
+    MP.sendAcc=0;
+    const msg={ id:myId, p:r1(player.prog), l:r2(player.lateral), s:r1(player.speed), f:player.finished?1:0 };
+    if (MP.isHost) msg.b=MP.bots.map(b=>[r1(b.prog), r2(b.lateral), r1(b.speed), b.finished?r2(b.finishTime):0]);
+    mpSend('pos', msg);
+  }
+}
+// dead-reckoning: advance at the last reported speed, softly correct toward the report
+function mpDrive(r, now, dt){
+  if (r.gone || r.netP==null) return;
+  const age=Math.min(3,(now-r.netT)/1000);         // stop extrapolating a silent car after 3 s
+  const target=r.netP + r.netV*age;
+  r.prog += r.netV*dt;
+  const err=target-r.prog;
+  if (Math.abs(err)>40) r.prog=target;             // way off (packet burst) — snap
+  else r.prog += err*Math.min(1, dt*4);
+  r.lateral += (r.netL-r.lateral)*Math.min(1, dt*8);
+  r.speed=r.netV;
+}
+// collisions online: remote cars are ground truth — only push MY car (and my bots) away
+function mpResolveCollisions(){
+  const locals=[player].concat(MP.isHost?MP.bots:[]);
+  for (let i=0;i<locals.length;i++) for (let j=i+1;j<locals.length;j++) mpPush(locals[i], locals[j], true);
+  const remotes=Object.values(MP.netCars).concat(MP.isHost?[]:MP.bots);
+  for (const a of locals) for (const b of remotes){ if (!b.gone) mpPush(a, b, false); }
+}
+function mpPush(A, B, sym){
+  const along=wrapDelta(B.prog-A.prog); if (Math.abs(along)>=CAR_LEN) return;
+  const lat=B.lateral-A.lateral;        if (Math.abs(lat)>=CAR_W) return;
+  const pen=(CAR_W-Math.abs(lat))*0.55, dir=lat>=0?1:-1;
+  if (sym){ A.lateral-=dir*pen*0.5; B.lateral+=dir*pen*0.5; (along>0?A:B).speed*=0.975; }
+  else    { A.lateral-=dir*pen; if (along>0) A.speed*=0.975; }
+}
+
+/* ---- network events ---- */
+function mpOnNet(ev, p){
+  if (ev==='pos'){ mpOnPos(p); return; }
+  if (ev==='fin'){
+    if (!p || !p.id) return;
+    MP.finTimes[p.id]=p.t;
+    const r=MP.netCars[p.id];
+    if (r && !r.finished){ r.finished=true; r.finishTime=p.t; }
+    mpMaybeRefreshBoard();
+    return;
+  }
+  if (ev==='start'){
+    if (!p || !Array.isArray(p.members)) return;
+    if (p.seq!=null){ if (p.seq<=MP.lastSeq) return; MP.lastSeq=p.seq; }
+    if (!p.members.some(m=>m.id===myId)) return;   // not in this grid (joined too late)
+    if (MP.on && MP.done) mpTeardownRace();        // lingering on results — pulled into the next race
+    if (!MP.on) mpBeginRace(p);
+    return;
+  }
+  if (ev==='bye'){ if (p && p.to===myId){ mpToast('That room is full ('+MP_MAXN+'/'+MP_MAXN+').'); mpLeaveRoom(); } return; }
+}
+function mpOnPos(p){
+  if (!MP.on || !p || !p.id || p.id===myId) return;
+  const now=performance.now();
+  const r=MP.netCars[p.id];
+  if (r){
+    r.netP=p.p; r.netV=p.s; r.netL=p.l; r.netT=now; r.gone=false;
+    if (p.f && !r.finished){ r.finished=true; r.finishTime=(MP.finTimes[p.id]>0)?MP.finTimes[p.id]:raceTime; }
+  }
+  if (p.id===MP.hostId && Array.isArray(p.b) && !MP.isHost){
+    p.b.forEach((t,i)=>{ const b=MP.bots[i]; if (!b || !Array.isArray(t)) return;
+      b.netP=t[0]; b.netL=t[1]; b.netV=t[2]; b.netT=now;
+      if (t[3]>0 && !b.finished){ b.finished=true; b.finishTime=t[3]; } });
+  }
+}
+
+/* ---- my finish + live results ---- */
+function mpPlayerFinished(){
+  MP.done=true;
+  MP.finTimes[myId]=player.finishTime;
+  mpSend('fin',{ id:myId, t:r2(player.finishTime) });
+  Engine.stop();
+  $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden');
+  $('vignette').classList.remove('on');
+  $('againBtn').classList.add('hidden'); $('menuBtn').classList.add('hidden');
+  $('mpAgainBtn').classList.remove('hidden'); $('mpFinLeaveBtn').classList.remove('hidden');
+  mpRenderBoard(false);
+  $('scr-finish').classList.remove('hidden');
+  mpTrackSelf();                                   // racing:0 — eligible for the next race
+  const g=MP.raceGen;                              // stragglers get 60 s, then the board freezes
+  setTimeout(()=>{ if (g===MP.raceGen && MP.on && state==='race') mpEndRaceSim(); }, 60000);
+  try{ if (window.track) window.track('mp_race_finish',{ t:r2(player.finishTime) }); }catch(e){}
+}
+function mpMaybeRefreshBoard(){
+  if (MP.on && MP.done) mpRenderBoard(false);
+}
+function mpEndRaceSim(){
+  if (!MP.on || state!=='race') return;
+  state='finish';                                  // stops the race sim; screens stay as they are
+  mpRenderBoard(true);
+}
+function mpRenderBoard(final){
+  const order=rankings();
+  const myPos=order.findIndex(r=>r.isPlayer)+1;
+  const medal=myPos===1?'🏆 YOU WON!':(myPos===2?'🥈 P2':myPos===3?'🥉 P3':'🏁 P'+myPos);
+  $('finTitle').textContent=medal;
+  $('finTitle').style.color=myPos===1?'#ffd54a':myPos<=3?'#39ff88':'#fff';
+  $('finSub').innerHTML=`${MP.country.flag} ${MP.country.name} — online race · ${all.length} racers · your time ${fmt(player.finishTime||raceTime)}`
+    + (final?'':'<br><span style="color:#9fb3d8">Waiting for everyone to finish…</span>');
+  $('finBoard').innerHTML=order.map((r,i)=>{
+    const t=r.finished?fmt(r.finishTime):(r.gone?'❌ left':(final?'DNF':'racing…'));
+    return `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span>
+      <span class="nm">${esc(r.name)}${r.isPlayer?' (you)':''}</span><span style="color:#9fb3d8">${t}</span></div>`;
+  }).join('');
+}
+
+/* ---- leaving a race / back to the room ---- */
+function mpTeardownRace(){
+  MP.on=false; MP.done=false; MP.raceGen++;
+  Engine.stop();
+  $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden'); $('lamps').classList.remove('on');
+  $('againBtn').classList.remove('hidden'); $('menuBtn').classList.remove('hidden');
+  $('mpAgainBtn').classList.add('hidden'); $('mpFinLeaveBtn').classList.add('hidden');
+  MP.netCars={}; MP.bots=[];
+  buildTrack(chosenCountry);                       // restore the solo-selected backdrop
+  resetShowcase();
+}
+function mpBackToRoom(){
+  if (MPDBG) mpdbg('backToRoom', JSON.stringify({ isHost:MP.isHost, ch:!!MP.ch, chState:MP.ch&&MP.ch.state,
+    members:MP.members.map(m=>({id:m.id,host:m.host})) }));
+  mpTeardownRace();
+  if (!MP.ch){ mpOpenLobby(); return; }
+  if (!MP.isHost && !MP.members.some(m=>m.host)){
+    mpdbg('backToRoom: host missing -> leave');
+    mpToast('👑 The host left — room closed.'); mpLeaveRoom(); return;
+  }
+  MP.started=false;
+  if (MP.isHost){ mpTrackSelf(); mpAdvertise(); }
+  state='mproom'; showScreenMp('scr-mproom'); mpRenderRoom();
+}
+
+/* ---- wiring ---- */
+$('mpBtn').onclick=()=>{ Engine.resume(); mpOpenLobby(); };
+$('mpCreateBtn').onclick=mpCreate;
+$('mpJoinCodeBtn').onclick=()=>mpJoin($('mpCodeIn').value);
+$('mpCodeIn').addEventListener('input',()=>{ $('mpCodeIn').value=cleanCode($('mpCodeIn').value); });
+$('mpCodeIn').addEventListener('keydown',e=>{ if (e.key==='Enter') mpJoin($('mpCodeIn').value); });
+$('mpLobbyBack').onclick=mpExitLobby;
+$('mpStartBtn').onclick=mpStart;
+$('mpLeaveBtn').onclick=mpLeaveRoom;
+$('mpAgainBtn').onclick=mpBackToRoom;
+$('mpFinLeaveBtn').onclick=()=>{ mpTeardownRace(); mpLeaveRoom(); };
+$('mpShareBtn').onclick=()=>{
+  const url=location.origin+location.pathname+'?room='+MP.code;
+  const txt='🏎️ Race me in Grand Prix 3D! Room '+MP.code+' → '+url;
+  if (navigator.share) navigator.share({ text:txt }).catch(()=>{});
+  else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>mpToast('📋 Invite copied — send it to your friends!')).catch(()=>{});
+};
+// leaving the page = leaving the room (presence + our channels clean up server-side)
+function mpBye(){ try{ if (MP.ch) MP.sb.removeChannel(MP.ch); if (MP.lobbyCh) MP.sb.removeChannel(MP.lobbyCh); }catch(e){} }
+window.addEventListener('beforeunload', mpBye);
+window.addEventListener('pagehide', mpBye);
+
 /* ---------------- boot ---------------- */
 resize();
 buildMenu();
 resetShowcase();   // one idling car on the menu backdrop (cleared when a race starts)
 requestAnimationFrame(loop);
+// push the (possibly just-migrated) lifetime-money score so the leaderboard reflects
+// the wallet without needing another race. auth.js loads deferred, so poll briefly.
+(function pushEarned(n){
+  const e = acct ? (acct.f1.earned||0) : 0;
+  if (window.IGAuth && e) IGAuth.submitScore('f1', e);
+  else if (!window.IGAuth && n<20) setTimeout(()=>pushEarned(n+1), 400);
+})(0);
+// invite deep-link: 3d.html?room=CODE goes straight to that room
+try{
+  const rc=new URLSearchParams(location.search).get('room');
+  if (rc){ const c=cleanCode(rc); if (c.length===4){ mpOpenLobby(); roomTimer(()=>mpJoin(c), 700); } }
+}catch(e){}
+// test hook (only with ?mptest in the URL) — lets automated tests inspect the race
+try{ if (location.search.indexOf('mptest')>=0){
+  window.__f1={ get state(){ return state; }, get MP(){ return MP; }, get player(){ return player; },
+    get all(){ return all; }, get raceLaps(){ return raceLaps; }, get TRACK_LEN(){ return TRACK_LEN; },
+    warp(m){ player.prog=raceLaps*TRACK_LEN-(m==null?40:m); } };
+} }catch(e){}
 </script>
 
 <!-- shared accounts + F1 leaderboard (same as the 2D game) + analytics + announcements -->
