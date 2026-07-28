@@ -14,7 +14,7 @@
   const GAME_BEST = {
     catch:    a => (a.basket && a.basket.best) || 0,
     cricket:  a => ((a.ipl && a.ipl.runs) || 0) + ((a.odi && a.odi.runs) || 0),
-    f1:       a => (a.f1 && a.f1.points) || 0,
+    f1:       a => (a.f1 && (a.f1.earned || a.f1.points)) || 0,
     football: a => (a.pk && a.pk.won) || 0,
   };
   const NS = ["ipl", "odi", "basket", "f1", "pk", "puz"];
@@ -28,7 +28,7 @@
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
   const GAME_METRIC = {
-    catch: "Best score", cricket: "Career runs", f1: "Championship points", football: "Matches won",
+    catch: "Best score", cricket: "Career runs", f1: "Money earned", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",

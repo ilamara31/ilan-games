@@ -176,10 +176,12 @@ if(acct && acct.f1){
   if(f.unlocked===undefined){ f.unlocked=1; }   // India unlocked to start
   igSave();
 }
-const guestF1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0,money:300,owned:['kart'],car:'kart',unlocked:1};
+const guestF1={races:0,wins:0,podiums:0,points:0,bestPos:99,bestLapMs:0,money:300,owned:['kart'],car:'kart',unlocked:1,earned:0};
 function career(){ return acct ? acct.f1 : guestF1; }
 const playerName = acct ? acct.name : 'You';
-function saveF1(){ if(acct){ igSave(); } }
+// write only OUR game's slice into a freshly-read store, so a stale tab (e.g. the 3D
+// mode open alongside) can't clobber money won elsewhere with its old snapshot
+function saveF1(){ if(!acct) return; try{ const s=igLoad(); const a=s.accounts.find(x=>x.id===acctStore.activeId); if(a){ a.f1=acct.f1; localStorage.setItem(STORE_KEY, JSON.stringify(s)); return; } }catch(e){} igSave(); }
 
 /* ---- buyable cars: faster car = higher top speed ---- */
 const CARS=[
@@ -191,6 +193,13 @@ const CARS=[
   {id:'rocket',name:'Rocket V12',   top:520, price:6000, color:'#ff4fd8'},   // beats the fastest rivals at Monaco/Australia
 ];
 function getCar(id){ return CARS.find(c=>c.id===id)||CARS[0]; }
+// lifetime prize money — the leaderboard metric (never decreases, unlike the spendable
+// balance). Seed old saves from what we can prove: current balance + everything spent on cars.
+if(acct && acct.f1 && acct.f1.earned===undefined){
+  const f=acct.f1;
+  f.earned=Math.max(0,(f.money||0)+(f.owned||[]).reduce((s,id)=>s+(getCar(id).price||0),0));
+  igSave();
+}
 
 /* ---- circuits (levels): unlock in order, harder + faster each step ---- */
 const LOCS=[
@@ -379,6 +388,9 @@ const Engine=(()=>{
   }
   function resume(){ init(); if(ac&&ac.state==='suspended') ac.resume(); }
   function suspend(){ if(ac&&ac.state==='running') ac.suspend(); }   // oscillators must not burn CPU on menus
+  // hard-zero the gain before suspending — a suspended context freezes mid-fade, and the
+  // leftover volume would "vroom" on the next resume (any menu keypress calls resume)
+  function silence(){ if(ready){ const t=ac.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(0,t); } }
   function set(sp,active){                 // sp = 0..1 speed fraction
     if(!ready) return;
     const t=ac.currentTime, s=Math.max(0,Math.min(1,sp));
@@ -401,8 +413,13 @@ const Engine=(()=>{
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     o.start(t); o.stop(t+dur+0.03);
   }
-  return {resume,set,beep,suspend};
+  return {resume,set,beep,suspend,silence};
 })();
+// engine must not keep droning in a hidden tab mid-race (3d.html does the same)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) Engine.suspend();
+  else if(state==='race'||state==='countdown') Engine.resume();
+});
 
 /* ---- main loop ---- */
 let last=0, rafId=null;
@@ -410,7 +427,7 @@ function loop(ts){ rafId=null; const dt=Math.min(1/30,(ts-last)/1000||1/60); las
   Engine.set(maxSpeed?speed/maxSpeed:0, state==='race'||state==='countdown');
   // menu/garage/finish screens are opaque DOM overlays over a static canvas — park the loop
   if(state==='race'||state==='countdown') rafId=requestAnimationFrame(loop);
-  else Engine.suspend(); }
+  else { Engine.silence(); Engine.suspend(); } }
 function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
 // a resize while parked must still repaint the (static) frame once
 window.addEventListener('resize',()=>{ if(rafId==null) render(); });
@@ -487,7 +504,8 @@ function updateHud(){
 
 /* ---- screens ---- */
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden');
-  document.getElementById('hud').classList.add('hidden'); document.getElementById('touchpad').classList.add('hidden'); document.getElementById('steerhint').classList.add('hidden'); document.getElementById('lights').style.display='none'; }
+  document.getElementById('hud').classList.add('hidden'); document.getElementById('touchpad').classList.add('hidden'); document.getElementById('steerhint').classList.add('hidden'); document.getElementById('lights').style.display='none';
+  document.getElementById('homeBtn').classList.remove('hidden'); }
 
 function renderMenu(){
   state='menu';
@@ -508,7 +526,7 @@ function renderMenu(){
       ? `🔒 Finish ${LOCS[L.idx-1].name} to unlock`
       : L.free
         ? `FREE practice • Entry ₹0 • Earn ₹${L.win} every race • rivals ~${L.opp} km/h • ${L.grid} cars`
-        : `Entry ₹${L.fee} • Win ₹${L.win} • rivals ~${L.opp} km/h • ${L.grid} cars • 3 laps`;
+        : `Entry ₹${L.fee} • Win ₹${L.win} • rivals ~${L.opp} km/h • ${L.grid} cars • ${L.laps||3} laps`;
     d.innerHTML=`<div class="ic">${L.flag}</div>
       <div class="info"><div class="t">${L.name} Grand Prix</div><div class="d">${sub}</div></div>
       <div class="act">${act}</div>`;
@@ -554,7 +572,7 @@ function setLights(c,txt){
 function enterRace(L){
   const f=career();
   if((!L.free && L.idx>=f.unlocked) || f.money<L.fee) return;
-  f.money-=L.fee; saveF1();                 // pay the entry fee (₹0 for the free race)
+  // entry fee is settled in finishRace() — quitting/reloading mid-race must not eat money
   curLoc=L; theme=L.theme;
   applyCarPhysics();                        // top speed from the car you bought
   resetRace();
@@ -562,6 +580,8 @@ function enterRace(L){
   document.getElementById('hud').classList.remove('hidden');
   document.getElementById('touchpad').classList.remove('hidden');
   document.getElementById('steerhint').classList.remove('hidden');
+  // the home button sits over the ◀ steer button — hide it while driving (show() restores it)
+  document.getElementById('homeBtn').classList.add('hidden');
   state='countdown';
   Engine.resume();                          // unlock audio on this tap/click
   wakeLoop();
@@ -588,15 +608,16 @@ function finishRace(){
   const total=board.length, pos=board.findIndex(b=>b.me)+1;
   // free practice race: guaranteed flat reward regardless of finishing position
   const pts=POINTS[pos-1]||0, prize=curLoc.free?curLoc.win:prizeFor(pos,total,curLoc), net=prize-curLoc.fee;
-  // update career
-  f.races++; f.points+=pts; f.money+=prize;
+  // update career (fee is settled here, not at race start — see enterRace)
+  f.races++; f.points+=pts; f.money+=prize-curLoc.fee; f.earned=(f.earned||0)+prize;
   if(pos===1) f.wins++; if(pos<=3) f.podiums++;
   if(pos<f.bestPos) f.bestPos=pos;
   if(fastestLap>0 && (f.bestLapMs===0 || fastestLap<f.bestLapMs)) f.bestLapMs=fastestLap;
   let unlocked=null;
-  if(curLoc.idx+1<LOCS.length && f.unlocked<curLoc.idx+2){ f.unlocked=curLoc.idx+2; unlocked=LOCS[curLoc.idx+1]; }
+  if(curLoc.idx+1<LOCS.length && f.unlocked<curLoc.idx+2){ f.unlocked=curLoc.idx+2;
+    const nx=LOCS[curLoc.idx+1]; if(!nx.free) unlocked=nx; }   // the free practice race is always open — never announce it as an unlock
   saveF1();
-  if (window.IGAuth) IGAuth.submitScore('f1', f.points);   // career championship points (higher is better)
+  if (window.IGAuth) IGAuth.submitScore('f1', f.earned);   // lifetime prize money (matches the wallet progression players see)
   // header
   document.getElementById('finTitle').textContent = pos===1?'🏆 RACE WIN!' : pos<=3?'🏆 PODIUM!' : `P${pos} FINISH`;
   document.getElementById('finTitle').style.color = pos===1?'#ffd54a':pos<=3?'#39ff88':'#fff';
@@ -664,11 +685,18 @@ if(matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
 document.getElementById('garageBtn').addEventListener('click',openShop);
 document.getElementById('shopBack').addEventListener('click',renderMenu);
 document.getElementById('menuBtn').addEventListener('click',renderMenu);
-document.getElementById('againBtn').addEventListener('click',()=>{ const f=career(); if(curLoc.idx<f.unlocked && f.money>=curLoc.fee) enterRace(curLoc); else renderMenu(); });
+document.getElementById('againBtn').addEventListener('click',()=>{ const f=career(); if((curLoc.free || curLoc.idx<f.unlocked) && f.money>=curLoc.fee) enterRace(curLoc); else renderMenu(); });
 
 /* ---- boot ---- */
 buildTrack(curLoc.track);
 renderMenu();
+// push the (possibly just-migrated) lifetime-money score so the leaderboard reflects
+// the wallet without needing another race. auth.js loads deferred, so poll briefly.
+(function pushEarned(n){
+  const e=career().earned||0;
+  if(window.IGAuth && e) IGAuth.submitScore('f1', e);
+  else if(!window.IGAuth && n<20) setTimeout(()=>pushEarned(n+1), 400);
+})(0);
 
 /* ---- shared online account button label ---- */
 if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in'; });
