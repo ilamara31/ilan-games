@@ -3,79 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Grand Prix — Indian Grand Prix</title>
-<link rel="manifest" href="../manifest.webmanifest" />
+<title>Grand Prix 3D</title>
 <meta name="theme-color" content="#0a0e1a" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Grand Prix" />
 <link rel="apple-touch-icon" href="../icon-180.png" />
 <link rel="icon" href="../icon-192.png" />
+<!-- The 2D game is retired — Grand Prix is 3D only now. Send everyone (and any
+     old ?room=CODE invite links) straight into the 3D game. -->
+<script>location.replace('3d.html' + location.search);</script>
+<meta http-equiv="refresh" content="0;url=3d.html" />
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff;
-    background:radial-gradient(circle at 50% 22%,#18305a,#070d14 78%);}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;user-select:none}
-  .car{font-size:60px;margin-bottom:4px}
-  h1{font-size:clamp(32px,9vw,58px);letter-spacing:1px;margin-bottom:4px;
-    background:linear-gradient(90deg,#ff9933,#ffffff 50%,#138808);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .sub{color:#9fb3d8;margin-bottom:30px;font-size:clamp(14px,3.5vw,18px)}
-  .choose{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:520px;width:100%}
-  @media(max-width:430px){ .choose{grid-template-columns:1fr} }
-  a.opt{position:relative;display:block;text-decoration:none;color:#fff;border-radius:22px;padding:26px 18px;border:3px solid rgba(255,255,255,.14);
-    transition:transform .12s,border-color .12s,box-shadow .12s}
-  a.opt:hover{transform:translateY(-5px) scale(1.02);border-color:#fff;box-shadow:0 14px 34px rgba(0,0,0,.45)}
-  a.opt:active{transform:scale(.97)}
-  a.opt.d3{background:linear-gradient(135deg,#e10600,#7a0400)}
-  a.opt.d2{background:linear-gradient(135deg,#3a6cf0,#16306e)}
-  a.opt .tag{font-size:46px;font-weight:900;display:block;line-height:1}
-  a.opt h2{font-size:22px;margin:10px 0 6px}
-  a.opt p{color:#ffe6d8;font-size:13px;line-height:1.4}
-  a.opt .new{position:absolute;top:-10px;right:-8px;font-size:11px;font-weight:bold;padding:4px 10px;border-radius:13px;
-    background:linear-gradient(135deg,#ffd54a,#ff9b3d);color:#3a0010;box-shadow:0 3px 10px rgba(0,0,0,.4)}
-  .exit{margin-top:26px;display:inline-block;text-decoration:none;color:#9fb3d8;font-size:15px;font-weight:bold;
-    background:rgba(8,18,28,.5);border:1px solid rgba(120,180,255,.22);border-radius:24px;padding:11px 24px;cursor:pointer}
-  .exit:active{transform:scale(.96)}
-  .row{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  html,body{ height:100%; background:#0a0e1a; color:#9fb3d8; font-family:'Trebuchet MS','Segoe UI',sans-serif; }
+  body{ display:flex; align-items:center; justify-content:center; }
 </style>
 </head>
 <body>
-  <div class="car">🏎️</div>
-  <h1>GRAND PRIX</h1>
-  <div style="font-size:12px;font-weight:900;letter-spacing:2px;color:#7cf;background:rgba(120,200,255,.12);border:1px solid rgba(120,200,255,.4);border-radius:20px;padding:4px 14px;margin-bottom:12px">🆕 UPDATED · v2.0</div>
-  <div class="sub">Choose how you want to race — all countries, all cars.</div>
-  <div class="choose">
-    <a class="opt d3" href="3d.html">
-      <span class="new">NEW</span>
-      <span class="tag">3D</span>
-      <h2>3D Grand Prix</h2>
-      <p>Real 3D racing on every country's circuit — weave the pack, dash, and take the win.</p>
-    </a>
-    <a class="opt d2" href="2d.html">
-      <span class="tag">2D</span>
-      <h2>Classic 2D</h2>
-      <p>The original World Tour career — entry fees, prize money, and the car garage.</p>
-    </a>
-  </div>
-  <div class="row">
-    <a class="exit" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</a>
-    <a class="exit" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</a>
-  </div>
-  <a class="exit" href="../">🏠 All Ilan Games</a>
-
-  <script src="../supabase-config.js"></script>
-  <script src="../auth.js" defer></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    if(!window.IGAuth) return;
-    IGAuth.onChange(function(p){
-      var b=document.getElementById('IGA_login');
-      if(b) b.textContent = p?('👤 '+IGAuth.displayName()):'👤 Log in';
-    });
-  });
-  </script>
-  <script src="../analytics.js" defer></script>
-  <script src="../announce.js" defer></script>
+  <div>🏎️ Loading Grand Prix 3D… <a href="3d.html" style="color:#7cf">tap here if nothing happens</a></div>
 </body>
 </html>

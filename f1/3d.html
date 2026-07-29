@@ -128,6 +128,14 @@
   .pv-nose { position:absolute; top:-12px; left:27px; width:20px; height:26px; border-radius:8px 8px 3px 3px; }
   .pv-stripe { position:absolute; top:6px; left:31px; width:12px; height:120px; border-radius:6px; opacity:.92; }
   .pv-cockpit { position:absolute; top:44px; left:24px; width:26px; height:34px; border-radius:12px; background:#0d1116; }
+  /* ---- big highlighted multiplayer button (it's the new thing) ---- */
+  #mpBtn{ position:relative; font-size:clamp(18px,5vw,22px); padding:17px 46px; margin:10px 6px 4px;
+    background:linear-gradient(135deg,#39ff88,#12b76a); color:#04220f; border-radius:34px;
+    box-shadow:0 10px 30px rgba(40,220,120,.45); animation:mpPulse 1.9s ease-in-out infinite; }
+  @keyframes mpPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
+  #mpBtn .newb{ position:absolute; top:-11px; right:-10px; font-size:11px; font-weight:900; padding:4px 10px;
+    border-radius:13px; background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#3a0010;
+    box-shadow:0 3px 10px rgba(0,0,0,.4); letter-spacing:1px; }
   /* ---- multiplayer ---- */
   .rooms { max-width:480px; width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0; }
   .room { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:11px 14px; text-align:left; }
@@ -150,10 +158,13 @@
   .prow.bot { opacity:.6; }
   #mpMsg { min-height:20px; font-size:14px; color:#ff9b9b; font-weight:bold; margin:4px 0; }
   #mpRoomMaps .mapcard { pointer-events:auto; }
-  /* announce.js pins its banner to bottom:12px at z-index 99999 — on the multiplayer
-     screens that lands exactly on the START/LEAVE buttons and swallows their taps.
-     Hide it while in multiplayer; the solo menu still shows announcements. */
+  /* announce.js pins its banner to bottom:12px at z-index 99999 — on every screen
+     except the main menu that lands on buttons (garage DONE, room START/LEAVE) or on
+     the race touch controls and swallows their taps. Show announcements on the main
+     menu only. (.mpui is the fallback for browsers without :has) */
   body.mpui div[role="status"] { display:none !important; }
+  body:has(.screen:not(.hidden):not(#scr-menu)) div[role="status"],
+  body:has(#hud.on) div[role="status"] { display:none !important; }
   #mpRoomMaps.guestview .mapcard { pointer-events:none; opacity:.75; }
   #mpRoomMaps.guestview .mapcard.sel { opacity:1; }
 </style>
@@ -185,27 +196,37 @@
 
   <!-- MENU -->
   <div id="scr-menu" class="screen">
-    <div class="tag">3D · WORLD TOUR CAREER · 🆕 v2.0</div>
+    <div class="tag">🏁 WORLD TOUR · 🆕 NOW WITH ONLINE MULTIPLAYER</div>
     <h1>🏁 GRAND PRIX 3D</h1>
-    <div class="sub">Pay the entry fee, beat the grid, win prize money — then buy faster cars, paint your own livery, and unlock new circuits. Shares the same wallet &amp; garage as the 2D game.</div>
+    <div class="sub">Race the world, win prize money, buy faster cars — or race your friends live!</div>
     <div id="wallet3d"></div>
-    <div class="secttl">🌍 CHOOSE CIRCUIT · unlock in order</div>
+    <button class="btn" id="mpBtn">🌐 MULTIPLAYER<span class="newb">NEW!</span></button>
+    <div class="secttl" style="margin-top:14px">🌍 CHOOSE CIRCUIT · unlock in order</div>
     <div class="maps" id="mapList"></div>
-    <div class="secttl">🏎️ YOUR GARAGE · buy &amp; select</div>
-    <div class="cars" id="carList"></div>
     <div class="row">
       <button class="btn green" id="startBtn">🏁 START RACE</button>
-      <button class="btn" id="mpBtn">🌐 MULTIPLAYER</button>
-      <button class="btn alt" id="customBtn">🎨 CUSTOMIZE CAR</button>
+      <button class="btn alt" id="garageBtn">🛒 GARAGE</button>
     </div>
     <div class="row">
       <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
       <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
-      <a class="btn alt" href="./">⬅ 2D / 3D</a>
+      <a class="btn alt" href="../">🏠 ALL GAMES</a>
     </div>
     <div class="hintbar">
       <b>Steer:</b> ← → or A / D (mobile ◀ ▶) — <b>steer into the corners</b> or you run wide onto the grass and slow down. &nbsp;<b>Dash:</b> Space / Shift or ⚡. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
       You auto-accelerate. Win prize money to buy faster cars; finishing high also earns championship points.
+    </div>
+  </div>
+
+  <!-- GARAGE -->
+  <div id="scr-garage" class="screen hidden">
+    <h1>🛒 GARAGE</h1>
+    <div class="sub">Buy &amp; pick your car, then paint it your way. Your wallet and cars carry across every race.</div>
+    <div id="walletGarage" class="sub" style="color:#ffd54a;font-weight:bold"></div>
+    <div class="cars" id="carList"></div>
+    <div class="row">
+      <button class="btn alt" id="customBtn">🎨 CUSTOMIZE CAR</button>
+      <button class="btn green" id="garageBack">✔ DONE</button>
     </div>
   </div>
 
@@ -267,7 +288,7 @@
     <div id="finBoard"></div>
     <button class="btn" id="againBtn">🔁 RACE AGAIN</button>
     <button class="btn green" id="menuBtn">🏠 MENU</button>
-    <button class="btn hidden" id="mpAgainBtn">🚪 BACK TO ROOM</button>
+    <button class="btn hidden" id="mpAgainBtn">🔁 REMATCH — SAME ROOM</button>
     <button class="btn green hidden" id="mpFinLeaveBtn">🌐 LEAVE ROOM</button>
     <a class="btn alt" href="../">ALL GAMES</a>
   </div>
@@ -856,8 +877,14 @@ function toMenu(){
   state='menu'; Engine.stop();
   buildMenu();       // refresh wallet, unlocked circuits and garage after a race
   resetShowcase();   // clear the race grid; leave one idling car on the menu backdrop
-  $('scr-menu').classList.remove('hidden'); $('scr-finish').classList.add('hidden'); $('scr-custom').classList.add('hidden');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  $('scr-menu').classList.remove('hidden');
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden'); $('lamps').classList.remove('on');
+}
+function openGarage(){
+  buildMenu();       // refresh owned/selected/prices
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  $('scr-garage').classList.remove('hidden');
 }
 // menu backdrop: a single idling car sitting on the current circuit
 function resetShowcase(){
@@ -1142,6 +1169,7 @@ function prizeFor(pos,total,L){
 function refreshWallet(){
   const f = career();
   $('wallet3d').innerHTML = `💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${chosenCar.name}</b> (${Math.round(chosenCar.top*3.4)} km/h)`;
+  $('walletGarage').textContent = `💰 ₹${f.money} · driving the ${chosenCar.name}`;
 }
 function flashWallet(msg){
   $('wallet3d').innerHTML = `<span style="color:#ff7b7b">${msg}</span>`;
@@ -1210,7 +1238,7 @@ function openCustom(){
   customSnapshot = JSON.stringify((career().paint||{})[chosenCar.id] || {});
   $('customSub').innerHTML = `Paint your <b>${chosenCar.name}</b> — body colour, an accent for the nose &amp; stripe, and a racing stripe. You'll drive it in the race.`;
   renderCustom();
-  $('scr-menu').classList.add('hidden'); $('scr-finish').classList.add('hidden');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('scr-custom').classList.remove('hidden');
 }
 function renderCustom(){
@@ -1231,9 +1259,11 @@ function renderCustom(){
        <div class="pv-cockpit"></div>
      </div>`;
 }
-function closeCustom(){ $('scr-custom').classList.add('hidden'); $('scr-menu').classList.remove('hidden'); }
+function closeCustom(){ $('scr-custom').classList.add('hidden'); openGarage(); }   // customize lives inside the garage
 
 $('startBtn').onclick = startRace;
+$('garageBtn').onclick = openGarage;
+$('garageBack').onclick = toMenu;
 $('againBtn').onclick = ()=>{
   const f = career();
   if (isUnlocked(chosenCountry) && (chosenCountry.free || f.money>=chosenCountry.fee)) startRace();
@@ -1311,7 +1341,7 @@ function mpToast(msg){
   t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 4000);
 }
 function showScreenMp(id){
-  ['scr-menu','scr-custom','scr-finish','scr-mplobby','scr-mproom'].forEach(s=>$(s).classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $(id).classList.remove('hidden');
 }
 
@@ -1323,28 +1353,75 @@ async function mpOpenLobby(){
   $('mpMsg').textContent='';
   try{
     const sb=await mpEnsure();
+    // a lobby channel left over from earlier may have silently died — rebuild it now,
+    // not on the next watchdog tick, so the room list is never stuck stale
+    if (MP.lobbyCh && MP.lobbyCh.state!=='joined' && MP.lobbyCh.state!=='joining'){
+      try{ sb.removeChannel(MP.lobbyCh); }catch(e){} MP.lobbyCh=null;
+    }
     if (!MP.lobbyCh){
       MP.lobbyCh=sb.channel('f1mp-lobby',{ config:{ broadcast:{ self:false }, presence:{ key:myId } } });
       MP.lobbyCh.on('presence',{event:'sync'},mpRenderRooms);
       MP.lobbyCh.subscribe(st=>{ if (st==='SUBSCRIBED'){ mpAdvertise(); mpRenderRooms(); } });
     } else mpRenderRooms();
+    mpLobbyKeepalive();
   }catch(e){ $('mpRoomList').innerHTML='<div class="sub">⚠️ Couldn’t connect — check your internet and try again.</div>'; }
 }
-// hosts advertise their room on the lobby channel; the ad dies with the host's connection
+// hosts advertise their room on the lobby channel; the ad dies with the host's connection.
+// `hb` is a freshness beat — viewers hide ads whose beat stops (ghost rooms from a host
+// whose app was killed can linger in server presence for a while).
 function mpAdvertise(){
   if (!MP.lobbyCh) return;
   try{
     if (MP.code && MP.isHost)
       MP.lobbyCh.track({ room:MP.code, host:mpName(), n:Math.max(1,MP.members.length), max:MP_MAXN,
-                         started:MP.started?1:0, circuit:MP.circuit, t:MP.roomT });
+                         started:MP.started?1:0, circuit:MP.circuit, t:MP.roomT, hb:Date.now() });
     else MP.lobbyCh.untrack();
   }catch(e){}
 }
+/* one maintenance tick keeps the lobby honest: reopens a dropped lobby channel,
+   re-beats our own ad, and re-renders so the ghost-room filter applies */
+function mpLobbyKeepalive(){
+  if (MP.lobbyIv) return;
+  MP.lobbyIv=setInterval(async ()=>{
+    if (!MP.lobbyCh){ clearInterval(MP.lobbyIv); MP.lobbyIv=null; return; }
+    const s=MP.lobbyCh.state;
+    if (s!=='joined' && s!=='joining'){
+      if (MP.lobbyRe) return;
+      MP.lobbyRe=true;
+      mpdbg('lobby channel', s, '— reopening');
+      try{
+        const sb=await mpEnsure();
+        try{ sb.removeChannel(MP.lobbyCh); }catch(e){}
+        MP.lobbyCh=sb.channel('f1mp-lobby',{ config:{ broadcast:{ self:false }, presence:{ key:myId } } });
+        MP.lobbyCh.on('presence',{event:'sync'},mpRenderRooms);
+        await new Promise((res,rej)=>{ let done=false;
+          MP.lobbyCh.subscribe(st=>{ if (st==='SUBSCRIBED'&&!done){ done=true; res(); }
+            else if ((st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')&&!done){ done=true; rej(0); } });
+          setTimeout(()=>{ if (!done){ done=true; rej(0); } }, 8000); });
+        mpAdvertise(); mpRenderRooms();
+      }catch(e){}
+      MP.lobbyRe=false;
+      return;
+    }
+    if (MP.code && MP.isHost) mpAdvertise();
+    if (state==='mplobby') mpRenderRooms();
+  }, 8000);
+}
+document.addEventListener('visibilitychange',()=>{ if (!document.hidden && state==='mplobby') mpRenderRooms(); });
 function mpRenderRooms(){
   const el=$('mpRoomList'); if (!el || state!=='mplobby') return;
   let rooms=[];
   try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{};
        for (const k in st){ const p=st[k]&&st[k][0]; if (p&&p.room) rooms.push(p); } }catch(e){}
+  // ghost filter: an ad whose heartbeat hasn't changed in 30s of OUR observation is a
+  // dead host lingering in server presence — hide it (local clocks only, no skew issues)
+  const seen=MP.adSeen||(MP.adSeen={}), nowT=performance.now();
+  rooms=rooms.filter(r=>{
+    if (!r.hb) return true;                             // ad from an older client — never filter
+    const e=seen[r.room];
+    if (!e || e.hb!==r.hb){ seen[r.room]={ hb:r.hb, at:nowT }; return true; }
+    return (nowT-e.at)<30000;
+  });
   rooms.sort((a,b)=>(a.t||0)-(b.t||0));
   if (!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite your friends! 🏎️</div>'; return; }
   el.innerHTML=rooms.map(r=>{
@@ -1608,7 +1685,7 @@ function mpBeginRace(msg){
   }
   raceTime=0; boostE=100; MP.sendAcc=0;
   state='countdown'; cdTimer=0; cdStep=0;
-  ['scr-menu','scr-custom','scr-finish','scr-mplobby','scr-mproom'].forEach(s=>$(s).classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
   $('lamps').classList.add('on');
   [...$('lamps').children].forEach(l=>l.classList.remove('lit','go'));
@@ -1656,7 +1733,10 @@ function mpDrive(r, now, dt){
   r.lateral += (r.netL-r.lateral)*Math.min(1, dt*8);
   r.speed=r.netV;
 }
-// collisions online: remote cars are ground truth — only push MY car (and my bots) away
+/* collisions online: remote cars are ground truth — only push MY car (and my bots) away.
+   Online racing is SOLID: a car squarely in your lane is a wall — you cannot phase
+   through it, you must move to a free lane to overtake. Blocking is a real tactic. */
+const BLOCK_LAT = CAR_W*0.55;                    // this much lateral overlap = same lane = blocked
 function mpResolveCollisions(){
   const locals=[player].concat(MP.isHost?MP.bots:[]);
   for (let i=0;i<locals.length;i++) for (let j=i+1;j<locals.length;j++) mpPush(locals[i], locals[j], true);
@@ -1664,11 +1744,29 @@ function mpResolveCollisions(){
   for (const a of locals) for (const b of remotes){ if (!b.gone) mpPush(a, b, false); }
 }
 function mpPush(A, B, sym){
+  if (A.finished || B.finished) return;           // finished cars are coasting off the pace — not walls
   const along=wrapDelta(B.prog-A.prog); if (Math.abs(along)>=CAR_LEN) return;
   const lat=B.lateral-A.lateral;        if (Math.abs(lat)>=CAR_W) return;
-  const pen=(CAR_W-Math.abs(lat))*0.55, dir=lat>=0?1:-1;
-  if (sym){ A.lateral-=dir*pen*0.5; B.lateral+=dir*pen*0.5; (along>0?A:B).speed*=0.975; }
-  else    { A.lateral-=dir*pen; if (along>0) A.speed*=0.975; }
+  const dir=lat>=0?1:-1;
+  if (Math.abs(lat) < BLOCK_LAT){
+    // same lane: the car behind is held a car-length back and pinned to the leader's
+    // pace — no passing through. Change lanes to get by.
+    if (sym){
+      const back = along>0 ? A : B, front = along>0 ? B : A;
+      back.prog -= (CAR_LEN - Math.abs(along));
+      if (back.speed > front.speed*0.96) back.speed = front.speed*0.96;
+    } else if (along>0){                          // remote car ahead of my local car
+      A.prog -= (CAR_LEN - along);
+      if (A.speed > B.speed*0.96) A.speed = B.speed*0.96;
+    }
+    // whisper of side pressure so bumpers don't visually merge — far too weak to slide past
+    A.lateral -= dir*0.02; if (sym) B.lateral += dir*0.02;
+  } else {
+    // partly alongside in the next lane: firm shoulder-to-shoulder separation
+    const pen=(CAR_W-Math.abs(lat))*0.6;
+    if (sym){ A.lateral-=dir*pen*0.5; B.lateral+=dir*pen*0.5; }
+    else A.lateral-=dir*pen;
+  }
 }
 
 /* ---- network events ---- */

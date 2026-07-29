@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v104';
+const CACHE = 'ilan-arcade-v105';
 const ASSETS = [
   './',
   './index.html',
@@ -25,7 +25,6 @@ const ASSETS = [
   './airhockey/index.html',
   './f1/',
   './f1/index.html',
-  './f1/2d.html',
   './f1/3d.html',
   './f1/libs/three.module.js',
   './football/',
