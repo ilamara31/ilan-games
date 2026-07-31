@@ -142,9 +142,9 @@
   <button id="friendsBtn" style="background:linear-gradient(135deg,#7dc4ff,#3a6cf0);color:#06122a;border:none;
     padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(60,120,255,.4)">👥 Friends<span id="friendsBadge" style="display:none;background:#ff4d6d;color:#fff;border-radius:10px;padding:1px 7px;margin-left:6px;font-size:12px">0</span></button>
-  <a href="teaser/" id="teaserBtn" style="display:inline-block;text-decoration:none;background:linear-gradient(135deg,#ff7b3d,#b8005a);color:#fff;
+  <button id="starLbBtn" style="background:linear-gradient(135deg,#ffe14a,#c98a00);color:#241600;border:none;
     padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
-    box-shadow:0 6px 18px rgba(255,90,100,.45)">🎬 Watch Teaser</a>
+    box-shadow:0 6px 18px rgba(255,215,70,.4)">⭐ Star Leaderboard</button>
   <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
     border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
     box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
@@ -425,9 +425,13 @@
         if(!ok) return;
         wr('ig_stars', stars() + (isWeek?3:1));
         wr(isWeek?'ig_claim_week':'ig_claim_day', isWeek?week:today);
+        postStars();
         renderFeats(); renderPassport();
       }); });
     }
+    // ⭐ Star Leaderboard — total stars go on the global board under the "stars" game
+    function postStars(){ try{ if(window.IGAuth && stars()>0) IGAuth.submitScore('stars', stars()); }catch(e){} }
+    (function starsBoot(){ if(window.IGAuth && IGAuth.isReady && IGAuth.isReady()) postStars(); else setTimeout(starsBoot, 700); })();
     renderFeats(); renderPassport();
   })();
   </script>
@@ -524,6 +528,9 @@
     /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
     function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }
     document.getElementById('overallLbBtn').onclick=openOverall;
+    /* star leaderboard (most ⭐ from Game of the Day / Week goals) */
+    function openStars(){ if(window.IGAuth && IGAuth.showLeaderboard) IGAuth.showLeaderboard('stars','Star Leaderboard'); else setTimeout(openStars,80); }
+    document.getElementById('starLbBtn').onclick=openStars;
     /* User of the Week (most game-opens this week; excludes the creator) */
     (function uotw(){
       function escu(s){ return String(s).replace(/[<>&]/g,''); }

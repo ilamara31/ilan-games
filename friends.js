@@ -33,15 +33,15 @@
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis Tour", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
-    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush" };
+    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", stars: "Stars" };
   const GAME_METRIC = { catch: "Best score", cricket: "Career runs", f1: "Points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
-    scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published" };
+    scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published", stars: "Stars earned" };
   const GAME_EMOJI = { catch: "🧺", cricket: "🏏", f1: "🏎️", football: "⚽", try: "🎯", puzzles: "🧩", obby: "🌈",
     "anime-tycoon": "💴", tennis: "🎾", karate: "🥋", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
-    stack: "🧱", archer: "🏹", airhockey: "🏒", scoop: "🏀", meme: "😂", drawrush: "🎨" };
+    stack: "🧱", archer: "🏹", airhockey: "🏒", scoop: "🏀", meme: "😂", drawrush: "🎨", stars: "⭐" };
   const HIDDEN_GAMES = { cricket2bowl: 1, cricket2bat: 1 };
 
   function gameSlug() {
@@ -354,7 +354,7 @@
   // render the "leading" block: a headline count + a chip per game (emoji + name). Always shows,
   // so a player who leads nothing reads "🥇 Leading 0 games".
   function leadingHTML(lead) {
-    var games = (lead && lead.games ? lead.games : []).filter(function (g) { return !HIDDEN_GAMES[g]; });
+    var games = (lead && lead.games ? lead.games : []).filter(function (g) { return !HIDDEN_GAMES[g] && g !== "stars"; });
     var n = games.length;
     var h = '<div class="igf-lead' + (n === 0 ? ' zero' : '') + '">🥇 Leading ' + n + ' game' + (n === 1 ? '' : 's') + '</div>';
     if (n > 0) h += '<div class="igf-leadgs">' + games.map(function (g) {

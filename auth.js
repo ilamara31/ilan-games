@@ -23,7 +23,7 @@
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
-    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush"
+    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", stars: "⭐ Stars"
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
@@ -32,7 +32,8 @@
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
-    scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published"
+    scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
+    stars: "Stars earned (Game of the Day & Week goals)"
   };
   // Read a game's best straight from its own localStorage save (every game on
   // this origin shares storage), so we can re-post high scores on each load.
@@ -402,7 +403,8 @@
   }
 
   async function showLeaderboard(game, title) {
-    const ov = modal(`<h2>🏆 ${title || "Leaderboard"}</h2><p>All-time best scores</p><div id="iga-lb">Loading…</div>
+    const sub = game === "stars" ? "Most ⭐ earned — play the Game of the Day &amp; Game of the Week to climb!" : "All-time best scores";
+    const ov = modal(`<h2>${game === "stars" ? "⭐" : "🏆"} ${title || "Leaderboard"}</h2><p>${sub}</p><div id="iga-lb">Loading…</div>
       <button class="iga-btn iga-x" id="iga-close" style="margin-top:10px">Close</button>`);
     ov.querySelector("#iga-close").onclick = () => ov.remove();
     const box = ov.querySelector("#iga-lb");
