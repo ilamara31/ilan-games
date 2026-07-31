@@ -133,6 +133,9 @@
       ensureGuestPlayer(); seedLeaderboard(); setTimeout(nudgeLogin, 1600);
     }
     try { seedLocalAll(); } catch (e) {}        // always populate the local fallback board (works without login/server)
+    // ⭐ upload this device's stars from ANY page (home or game) so everyone with
+    // stars lands on the Star Leaderboard on their first visit after the update
+    try { const n = Math.round(+JSON.parse(localStorage.getItem("ig_stars") || "0") || 0); if (n > 0) submitScore("stars", n); } catch (e) {}
     ready = true; fire();
     setTimeout(fetchBoard, 800);                // warm the leaderboard cache so it opens instantly
   }
