@@ -242,7 +242,6 @@
       <p>Catch the fruit, dodge the junk food — then feast on Cheat Day!</p>
     </a>
     <a class="card carrom" href="carrom/">
-      <span class="badges"><span class="badge new">NEW</span><span class="badge new">🌐 MULTIPLAYER</span></span>
       <span class="emoji">🪙</span>
       <h2>Carrom Clash</h2>
       <p>Flick the striker, pocket the coins, grab the queen — vs the computer or your <b>friends live</b>!</p>
@@ -398,29 +397,34 @@
 
     // ---- WEEKLY goals: HARD grind targets, verified against your saved best / career stat ----
     const WEEK_EXCLUDE={ 'puzzles':1, 'anime-tycoon':1 };   // no Puzzle Pad / Anime Tycoon as Game of the Week
+    /* Two kinds of weekly goal, both measured against a WEEK-START snapshot so a
+       veteran's lifetime stats can never auto-complete the goal (no free stars):
+       - cumulative (default): earn `t` MORE than you had when the week started
+       - k:'best'           : reach `t` with a best you set THIS week; if your best
+                              already beats `t`, the goal becomes "beat your own best" */
     const WEEK_GOALS={
-      cricket:{t:1000,txt:g=>'score '+g+' career runs (across matches)'},
-      catch:{t:300,txt:g=>'reach a best score of '+g},
-      catch2:{t:250,txt:g=>'reach a best score of '+g},
-      f1:{t:90,txt:g=>'earn '+g+' championship points'},
-      football:{t:10,txt:g=>'win '+g+' shootout matches'},
-      'fruit-arena':{t:200,txt:g=>'score '+g+' in a single run'},
-      pptour:{t:12,txt:g=>'win '+g+' matches'},
-      paper:{t:45,txt:g=>'claim '+g+'% of the map'},
-      obby:{t:30,txt:g=>'reach stage '+g},
-      try:{t:15,txt:g=>'reach level '+g},
-      tennis:{t:6,txt:g=>'win '+g+' trophies'},
-      karate:{t:15,txt:g=>'win '+g+' fights'},
-      stack:{t:55,txt:g=>'stack '+g+' blocks high'},
-      archer:{t:8,txt:g=>'reach level '+g},
-      scoop:{t:40,txt:g=>'reach a best score of '+g},
-      airhockey:{t:12,txt:g=>'win '+g+' matches (career)'},
-      codebreaker:{t:15,txt:g=>'solve '+g+' codes (career)'},
-      codewords:{t:10,txt:g=>'win '+g+' boards (career)'},
-      handcricket:{t:10,txt:g=>'win '+g+' matches (career)'},
-      thisorthat:{t:7,txt:g=>'hit a '+g+'-answer agreement streak',m:function(){ return lsGet('thisOrThat_v2',['bestStreak']); }},
-      drawrush:{t:15,txt:g=>'finish '+g+' drawings (career)'},
-      meme:{t:10,txt:g=>'publish '+g+' memes'}
+      cricket:{t:1000,txt:g=>'score '+g+' runs this week'},
+      catch:{t:300,k:'best',txt:g=>'reach a best score of '+g},
+      catch2:{t:250,k:'best',txt:g=>'reach a best score of '+g},
+      f1:{t:90,txt:g=>'earn '+g+' championship points this week'},
+      football:{t:10,txt:g=>'win '+g+' shootout matches this week'},
+      'fruit-arena':{t:200,k:'best',txt:g=>'score '+g+' in a single run'},
+      pptour:{t:12,txt:g=>'win '+g+' matches this week'},
+      paper:{t:45,k:'best',txt:g=>'claim '+g+'% of the map'},
+      obby:{t:30,k:'best',txt:g=>'reach stage '+g},
+      try:{t:15,k:'best',txt:g=>'reach level '+g},
+      tennis:{t:6,txt:g=>'win '+g+' trophies this week'},
+      karate:{t:15,txt:g=>'win '+g+' fights this week'},
+      stack:{t:55,k:'best',txt:g=>'stack '+g+' blocks high'},
+      archer:{t:8,k:'best',txt:g=>'reach level '+g},
+      scoop:{t:40,k:'best',txt:g=>'reach a best score of '+g},
+      airhockey:{t:12,txt:g=>'win '+g+' matches this week'},
+      codebreaker:{t:15,txt:g=>'solve '+g+' codes this week'},
+      codewords:{t:10,txt:g=>'win '+g+' boards this week'},
+      handcricket:{t:10,txt:g=>'win '+g+' matches this week'},
+      thisorthat:{t:7,k:'best',txt:g=>'hit a '+g+'-answer agreement streak',m:function(){ return lsGet('thisOrThat_v2',['bestStreak']); }},
+      drawrush:{t:15,txt:g=>'finish '+g+' drawings this week'},
+      meme:{t:10,txt:g=>'publish '+g+' memes this week'}
     };
     function weekMetric(slug){ const wg=WEEK_GOALS[slug]; return wg&&wg.m ? wg.m() : metric(slug); }
 
@@ -461,6 +465,17 @@
     function dayBase(){ let b=rd('ig_day_base',null);
       if(!b || b.day!==today || b.slug!==gotd.slug){ b={day:today,slug:gotd.slug,val:Math.max(0,metric(gotd.slug))}; wr('ig_day_base',b); }
       return b; }
+    // week-start snapshot of the weekly game's metric — captured the first time the
+    // hub renders each week, so lifetime stats can never auto-complete the goal
+    function weekBase(){ let b=rd('ig_week_base',null);
+      if(!b || b.week!==week || b.slug!==gotw.slug){ b={week:week,slug:gotw.slug,val:Math.max(0,weekMetric(gotw.slug))}; wr('ig_week_base',b); }
+      return b; }
+    function weekDone(){
+      const wg=WEEK_GOALS[gotw.slug]; if(!wg) return false;
+      const cur=weekMetric(gotw.slug), base=weekBase().val;
+      if(wg.k==='best') return cur>=wg.t && cur>base;   // fresh personal best this week, at/above target
+      return cur-base>=wg.t;                            // earned the target since the week began
+    }
     function dayDone(g){ const m=metric(g.slug);
       if(m<0){ const lp=rd('ig_lastplay',{}); return lp[g.slug]===today; }          // no metric → played today
       const dg=DAY_GOALS[g.slug]||{}; return m - dayBase().val >= (dg.d||1); }
@@ -468,16 +483,21 @@
     function cardHTML(kind,g){
       const isWeek=kind==='week';
       if(isWeek && WEEK_GOALS[g.slug]){
-        const wg=WEEK_GOALS[g.slug], cur=weekMetric(g.slug), met=cur>=wg.t;
+        const wg=WEEK_GOALS[g.slug], cur=weekMetric(g.slug), base=weekBase().val, isBest=wg.k==='best';
+        const met=weekDone();
         const claimed = rd('ig_claim_week',-1)===week;
+        // a champ whose best already beats the target must set a NEW best this week
+        const goalTxt = (isBest && base>=wg.t) ? 'set a NEW personal best (beat '+base+')' : wg.txt(wg.t);
         let action;
         if(claimed) action='<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>';
         else if(met) action='<button class="fclaim" data-claim="week">Claim ⭐⭐⭐</button>';
-        else action='<span class="flock">Progress: <b>'+Math.min(cur,wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
+        else if(isBest && base>=wg.t) action='<span class="flock">Your best is <b>'+base+'</b> — beat it this week for ⭐⭐⭐</span>';
+        else if(isBest) action='<span class="flock">Best so far: <b>'+Math.min(Math.max(cur,0),wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
+        else action='<span class="flock">This week: <b>'+Math.min(Math.max(0,cur-base),wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
         return '<div class="feature week">'
           +'<div class="flabel">⭐ GAME OF THE WEEK</div>'
           +'<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
-          +'<div class="fgoal">🎯 Weekly goal: <b>'+wg.txt(wg.t)+'</b> — earn 3 stars!</div>'
+          +'<div class="fgoal">🎯 Weekly goal: <b>'+goalTxt+'</b> — earn 3 stars!</div>'
           +'<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
       }
       if(isWeek){   // weekly fallback for a game with no metric yet: play it this week (honest text)
@@ -514,7 +534,7 @@
       f.querySelectorAll('[data-claim]').forEach(function(b){ b.addEventListener('click',function(){
         const kind=b.getAttribute('data-claim'), isWeek=kind==='week', g=isWeek?gotw:gotd;
         let ok;
-        if(isWeek && WEEK_GOALS[g.slug]) ok = weekMetric(g.slug) >= WEEK_GOALS[g.slug].t;   // weekly = verified grind
+        if(isWeek && WEEK_GOALS[g.slug]) ok = weekDone();   // weekly = verified fresh-progress grind
         else if(isWeek){ const lp=rd('ig_lastplay',{}); ok = lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week; }
         else ok = dayDone(g);                                                               // daily = verified goal, not "visited"
         if(!ok){ renderFeats(); return; }   // stale button (e.g. day rolled over) — re-render, no free star
@@ -690,6 +710,7 @@
        To flag a game, add its card href below with an `added` (newly added) or
        `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
     const GAMES = {
+      'carrom/':       { added:   '2026-07-31T09:00:00', tag:'🌐 MULTIPLAYER' },   // Carrom Clash: flick physics, AI levels, modes, 1v1 online rooms
       'meme/':         { added:   '2026-07-19T18:45:00' },   // Meme Studio: create+replay meme scenes, gallery, likes
       'scoop/':        { added:   '2026-07-16T17:30:00' },   // swipe basketball: 2.5D court, combos, shop
       'drawrush/':     { added:   '2026-07-19T18:00:00' },   // multiplayer + AI drawing game with community gallery
@@ -726,6 +747,10 @@
           const t=new Date(g.added).getTime(); if(t>newestT){ newestT=t; newest=card; }
         } else if(fresh(g.updated)){
           const b=document.createElement('span'); b.className='badge upd'; b.textContent='UPDATED'; window.getBadges(card).appendChild(b);
+        }
+        // optional extra tag (e.g. 🌐 MULTIPLAYER) rides the same 16h window
+        if(g.tag && (fresh(g.added)||fresh(g.updated))){
+          const b=document.createElement('span'); b.className='badge new'; b.textContent=g.tag; window.getBadges(card).appendChild(b);
         }
       });
       const banner=document.getElementById('newBanner');
