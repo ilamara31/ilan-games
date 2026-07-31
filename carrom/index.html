@@ -152,7 +152,7 @@
     <div class="pbar" id="barTop"><span class="tn"></span><span class="nm" id="nmTop">—</span><span class="sc" id="scTop">0</span></div>
     <div class="pbar" id="barBot"><span class="tn"></span><span class="nm" id="nmBot">You</span><span class="sc" id="scBot">0</span></div>
     <div id="modeChip"></div>
-    <button id="quitBtn" title="Quit">✕</button>
+    <button id="quitBtn" title="Exit match">🚪</button>
     <div id="toast"></div>
     <div id="hint" class="hidden"></div>
     <div id="ctl" class="hidden">
@@ -406,6 +406,8 @@ function startGame(mode, vsAi, aiLvl, names){
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on');
   $('modeChip').textContent = modeOf(mode).icon+' '+modeOf(mode).name;
+  // mid-match exit is a solo luxury — online you finish (or forfeit by leaving the page)
+  $('quitBtn').style.display = MP.on ? 'none' : 'block';
   syncHud(); syncCtl(); wake();
   maybeAiMove();
 }
