@@ -100,6 +100,10 @@
         creator_key: u.key, creator_name: u.name, title: title, category: cat, scene: m.scene
       }).select("id").single();
       if (r.error) return { ok: false, msg: "Save failed: " + (r.error.message || "") };
+      // local publish counter — the hub's Game of the Day "publish a meme" goal reads this
+      try { var pc = null; try { pc = JSON.parse(localStorage.getItem("ms_pub_count_v1")); } catch (_e) {}
+        if (!pc || typeof pc !== "object") pc = { n: 0 };
+        pc.n = (+pc.n || 0) + 1; localStorage.setItem("ms_pub_count_v1", JSON.stringify(pc)); } catch (_e) {}
       return { ok: true, id: r.data.id };
     } catch (e) { return { ok: false, msg: (e && e.message) || "Save failed." }; }
   }

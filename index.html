@@ -226,7 +226,6 @@
       <p>Catch the fruit, dodge the junk food — then feast on Cheat Day!</p>
     </a>
     <a class="card f1" href="f1/">
-      <span class="badges"><span class="badge new">🌐 MULTIPLAYER</span></span>
       <span class="emoji">🏎️</span>
       <h2>Grand Prix 3D</h2>
       <p>Race the world in 3D — and now race your <b>friends live</b> in online rooms!</p>
@@ -308,19 +307,63 @@
       emoji:(c.querySelector('.emoji')||{}).textContent||'🎮' }; }).filter(function(g){ return g.slug; });
     const N=games.length; if(!N) return;
 
-    // per-game goal challenge (falls back to "beat your best")
-    const GOALS={ 'cricket':'chase down the target and win', 'catch':'catch 25 without missing', 'f1':'finish on the podium (top 3)',
-      'football':'win the penalty shootout', 'pptour':'win a tournament match', 'fruit-arena':'slice 40 fruit, no bombs',
-      'paper':'claim 30% of the map', 'obby':'reach stage 10', 'puzzles':'finish any puzzle',
-      'try':'survive 5 rule-flips', 'anime-tycoon':'win a battle in the arena', 'tennis':'win a match', 'karate':'land a KO',
-      'stack':'stack 15 blocks high', 'archer':'KO 3 rivals' };
-    function goalFor(s){ return GOALS[s] || 'beat your best score'; }
+    /* ---- per-game PROGRESS METRICS (monotonic: bests / career counters) ----
+       Every goal below is VERIFIED against these — entering a game and walking
+       out no longer earns a star. Games missing here fall back to an honest
+       "play a round today" goal (carrom etc. — add a metric when they save one). */
+    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return s&&Array.isArray(s.accounts)?(s.accounts.find(a=>a.id===s.activeId)||s.accounts[0]):null; }catch(e){ return null; } }
+    function acctSlugKey(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); }catch(e){}
+      try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); if(s&&Array.isArray(s.accounts)){ const a=s.accounts.find(x=>x.id===s.activeId); if(a&&a.name) return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); } }catch(e){} return 'guest'; }
+    function lsGet(key,path){ try{ let o=JSON.parse(localStorage.getItem(key)); for(let i=0;i<path.length;i++){ if(!o) return 0; o=o[path[i]]; } return Math.max(0,+o||0); }catch(e){ return 0; } }
+    // stack/archer/tennis save under per-account keys (base__name) — read those, fall back to the base key
+    function lsGetA(base,path){ const v=lsGet(base+'__'+acctSlugKey(),path); return v||lsGet(base,path); }
+    const METRIC={
+      cricket: function(){ const a=acctActive(); return ((a&&a.ipl&&+a.ipl.runs)||0)+((a&&a.odi&&+a.odi.runs)||0); },
+      catch: function(){ const a=acctActive(); return Math.max((a&&a.basket&&+a.basket.best)||0, lsGet('basketCatchV2_guest',['best'])); },
+      catch2: function(){ const a=acctActive(); return Math.max((a&&a.basket2&&+a.basket2.best)||0, lsGet('basketCatch2_guest',['best'])); },
+      f1: function(){ const a=acctActive(); return (a&&a.f1&&+a.f1.points)||0; },
+      football: function(){ const a=acctActive(); return (a&&a.pk&&+a.pk.won)||0; },
+      puzzles: function(){ const a=acctActive(); const p=(a&&a.puz)||{}; return (p.wordleStreak||0)+(p.connWins||0)+(p.searchWins||0)+(p.scrambleBest||0)+(p.best2048||0)+(p.simonBest||0)+(p.emojiBest||0)+(p.sudokuWins||0); },
+      'fruit-arena': function(){ return lsGet('fruitArena_v1',['best']); },
+      tennis: function(){ return lsGetA('tennisTour_v1',['trophies']); },
+      pptour: function(){ return lsGet('ppTour_v2',['wins']); },
+      karate: function(){ return lsGet('karateChamp_v1',['wins']); },
+      obby: function(){ return lsGet('ilanObbySave_v1',['bestStage']); },
+      try: function(){ return lsGet('omt_save_v1',['best']); },
+      paper: function(){ return lsGet('paperTerritory_v1',['best']); },
+      stack: function(){ return lsGetA('stackTower_v1',['best']); },
+      archer: function(){ return lsGetA('archerDuel_v1',['best']); },
+      'anime-tycoon': function(){ return lsGet('animeTycoon_v1',['lifetime']); },
+      scoop: function(){ return Math.max(lsGet('basketScoop_v1',['best','classic']), lsGet('basketScoop_v1',['best','time']), lsGet('basketScoop_v1',['best','hs'])); },
+      airhockey: function(){ return lsGet('airHockeyArena_v1',['wins']); },
+      codebreaker: function(){ return lsGet('cb_secret_agent_v1',['stats','solves']); },
+      codewords: function(){ return lsGet('cw_save_v1',['stats','won']); },
+      handcricket: function(){ return lsGet('hcl_save_v1',['stats','wins']); },
+      thisorthat: function(){ return lsGet('thisOrThat_v2',['rounds']); },
+      drawrush: function(){ return lsGet('draw_rush_v1',['stats','drawings']); },
+      meme: function(){ return lsGet('ms_pub_count_v1',['n']); }
+    };
+    function metric(slug){ return METRIC[slug] ? METRIC[slug]() : -1; }   // -1 = no metric known
 
-    // ---- WEEKLY goals: HARD grind targets, actually verified against your saved best / career stat ----
+    // ---- DAILY goals: do the thing TODAY — metric must move past its day-start snapshot.
+    //      d = how much it must move (default 1). "new best" games: any increase IS a new best.
+    const DAY_GOALS={
+      cricket:{txt:'score runs in a match'}, catch:{txt:'set a new best score'}, catch2:{txt:'set a new best score'},
+      f1:{txt:'earn championship points'}, football:{txt:'win a shootout match'}, pptour:{txt:'win a match'},
+      'fruit-arena':{txt:'set a new best score'}, paper:{txt:'set a new best territory %'}, obby:{txt:'reach a new best stage'},
+      puzzles:{txt:'finish a puzzle'}, try:{txt:'reach a new best level'}, 'anime-tycoon':{txt:'grow your lifetime ¥ earnings'},
+      tennis:{txt:'win a trophy'}, karate:{txt:'win a fight'}, stack:{txt:'build a new best tower'},
+      archer:{txt:'reach a new best level'}, scoop:{txt:'set a new best score'}, airhockey:{txt:'win a match'},
+      codebreaker:{txt:'solve a code'}, codewords:{txt:'win a board'}, handcricket:{txt:'win a match'},
+      thisorthat:{txt:'answer 5 rounds',d:5}, drawrush:{txt:'finish a drawing'}, meme:{txt:'publish a meme'}
+    };
+
+    // ---- WEEKLY goals: HARD grind targets, verified against your saved best / career stat ----
     const WEEK_EXCLUDE={ 'puzzles':1, 'anime-tycoon':1 };   // no Puzzle Pad / Anime Tycoon as Game of the Week
     const WEEK_GOALS={
       cricket:{t:1000,txt:g=>'score '+g+' career runs (across matches)'},
       catch:{t:300,txt:g=>'reach a best score of '+g},
+      catch2:{t:250,txt:g=>'reach a best score of '+g},
       f1:{t:90,txt:g=>'earn '+g+' championship points'},
       football:{t:10,txt:g=>'win '+g+' shootout matches'},
       'fruit-arena':{t:200,txt:g=>'score '+g+' in a single run'},
@@ -331,26 +374,17 @@
       tennis:{t:6,txt:g=>'win '+g+' trophies'},
       karate:{t:15,txt:g=>'win '+g+' fights'},
       stack:{t:55,txt:g=>'stack '+g+' blocks high'},
-      archer:{t:8,txt:g=>'reach level '+g}
+      archer:{t:8,txt:g=>'reach level '+g},
+      scoop:{t:40,txt:g=>'reach a best score of '+g},
+      airhockey:{t:12,txt:g=>'win '+g+' matches (career)'},
+      codebreaker:{t:15,txt:g=>'solve '+g+' codes (career)'},
+      codewords:{t:10,txt:g=>'win '+g+' boards (career)'},
+      handcricket:{t:10,txt:g=>'win '+g+' matches (career)'},
+      thisorthat:{t:7,txt:g=>'hit a '+g+'-answer agreement streak',m:function(){ return lsGet('thisOrThat_v2',['bestStreak']); }},
+      drawrush:{t:15,txt:g=>'finish '+g+' drawings (career)'},
+      meme:{t:10,txt:g=>'publish '+g+' memes'}
     };
-    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return s&&Array.isArray(s.accounts)?(s.accounts.find(a=>a.id===s.activeId)||s.accounts[0]):null; }catch(e){ return null; } }
-    function lsNum(key,field){ try{ const o=JSON.parse(localStorage.getItem(key)); return (o&&+o[field])||0; }catch(e){ return 0; } }
-    function bestOf(slug){ const a=acctActive();
-      switch(slug){
-        case 'catch': return Math.max((a&&a.basket&&+a.basket.best)||0, lsNum('basketCatchV2_guest','best'));
-        case 'cricket': return ((a&&a.ipl&&+a.ipl.runs)||0)+((a&&a.odi&&+a.odi.runs)||0);
-        case 'f1': return (a&&a.f1&&+a.f1.points)||0;
-        case 'football': return (a&&a.pk&&+a.pk.won)||0;
-        case 'fruit-arena': return lsNum('fruitArena_v1','best');
-        case 'tennis': return lsNum('tennisTour_v1','trophies');
-        case 'pptour': return lsNum('ppTour_v2','wins');
-        case 'karate': return lsNum('karateChamp_v1','wins');
-        case 'obby': return lsNum('ilanObbySave_v1','bestStage');
-        case 'try': return lsNum('omt_save_v1','best');
-        case 'paper': return lsNum('paperTerritory_v1','best');
-        case 'stack': return lsNum('stackTower_v1','best');
-        case 'archer': return lsNum('archerDuel_v1','best');
-      } return 0; }
+    function weekMetric(slug){ const wg=WEEK_GOALS[slug]; return wg&&wg.m ? wg.m() : metric(slug); }
 
     function rd(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
     function wr(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
@@ -384,10 +418,19 @@
     let gotw=wpArr[(((week*3+5)%WP)+WP)%WP];
     if(gotw.slug===gotd.slug) gotw=wpArr[(wpArr.indexOf(gotw)+1)%WP];   // keep day & week different
 
+    // day-start snapshot of the daily game's metric — "beat it" is the REAL goal.
+    // Captured the first time the hub renders each day, so the star needs fresh progress.
+    function dayBase(){ let b=rd('ig_day_base',null);
+      if(!b || b.day!==today || b.slug!==gotd.slug){ b={day:today,slug:gotd.slug,val:Math.max(0,metric(gotd.slug))}; wr('ig_day_base',b); }
+      return b; }
+    function dayDone(g){ const m=metric(g.slug);
+      if(m<0){ const lp=rd('ig_lastplay',{}); return lp[g.slug]===today; }          // no metric → played today
+      const dg=DAY_GOALS[g.slug]||{}; return m - dayBase().val >= (dg.d||1); }
+
     function cardHTML(kind,g){
       const isWeek=kind==='week';
       if(isWeek && WEEK_GOALS[g.slug]){
-        const wg=WEEK_GOALS[g.slug], cur=bestOf(g.slug), met=cur>=wg.t;
+        const wg=WEEK_GOALS[g.slug], cur=weekMetric(g.slug), met=cur>=wg.t;
         const claimed = rd('ig_claim_week',-1)===week;
         let action;
         if(claimed) action='<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>';
@@ -399,18 +442,31 @@
           +'<div class="fgoal">🎯 Weekly goal: <b>'+wg.txt(wg.t)+'</b> — earn 3 stars!</div>'
           +'<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
       }
-      const lp=rd('ig_lastplay',{}), playedT = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today);
-      const claimedAt = rd(isWeek?'ig_claim_week':'ig_claim_day', -1);
-      const claimed = claimedAt === (isWeek?week:today);
-      const reward = isWeek?3:1;
+      if(isWeek){   // weekly fallback for a game with no metric yet: play it this week (honest text)
+        const lp=rd('ig_lastplay',{}), playedT = lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week;
+        const claimed = rd('ig_claim_week',-1)===week;
+        const action = claimed ? '<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>'
+          : (playedT ? '<button class="fclaim" data-claim="week">Claim ⭐⭐⭐</button>'
+                     : '<span class="flock">▶ Play it this week to earn your ⭐⭐⭐</span>');
+        return '<div class="feature week">'
+          + '<div class="flabel">⭐ GAME OF THE WEEK</div>'
+          + '<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+          + '<div class="fgoal">🎯 Goal: <b>play a round this week</b> — earn 3 stars!</div>'
+          + '<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
+      }
+      // ---- daily card: goal text = what's actually verified ----
+      const claimed = rd('ig_claim_day',-1)===today;
+      const m=metric(g.slug), hasMetric=m>=0, dg=DAY_GOALS[g.slug]||{txt:'play a round'}, need=dg.d||1;
+      const got=hasMetric?Math.max(0,m-dayBase().val):0;
       let action;
       if(claimed) action='<span class="fdone">✅ Goal done — ⭐ earned!</span>';
-      else if(playedT) action='<button class="fclaim" data-claim="'+kind+'">Claim '+(isWeek?'⭐⭐⭐':'⭐')+'</button>';
-      else action='<span class="flock">▶ Play it '+(isWeek?'this week':'today')+' to earn your '+(isWeek?'⭐⭐⭐':'⭐')+'</span>';
-      return '<div class="feature'+(isWeek?' week':'')+'">'
-        + '<div class="flabel">'+(isWeek?'⭐ GAME OF THE WEEK':'🎯 GAME OF THE DAY')+'</div>'
+      else if(dayDone(g)) action='<button class="fclaim" data-claim="day">Claim ⭐</button>';
+      else if(hasMetric && need>1) action='<span class="flock">Progress today: <b>'+got+' / '+need+'</b> — finish it for your ⭐</span>';
+      else action='<span class="flock">▶ '+(hasMetric?dg.txt.charAt(0).toUpperCase()+dg.txt.slice(1)+' today':'Play it today')+' to earn your ⭐</span>';
+      return '<div class="feature">'
+        + '<div class="flabel">🎯 GAME OF THE DAY</div>'
         + '<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
-        + '<div class="fgoal">🎯 Goal: <b>'+goalFor(g.slug)+'</b> — earn '+(isWeek?'3 stars':'a star')+'!</div>'
+        + '<div class="fgoal">🎯 Goal: <b>'+(hasMetric?dg.txt:'play a round')+'</b> — earn a star!</div>'
         + '<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
     }
     function renderFeats(){
@@ -420,9 +476,10 @@
       f.querySelectorAll('[data-claim]').forEach(function(b){ b.addEventListener('click',function(){
         const kind=b.getAttribute('data-claim'), isWeek=kind==='week', g=isWeek?gotw:gotd;
         let ok;
-        if(isWeek && WEEK_GOALS[g.slug]) ok = bestOf(g.slug) >= WEEK_GOALS[g.slug].t;   // weekly = verified grind
-        else { const lp=rd('ig_lastplay',{}); ok = isWeek ? (lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week) : (lp[g.slug]===today); }
-        if(!ok) return;
+        if(isWeek && WEEK_GOALS[g.slug]) ok = weekMetric(g.slug) >= WEEK_GOALS[g.slug].t;   // weekly = verified grind
+        else if(isWeek){ const lp=rd('ig_lastplay',{}); ok = lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week; }
+        else ok = dayDone(g);                                                               // daily = verified goal, not "visited"
+        if(!ok){ renderFeats(); return; }   // stale button (e.g. day rolled over) — re-render, no free star
         wr('ig_stars', stars() + (isWeek?3:1));
         wr(isWeek?'ig_claim_week':'ig_claim_day', isWeek?week:today);
         postStars();
@@ -433,6 +490,10 @@
     function postStars(){ try{ if(window.IGAuth && stars()>0) IGAuth.submitScore('stars', stars()); }catch(e){} }
     (function starsBoot(){ if(window.IGAuth && IGAuth.isReady && IGAuth.isReady()) postStars(); else setTimeout(starsBoot, 700); })();
     renderFeats(); renderPassport();
+    // coming BACK from a game often restores the hub from the bfcache (no reload) —
+    // re-render so freshly earned progress unlocks the Claim button immediately
+    window.addEventListener('pageshow', function(e){ if(e.persisted){ renderFeats(); renderPassport(); } });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ renderFeats(); renderPassport(); } });
   })();
   </script>
 
