@@ -91,6 +91,25 @@
   .stage .done{ color:#ffe14a; font-weight:bold; }
   .res-big{ font-size:40px; font-weight:bold; margin:6px 0; }
   .res-line{ font-size:17px; margin:5px 0; }
+
+  /* multiplayer lobby + room */
+  .rooms{ display:flex; flex-direction:column; gap:9px; margin:8px 0; width:min(440px,94vw); }
+  .room{ display:flex; align-items:center; gap:12px; background:#0e2240; border:1.5px solid #2f5f9e; border-radius:14px; padding:11px 14px; text-align:left; }
+  .room.playing{ opacity:.55; }
+  .room .rinfo{ flex:1; min-width:0; }
+  .room .rcode{ font-weight:bold; font-size:17px; letter-spacing:3px; color:#ffe14a; }
+  .room .rmeta{ font-size:12.5px; color:#bcd4ee; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .codein{ display:flex; gap:8px; justify-content:center; margin:6px 0 2px; }
+  .codein input{ width:150px; text-align:center; background:#0e2240; border:2px solid #2f5f9e; color:#ffe14a; padding:12px; border-radius:12px; font-size:20px; font-weight:bold; letter-spacing:5px; text-transform:uppercase; font-family:inherit; outline:none; }
+  .codein input:focus{ border-color:#ffe14a; }
+  #mpRoomCode{ font-size:clamp(34px,10vw,52px); font-weight:bold; letter-spacing:10px; color:#ffe14a; background:rgba(255,225,74,.1); border:2px dashed rgba(255,225,74,.5); border-radius:18px; padding:8px 22px; margin:4px 0 2px; }
+  .plist{ display:flex; flex-direction:column; gap:7px; margin:8px 0; width:min(360px,92vw); }
+  .prow{ display:flex; align-items:center; gap:10px; background:#0e2240; border-radius:12px; padding:9px 13px; font-size:15px; text-align:left; }
+  .prow .pc{ width:16px; height:16px; border-radius:4px; flex:0 0 auto; }
+  .prow .pn{ flex:1; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prow .ph{ font-size:12px; color:#ffe14a; }
+  .prow.empty{ opacity:.5; }
+  #mpMsg{ min-height:20px; font-size:14px; color:#ff9a9a; font-weight:bold; margin:4px 0; }
 </style>
 </head>
 <body>
@@ -114,6 +133,7 @@
   </div>
   <button class="btn" data-mode="tournament" style="margin-top:8px">🏆 Tournament</button>
   <button class="btn gold" data-mode="career">🎓 Career Mode</button>
+  <button class="btn green" id="mpBtn">🌐 MULTIPLAYER — play a friend</button>
   <div class="row" style="margin-top:6px">
     <button class="btn alt" id="howBtn" type="button">❓ How to Play</button>
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
@@ -173,6 +193,35 @@
   <div class="res-line">⭐ XP earned: <b id="resXp">0</b></div>
   <div class="res-line" id="resStats" style="opacity:.8;font-size:14px"></div>
   <button class="btn green" id="resNext">Continue</button>
+</div>
+
+<!-- MULTIPLAYER LOBBY -->
+<div id="mplobby" class="scr hidden">
+  <div class="tourlogo">🌐 ONLINE MULTIPLAYER</div>
+  <h1 style="font-size:clamp(28px,7vw,52px)">🎾 MATCH ROOMS</h1>
+  <div class="sub">Create a room and share the 4-letter code, or join a friend's room.<br><b>2 players</b> · first to 5 points · works on phones &amp; computers!</div>
+  <div class="sub" id="mpWho" style="color:#ffe14a;margin-top:-8px"></div>
+  <button class="btn green" id="mpCreateBtn">➕ CREATE A ROOM</button>
+  <div class="sub" style="margin:8px 0 2px">🔑 Have a code?</div>
+  <div class="codein">
+    <input id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="btn" id="mpJoinCodeBtn" style="width:auto;margin:0">JOIN</button>
+  </div>
+  <div id="mpMsg"></div>
+  <div class="sub" style="margin:8px 0 2px">🚪 Open rooms — tap to join</div>
+  <div class="rooms" id="mpRoomList"><div class="sub">Looking for rooms…</div></div>
+  <button class="btn alt" id="mpLobbyBack">← Back</button>
+</div>
+
+<!-- MULTIPLAYER ROOM -->
+<div id="mproom" class="scr hidden">
+  <div class="tourlogo">🌐 MATCH ROOM — share this code</div>
+  <div id="mpRoomCode">----</div>
+  <button class="btn alt" id="mpShareBtn" style="width:auto;padding:10px 22px">📤 Share invite</button>
+  <div class="plist" id="mpPlayers"></div>
+  <div class="sub" id="mpRoomHint"></div>
+  <button class="btn green hidden" id="mpStartBtn">🎾 START MATCH</button>
+  <button class="btn alt" id="mpLeaveBtn">🚪 Leave room</button>
 </div>
 
 <!-- SHOP -->
@@ -380,12 +429,12 @@ function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const m=parts[i]; 
 
 /* ---------- entities ---------- */
 let player=null, opp=null;
-function makePlayers(oppCol, oppName){
+function makePlayers(oppCol, oppName, oppJerseyNum){
   if(player) scene.remove(player); if(opp) scene.remove(opp);
   const js=ALLSHOP[S.equip.jerseys]||ALLSHOP['js0'];
   player=buildPlayer({skin:0xf3c79a, jersey:js, shoe:(ALLSHOP[S.equip.shoes]||ALLSHOP['sh0']).col, racket:(ALLSHOP[S.equip.rackets]||ALLSHOP['rk0']).col, name:S.name||'You', num:S.jerseyNum||'10'});
   player.position.set(0,0,PZ); scene.add(player);
-  const oppNum=((oppName||'R').charCodeAt(0)%20)+1;
+  const oppNum=(oppJerseyNum!=null&&oppJerseyNum!=='')?oppJerseyNum:((oppName||'R').charCodeAt(0)%20)+1;
   opp=buildPlayer({skin:0xe8b48a, jersey:{col:oppCol,stripe:0x141414}, shoe:0xffffff, racket:0x222, flip:true, name:oppName||'', num:oppNum});
   opp.position.set(0,0,OZ); scene.add(opp);
 }
@@ -396,9 +445,9 @@ const M={ active:false, ctx:null, score:{a:0,b:0}, server:'a', state:'idle',
   oppArmed:false, oppWill:null };
 let px=0, oppx=0, ovx=0;
 
-function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server='a'; M.smashCD=0; M.oppSmashes=0;
+function startMatch(ctx){ M.ctx=ctx; M.active=true; M.score={a:0,b:0}; M.server=ctx.srv||'a'; M.smashCD=0; M.oppSmashes=0;
   setCourt(ctx.courtF||1);   // Hard = bigger arena
-  M.stats={rallies:0,smashes:0,aces:0}; makePlayers(ctx.oppColor, ctx.oppName); px=0; oppx=0;
+  M.stats={rallies:0,smashes:0,aces:0}; makePlayers(ctx.oppColor, ctx.oppName, ctx.oppNum); px=0; oppx=0;
   show('hud'); document.getElementById('sNmA').textContent=S.name||'You'; document.getElementById('sNmB').textContent=ctx.oppName;
   document.getElementById('smashBtn').style.display='flex'; updateSmashUI();   // smash/cooldown badge always visible
   if('ontouchstart' in window){ document.getElementById('stick').style.display='block'; document.getElementById('hitBtn').style.display='flex'; }
@@ -407,7 +456,8 @@ function newPoint(){ M.state='serve'; M.lastHitter=null; M.bounce=0; M.rallyHits
   const srv=M.server; const sz= srv==='a'?PZ:OZ; const sx=(srv==='a'?px:oppx)*0.4;
   ball.position.set(sx,2.0,sz - (srv==='a'?0.5:-0.5)); BV.set(0,0,0); M.prevZ=ball.position.z; }
 function serveBall(){ const srv=M.server; M.lastHitter=srv; M.bounce=0;
-  const tz=(srv==='a'?-1:1)*HL*0.45; const tx=(Math.random()-0.5)*HW*0.8; flightTo(tx,tz,1.0, srv==='a'?9:9); M.state='play'; sfx('hit'); swing(srv==='a'?player:opp); }
+  const tz=(srv==='a'?-1:1)*HL*0.45; const tx=(Math.random()-0.5)*HW*0.8; flightTo(tx,tz,1.0, srv==='a'?9:9); M.state='play'; sfx('hit'); swing(srv==='a'?player:opp);
+  if(srv==='a') mpShot('serve'); }   // online: my serve re-syncs the ball for my opponent (no-op offline)
 function flightTo(tx,tz,T,vyBoost){ const g=18; const b=ball.position;
   BV.x=(tx-b.x)/T; BV.z=(tz-b.z)/T; BV.y=(0 - b.y + 0.5*g*T*T)/T; if(vyBoost) BV.y=Math.max(BV.y, vyBoost*0.0+ (0.5*g*T - b.y/T)); }
 
@@ -449,7 +499,7 @@ function playerHit(useSmash){ if(M.state!=='play'||M.hitCool>0) return;
   if(useSmash && M.smashCD<=0){ kind=(q==='smash')?'smash':q; if(kind==='smash') M.smashCD=5; }  // X smashes only on perfect timing, then 5s cooldown
   else { kind=(q==='smash')?'power':q; }                                                          // Space, or X on cooldown -> no smash
   M.lastHitter='a'; M.bounce=0; M.hitCool=0.35; M.rallyHits++; M.oppArmed=false; M.oppWill=null;   // opponent decides fresh for this return
-  shotFor(kind,'a'); swing(player); sfx(kind==='smash'?'smash':'hit');
+  shotFor(kind,'a'); mpShot(kind); swing(player); sfx(kind==='smash'?'smash':'hit');
   const col = kind==='smash'?0xff5a3c : kind==='power'?0x9bff8e : 0xeaff8a;
   burst(ball.position.clone(), col, kind==='smash'?22:10, kind==='smash'?7:4);
   feed(kind==='lob'?'LOB 🎾':kind==='smash'?'SMASH! 💥':kind==='power'?'POWER SHOT! ⚡':kind==='weak'?'late… weak':'nice shot', kind==='smash'?'#ffe14a':kind==='power'?'#9bff8e':'#cfe9ff');
@@ -465,7 +515,8 @@ function updateTiming(){ const tm=document.getElementById('timing'), tl=document
   if(showIt){ const frac=Math.max(0,Math.min(1,(ball.position.z)/(PZ))); mk.style.left=(frac*100)+'%'; } }
 
 /* ---------- AI (harder at higher difficulty; smashes your weak/short balls) ---------- */
-function updateAI(dt){ const d=M.ctx.diff;
+function updateAI(dt){ if(MPT.on) return;   // online: the opponent is a real person, not the AI
+  const d=M.ctx.diff;
   let targetX=0;
   if(ball.position.z<0 && M.state==='play'){ targetX=ball.position.x; }
   const sp=(4.8+d*4.2);                                  // can chase a few balls, but not everything
@@ -492,19 +543,28 @@ function updateAI(dt){ const d=M.ctx.diff;
 /* ---------- point resolution: 1 point per rally, first to 5 ---------- */
 function endPoint(winner){ // 'a'=you, 'b'=opponent
   if(M.state==='dead') return;
+  if(MPT.on && !MPT.isHost) return;             // online: the HOST referees — guests apply the host's verdict (mpOnPoint)
   M.state='dead'; M.stats.rallies++;
   if(M.rallyHits<=1 && winner===M.server) M.stats.aces++;
   M.score[winner]++;
   feed(winner==='a' ? '✅ You scored!  '+M.score.a+'–'+M.score.b : '❌ '+M.ctx.oppName+' scored  '+M.score.a+'–'+M.score.b, winner==='a'?'#9bff8e':'#ff9a9a');
   if(winner==='a') crowdCheer();
   syncScore();
-  if(matchWon(M.score)){ setTimeout(()=>endMatch(M.score.a>M.score.b),950); return; }
+  if(matchWon(M.score)){ if(MPT.on) mpPoint(winner,null); setTimeout(()=>endMatch(M.score.a>M.score.b),950); return; }
   M.server = M.server==='a'?'b':'a';            // alternate serve each point
-  setTimeout(()=>{ if(M.active) newPoint(); },1100);
+  if(MPT.on) mpPoint(winner,M.server);
+  setTimeout(()=>{ if(M.active&&M.state==='dead') newPoint(); },1100);
 }
 
 /* ---------- physics step ---------- */
-function stepBall(dt){ if(M.state==='serve'){ M.serveT-=dt; if(M.serveT<=0) serveBall(); return; }
+// online guest: endPoint() is a no-op (the host referees), so after a locally-visible
+// verdict the ball must REST — else the verdict branches re-fire every frame
+// (burst spam / ball sinking) until the host's 'pt' arrives. State stays 'play'
+// so the verdict still applies. No-op offline and for the host.
+function guestHold(){ if(MPT.on&&!MPT.isHost){ BV.set(0,0,0); M.bounce=2; } }
+function stepBall(dt){ if(M.state==='serve'){ M.serveT-=dt;
+    // online: only the SERVING side launches the ball; the other side waits for the 'shot' message
+    if(M.serveT<=0 && (!MPT.on || M.server==='a')) serveBall(); return; }
   if(M.state!=='play') return;
   const g=18; BV.y-=g*dt; ball.position.addScaledVector(BV,dt);
   if(M.hitCool>0) M.hitCool-=dt;
@@ -513,7 +573,7 @@ function stepBall(dt){ if(M.state==='serve'){ M.serveT-=dt; if(M.serveT<=0) serv
   trail.forEach(m=>{ if(m.visible) m.material.opacity*=0.86; });
   // net crossing
   if((M.prevZ<0)!==(ball.position.z<0)){ if(ball.position.y<NETH+0.05){ // hit the net
-      burst(ball.position.clone(),0xffffff,10,3); endPoint(M.lastHitter==='a'?'b':'a'); M.prevZ=ball.position.z; return; } }
+      burst(ball.position.clone(),0xffffff,10,3); endPoint(M.lastHitter==='a'?'b':'a'); guestHold(); M.prevZ=ball.position.z; return; } }
   M.prevZ=ball.position.z;
   // bounce
   if(ball.position.y<=0.34 && BV.y<0){ ball.position.y=0.34;
@@ -521,15 +581,15 @@ function stepBall(dt){ if(M.state==='serve'){ M.serveT-=dt; if(M.serveT<=0) serv
     if(M.bounce===0){ // this is the shot's FIRST landing -> judge in/out here only
       const inside = Math.abs(ball.position.x)<=HW+0.25 && Math.abs(ball.position.z)<=HL+0.25;
       const side = ball.position.z<0?'b':'a';
-      if(!inside){ burst(ball.position.clone(),0xff5a3c,10,3); endPoint(receiver); return; }       // hit OUT -> hitter loses
-      if(M.lastHitter && side===M.lastHitter){ endPoint(receiver); return; }                         // didn't cross net -> hitter loses
+      if(!inside){ burst(ball.position.clone(),0xff5a3c,10,3); endPoint(receiver); guestHold(); return; }   // hit OUT -> hitter loses
+      if(M.lastHitter && side===M.lastHitter){ endPoint(receiver); guestHold(); return; }                    // didn't cross net -> hitter loses
       M.bounce=1; BV.y=-BV.y*0.62; BV.x*=0.86; BV.z*=0.92; burst(ball.position.clone(),0xffffff,5,2); // valid landing
     } else { // already bounced in once -> receiver failed to return it -> HITTER wins
-      endPoint(M.lastHitter); return;
+      endPoint(M.lastHitter); guestHold(); return;
     }
   }
   // safety: ball lost
-  if(ball.position.y<-3 || Math.abs(ball.position.z)>HL+14){ endPoint(M.bounce>=1?M.lastHitter:(M.lastHitter==='a'?'b':'a')); }
+  if(ball.position.y<-3 || Math.abs(ball.position.z)>HL+14){ endPoint(M.bounce>=1?M.lastHitter:(M.lastHitter==='a'?'b':'a')); guestHold(); }
 }
 
 /* ============================================================ INPUT ============================================================ */
@@ -570,7 +630,7 @@ let cheerT=0; function crowdCheer(){ sfx('cheer'); cheerT=0.6; }
 
 /* ============================================================ UI ============================================================ */
 const $=id=>document.getElementById(id);
-function show(id){ ['menu','career','cards','result'].forEach(s=>$(s).classList.add('hidden')); $('hud').classList.add('hidden');
+function show(id){ ['menu','career','cards','result','mplobby','mproom'].forEach(s=>$(s).classList.add('hidden')); $('hud').classList.add('hidden');
   if(id==='hud') $('hud').classList.remove('hidden'); else if(id) $(id).classList.remove('hidden'); }
 function feed(msg,col='#fff'){ const d=document.createElement('div'); d.className='fmsg'; d.textContent=msg; d.style.color=col; $('feed').appendChild(d);
   setTimeout(()=>{ d.style.transition='opacity .4s'; d.style.opacity='0'; setTimeout(()=>d.remove(),400); },1400); }
@@ -595,7 +655,8 @@ function toCards(ctx){ pendingCtx=ctx; show('cards');
   $('oName').textContent=ctx.oppName; $('oLv').textContent='Lv '+Math.max(1,Math.round(ctx.diff*40)); $('oSt').textContent=ctx.roundLabel||''; }
 $('startBtn').onclick=()=>startMatch(pendingCtx);
 
-function endMatch(win){ M.active=false; M.state='idle'; show('result');
+function endMatch(win){ if(!M.active) return;   // e.g. opponent-left already ended it; the scheduled call must not double coins/trophies
+  M.active=false; M.state='idle'; if(M.ctx.mode==='mp') mpTeardown(); show('result');
   const coins=coinsForMatch(M.ctx.mode,M.ctx.diff,win); const xp=Math.round((win?1:0.4)*(40+M.ctx.diff*120));
   S.coins+=coins; S.xp+=xp; if(win) S.trophies++;
   // career progression
@@ -608,6 +669,7 @@ function endMatch(win){ M.active=false; M.state='idle'; show('result');
   $('resStats').textContent=`Rallies: ${M.stats.rallies} • Smashes: ${M.stats.smashes} • Aces: ${M.stats.aces}`;
   // next-step context
   resultNext = ()=>{
+    if(M.ctx.mode==='mp'){ mpAfterMatch(); return; }
     if(M.ctx.mode==='tournament' && win){ const nr=(M.ctx.round||0)+1; if(nr<TOUR_ROUNDS.length){ toCards(makeTournCtx(nr)); return; } else { /* champion */ } }
     if(M.ctx.mode==='career'){ openCareer(); return; }
     show('menu'); refreshMenu();
@@ -660,6 +722,379 @@ $('resetBtn').onclick=()=>{ if(confirm('Reset all progress?')){ localStorage.rem
 refreshMenu();
 ['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
 
+/* ============================================================ ONLINE MULTIPLAYER (2 players) ============================================================
+   Rooms over Supabase Realtime — same pattern as Grand Prix 3D: a room IS a
+   channel ('ttmp-'+CODE); hosts advertise it on a shared lobby channel
+   ('ttmp-lobby') via presence, so the ad vanishes when the host disconnects.
+   Authority model, built for a 2-player rally game:
+   - The HOST is the referee: ball verdicts (net/out/double-bounce), the score
+     and the serve order all come from the host ('pt' messages).
+   - Each side is authoritative for its OWN swings: a hit computes the new ball
+     trajectory locally and re-syncs it for both sides ('shot' messages).
+   - The host streams ball state at ~6 Hz so the guest can never drift far.
+   - The guest plays a MIRRORED court (everyone plays the near side), so every
+     x/z that crosses the network is flipped by mir().                        */
+const MPT={ on:false, sb:null, ch:null, lobbyCh:null, code:null, isHost:false,
+  members:[], started:false, sendAcc:0, oppXT:0, oppMoving:false, myT:0,
+  lobbyIv:null, lobbyRe:false, reopening:false, seq:0, lastSeq:-1, adSeen:null };
+let RGEN=0, _trackT=null;
+function roomTimer(fn,ms){ const g=RGEN; setTimeout(()=>{ if(g===RGEN) fn(); },ms); }
+const myId='u'+Math.random().toString(36).slice(2,9);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cleanCode=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=A[(Math.random()*A.length)|0]; return s; }
+const mir=()=>MPT.isHost?1:-1;                 // guest mirrors x and z across the net
+const r2=v=>Math.round(v*100)/100;
+function mpName(){ if(S.name) return String(S.name).slice(0,12);
+  try{ if(window.IGAuth&&IGAuth.displayName){ const n=IGAuth.displayName(); if(n) return String(n).trim().slice(0,12); } }catch(e){}
+  return 'Player-'+(100+((Math.random()*900)|0)); }
+async function mpEnsure(){
+  if(!(window.supabase&&window.supabase.createClient)){
+    await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; s.onload=res; s.onerror=()=>rej(new Error('cdn')); document.head.appendChild(s); });
+  }
+  if(!MPT.sb) MPT.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:30}}});
+  return MPT.sb;
+}
+function mpSend(ev,payload){ if(MPT.ch){ try{ MPT.ch.send({type:'broadcast',event:ev,payload:payload||{}}); }catch(e){} } }
+function mpToast(msg){ const t=document.createElement('div');
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#0f1d36;border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:bold;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center';
+  t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),4000); }
+const inLobby=()=>!$('mplobby').classList.contains('hidden');
+const inRoom=()=>!$('mproom').classList.contains('hidden');
+
+/* ---- lobby (room list) ---- */
+async function mpOpenLobby(){
+  show('mplobby'); $('mpWho').textContent='👤 Playing as '+mpName(); $('mpMsg').textContent='';
+  try{
+    const sb=await mpEnsure();
+    if(MPT.lobbyCh && MPT.lobbyCh.state!=='joined' && MPT.lobbyCh.state!=='joining'){ try{ sb.removeChannel(MPT.lobbyCh); }catch(e){} MPT.lobbyCh=null; }
+    if(!MPT.lobbyCh){
+      MPT.lobbyCh=sb.channel('ttmp-lobby',{config:{broadcast:{self:false},presence:{key:myId}}});
+      MPT.lobbyCh.on('presence',{event:'sync'},mpRenderRooms);
+      MPT.lobbyCh.subscribe(st=>{ if(st==='SUBSCRIBED'){ mpAdvertise(); mpRenderRooms(); } });
+    } else mpRenderRooms();
+    mpLobbyKeepalive();
+  }catch(e){ $('mpRoomList').innerHTML='<div class="sub">⚠️ Couldn’t connect — check your internet and try again.</div>'; }
+}
+function mpAdvertise(){ if(!MPT.lobbyCh) return;
+  try{ if(MPT.code&&MPT.isHost) MPT.lobbyCh.track({room:MPT.code,host:mpName(),n:Math.max(1,MPT.members.length),playing:MPT.started?1:0,hb:Date.now()});
+       else MPT.lobbyCh.untrack(); }catch(e){} }
+function mpLobbyKeepalive(){ if(MPT.lobbyIv) return;
+  MPT.lobbyIv=setInterval(async()=>{
+    if(!MPT.lobbyCh){ clearInterval(MPT.lobbyIv); MPT.lobbyIv=null; return; }
+    const s=MPT.lobbyCh.state;
+    if(s!=='joined'&&s!=='joining'){
+      if(MPT.lobbyRe) return; MPT.lobbyRe=true;
+      try{ const sb=await mpEnsure(); try{ sb.removeChannel(MPT.lobbyCh); }catch(e){}
+        MPT.lobbyCh=sb.channel('ttmp-lobby',{config:{broadcast:{self:false},presence:{key:myId}}});
+        MPT.lobbyCh.on('presence',{event:'sync'},mpRenderRooms);
+        await new Promise((res,rej)=>{ let d=false; MPT.lobbyCh.subscribe(st=>{ if(st==='SUBSCRIBED'&&!d){d=true;res();} else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')&&!d){d=true;rej(0);} }); setTimeout(()=>{ if(!d){d=true;rej(0);} },8000); });
+        mpAdvertise(); mpRenderRooms();
+      }catch(e){}
+      MPT.lobbyRe=false; return;
+    }
+    if(MPT.code&&MPT.isHost) mpAdvertise();
+    if(inLobby()) mpRenderRooms();
+  },8000);
+}
+function mpRenderRooms(){
+  const el=$('mpRoomList'); if(!el||!inLobby()) return;
+  let rooms=[]; try{ const st=MPT.lobbyCh?MPT.lobbyCh.presenceState():{}; for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.room) rooms.push(p); } }catch(e){}
+  // ghost filter: an ad whose heartbeat froze for 30s is a dead host lingering in presence
+  const seen=MPT.adSeen||(MPT.adSeen={}), nowT=performance.now();
+  rooms=rooms.filter(r=>{ if(!r.hb) return true; const e=seen[r.room]; if(!e||e.hb!==r.hb){ seen[r.room]={hb:r.hb,at:nowT}; return true; } return (nowT-e.at)<30000; });
+  if(!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite a friend! 🎾</div>'; return; }
+  el.innerHTML=rooms.map(r=>{
+    const full=(r.n|0)>=2, playing=!!r.playing;
+    const act=playing?'<span style="font-size:13px;color:#ff9a9a;font-weight:bold">🎾 PLAYING</span>'
+      : full?'<span style="font-size:13px;color:#ff9a9a;font-weight:bold">FULL</span>'
+      : `<button class="btn green" data-join="${esc(r.room)}" style="width:auto;margin:0;padding:9px 18px;font-size:14px">JOIN</button>`;
+    return `<div class="room ${playing?'playing':''}"><div class="rinfo"><div class="rcode">${esc(r.room)}</div><div class="rmeta">👑 ${esc(r.host||'?')} · ${Math.min(r.n|0,2)}/2 players${playing?' · match in progress':''}</div></div>${act}</div>`;
+  }).join('');
+  el.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>mpJoin(b.dataset.join));
+}
+function mpExitLobby(){ mpCloseRoom();
+  if(MPT.lobbyCh){ try{ MPT.sb.removeChannel(MPT.lobbyCh); }catch(e){} MPT.lobbyCh=null; }
+  show('menu'); refreshMenu(); }
+
+/* ---- create / join / room ---- */
+async function mpCreate(){
+  $('mpMsg').textContent='Creating your room…';
+  try{ await mpEnsure();
+    let code=genCode();
+    try{ const st=MPT.lobbyCh?MPT.lobbyCh.presenceState():{}; const ads={}; for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.room) ads[p.room]=1; } let n=0; while(ads[code]&&n++<20) code=genCode(); }catch(e){}
+    await mpOpenRoom(code,true); $('mpMsg').textContent='';
+    try{ if(window.track) window.track('mp_room_create',{code:code}); }catch(e){}
+  }catch(e){ mpCloseRoom(); show('mplobby'); $('mpMsg').textContent='⚠️ Couldn’t create the room — try again.'; }
+}
+async function mpJoin(code){
+  code=cleanCode(code);
+  if(code.length<4){ $('mpMsg').textContent='Enter the 4-letter room code.'; return; }
+  try{ const st=MPT.lobbyCh?MPT.lobbyCh.presenceState():{}; for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.room===code){ if(p.playing){ $('mpMsg').textContent='🎾 That match already started — join another room.'; return; } if((p.n|0)>=2){ $('mpMsg').textContent='That room is full (2/2).'; return; } } } }catch(e){}
+  $('mpMsg').textContent='Joining '+code+'…';
+  try{ await mpEnsure(); await mpOpenRoom(code,false); $('mpMsg').textContent='';
+    try{ if(window.track) window.track('mp_room_join',{code:code}); }catch(e){} }
+  catch(e){ mpCloseRoom(); show('mplobby'); $('mpMsg').textContent='⚠️ Couldn’t join '+code+' — try again.'; }
+}
+/* presence tracks are debounced — rapid re-tracks can drop the channel */
+function mpTrackSelf(){
+  if(!MPT.ch||_trackT) return;
+  _trackT=setTimeout(()=>{ _trackT=null; if(!MPT.ch) return;
+    const js=ALLSHOP[S.equip.jerseys]||ALLSHOP['js0'];
+    const meta={id:myId,name:mpName(),num:S.jerseyNum||'10',jcol:js.col,host:MPT.isHost?1:0,t:MPT.myT,playing:(MPT.on&&M.active)?1:0};
+    if(MPT.isHost) meta.started=MPT.started?1:0;
+    try{ MPT.ch.track(meta); }catch(e){}
+  },150);
+}
+async function mpConnectRoom(code){
+  const sb=await mpEnsure();
+  if(MPT.ch){ try{ sb.removeChannel(MPT.ch); }catch(e){} MPT.ch=null; }
+  const ch=sb.channel('ttmp-'+code,{config:{broadcast:{self:false},presence:{key:myId}}});
+  MPT.ch=ch;
+  ch.on('presence',{event:'sync'},mpOnPresence);
+  ch.on('presence',{event:'leave'},({leftPresences})=>mpOnLeave(leftPresences||[]));
+  ['start','shot','pt','pos','bye'].forEach(ev=>ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
+  await new Promise((res,rej)=>{ let d=false;
+    ch.subscribe(st=>{ if(st==='SUBSCRIBED'&&!d){ d=true; mpTrackSelf(); res(); }
+      else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')&&!d){ d=true; rej(new Error(st)); } });
+    setTimeout(()=>{ if(!d){ d=true; rej(new Error('timeout')); } },8000); });
+}
+async function mpOpenRoom(code,asHost){
+  mpCloseRoom(); RGEN++;
+  MPT.code=code; MPT.isHost=asHost; MPT.started=false; MPT.members=[]; MPT.myT=Date.now(); MPT.seq=0; MPT.lastSeq=-1;
+  await mpConnectRoom(code);
+  show('mproom'); mpRenderRoom();
+  if(asHost) mpAdvertise();
+  else roomTimer(()=>{ if(inRoom()&&MPT.code===code&&!MPT.members.some(m=>m.host)){ mpToast('Room '+code+' was not found — maybe it closed.'); mpLeaveRoom(); } },5000);
+  mpRoomWatch();
+}
+function mpOnPresence(){
+  if(!MPT.ch) return;
+  let arr=[]; try{ const st=MPT.ch.presenceState(); for(const k in st){ const p=st[k]&&st[k][0]; if(p&&p.id) arr.push(p); } }catch(e){}
+  arr.sort((a,b)=>(a.t||0)-(b.t||0)||(a.id<b.id?-1:1));
+  MPT.members=arr;
+  if(MPT.isHost){
+    // turn away extras: during a match, anyone who isn't a participant; otherwise seats beyond 2
+    const extras=(MPT.started&&MPT.oppId)?arr.filter(m=>m.id!==myId&&m.id!==MPT.oppId):arr.slice(2);
+    extras.forEach(m=>{ if(m.id!==myId) mpSend('bye',{to:m.id}); });
+    mpAdvertise();
+  }
+  if(inRoom()) mpRenderRoom();
+}
+function mpOnLeave(lefts){
+  for(const p of lefts){ if(!p||!p.id||p.id===myId) continue;
+    if(MPT.on&&M.active){
+      if(p.id!==MPT.oppId) continue;             // a turned-away 3rd joiner leaving must not abort the match
+      // presence can blip (phone lock, network hiccup) — give them a few seconds to reconnect
+      roomTimer(()=>{ if(MPT.on&&M.active&&!MPT.members.some(m=>m.id===MPT.oppId)) mpOpponentGone(); },6000);
+      return;
+    }
+    if(p.host&&!MPT.isHost&&inRoom()){
+      // presence can blip — confirm the host is really gone before closing
+      roomTimer(()=>{ if(inRoom()&&MPT.ch&&!MPT.members.some(m=>m.host)){ mpToast('👑 The host closed the room.'); mpLeaveRoom(); } },6000);
+    }
+  }
+}
+function mpRoomWatch(){
+  const g=RGEN; let failures=0;
+  const iv=setInterval(()=>{
+    if(g!==RGEN||!MPT.ch){ clearInterval(iv); return; }
+    const s=MPT.ch.state;
+    if(s!=='joined'&&s!=='joining'){
+      // channels DO drop (phone sleep, network blip) — self-heal by resubscribing
+      if(MPT.reopening) return;
+      MPT.reopening=true; const code=MPT.code;
+      mpConnectRoom(code).then(()=>{ MPT.reopening=false; failures=0; if(g!==RGEN||MPT.code!==code) return; mpTrackSelf(); if(MPT.isHost) mpAdvertise(); })
+      .catch(()=>{ MPT.reopening=false; failures++; if(g!==RGEN||MPT.code!==code) return;
+        if(failures>=2){ clearInterval(iv);
+          if(MPT.on&&M.active){ mpToast('⚠️ Connection lost.'); mpOpponentGone(); }
+          else { mpToast('⚠️ Connection lost — left the room.'); mpLeaveRoom(); } } });
+      return;
+    }
+    failures=0;
+    if(!MPT.isHost&&inRoom()&&MPT.members.length&&!MPT.members.some(m=>m.host)){
+      clearInterval(iv); mpToast('👑 The host closed the room.'); mpLeaveRoom();
+    }
+  },5000);
+}
+function mpRenderRoom(){
+  $('mpRoomCode').textContent=MPT.code||'----';
+  const rows=MPT.members.slice(0,2).map(m=>`<div class="prow"><span class="pc" style="background:#${((m.jcol!=null?m.jcol:0x2a6df0)>>>0).toString(16).padStart(6,'0')}"></span><span class="pn">${esc(m.name||'Player')}${m.id===myId?' (you)':''}</span>${m.host?'<span class="ph">👑 HOST</span>':''}</div>`);
+  while(rows.length<2) rows.push('<div class="prow empty"><span class="pc" style="background:#666"></span><span class="pn">Waiting for a friend…</span></div>');
+  $('mpPlayers').innerHTML=rows.join('');
+  const n=MPT.members.length, b=$('mpStartBtn');
+  b.classList.toggle('hidden',!MPT.isHost);
+  b.disabled=n<2;
+  b.textContent=n<2?'🎾 START — waiting for your friend':'🎾 START MATCH';
+  $('mpRoomHint').innerHTML=MPT.isHost?'You are the host 👑 — start when your friend joins. First to <b>5 points</b> wins!':'Waiting for the host 👑 to start the match…';
+}
+function mpLeaveRoom(){ mpCloseRoom(); if(!inLobby()) mpOpenLobby(); }
+function mpCloseRoom(){
+  RGEN++;
+  if(_trackT){ clearTimeout(_trackT); _trackT=null; }
+  MPT.reopening=false;
+  if(MPT.on) mpTeardown();
+  if(MPT.ch){ try{ MPT.sb.removeChannel(MPT.ch); }catch(e){} }
+  MPT.ch=null; MPT.code=null; MPT.isHost=false; MPT.members=[]; MPT.started=false;
+  mpAdvertise();                                 // clears our lobby ad
+}
+
+/* ---- match start ---- */
+function mpStart(){
+  if(!MPT.isHost||MPT.started||MPT.on) return;
+  const ms=MPT.members.slice(0,2);
+  if(ms.length<2) return;
+  const pk=m=>({id:m.id,name:m.name||'Player',num:m.num||'10',jcol:(m.jcol!=null?m.jcol:0x2a6df0)});
+  const msg={seq:++MPT.seq, h:pk(ms.find(m=>m.host)||ms[0]), g:pk(ms.find(m=>!m.host)||ms[1])};
+  MPT.started=true; mpTrackSelf(); mpAdvertise();
+  mpSend('start',msg);
+  mpBeginMatch(msg);                             // broadcast is self:false — run it locally too
+}
+function mpBeginMatch(msg){
+  MPT.on=true; MPT.started=true; MPT.sendAcc=0; MPT.oppXT=0; MPT.oppMoving=false; MPT.oppSeen=performance.now();
+  MPT.ptN=0; MPT.lastPtN=-1; MPT.lastPt=null; MPT.ptAt=0; MPT.myShotAt=0;
+  const o=MPT.isHost?msg.g:msg.h;
+  MPT.oppId=o.id;                                 // only THIS id leaving means the opponent left
+  startMatch({mode:'mp', diff:0.55, run:0, courtF:1, games:2,
+    oppName:o.name, oppNum:o.num, oppColor:o.jcol,
+    tourName:'Online Match', roundLabel:'Room '+MPT.code,
+    srv: MPT.isHost?'a':'b'});                    // the host always serves first
+  feed(MPT.isHost?'You serve first! 🎾':o.name+' serves first! 🎾','#7ee0ff');
+  try{ if(window.IGFriends&&IGFriends.blockChat) IGFriends.blockChat(true); }catch(e){}
+  try{ if(window.track) window.track('mp_match_start',{host:MPT.isHost?1:0}); }catch(e){}
+}
+
+/* ---- network events ---- */
+function mpOnNet(ev,p){
+  if(ev==='pos'){ mpOnPos(p); return; }
+  if(ev==='shot'){ mpOnShot(p); return; }
+  if(ev==='pt'){ mpOnPoint(p); return; }
+  if(ev==='start'){
+    if(!p||!p.h||!p.g) return;
+    if(p.seq!=null){ if(p.seq<=MPT.lastSeq) return; MPT.lastSeq=p.seq; }
+    if(p.h.id!==myId&&p.g.id!==myId) return;
+    if(!MPT.on) mpBeginMatch(p);
+    return;
+  }
+  if(ev==='bye'){ if(p&&p.to===myId){ mpToast('That room is full (2/2).'); mpLeaveRoom(); } return; }
+}
+// my swing (or serve) → tell the other side the ball's new trajectory, in net frame
+function mpShot(kind){
+  if(!MPT.on) return;
+  MPT.myShotAt=performance.now();               // my trajectory is authoritative until the host adopts it
+  const m=mir();
+  mpSend('shot',{k:kind, bx:r2(ball.position.x*m), by:r2(ball.position.y), bz:r2(ball.position.z*m),
+    vx:r2(BV.x*m), vy:r2(BV.y), vz:r2(BV.z*m)});
+}
+function mpOnShot(p){
+  if(!MPT.on||!M.active||!p) return;
+  if(M.state==='dead'&&p.k!=='serve') return;    // point already decided — late swing, ignore
+  if(M.state==='idle') return;
+  const m=mir();
+  MPT.oppSeen=performance.now();
+  ball.position.set(p.bx*m,p.by,p.bz*m); BV.set(p.vx*m,p.vy,p.vz*m);
+  M.prevZ=ball.position.z;                       // don't false-trigger the net-crossing check
+  M.state='play'; M.lastHitter='b'; M.bounce=0; M.rallyHits++;
+  swing(opp); sfx(p.k==='smash'?'smash':'hit');
+  burst(ball.position.clone(), p.k==='smash'?0xff5a3c:0xeaff8a, p.k==='smash'?18:8, p.k==='smash'?7:4);
+  if(p.k==='smash') feed(M.ctx.oppName+' smashes! 💥','#ff9a9a');
+  else if(p.k==='lob') feed(M.ctx.oppName+' lobs 🎾','#cfe9ff');
+}
+// host → guest: the point verdict (score is in the HOST's frame; mine is flipped)
+function mpPoint(winner,nextSrv){
+  MPT.lastPt={n:++MPT.ptN, w:winner==='a'?'h':'g', sa:M.score.a, sb:M.score.b,
+    srv:nextSrv?(nextSrv==='a'?'h':'g'):null, end:matchWon(M.score)?1:0};
+  MPT.ptAt=performance.now();
+  mpSend('pt',MPT.lastPt);
+}
+function mpOnPoint(p){
+  if(!MPT.on||!M.active||MPT.isHost||!p) return;
+  if(p.n!=null){ if(p.n<=MPT.lastPtN) return; MPT.lastPtN=p.n; }   // resent verdicts apply once
+  if(M.state==='dead') return;
+  M.state='dead'; M.stats.rallies++;
+  M.score.a=p.sb|0; M.score.b=p.sa|0;            // host's score, flipped into my frame
+  const mine=p.w==='g';
+  feed(mine?'✅ You scored!  '+M.score.a+'–'+M.score.b:'❌ '+M.ctx.oppName+' scored  '+M.score.a+'–'+M.score.b, mine?'#9bff8e':'#ff9a9a');
+  if(mine) crowdCheer();
+  syncScore();
+  if(p.end){ setTimeout(()=>endMatch(M.score.a>M.score.b),950); return; }
+  if(p.srv) M.server=(p.srv==='h')?'b':'a';
+  setTimeout(()=>{ if(M.active&&M.state==='dead') newPoint(); },1100);
+}
+/* ---- per-frame: opponent paddle + my paddle / host ball stream ---- */
+function mpMatchTick(dt){
+  const prev=oppx;
+  oppx+=(MPT.oppXT-oppx)*Math.min(1,dt*10);
+  oppx=Math.max(-HW+0.3,Math.min(HW-0.3,oppx));
+  MPT.oppMoving=Math.abs(MPT.oppXT-oppx)>0.05||Math.abs(oppx-prev)>0.003;
+  const nowT=performance.now();
+  // opponent silent for 20s (crashed app, dead network) → the match can't continue
+  if(nowT-(MPT.oppSeen||nowT)>20000){ mpOpponentGone(); return; }
+  // host: if the guest should be serving but nothing arrived, the guest may have
+  // missed the 'pt' verdict (it carries the serve order) — resend it, they apply it once
+  if(MPT.isHost&&M.state==='serve'&&M.server==='b'&&MPT.lastPt&&nowT-MPT.ptAt>4000){ MPT.ptAt=nowT; mpSend('pt',MPT.lastPt); }
+  MPT.sendAcc+=dt;
+  if(MPT.sendAcc>=0.15){
+    MPT.sendAcc=0;
+    const m=mir(), msg={x:r2(px*m)};
+    if(MPT.isHost&&M.state==='play'){ msg.bx=r2(ball.position.x); msg.by=r2(ball.position.y); msg.bz=r2(ball.position.z); msg.vx=r2(BV.x); msg.vy=r2(BV.y); msg.vz=r2(BV.z); }
+    mpSend('pos',msg);
+  }
+}
+function mpOnPos(p){
+  if(!MPT.on||!p) return;
+  MPT.oppSeen=performance.now();
+  if(p.x!=null) MPT.oppXT=Math.max(-HW+0.3,Math.min(HW-0.3,p.x*mir()));
+  // guest: softly follow the host's ball so the referee's view is what I see.
+  // BUT not right after my own swing — the host still streams the pre-hit ball
+  // until my 'shot' reaches it, and correcting from that would visually cancel my return.
+  if(!MPT.isHost&&p.bx!=null&&M.state==='play'&&performance.now()-(MPT.myShotAt||0)>600){
+    const m=mir(), tx=p.bx*m, ty=p.by, tz=p.bz*m;
+    const dx=tx-ball.position.x, dy=ty-ball.position.y, dz=tz-ball.position.z;
+    const err=Math.hypot(dx,dy,dz);
+    if(err>2.5){ ball.position.set(tx,ty,tz); BV.set(p.vx*m,p.vy,p.vz*m); M.prevZ=ball.position.z; }
+    else if(err>0.25){ ball.position.x+=dx*0.25; ball.position.y+=dy*0.25; ball.position.z+=dz*0.25; BV.set(p.vx*m,p.vy,p.vz*m); }
+  }
+}
+/* ---- match end / teardown ---- */
+function mpOpponentGone(){
+  if(!MPT.on||!M.active) return;
+  mpToast('Your opponent left the match — you win! 🏆');
+  MPT.started=false;
+  endMatch(true);
+}
+function mpTeardown(){
+  MPT.on=false; MPT.started=false;
+  try{ if(window.IGFriends&&IGFriends.blockChat) IGFriends.blockChat(false); }catch(e){}
+  if(MPT.isHost&&MPT.ch){ mpTrackSelf(); mpAdvertise(); }
+}
+function mpAfterMatch(){                          // "Continue" on the result screen
+  mpTeardown();
+  if(!MPT.ch){ mpOpenLobby(); return; }
+  if(!MPT.isHost&&!MPT.members.some(m=>m.host)){ mpToast('👑 The host left — room closed.'); mpLeaveRoom(); return; }
+  show('mproom'); mpRenderRoom(); mpTrackSelf();
+}
+
+/* ---- wiring ---- */
+$('mpBtn').onclick=()=>{ S.name=($('nameIn').value.trim()||S.name||'You'); S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||S.jerseyNum||'10')).slice(0,2); save(); mpOpenLobby(); };
+$('mpCreateBtn').onclick=mpCreate;
+$('mpJoinCodeBtn').onclick=()=>mpJoin($('mpCodeIn').value);
+$('mpCodeIn').addEventListener('input',()=>{ $('mpCodeIn').value=cleanCode($('mpCodeIn').value); });
+$('mpCodeIn').addEventListener('keydown',e=>{ if(e.key==='Enter') mpJoin($('mpCodeIn').value); });
+$('mpLobbyBack').onclick=mpExitLobby;
+$('mpStartBtn').onclick=mpStart;
+$('mpLeaveBtn').onclick=mpLeaveRoom;
+$('mpShareBtn').onclick=()=>{ const url=location.origin+location.pathname+'?room='+MPT.code;
+  const txt='🎾 Play me in Tennis Tour! Room '+MPT.code+' → '+url;
+  if(navigator.share) navigator.share({text:txt}).catch(()=>{});
+  else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>mpToast('📋 Invite copied — send it to your friend!')).catch(()=>{}); };
+// leaving the page = leaving the room (presence cleans up server-side)
+function mpBye(){ try{ if(MPT.ch) MPT.sb.removeChannel(MPT.ch); if(MPT.lobbyCh) MPT.sb.removeChannel(MPT.lobbyCh); }catch(e){} }
+addEventListener('beforeunload',mpBye); addEventListener('pagehide',mpBye);
+// invite deep-link: tennis/?room=CODE goes straight to that room
+try{ const rc=new URLSearchParams(location.search).get('room');
+  if(rc){ const c=cleanCode(rc); if(c.length===4){ mpOpenLobby(); roomTimer(()=>mpJoin(c),700); } } }catch(e){}
+
 /* ============================================================ LOOP ============================================================ */
 let last=performance.now(), shake=0, frameNo=0;
 function tick(now){ requestAnimationFrame(tick);
@@ -671,13 +1106,15 @@ function tick(now){ requestAnimationFrame(tick);
     let mv=0; if(keys['ArrowLeft']) mv-=1; if(keys['ArrowRight']) mv+=1; if(stickX) mv=stickX;
     px+=mv*9*dt; px=Math.max(-HW+0.3,Math.min(HW-0.3,px)); player.position.x=px;
     player.position.z=PZ; opp.position.x=oppx;
+    if(MPT.on) mpMatchTick(dt);
     updateAI(dt); stepBall(dt);
-    animatePlayer(player, Math.abs(mv)>0.1, t, dt); animatePlayer(opp, Math.abs(ovx)>0.1, t+1, dt);
+    animatePlayer(player, Math.abs(mv)>0.1, t, dt); animatePlayer(opp, MPT.on?MPT.oppMoving:Math.abs(ovx)>0.1, t+1, dt);
     // ball + shadow
     ballShadow.position.set(ball.position.x,0.02,ball.position.z); const sc=Math.max(0.3,1-ball.position.y*0.08); ballShadow.scale.set(sc,sc,sc);
     updateTiming();
     if(M.smashCD>0) M.smashCD-=dt; updateSmashUI();
-    $('hintbar').textContent = M.state==='serve' ? 'Serving…' : (M.lastHitter==='b' ? '◀ ▶ line up • Space = shot • X = smash' : '');
+    $('hintbar').textContent = (MPT.on && performance.now()-(MPT.oppSeen||0)>4000) ? '⏳ Waiting for your opponent’s connection…'
+      : M.state==='serve' ? 'Serving…' : (M.lastHitter==='b' ? '◀ ▶ line up • Space = shot • X = smash' : '');
     if(cheerT>0){ cheerT-=dt; bobCrowd(t); }
   }
   // camera: behind player, whole court visible (pull back for a bigger arena)
