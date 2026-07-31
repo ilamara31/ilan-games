@@ -125,8 +125,9 @@
     <input id="numIn" maxlength="2" placeholder="#" inputmode="numeric" autocomplete="off" style="width:64px;text-align:center;padding:12px 8px;border-radius:14px;border:2px solid #2f5f9e;background:#0e2240;color:#fff;font-size:17px;outline:none">
   </div>
   <div class="sub" style="margin:6px 0 12px;font-size:12px">↑ your name &amp; jersey number (shown on your shirt)</div>
-  <div class="sub" style="margin:2px 0 4px;font-size:13px;color:#bcd4ee">⚡ Quick Match — choose difficulty:</div>
-  <div class="row">
+  <button class="btn green" id="quickBtn">⚡ Quick Match</button>
+  <div class="sub hidden" id="quickLbl" style="margin:4px 0 2px;font-size:13px;color:#bcd4ee">Choose difficulty:</div>
+  <div class="row hidden" id="quickRow">
     <button class="btn green" data-mode="quick" data-diff="easy" style="flex:1">😀 Easy</button>
     <button class="btn" data-mode="quick" data-diff="medium" style="flex:1">😅 Medium</button>
     <button class="btn" data-mode="quick" data-diff="hard" style="flex:1;background:linear-gradient(135deg,#ff7a7a,#d11f3a);color:#fff">😈 Hard</button>
@@ -139,10 +140,7 @@
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
     <button class="btn alt" id="setBtn">⚙️ Settings</button>
   </div>
-  <div class="row" style="margin-top:6px">
-    <button class="btn alt" id="IGA_login" type="button" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-    <button class="btn alt" id="IGA_lb" type="button" onclick="window.IGAuth && IGAuth.showLeaderboard('tennis','Tennis')">🏆 Leaderboard</button>
-  </div>
+  <button class="btn alt" id="IGA_lb" type="button" onclick="window.IGAuth && IGAuth.showLeaderboard('tennis','Tennis')" style="margin-top:6px">🏆 Leaderboard</button>
   <div class="foot">Desktop: ◀ ▶ move • <b>Space</b> shot • <b>X</b> smash. Mobile: joystick + HIT.<br>Timing: early = lob • perfect = smash • late = weak. First to <b>5 points</b> wins!</div>
 </div>
 
@@ -713,6 +711,7 @@ function feedShop(){ alert('Not enough coins!'); }
 function refreshMenu(){ $('nameIn').value=S.name||''; $('numIn').value=S.jerseyNum||''; }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('nameIn').value.trim()||'You'); S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||'10')).slice(0,2); save();
   const m=b.dataset.mode; if(m==='quick') toCards(makeQuickCtx(b.dataset.diff)); else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
+$('quickBtn').onclick=()=>{ const hid=$('quickRow').classList.toggle('hidden'); $('quickLbl').classList.toggle('hidden',hid); };
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
 $('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden');
