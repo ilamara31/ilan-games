@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0e1a">
+<title>Feedback — Ilan Games</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:radial-gradient(circle at 50% 20%,#1b3a6b,#0a0e1a 75%);color:#fff;
+    font-family:'Trebuchet MS','Segoe UI',sans-serif;padding:24px 14px 60px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  h1{font-size:26px;background:linear-gradient(135deg,#ffd54a,#ff8c3d);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:4px}
+  .sub{color:#9fb3d8;font-size:14px;margin-bottom:14px}
+  a.back{color:#7dc4ff;font-size:14px;margin-bottom:18px;display:inline-block}
+  .wrap{width:100%;max-width:640px}
+  .fcard{background:#0f1d36;border:1px solid #2a3c63;border-radius:16px;padding:16px 18px;margin-bottom:12px;text-align:left}
+  .sumrow{display:flex;gap:12px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+  .sum{background:#0f1d36;border:1px solid #2a3c63;border-radius:14px;padding:12px 22px;text-align:center}
+  .sum b{display:block;font-size:22px;color:#ffd54a}
+  .sum span{font-size:12px;color:#8aa0c6}
+  .stars{position:relative;display:inline-block;font-size:20px;letter-spacing:2px;color:#33436a;line-height:1;vertical-align:middle}
+  .stars .fill{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#ffd54a}
+  .meta{color:#8aa0c6;font-size:12px;margin-top:4px}
+  .meta b{color:#cdd9f0}
+  .msg{margin-top:8px;font-size:15px;color:#e6eeff;white-space:pre-wrap;word-break:break-word}
+  .gametag{display:inline-block;background:#16243f;border:1px solid #2a3c63;color:#9fb3d8;border-radius:10px;
+    padding:2px 8px;font-size:11px;margin-left:6px;vertical-align:middle}
+  .del{float:right;background:#5a2330;color:#ff8088;border:1px solid #7c3242;border-radius:10px;
+    padding:4px 10px;font-size:12px;font-weight:bold;cursor:pointer}
+  .note{color:#9fb3d8;margin:26px 0;font-size:15px;text-align:center;line-height:1.6}
+  .note.err{color:#ff8088}
+  button.refresh{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border:none;padding:9px 20px;
+    font-size:14px;font-weight:bold;border-radius:20px;cursor:pointer;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+  <h1>💬 Player Feedback</h1>
+  <div class="sub">Admin page — only Ilan's login can load this list</div>
+  <a class="back" href="./">⬅ Back to Ilan Games</a>
+  <div class="wrap">
+    <div class="sumrow" id="sum" style="display:none">
+      <div class="sum"><b id="sumCount">0</b><span>feedbacks</span></div>
+      <div class="sum"><b id="sumAvg">–</b><span>average stars</span></div>
+    </div>
+    <button class="refresh" id="refresh">🔄 Refresh</button>
+    <div id="list"><div class="note">Loading…</div></div>
+  </div>
+<script src="supabase-config.js"></script>
+<script>
+(function(){
+  const list=document.getElementById('list');
+  function note(t,err){ list.innerHTML='<div class="note'+(err?' err':'')+'">'+t+'</div>'; }
+  function player(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p; }catch(e){} return null; }
+  function slug(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40); }
+  const p=player();
+  if(!p||p.guest||slug(p.name)!=='ilan'){
+    note('🔒 This page is only for the game owner.<br>Log in as <b>ilan</b> on the home page first.',true); return;
+  }
+  let sb=null;
+  function loadSb(){ return new Promise(function(res,rej){ if(sb) return res(sb);
+    function mk(){ try{ sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}}); res(sb); }catch(e){ rej(e); } }
+    if(window.supabase&&window.supabase.createClient) return mk();
+    const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload=mk; s.onerror=function(){ rej(new Error('offline')); }; document.head.appendChild(s); }); }
+  function esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+  function starHtml(r){ const pct=Math.max(0,Math.min(5,+r))/5*100;
+    return '<span class="stars">★★★★★<span class="fill" style="width:'+pct+'%">★★★★★</span></span> <b style="color:#ffd54a;font-size:14px">'+(+r)+'</b>'; }
+  async function load(){
+    note('Loading…');
+    try{
+      const db=await loadSb();
+      const r=await db.rpc('feedback_admin_list',{p_name:p.name,p_password:p.pw||''});
+      if(r.error) throw r.error;
+      const rows=r.data||[];
+      document.getElementById('sum').style.display='flex';
+      document.getElementById('refresh').style.display='inline-block';
+      document.getElementById('sumCount').textContent=rows.length;
+      document.getElementById('sumAvg').textContent=rows.length?(rows.reduce(function(a,x){return a+ +x.rating;},0)/rows.length).toFixed(2):'–';
+      if(!rows.length){ note('No feedback yet — waiting for the first player! ⭐'); return; }
+      list.innerHTML=rows.map(function(x){
+        const d=new Date(x.created_at);
+        return '<div class="fcard">'
+          +'<button class="del" data-id="'+x.id+'">🗑 Delete</button>'
+          +starHtml(x.rating)
+          +(x.game?'<span class="gametag">🎮 '+esc(x.game)+'</span>':'<span class="gametag">🌐 whole website</span>')
+          +'<div class="meta"><b>'+esc(x.user_name)+'</b>'+(x.is_guest?' (guest)':'')+' • '+d.toLocaleString()+'</div>'
+          +(x.message?'<div class="msg">'+esc(x.message)+'</div>':'<div class="msg" style="color:#5e6f93">(no message — just stars)</div>')
+          +'</div>'; }).join('');
+    }catch(e){
+      const m=String((e&&e.message)||e);
+      if(m.indexOf('not allowed')>=0) note('🔒 Supabase said no — the password saved on this device is wrong.<br>Log in as <b>ilan</b> again on the home page.',true);
+      else if(m.indexOf('does not exist')>=0) note('⚠️ The database is not set up yet.<br>Run <b>feedback-setup.sql</b> once in Supabase → SQL Editor.',true);
+      else note('Could not load: '+esc(m),true);
+    }
+  }
+  list.addEventListener('click',async function(e){
+    const b=e.target.closest('.del'); if(!b) return;
+    if(!confirm('Delete this feedback forever?')) return;
+    b.disabled=true;
+    try{
+      const db=await loadSb();
+      const r=await db.rpc('feedback_admin_delete',{p_name:p.name,p_password:p.pw||'',p_id:+b.getAttribute('data-id')});
+      if(r.error) throw r.error;
+      load();
+    }catch(err){ b.disabled=false; alert('Could not delete: '+((err&&err.message)||err)); }
+  });
+  document.getElementById('refresh').addEventListener('click',load);
+  load();
+})();
+</script>
+</body>
+</html>

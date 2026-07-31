@@ -131,6 +131,21 @@
     border-radius:10px; margin:6px 0; }
   .acctrow .nm { flex:1; text-align:left; color:#fff; }
   .acctrow .nm small { color:#7e90b5; }
+  /* 💬 feedback */
+  #feedbackBtn { background:linear-gradient(135deg,#c77dff,#7b2ff7); color:#fff; border:none; padding:14px 34px;
+    font-size:18px; font-weight:bold; border-radius:30px; cursor:pointer; margin-top:36px;
+    box-shadow:0 6px 18px rgba(150,80,255,.4); }
+  #fbAdminLink { display:none; margin-top:12px; color:#9fb3d8; font-size:13px; text-decoration:underline; cursor:pointer; }
+  .fbstars { position:relative; display:inline-block; font-size:44px; line-height:1; letter-spacing:4px;
+    color:#33436a; cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .fbstars .fill { position:absolute; left:0; top:0; white-space:nowrap; overflow:hidden; width:0;
+    color:#ffd54a; text-shadow:0 0 12px rgba(255,213,74,.45); pointer-events:none; }
+  #fbVal { color:#ffd54a; font-weight:bold; font-size:15px; margin:6px 0 12px; min-height:18px; }
+  #fbModal textarea { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:12px 14px;
+    border-radius:10px; font-size:15px; width:100%; min-height:90px; resize:vertical; margin-bottom:12px; font-family:inherit; }
+  #fbModal select { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:10px 12px;
+    border-radius:10px; font-size:14px; width:100%; margin-bottom:12px; }
+  #fbNote { font-size:13px; margin-top:8px; min-height:16px; }
 </style>
 </head>
 <body data-arcade-home>
@@ -300,9 +315,25 @@
     </a>
   </div>
   <div id="newBanner"></div>
+  <button id="feedbackBtn">💬 Feedback</button>
+  <div><a id="fbAdminLink" href="feedback.html">📋 View all feedback (admin)</a></div>
   <footer>Made with ❤️ by Ilan • More games coming soon</footer>
 
   <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
+
+  <div id="fbModal" class="modal" style="display:none"><div class="modalbox">
+    <h2>💬 Feedback</h2>
+    <div style="color:#9fb3d8;font-size:14px;margin-bottom:10px">Tap the stars — half stars count too!</div>
+    <div class="fbstars" id="fbStars">★★★★★<span class="fill" id="fbFill">★★★★★</span></div>
+    <div id="fbVal">Tap to rate</div>
+    <select id="fbGame"><option value="">🌐 The whole website</option></select>
+    <textarea id="fbMsg" maxlength="2000" placeholder="Tell Ilan what you loved — or what's broken and what he should add next…"></textarea>
+    <div>
+      <button class="btn2" id="fbSend">Send feedback</button>
+      <button class="btn2 alt" id="fbCancel">Close</button>
+    </div>
+    <div id="fbNote"></div>
+  </div></div>
 
   <script>
   /* ===== Game Passport + Game of the Day / Week with goals (drives playing ALL games) ===== */
@@ -814,6 +845,50 @@
 })();
 </script>
 <script src="supabase-config.js"></script>
+<script>
+/* ===== 💬 Feedback — stars (half-star steps) + message → Supabase ig_feedback ===== */
+(function(){
+  const modal=document.getElementById('fbModal'), stars=document.getElementById('fbStars'),
+        fill=document.getElementById('fbFill'), val=document.getElementById('fbVal'),
+        note=document.getElementById('fbNote'), sel=document.getElementById('fbGame'),
+        msg=document.getElementById('fbMsg'), sendBtn=document.getElementById('fbSend');
+  let rating=0;
+  function player(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p; }catch(e){} return null; }
+  function slug(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40); }
+  document.querySelectorAll('a.card h2').forEach(function(h){
+    const o=document.createElement('option'); o.value=h.textContent; o.textContent='🎮 '+h.textContent; sel.appendChild(o); });
+  function setRating(r){ rating=r; fill.style.width=(r/5*100)+'%'; val.textContent=r?(r+' / 5 ⭐'):'Tap to rate'; }
+  stars.addEventListener('click',function(e){
+    const rect=stars.getBoundingClientRect(); const x=e.clientX-rect.left;
+    let r=Math.ceil((x/rect.width)*10)/2; r=Math.max(.5,Math.min(5,r)); setRating(r); });
+  document.getElementById('feedbackBtn').addEventListener('click',function(){ note.textContent=''; modal.style.display='flex'; });
+  document.getElementById('fbCancel').addEventListener('click',function(){ modal.style.display='none'; });
+  modal.addEventListener('click',function(e){ if(e.target===modal) modal.style.display='none'; });
+  let sb=null;
+  function loadSb(){ return new Promise(function(res,rej){ if(sb) return res(sb);
+    function mk(){ try{ sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,{auth:{persistSession:false}}); res(sb); }catch(e){ rej(e); } }
+    if(window.supabase&&window.supabase.createClient) return mk();
+    const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload=mk; s.onerror=function(){ rej(new Error('offline')); }; document.head.appendChild(s); }); }
+  sendBtn.addEventListener('click',async function(){
+    if(!rating){ note.style.color='#ff8088'; note.textContent='Pick your stars first! ⭐'; return; }
+    sendBtn.disabled=true; note.style.color='#9fb3d8'; note.textContent='Sending…';
+    try{
+      const p=player(); const db=await loadSb();
+      const r=await db.from('ig_feedback').insert({
+        user_key:p?slug(p.name):'guest', user_name:p?p.name:'Guest', is_guest:!p||!!p.guest,
+        game:sel.value||null, rating:rating, message:msg.value.trim().slice(0,2000) });
+      if(r.error) throw r.error;
+      note.style.color='#7CFFB2'; note.textContent='✅ Thanks! Ilan will read it.';
+      setTimeout(function(){ modal.style.display='none'; setRating(0); msg.value=''; sel.value=''; note.textContent=''; sendBtn.disabled=false; },1400);
+    }catch(e){ note.style.color='#ff8088'; note.textContent='Could not send — check your internet and try again.'; sendBtn.disabled=false; }
+  });
+  function updAdmin(){ const p=player();
+    document.getElementById('fbAdminLink').style.display=(p&&!p.guest&&slug(p.name)==='ilan')?'inline-block':'none'; }
+  updAdmin();
+  window.addEventListener('load',function(){ try{ if(window.IGAuth&&IGAuth.onChange) IGAuth.onChange(updAdmin); }catch(e){} });
+})();
+</script>
 <script src="auth.js" defer></script>
 <script src="analytics.js" defer></script>
 <script src="announce.js" defer></script>
