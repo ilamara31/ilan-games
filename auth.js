@@ -447,7 +447,7 @@
     const tabs = ov.querySelector("#iga-tabs"), box = ov.querySelector("#iga-lb"), metric = ov.querySelector("#iga-metric");
     let activeG = null;
     function build(rows) {
-      rows = rows.filter(r => !HIDDEN_GAMES.has(r.game) && !isAutoGuest(r.name));   // drop retired games + auto-guest test rows
+      rows = rows.filter(r => !HIDDEN_GAMES.has(r.game) && r.game !== "stars" && !isAutoGuest(r.name));   // drop retired games, auto-guest test rows + stars (it has its own board)
       // one row per (name, game): registered beats guest, keep highest score
       const map = {};
       for (const r of rows) {
