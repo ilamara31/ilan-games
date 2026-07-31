@@ -338,6 +338,7 @@
     for (i = 0; i < rows.length; i++) {
       r = rows[i]; if (!r) continue; g = r.game; k = key(r.name); s = Number(r.score);
       if (g == null || k === '' || isNaN(s)) continue;
+      if (/^guest[-_ ]?\d{3,}$/i.test(String(r.name || '').trim())) continue;   // auto-guest test rows aren't players
       if (!effective[g]) effective[g] = {};
       if (!(k in effective[g]) || s > effective[g][k]) effective[g][k] = s;
     }

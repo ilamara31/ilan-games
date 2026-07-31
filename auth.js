@@ -27,6 +27,9 @@
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
+  // Auto-generated "Guest-1234" identities (test runs / one-off visits) are noise,
+  // not players — never show them on any leaderboard.
+  function isAutoGuest(n) { return /^guest[-_ ]?\d{3,}$/i.test(String(n || "").trim()); }
   const GAME_METRIC = {
     catch: "Best score", cricket: "Career runs", f1: "Money earned", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
@@ -225,7 +228,7 @@
   }
   async function topScores(game, n) {
     await fetchBoard();
-    return mergeLocal(boardRows || []).filter(r => r.game === game).sort((a, b) => b.score - a.score).slice(0, n || 50);
+    return mergeLocal(boardRows || []).filter(r => r.game === game && !isAutoGuest(r.name)).sort((a, b) => b.score - a.score).slice(0, n || 20);
   }
 
   /* ---------- account actions ---------- */
@@ -414,12 +417,12 @@
     const render = (all) => {
       // collapse same-name entries: registered beats guest, keep highest score
       const byName = {};
-      for (const r of all.filter(r => r.game === game)) {
+      for (const r of all.filter(r => r.game === game && !isAutoGuest(r.name))) {
         const k = (r.name || "Player");
         if (!byName[k]) byName[k] = { name: r.name, score: r.score, is_guest: !!r.is_guest };
         else { byName[k].score = Math.max(byName[k].score, r.score); if (!r.is_guest) byName[k].is_guest = false; }
       }
-      const list = Object.values(byName).sort((a, b) => b.score - a.score).slice(0, 50);
+      const list = Object.values(byName).sort((a, b) => b.score - a.score).slice(0, 20);
       if (!list.length) { box.innerHTML = `<p>No scores yet — be the first!</p>`; return; }
       box.innerHTML = list.map((r, i) => {
         const me = player && r.name === player.name;
@@ -444,7 +447,7 @@
     const tabs = ov.querySelector("#iga-tabs"), box = ov.querySelector("#iga-lb"), metric = ov.querySelector("#iga-metric");
     let activeG = null;
     function build(rows) {
-      rows = rows.filter(r => !HIDDEN_GAMES.has(r.game));   // drop retired games (e.g. Super Over Cricket 2)
+      rows = rows.filter(r => !HIDDEN_GAMES.has(r.game) && !isAutoGuest(r.name));   // drop retired games + auto-guest test rows
       // one row per (name, game): registered beats guest, keep highest score
       const map = {};
       for (const r of rows) {

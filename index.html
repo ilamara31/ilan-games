@@ -758,7 +758,8 @@
         .then(function (r) { return r.ok ? r.json() : []; })
         .then(function (rows) {
           var m = {};
-          (rows || []).forEach(function (r) { (m[r.game] = m[r.game] || {})[String(r.name || '').toLowerCase()] = 1; });
+          (rows || []).forEach(function (r) { if (/^guest[-_ ]?\d{3,}$/i.test(String(r.name || '').trim())) return;
+            (m[r.game] = m[r.game] || {})[String(r.name || '').toLowerCase()] = 1; });
           var c = {}; Object.keys(m).forEach(function (g) { c[g] = Object.keys(m[g]).length; });
           decorate(c);
         }).catch(function () {});
