@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v107';
+const CACHE = 'ilan-arcade-v108';
 const ASSETS = [
   './',
   './index.html',
@@ -86,6 +86,8 @@ const ASSETS = [
   './drawrush/data.js',
   './scoop/',
   './scoop/index.html',
+  './carrom/',
+  './carrom/index.html',
   './meme/',
   './meme/index.html',
   './meme/db.js',

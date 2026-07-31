@@ -27,7 +27,7 @@
     catch: "Basket Catch", f1: "Grand Prix", football: "Penalty Kings", obby: "Rainbow Obby", puzzles: "Puzzle Pad",
     try: "One More Try", "anime-tycoon": "Anime Tycoon", tennis: "Tennis Tour", pptour: "Ping Pong Tour", karate: "Karate",
     "fruit-arena": "Fruit Arena", airhockey: "Air Hockey Arena", codebreaker: "Codebreaker", thisorthat: "This or That",
-    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush" };
+    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", carrom: "Carrom Clash" };
   // maps used to show a player's scores on their profile (mirrors auth.js)
   const GAME_TITLES = { catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
