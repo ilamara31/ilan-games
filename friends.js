@@ -729,9 +729,11 @@
       var acc = 0, last = Date.now(), done = false;
       var iv = setInterval(function () {
         if (done) return;
-        var t = Date.now();
-        if (!document.hidden) acc += t - last;
+        var t = Date.now(), d = t - last;
         last = t;
+        // clamp each tick's credit — on tab unfreeze the first tick can fire before
+        // visibilitychange resets `last` and would credit the whole hidden gap
+        if (!document.hidden && d > 0 && d <= 2000) acc += d;
         if (acc >= ms) { done = true; clearInterval(iv); try { cb(); } catch (e) {} }
       }, 1000);
       document.addEventListener("visibilitychange", function () { last = Date.now(); });

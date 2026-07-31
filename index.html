@@ -196,7 +196,6 @@
       <p>Fast, physics-driven air hockey — first to 7 wins. Career mode, paddle skins, arenas & leaderboard.</p>
     </a>
     <a class="card codebreaker" href="codebreaker/">
-      <span class="badges"><span class="badge upd">UPDATED</span></span>
       <span class="emoji">🕵️</span>
       <h2>Codebreaker: Secret Agent</h2>
       <p>Crack the secret code before time runs out — investigate the room, find clues, break in.</p>
@@ -212,7 +211,6 @@
       <p>Time your shots, chase the target, and win the IPL-style cup.</p>
     </a>
     <a class="card hcl" href="handcricket/">
-      <span class="badges"><span class="badge fix">BUG FIXED</span></span>
       <span class="emoji">✋</span>
       <h2>Hand Cricket League</h2>
       <p>Numbers 1–10! Normal &amp; wild Crazy mode, smart AI, online rooms with a friend, leagues &amp; cups.</p>
@@ -228,7 +226,7 @@
       <p>Catch the fruit, dodge the junk food — then feast on Cheat Day!</p>
     </a>
     <a class="card f1" href="f1/">
-      <span class="badges"><span class="badge upd">UPDATED</span><span class="badge new">🌐 MULTIPLAYER</span></span>
+      <span class="badges"><span class="badge new">🌐 MULTIPLAYER</span></span>
       <span class="emoji">🏎️</span>
       <h2>Grand Prix 3D</h2>
       <p>Race the world in 3D — and now race your <b>friends live</b> in online rooms!</p>
@@ -607,6 +605,7 @@
       'fruit-arena/':  { updated: '2026-07-08T18:45:00' },   // fruit storm: no life loss on miss + no bombs
       'f1/':           { updated: '2026-07-09T21:00:00' },   // new 3D mode + 2D/3D chooser, all maps, engine sound
       // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
+      // NEVER hardcode <span class="badge">…</span> on a card — those never expire. Timestamps here only.
     };
     /* every card badge goes into a single top-left .badges flex box so they stack side-by-side */
     window.getBadges = function(card){ var bb=card.querySelector('.badges'); if(!bb){ bb=document.createElement('span'); bb.className='badges'; card.insertBefore(bb, card.firstChild); } return bb; };

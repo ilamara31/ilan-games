@@ -140,9 +140,12 @@
         var acc = 0, last = Date.now(), done = false;
         var iv = setInterval(function () {
           if (done) return;
-          var t = Date.now();
-          if (!document.hidden) acc += t - last;
+          var t = Date.now(), d = t - last;
           last = t;
+          // clamp each tick's credit: after the phone unfreezes a background tab, the
+          // first tick can fire BEFORE visibilitychange resets `last`, and would credit
+          // the whole hidden gap as playtime — counting a play nobody played
+          if (!document.hidden && d > 0 && d <= 2000) acc += d;
           if (acc < DWELL_MS) return;
           done = true; clearInterval(iv);
           try {
