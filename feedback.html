@@ -27,6 +27,21 @@
     padding:2px 8px;font-size:11px;margin-left:6px;vertical-align:middle}
   .del{float:right;background:#5a2330;color:#ff8088;border:1px solid #7c3242;border-radius:10px;
     padding:4px 10px;font-size:12px;font-weight:bold;cursor:pointer}
+  .rxrow{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .rx{background:#16243f;border:1px solid #2a3c63;border-radius:12px;padding:4px 10px;font-size:16px;cursor:pointer}
+  .rx.on{background:linear-gradient(135deg,#ffd54a,#ff8c3d);border-color:transparent}
+  .replybtn{background:linear-gradient(135deg,#7dc4ff,#3a6cf0);color:#06122a;border:none;border-radius:12px;
+    padding:5px 12px;font-size:12px;font-weight:bold;cursor:pointer;margin-left:auto}
+  .replybox{margin-top:8px;background:#0c1426;border:1px solid #2a3c63;border-radius:10px;padding:10px 12px;
+    font-size:14px;color:#cdd9f0;text-align:left;white-space:pre-wrap;word-break:break-word}
+  .replybox b{color:#7dc4ff}
+  .redit{margin-top:8px;display:none}
+  .redit textarea{width:100%;min-height:70px;background:#0c1426;border:1px solid #2a3c63;color:#fff;
+    border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:vertical}
+  .redit .sv{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border:none;border-radius:12px;
+    padding:6px 14px;font-weight:bold;font-size:13px;cursor:pointer;margin-top:6px;margin-right:6px}
+  .redit .cx{background:#16243f;color:#9fb3d8;border:1px solid #2a3c63;border-radius:12px;
+    padding:6px 14px;font-weight:bold;font-size:13px;cursor:pointer;margin-top:6px}
   .note{color:#9fb3d8;margin:26px 0;font-size:15px;text-align:center;line-height:1.6}
   .note.err{color:#ff8088}
   button.refresh{background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border:none;padding:9px 20px;
@@ -63,6 +78,20 @@
     const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     s.onload=mk; s.onerror=function(){ rej(new Error('offline')); }; document.head.appendChild(s); }); }
   function esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+  const RX=['👍','❤️','👏','🔥','🎉'];
+  let cur={};
+  async function respond(id,reply,reaction){
+    try{
+      const db=await loadSb();
+      const r=await db.rpc('feedback_admin_respond',{p_name:p.name,p_password:p.pw||'',p_id:id,p_reply:reply||'',p_reaction:reaction||''});
+      if(r.error) throw r.error;
+      load();
+    }catch(err){
+      const m=String((err&&err.message)||err);
+      if(m.indexOf('does not exist')>=0) alert('Run feedback2-setup.sql once in Supabase → SQL Editor first!');
+      else alert('Could not save: '+m);
+    }
+  }
   function starHtml(r){ const pct=Math.max(0,Math.min(5,+r))/5*100;
     return '<span class="stars">★★★★★<span class="fill" style="width:'+pct+'%">★★★★★</span></span> <b style="color:#ffd54a;font-size:14px">'+(+r)+'</b>'; }
   async function load(){
@@ -77,6 +106,7 @@
       document.getElementById('sumCount').textContent=rows.length;
       document.getElementById('sumAvg').textContent=rows.length?(rows.reduce(function(a,x){return a+ +x.rating;},0)/rows.length).toFixed(2):'–';
       if(!rows.length){ note('No feedback yet — waiting for the first player! ⭐'); return; }
+      cur={}; rows.forEach(function(x){ cur[x.id]=x; });
       list.innerHTML=rows.map(function(x){
         const d=new Date(x.created_at);
         return '<div class="fcard">'
@@ -85,6 +115,13 @@
           +(x.game?'<span class="gametag">🎮 '+esc(x.game)+'</span>':'<span class="gametag">🌐 whole website</span>')
           +'<div class="meta"><b>'+esc(x.user_name)+'</b>'+(x.is_guest?' (guest)':'')+' • '+d.toLocaleString()+'</div>'
           +(x.message?'<div class="msg">'+esc(x.message)+'</div>':'<div class="msg" style="color:#5e6f93">(no message — just stars)</div>')
+          +'<div class="rxrow">'
+            +RX.map(function(r){ return '<button class="rx'+(x.reaction===r?' on':'')+'" data-id="'+x.id+'" data-rx="'+r+'">'+r+'</button>'; }).join('')
+            +'<button class="replybtn" data-id="'+x.id+'">'+(x.reply?'✏️ Edit reply':'↩️ Reply')+'</button>'
+          +'</div>'
+          +(x.reply?'<div class="replybox"><b>💬 Your reply:</b> '+esc(x.reply)+'</div>':'')
+          +'<div class="redit" data-id="'+x.id+'"><textarea maxlength="2000" placeholder="Write a reply to '+esc(x.user_name)+'…">'+esc(x.reply||'')+'</textarea>'
+            +'<div><button class="sv" data-id="'+x.id+'">💾 Save reply</button><button class="cx">Cancel</button></div></div>'
           +'</div>'; }).join('');
     }catch(e){
       const m=String((e&&e.message)||e);
@@ -94,6 +131,23 @@
     }
   }
   list.addEventListener('click',async function(e){
+    const rx=e.target.closest('.rx');
+    if(rx){ const id=+rx.getAttribute('data-id'), em=rx.getAttribute('data-rx'), row=cur[id]||{};
+      rx.disabled=true;
+      respond(id, row.reply||'', row.reaction===em?'':em);   // tap the same emoji again to remove it
+      return; }
+    const rb=e.target.closest('.replybtn');
+    if(rb){ const ed=list.querySelector('.redit[data-id="'+rb.getAttribute('data-id')+'"]');
+      if(ed){ ed.style.display=ed.style.display==='block'?'none':'block'; const t=ed.querySelector('textarea'); if(ed.style.display==='block'&&t) t.focus(); }
+      return; }
+    const sv=e.target.closest('.sv');
+    if(sv){ const id=+sv.getAttribute('data-id'), row=cur[id]||{};
+      const ed=list.querySelector('.redit[data-id="'+id+'"]'); const t=ed&&ed.querySelector('textarea');
+      sv.disabled=true;
+      respond(id, t?t.value.trim().slice(0,2000):'', row.reaction||'');
+      return; }
+    const cx=e.target.closest('.cx');
+    if(cx){ const ed=cx.closest('.redit'); if(ed) ed.style.display='none'; return; }
     const b=e.target.closest('.del'); if(!b) return;
     if(!confirm('Delete this feedback forever?')) return;
     b.disabled=true;

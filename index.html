@@ -146,6 +146,12 @@
   #fbModal select { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:10px 12px;
     border-radius:10px; font-size:14px; width:100%; margin-bottom:12px; }
   #fbNote { font-size:13px; margin-top:8px; min-height:16px; }
+  #fbMine { max-height:190px; overflow-y:auto; margin-top:12px; text-align:left; }
+  .fbm { background:#16243f; border:1px solid #2a3c63; border-radius:10px; padding:8px 12px; margin:6px 0;
+    font-size:13px; color:#cdd9f0; word-break:break-word; }
+  .fbm .st { color:#ffd54a; font-weight:bold; }
+  .fbm .rp { margin-top:4px; color:#7dc4ff; white-space:pre-wrap; }
+  .fbm .rx2 { margin-left:6px; background:#0c1426; border:1px solid #2a3c63; border-radius:10px; padding:1px 7px; font-size:12px; }
 </style>
 </head>
 <body data-arcade-home>
@@ -332,6 +338,7 @@
       <button class="btn2 alt" id="fbCancel">Close</button>
     </div>
     <div id="fbNote"></div>
+    <div id="fbMine"></div>
   </div></div>
 
   <script>
@@ -886,7 +893,24 @@
   stars.addEventListener('click',function(e){
     const rect=stars.getBoundingClientRect(); const x=e.clientX-rect.left;
     let r=Math.ceil((x/rect.width)*10)/2; r=Math.max(.5,Math.min(5,r)); setRating(r); });
-  document.getElementById('feedbackBtn').addEventListener('click',function(){ note.textContent=''; modal.style.display='flex'; });
+  function escFb(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+  async function loadMine(){
+    const box=document.getElementById('fbMine'); const p=player();
+    if(!p){ box.innerHTML=''; return; }
+    try{
+      const db=await loadSb();
+      const r=await db.rpc('feedback_my',{p_key:slug(p.name)});
+      if(r.error||!r.data||!r.data.length){ box.innerHTML=''; return; }
+      box.innerHTML='<div style="color:#9fb3d8;font-size:12px;margin-bottom:2px">📬 Your earlier feedback:</div>'
+        +r.data.map(function(x){
+          return '<div class="fbm"><span class="st">'+(+x.rating)+'⭐</span> '+(x.game?escFb(x.game):'whole website')
+            +(x.reaction?'<span class="rx2">Ilan reacted '+escFb(x.reaction)+'</span>':'')
+            +(x.message?'<div>'+escFb(x.message)+'</div>':'')
+            +(x.reply?'<div class="rp">💬 Ilan: '+escFb(x.reply)+'</div>':'')
+            +'</div>'; }).join('');
+    }catch(e){ box.innerHTML=''; }
+  }
+  document.getElementById('feedbackBtn').addEventListener('click',function(){ note.textContent=''; modal.style.display='flex'; loadMine(); });
   document.getElementById('fbCancel').addEventListener('click',function(){ modal.style.display='none'; });
   modal.addEventListener('click',function(e){ if(e.target===modal) modal.style.display='none'; });
   let sb=null;
