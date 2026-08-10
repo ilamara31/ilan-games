@@ -355,6 +355,7 @@ const G = {
   coins:[], stk:null,                 // stk: {x,y,vx,vy,r,dead}
   phase:'place',                      // place | aim | roll | over
   shotBy:0, pocketedThisShot:[], stkPocketed:false,
+  queenPending:null,                  // player idx who pocketed the queen but still owes a cover coin
   ai:false, aiLvl:2, names:['You','Computer'],
   seed:1,
 };
@@ -402,6 +403,7 @@ function startGame(mode, vsAi, aiLvl, names){
   G.coins=mkCoins(); G.ai=vsAi; G.aiLvl=aiLvl||2;
   G.names = names || ['You', 'Computer L'+(aiLvl||2)];
   G.phase='place'; G.shotBy=0; aim=null; placeDrag=null;
+  G.queenPending=null; oppLive=null;
   resetStriker(G.turn);
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on');
@@ -448,7 +450,7 @@ function stepPhysics(){
             pop(pk.x,pk.y-46,'❌ WRONG!','#ff9b9b',36);
           } else if (p.c===2){
             Snd.queen(); burst(pk.x,pk.y,['#ff4f4f','#ffd54a','#ffffff'],28,340);
-            pop(pk.x,pk.y-46,'👑 QUEEN +50','#ffd54a',44);
+            pop(pk.x,pk.y-46,'👑 QUEEN!','#ffd54a',44);
           } else {
             Snd.pocket();
             burst(pk.x,pk.y, p.c===0?['#fff3c8','#ffd54a','#ffffff']:['#3a3a46','#8fa2c8','#ffd54a'],18,280);
@@ -508,26 +510,42 @@ function settleTurn(){
   const me=G.shotBy, mode=G.mode;
   let msg=null, again=false;
   let scoreGain=0;
-  for (const k of G.pocketedThisShot){
-    if (coinValid(mode,k.c)){ scoreGain += coinValue(mode,k.c); again=true; }
-    else {
-      // wrong colour: it comes back to the middle, and the turn is lost
-      respotCoin(k);
-      msg='❌ Wrong coin — it goes back!';
-      again=false;
-    }
+  const queen=G.pocketedThisShot.find(k=>k.c===2)||null;
+  const validCoins=G.pocketedThisShot.filter(k=>k.c!==2 && coinValid(mode,k.c));
+  const wrongs=G.pocketedThisShot.filter(k=>!coinValid(mode,k.c));
+  for (const k of validCoins) scoreGain += coinValue(mode,k.c);
+  if (validCoins.length || queen) again=true;
+  for (const k of wrongs){
+    // wrong colour: it comes back to the middle, and the turn is lost
+    respotCoin(k);
+    msg='❌ Wrong coin — it goes back!';
+    again=false;
   }
-  G.scores[me]+=scoreGain;
   if (G.stkPocketed){
     msg='😱 Striker in the pocket — foul!';
     again=false;
     // a pocketed valid coin comes back too on a striker foul — and its points with it
-    const back=G.pocketedThisShot.find(k=>coinValid(mode,k.c));
-    if (back){ respotCoin(back); G.scores[me]-=coinValue(mode,back.c); }
-    G.scores[me]=Math.max(0, G.scores[me]-20);
+    const back=validCoins.find(k=>k.dead);
+    if (back){ respotCoin(back); scoreGain-=coinValue(mode,back.c); }
   }
-  const wrong=G.pocketedThisShot.some(k=>!coinValid(mode,k.c));
-  if (wrong) again=false;
+  /* 👑 QUEEN COVER — the real carrom rule: the queen only counts if you also
+     pocket one of your coins, on the same shot or on the extra shot right
+     after. No cover → she returns to the centre and the 50 never lands. */
+  const othersLeft=G.coins.some(k=>!k.dead && k.c!==2 && coinValid(mode,k.c));
+  if (queen){
+    if (G.stkPocketed || wrongs.length){ respotCoin(queen); msg='👑 Foul — the queen returns to the centre!'; }
+    else if (validCoins.length){ scoreGain+=50; msg='👑 QUEEN COVERED — +50!'; }
+    else if (!othersLeft){ scoreGain+=50; msg='👑 QUEEN — +50!'; }   // nothing left to cover with — she counts
+    else { G.queenPending=me; msg='👑 Now COVER the queen — pocket a coin!'; }
+  } else if (G.queenPending===me){
+    const q=G.coins.find(k=>k.c===2);
+    G.queenPending=null;
+    if (!G.stkPocketed && !wrongs.length && validCoins.length){ scoreGain+=50; msg='👑 Queen covered — +50!'; }
+    else if (q && q.dead){ respotCoin(q); msg='👑 No cover — the queen returns!'; }
+  }
+  G.scores[me]+=scoreGain;
+  if (G.stkPocketed) G.scores[me]=Math.max(0, G.scores[me]-20);
+  const wrong=wrongs.length>0;
   const valid=G.pocketedThisShot.filter(k=>coinValid(mode,k.c) && k.dead).length;
   const foul=G.stkPocketed || wrong;
   if (!modeTargetsLeft(mode, G.coins)){ endGame(); return { over:true, valid, foul, again:false }; }
@@ -770,6 +788,21 @@ function render(){
       ctx.beginPath(); ctx.moveTo(G.stk.x,G.stk.y); ctx.lineTo(G.stk.x-ux*Math.min(l,180)*0.55, G.stk.y-uy*Math.min(l,180)*0.55); ctx.stroke();
     }
   }
+  // opponent's live aim (multiplayer): watch them line up their shot
+  if (MP.on && G.on && oppLive && !myTurn() && G.phase==='place' && G.stk && !G.stk.dead){
+    const dx=oppLive.dx||0, dy=oppLive.dy||0, l=Math.hypot(dx,dy);
+    if (l>14){
+      const pw=Math.min(1,l/340);
+      const ux=dx/l, uy=dy/l, len=90+pw*300;
+      ctx.globalAlpha=0.6;
+      ctx.strokeStyle='rgba(255,213,74,.85)'; ctx.lineWidth=6; ctx.setLineDash([14,10]); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(G.stk.x,G.stk.y); ctx.lineTo(G.stk.x+ux*len, G.stk.y+uy*len); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = pw<0.45?'#8fe3ff':pw<0.8?'#ffd54a':'#ff6b3d';
+      ctx.beginPath(); ctx.arc(G.stk.x+ux*len, G.stk.y+uy*len, 10+pw*8, 0, 7); ctx.fill();
+      ctx.globalAlpha=1;
+    }
+  }
   /* effects draw in the BASE transform (no 180° flip) so text and falling emoji stay
      upright for the guest too — board-anchored positions are mirrored by hand */
   ctx.setTransform(DPR*SCALE,0,0,DPR*SCALE,0,0);
@@ -897,6 +930,7 @@ cv.addEventListener('pointerdown', e=>{
       placeDrag={ id:e.pointerId };
       G.stk.x=Math.max(BASE_MIN,Math.min(BASE_MAX,p.x));
       nudgeStrikerClear(); syncSlider();
+      if (MP.on) mpSendLive({ph:'place'});
     }
   } else if (G.phase==='aim'){
     aim={ id:e.pointerId, x0:p.x, y0:p.y, x:p.x, y:p.y };
@@ -909,9 +943,11 @@ cv.addEventListener('pointermove', e=>{
   if (placeDrag && e.pointerId===placeDrag.id && G.phase==='place'){
     G.stk.x=Math.max(BASE_MIN,Math.min(BASE_MAX,p.x));
     nudgeStrikerClear(); syncSlider();
+    if (MP.on) mpSendLive({ph:'place'});
     wake();
   } else if (aim && e.pointerId===aim.id){
     aim.x=p.x; aim.y=p.y;
+    if (MP.on) mpSendLive({ph:'aim', dx:+(aim.x0-aim.x).toFixed(1), dy:+(aim.y0-aim.y).toFixed(1)});
     wake();
   }
 });
@@ -921,6 +957,7 @@ function endPointer(e){
   if (aim && e.pointerId===aim.id){
     const dx=aim.x0-aim.x, dy=aim.y0-aim.y, l=Math.hypot(dx,dy);
     aim=null;
+    if (l<=26 && MP.on) mpSendLive({ph:'aim', dx:0, dy:0});   // aim let go — clear their preview
     if (l>26){
       const pw=Math.min(1,l/340)*MAXPOW;
       const vx=dx/l*pw, vy=dy/l*pw;
@@ -939,11 +976,13 @@ window.addEventListener('pointercancel', endPointer);
 function confirmPlace(){
   if (!G.on || !myTurn() || G.phase!=='place') return;
   G.phase='aim'; placeDrag=null;
+  if (MP.on) mpSendLive({ph:'aim', dx:0, dy:0});
   syncCtl(); render();
 }
 function backToPlace(){
   if (!G.on || !myTurn() || G.phase!=='aim' || aim) return;
   G.phase='place';
+  if (MP.on) mpSendLive({ph:'place', dx:0, dy:0});
   syncCtl(); render();
 }
 $('setBtn').addEventListener('click', confirmPlace);
@@ -963,6 +1002,7 @@ posSlider.addEventListener('input', ()=>{
   const v=+posSlider.value;
   G.stk.x=Math.max(BASE_MIN,Math.min(BASE_MAX, viewFlip() ? (BW - v) : v));
   nudgeStrikerClear();
+  if (MP.on) mpSendLive({ph:'place'});
   wake(); render();
 });
 /* controls + hint follow the turn state */
@@ -971,8 +1011,9 @@ function syncCtl(){
   $('ctl').classList.toggle('hidden', !(mine && G.phase==='place'));
   $('moveBtn').classList.toggle('hidden', !(mine && G.phase==='aim'));
   const h=$('hint');
-  if (mine && G.phase==='place'){ h.classList.remove('hidden'); h.textContent='↔️ Slide the striker into position, then press ✔ SET'; }
-  else if (mine && G.phase==='aim'){ h.classList.remove('hidden'); h.textContent='🎯 Pull back and release to shoot!'; }
+  const cover = G.queenPending===G.turn;   // you owe the queen a cover coin
+  if (mine && G.phase==='place'){ h.classList.remove('hidden'); h.textContent=cover?'👑 Cover the queen! Slide the striker, then press ✔ SET':'↔️ Slide the striker into position, then press ✔ SET'; }
+  else if (mine && G.phase==='aim'){ h.classList.remove('hidden'); h.textContent=cover?'👑 Pocket a coin to KEEP the queen — or she goes back!':'🎯 Pull back and release to shoot!'; }
   else h.classList.add('hidden');
   if (mine) syncSlider();
 }
@@ -1178,7 +1219,7 @@ async function mpConnectRoom(code){
   MP.ch=ch;
   ch.on('presence',{event:'sync'},mpOnPresence);
   ch.on('presence',{event:'leave'},({leftPresences})=>mpOnLeave(leftPresences||[]));
-  ['start','shot','settle','bye'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
+  ['start','shot','settle','bye','live'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
   await new Promise((res,rej)=>{
     let done=false;
     ch.subscribe(st=>{
@@ -1335,7 +1376,25 @@ function mpBeginMatch(msg){
   try{ if (window.track) window.track('carrom_mp_start',{mode:msg.mode, host:MP.isHost?1:0}); }catch(e){}
 }
 function mpSendShot(sx,vx,vy){
+  mpSendLiveNow();                       // flush the last aim frame before the shot lands
   mpSend('shot',{ seq:++MP.shotSeq, by:MP.myIdx, sx:+sx.toFixed(2), vx:+vx.toFixed(2), vy:+vy.toFixed(2) });
+}
+/* ---- live striker/aim preview: the opponent watches me place + aim in real time ---- */
+let oppLive=null;                        // last live packet from the opponent (viewer side)
+let liveTimer=null, livePend=null, liveLast=0;
+function mpSendLive(o){
+  if (!MP.on || !MP.ch || !G.stk || G.phase==='roll' || G.phase==='waitsync') return;
+  o.by=MP.myIdx; o.x=+G.stk.x.toFixed(1);
+  livePend=o;
+  const now=performance.now();
+  if (now-liveLast>=110) mpSendLiveNow();
+  else if (!liveTimer) liveTimer=setTimeout(mpSendLiveNow,120);
+}
+function mpSendLiveNow(){
+  if (liveTimer){ clearTimeout(liveTimer); liveTimer=null; }
+  if (!livePend || !MP.ch) return;
+  liveLast=performance.now();
+  mpSend('live',livePend); livePend=null;
 }
 function mpSendSettle(over, msg, r){
   // canonicalize MY board to exactly what I broadcast, so both sides end the
@@ -1353,9 +1412,20 @@ function mpWaitSettle(){
   settleWaitT=setTimeout(()=>{ if (g===RGEN && G.phase==='waitsync'){ /* keep waiting quietly */ } },4000);
 }
 function mpOnNet(ev,p){
+  if (ev==='live'){
+    // opponent is lining up: mirror their striker slide + slingshot pull on my screen
+    if (!MP.on || !p || p.by===MP.myIdx || !G.on) return;
+    if (G.turn!==p.by || G.phase==='roll' || G.phase==='waitsync' || G.phase==='over') return;
+    oppLive=p;
+    if (G.stk && typeof p.x==='number' && isFinite(p.x))
+      G.stk.x=Math.max(BASE_MIN,Math.min(BASE_MAX,p.x));
+    render();
+    return;
+  }
   if (ev==='shot'){
     if (!MP.on || !p || p.by===MP.myIdx) return;
     if (p.seq!=null){ if (p.seq<=MP.lastShotSeq) return; MP.lastShotSeq=p.seq; }
+    oppLive=null;
     if (G.turn!==p.by){ G.turn=p.by; resetStriker(G.turn); }
     shoot(p.sx,p.vx,p.vy);
     return;
@@ -1377,6 +1447,7 @@ function mpOnNet(ev,p){
 }
 function mpApplySettle(p){
   // authoritative board from the shooter — snap everything
+  oppLive=null;
   p.coins.forEach((t,i)=>{ const k=G.coins[i]; if (!k) return;
     k.x=t[0]; k.y=t[1]; k.c=t[2]; k.dead=!!t[3]; k.vx=0; k.vy=0; });
   G.scores=p.scores.slice();
@@ -1391,6 +1462,7 @@ function mpApplySettle(p){
 }
 function mpTeardownMatch(){
   MP.on=false; MP.playing=false;
+  if (liveTimer){ clearTimeout(liveTimer); liveTimer=null; } livePend=null; oppLive=null;
   G.on=false; G.phase='over'; aim=null; placeDrag=null;
   if (settleWaitT){ clearTimeout(settleWaitT); settleWaitT=null; }
   $('hud').classList.remove('on');
@@ -1444,7 +1516,9 @@ try{ if (MPDBG){
   window.__ck={ get G(){ return G; }, get MP(){ return MP; },
     shoot:(sx,vx,vy)=>{ if (MP.on) mpSendShot(sx,vx,vy); return shoot(sx,vx,vy); },
     aiPlan, settle:()=>new Promise(res=>{ const iv=setInterval(()=>{ if (G.phase!=='roll' && G.phase!=='waitsync'){ clearInterval(iv); res(G.phase); } },100); }),
-    startSolo:(mode,lvl)=>startGame(mode||'free',true,lvl||2,['Tester','CPU']) };
+    startSolo:(mode,lvl)=>startGame(mode||'free',true,lvl||2,['Tester','CPU']),
+    settleNow:()=>settleTurn(), respot:k=>respotCoin(k), onNet:(ev,p)=>mpOnNet(ev,p),
+    get oppLive(){ return oppLive; }, sendLive:o=>mpSendLive(o) };
 } }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>
