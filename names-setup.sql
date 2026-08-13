@@ -162,65 +162,110 @@ grant execute on function public.ig_name_release(text, text)                   t
 --  SEED: protect every name that is ALREADY in use, so nobody can take one.
 --  Seeded rows have token = NULL ("unclaimed") — the device that already uses
 --  the name adopts it on its next visit; nobody else can type their way into it.
+--
+--  This block works out BOTH the accounts table and its name column by itself.
+--  If it cannot, it stops with a clear message rather than quietly leaving
+--  existing names unprotected.
 -- ============================================================================
 do $seed$
 declare
   v_tbl   text;
+  v_col   text;
   v_src   text;
   v_accts int := 0;
   v_lb    int := 0;
   v_wk    int := 0;
+  v_tot   int := 0;
 begin
-  -- Registered accounts: find the table account_auth() actually uses.
+  ------------------------------------------------------------------
+  -- 1. Registered accounts: find the table account_auth() really uses
+  ------------------------------------------------------------------
   select p.prosrc into v_src
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and p.proname = 'account_auth'
    limit 1;
 
   if v_src is null then
-    raise exception 'account_auth() not found — cannot protect registered names. Tell me your accounts table name and I will adjust this script.';
+    raise exception
+      'account_auth() was not found, so registered names cannot be protected. Tell me your accounts table name and I will adjust this script.';
   end if;
 
-  select (regexp_match(v_src, 'from\s+(?:public\.)?([a-z_][a-z0-9_]*)', 'i'))[1] into v_tbl;
+  -- try every table the function body mentions; keep the first real one
+  select q.t into v_tbl
+    from (
+      select (regexp_matches(v_src, '(?:from|into|update)\s+(?:public\.)?([a-z_][a-z0-9_]*)', 'gi'))[1] as t
+    ) q
+   where to_regclass('public.' || q.t) is not null
+     and q.t not in ('ig_name', 'ig_weekly', 'leaderboard')
+   limit 1;
+
   if v_tbl is null then
-    select (regexp_match(v_src, 'insert\s+into\s+(?:public\.)?([a-z_][a-z0-9_]*)', 'i'))[1] into v_tbl;
+    raise exception
+      'Could not work out which table account_auth() stores accounts in. Tell me the table name and I will adjust this script.';
   end if;
 
-  if v_tbl is null or to_regclass('public.' || v_tbl) is null then
-    raise exception 'Could not work out which table account_auth() stores accounts in. Tell me the table name and I will adjust this script.';
+  -- and which column on it holds the display name
+  select c.column_name into v_col
+    from information_schema.columns c
+   where c.table_schema = 'public'
+     and c.table_name = v_tbl
+     and c.column_name in ('name', 'username', 'user_name', 'player', 'player_name', 'display_name')
+   order by array_position(
+     array['name', 'username', 'user_name', 'player_name', 'display_name', 'player'],
+     c.column_name)
+   limit 1;
+
+  if v_col is null then
+    raise exception
+      'Found the accounts table public.% but not its name column. Tell me the column name and I will adjust this script.', v_tbl;
   end if;
 
-  execute format(
-    'insert into public.ig_name(name_key, name, token, is_guest, seen)
-       select distinct on (public.ig_name_key(t.name)) public.ig_name_key(t.name), t.name, null, false, now()
-         from public.%I t
-        where coalesce(t.name, '''') <> '''' and public.ig_name_key(t.name) <> ''''
-     on conflict (name_key) do update set is_guest = false', v_tbl);
+  -- built with quote_ident concatenation so the body contains no dollar signs
+  execute
+       'insert into public.ig_name (name_key, name, token, is_guest, seen) '
+    || 'select distinct on (public.ig_name_key(t.' || quote_ident(v_col) || ')) '
+    ||        'public.ig_name_key(t.' || quote_ident(v_col) || '), t.' || quote_ident(v_col) || ', null, false, now() '
+    || 'from public.' || quote_ident(v_tbl) || ' t '
+    || 'where coalesce(t.' || quote_ident(v_col) || ', '''') <> '''' '
+    || 'and public.ig_name_key(t.' || quote_ident(v_col) || ') <> '''' '
+    || 'order by public.ig_name_key(t.' || quote_ident(v_col) || ') '
+    || 'on conflict (name_key) do update set is_guest = false';
   get diagnostics v_accts = row_count;
-  raise notice 'Protected % registered account name(s) from public.%', v_accts, v_tbl;
+  raise notice 'Protected % registered account name(s), from public.% column %', v_accts, v_tbl, v_col;
 
-  -- Guests who have posted a score
+  ------------------------------------------------------------------
+  -- 2. Anyone who has ever posted a score
+  ------------------------------------------------------------------
   if to_regclass('public.leaderboard') is not null then
-    insert into public.ig_name(name_key, name, token, is_guest, seen)
-      select distinct on (public.ig_name_key(l.name)) public.ig_name_key(l.name), l.name, null, true, now()
+    insert into public.ig_name (name_key, name, token, is_guest, seen)
+      select distinct on (public.ig_name_key(l.name))
+             public.ig_name_key(l.name), l.name, null, true, now()
         from public.leaderboard l
-       where coalesce(l.name, '') <> '' and public.ig_name_key(l.name) <> ''
+       where coalesce(l.name, '') <> ''
+         and public.ig_name_key(l.name) <> ''
+       order by public.ig_name_key(l.name)
     on conflict (name_key) do nothing;
     get diagnostics v_lb = row_count;
-    raise notice 'Protected % name(s) seen on the leaderboard', v_lb;
+    raise notice 'Protected % more name(s) seen on the leaderboard', v_lb;
   end if;
 
-  -- Anyone who has ever earned a play this year
+  ------------------------------------------------------------------
+  -- 3. Anyone who has ever earned a play
+  ------------------------------------------------------------------
   if to_regclass('public.ig_weekly') is not null then
-    insert into public.ig_name(name_key, name, token, is_guest, seen)
-      select distinct on (w.user_key) w.user_key, w.user_name, null, true, now()
+    insert into public.ig_name (name_key, name, token, is_guest, seen)
+      select distinct on (w.user_key)
+             w.user_key, coalesce(nullif(w.user_name, ''), w.user_key), null, true, now()
         from public.ig_weekly w
        where coalesce(w.user_key, '') <> ''
+       order by w.user_key, w.updated desc
     on conflict (name_key) do nothing;
     get diagnostics v_wk = row_count;
-    raise notice 'Protected % name(s) from User-of-the-Week history', v_wk;
+    raise notice 'Protected % more name(s) from User-of-the-Week history', v_wk;
   end if;
 
-  raise notice 'Done — % name(s) are now reserved.', (select count(*) from public.ig_name);
-end
+  select count(*) into v_tot from public.ig_name;
+  raise notice 'Done — % name(s) are now reserved.', v_tot;
+end;
 $seed$;
