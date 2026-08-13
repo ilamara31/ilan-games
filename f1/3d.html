@@ -854,6 +854,7 @@ canvas.addEventListener('touchmove',  e=>e.preventDefault(), {passive:false});
 /* ---------------- state machine ---------------- */
 let state = 'menu';         // menu | countdown | race | finish
 let raceTime = 0, cdTimer = 0, cdStep = 0;
+let raceT0 = 0;             // performance.now() at the green light — raceTime derives from this
 let boostE = 100;           // 0..100
 // Boost is a SHORT tactical overtake aid, not a win-everything button:
 // modest multiplier, drains fast, recharges slowly. You win on car + racing line, not dash.
@@ -938,34 +939,72 @@ function finishRace(){
     ? `Fantastic driving — you won ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`
     : `P${myPos} of ${all.length} at ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`) + `<br>${earned}`;
   $('finBoard').innerHTML = order.slice(0,8).map((r,i)=>
-    `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span><span class="nm">${r.isPlayer?'You':r.name}</span><span>${r.finished?fmt(r.finishTime):'—'}</span></div>`
+    `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span><span class="nm">${r.isPlayer?'You':r.name}</span><span>${r.finished?fmt(finShow(r)):'—'}</span></div>`
   ).join('');
   $('scr-finish').classList.remove('hidden');
 }
+// Can this board be ranked on the shared clock? Only if EVERY finisher carries a real
+// crossing stamp. Deliberately no "reconstruct it from elapsed time" fallback: elapsed
+// is measured from the SENDER's green light, greenWall is the RECEIVER's, and those
+// agree only when the sender was synced — i.e. exactly when a real stamp already
+// exists. Rebuilding it from a missing stamp would silently re-credit the start skew
+// the stamp was withheld to avoid. One unsynced finisher drops the whole board to
+// elapsed ranking, which is the honest key when someone didn't share the start.
+// Single predicate, so ranking and displayed times can never disagree.
+function wallBasis(){
+  if (!MP.on || !MP.greenWall) return false;
+  const fin = all.filter(r=>r.finished);
+  return fin.length>0 && fin.every(r=>r.finWall>0);
+}
 function rankings(){
+  // Either every finisher is ranked on the shared clock or nobody is. Choosing the key
+  // per-pair instead would make the comparator intransitive (A<B by wall, B<C by
+  // elapsed, C<A by elapsed), and sort() with an inconsistent comparator returns an
+  // arbitrary order — a random podium, which is worse than the bug being fixed.
+  const useWall = wallBasis();
   // finished racers first (by time), then the rest by progress
   return [...all].sort((a,b)=>{
-    if (a.finished && b.finished) return a.finishTime - b.finishTime;
+    if (a.finished && b.finished)
+      return useWall ? (a.finWall-b.finWall) : (a.finishTime-b.finishTime);
     if (a.finished) return -1;
     if (b.finished) return 1;
     return b.prog - a.prog;
   });
+}
+// what to PRINT next to a placing — measured the same way the placing was, or the board
+// shows a slower time above a faster one on exactly the races this fix exists for
+function finShow(r){
+  return (wallBasis() && r.finWall) ? Math.max(0,(r.finWall-MP.greenWall)/1000) : r.finishTime;
 }
 function myPosition(){ return rankings().findIndex(r=>r.isPlayer)+1; }
 function fmt(t){ const m=Math.floor(t/60), s=(t%60); return m>0 ? `${m}:${s.toFixed(2).padStart(5,'0')}` : `${s.toFixed(2)}s`; }
 
 /* ---------------- update ---------------- */
 function updateCountdown(dt){
-  cdTimer += dt;
+  // In MP the countdown is read off the SHARED clock, not accumulated locally, so
+  // every client's lights go out at the same real-world moment however badly any
+  // one device is stuttering. Solo still just counts frames.
+  // max() of the two is a watchdog: normally the shared reading leads and wins, but if
+  // Date.now() steps BACKWARDS (device time sync on wake) the local accumulation keeps
+  // the count moving, so we can never sit in 'countdown' forever with no way out.
+  if (MP.on && MP.startWall) cdTimer = Math.max(cdTimer+dt, (mpNowHost()-MP.startWall)/1000);
+  else cdTimer += dt;
   const lamps = [...$('lamps').children];
   if (cdStep < 5 && cdTimer >= (cdStep+1)*0.7){
     cdStep++; Engine.resume(); Engine.start(); Engine.rev();   // engine blips on each light
     if (cdStep <= 5) for (let i=0;i<cdStep;i++) lamps[i].classList.add('lit');
   }
-  if (cdTimer >= 4.2){
+  if (cdTimer >= MP_CD){
     lamps.forEach(l=>{ l.classList.remove('lit'); l.classList.add('go'); });
     setTimeout(()=>$('lamps').classList.remove('on'), 500);
-    state='race'; raceTime=0; Engine.start();
+    // Zero the race clock at the green light. Subtract however far past the green
+    // instant this frame actually landed, so a late frame doesn't gift us time.
+    // capped: a client resumed from a backgrounded tab can sit in 'countdown' for
+    // minutes, and starting its race clock minutes in the past helps nobody
+    const over = (MP.on && MP.startWall) ? Math.min(Math.max(0, cdTimer-MP_CD), 10)*1000 : 0;
+    raceT0 = performance.now() - over;
+    raceTime = over/1000;
+    state='race'; Engine.start();
   }
 }
 
@@ -1077,7 +1116,20 @@ function checkFinish(){
   for (const r of all){
     if (MP.on && r.isRemote) continue;         // remote racers finish via the network, on their own clock
     if (!r.finished && r.prog >= raceLaps*TRACK_LEN){
-      r.finished = true; r.finishTime = raceTime; r.speed *= 0.4;
+      // We only notice the crossing on the frame AFTER it happened, so wind back by
+      // however far past the line this frame landed. Without this, a 30fps phone is
+      // charged up to 33ms it didn't lose while a 120fps desktop is charged 8ms —
+      // a bias against exactly the stuttering device this whole fix is protecting,
+      // and bigger than the clock error the handshake removes.
+      const past = r.prog - raceLaps*TRACK_LEN;
+      const back = (r.speed > 1) ? Math.min(past/r.speed, 0.1) : 0;
+      r.finished = true; r.finishTime = Math.max(0, raceTime - back); r.speed *= 0.4;
+      // Stamp the real-world crossing instant on the shared clock — this, not elapsed
+      // time, is what decides who actually crossed first (covers me and host-run bots).
+      // Gate on startWall, not clockOk: if we synced only AFTER the lights went out we
+      // were given a late green, so ranking us on absolute instants would charge us
+      // for a start we never got. Elapsed time is the honest key in that case.
+      if (MP.on && MP.startWall) r.finWall = mpNowHost() - back*1000;
     }
   }
   if (MP.on){
@@ -1156,7 +1208,12 @@ function loop(now){
     // keep engines idling in place; camera settled
     all.forEach(updateCarMesh); placeCamera(0);
   } else if (state === 'race'){
-    raceTime += dt;
+    // Read the stopwatch off a monotonic timestamp instead of summing frame deltas.
+    // dt is clamped to 50ms just below (necessary — it stops the car tunnelling
+    // through the track on a lag spike), and the old `raceTime += dt` inherited that
+    // clamp: every frame longer than 50ms silently deleted the excess from your
+    // race time. A stuttering phone could finish a 65-second lap and report 60.
+    raceTime = (now - raceT0)/1000;
     updatePlayer(dt);
     // finished rivals coast onward at their cool-down speed instead of parking ON the
     // finish line, where they used to form a wall of stationary cars on your last lap
@@ -1312,6 +1369,8 @@ $('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); $(
    car (own paint) — winning is racing skill, not garage money.
    ============================================================ */
 const MP_MAXN = 7, MP_TOP = 106;              // max racers per room; equal car spec (≈360 km/h)
+const MP_START_LEAD = 900;                    // ms of slack so the 'start' packet lands before lights-out
+const MP_CD = 4.2;                            // countdown length: lights-out → green
 const MPDBG = location.search.indexOf('mptest')>=0;
 const mpdbg = (...a)=>{ if (MPDBG) console.log('MPDBG', ...a); };
 const BOT_NAMES = ['Blitz','Nitro','Vortex','Comet','Dash','Zoom'];
@@ -1323,6 +1382,16 @@ const MP = {
   circuit:'india', started:false, members:[],
   netCars:{}, bots:[], country:null,
   seq:0, lastSeq:-1, sendAcc:0, raceGen:0, finTimes:{},
+  // --- shared clock ---------------------------------------------------------
+  // Every client's own race stopwatch is useless for ranking: they start at
+  // different moments and tick at different rates. So we agree on ONE clock (the
+  // host's) and rank by the real-world instant each car crossed the line.
+  // hostNow === Date.now() + clockOff.  clockOk stays false until we've actually
+  // measured it, and while it's false we fall back to elapsed-time ranking.
+  clockOff:0, clockOk:false, clockRtt:1e9, clockTries:0,
+  startWall:0, greenWall:0,                   // host-clock ms: lights out, green light
+  curSeq:-1,                                  // which race we're in — stamped on 'fin'/'pos'
+  raceOff:0,                                  // clockOff frozen for the duration of a race
 };
 let RGEN = 0;
 function roomTimer(fn, ms){ const g = RGEN; setTimeout(()=>{ if (g === RGEN) fn(); }, ms); }
@@ -1352,6 +1421,48 @@ async function mpEnsure(){
   return MP.sb;
 }
 function mpSend(ev, payload){ if (MP.ch){ try{ MP.ch.send({ type:'broadcast', event:ev, payload:payload||{} }); }catch(e){} } }
+/* ---- shared clock: NTP-style offset handshake against the host ----
+   Guest pings with its own send time, host echoes it back stamped with the host
+   clock, guest halves the round trip to place the host clock on its own timeline.
+   Lowest-RTT sample wins — the fastest exchange is the least skewed one. */
+// During a race we freeze the offset at the value we had when the lights went out.
+// The sync loop keeps refining clockOff in the background, and letting it move mid-race
+// would put finish stamps taken early and late in the same race on slightly different
+// bases — tens of ms, right back in the range the whole handshake exists to remove.
+function mpNowHost(){ return Date.now() + (MP.on ? MP.raceOff : MP.clockOff); }
+function mpSyncClock(){
+  if (MP.isHost || !MP.ch || !MP.code) return;
+  // Give up fast on a host that never answers (old build, dead channel) — but once
+  // we ARE synced, keep the slow re-measure alive for hours of room life.
+  if (MP.clockTries++ > (MP.clockOk ? 600 : 40)) return;
+  mpSend('png', { id:myId, t0:Date.now() });
+  const g = RGEN;
+  // a handful of quick samples up front, then a slow trickle to track drift
+  setTimeout(()=>{ if (g===RGEN && MP.code) mpSyncClock(); }, MP.clockOk ? 15000 : 700);
+}
+function mpOnClockMsg(ev, p){
+  if (ev==='png'){                                   // host answers every ping
+    if (MP.isHost && p && p.id) mpSend('pog', { to:p.id, t0:p.t0, ht:Date.now() });
+    return;
+  }
+  if (ev==='pog'){                                   // guest folds the sample in
+    if (MP.isHost || !p || p.to!==myId || !p.t0) return;
+    const t1=Date.now(), rtt=t1-p.t0;
+    // A 4s round trip would admit ~2s of offset error from path asymmetry. Keep the
+    // accept window tight — a bad sample that wins the ratchet is worth seconds of
+    // unearned advantage.
+    if (rtt<0 || rtt>1500) return;                   // nonsense sample — drop it
+    // Let the winning RTT decay upward so the best-ever sample can't pin the offset
+    // for the room's lifetime. Without this, one lucky early exchange survives a
+    // network switch or a host clock step and nothing ever re-measures.
+    MP.clockRtt = MP.clockRtt*1.08 + 4;
+    if (rtt<=MP.clockRtt){
+      MP.clockRtt=rtt;
+      MP.clockOff=(p.ht + rtt/2) - t1;               // hostNow - localNow
+      MP.clockOk=true;
+    }
+  }
+}
 function mpToast(msg){
   const t=document.createElement('div');
   t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#0f1d36;'
@@ -1517,7 +1628,7 @@ async function mpConnectRoom(code){
   MP.ch=ch;
   ch.on('presence',{event:'sync'},mpOnPresence);
   ch.on('presence',{event:'leave'},({leftPresences})=>mpOnLeave(leftPresences||[]));
-  ['start','pos','fin','bye'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
+  ['start','pos','fin','bye','png','pog'].forEach(ev=> ch.on('broadcast',{event:ev},({payload})=>mpOnNet(ev,payload)));
   await new Promise((res,rej)=>{
     let done=false;
     ch.subscribe(st=>{
@@ -1533,8 +1644,11 @@ async function mpOpenRoom(code, asHost){
   MP.code=code; MP.isHost=asHost; MP.hostId=asHost?myId:null;
   MP.started=false; MP.members=[]; MP.seq=0; MP.lastSeq=-1;
   MP.myT=Date.now(); MP.roomT=MP.myT;
+  // the host IS the reference clock; guests measure themselves against it
+  MP.clockOff=0; MP.clockRtt=1e9; MP.clockTries=0; MP.clockOk=asHost;
   if (asHost) MP.circuit=(chosenCountry.free?'india':chosenCountry.id);
   await mpConnectRoom(code);
+  mpSyncClock();                                     // no-op for the host
   state='mproom'; showScreenMp('scr-mproom');
   mpRenderRoom();
   if (asHost) mpAdvertise();
@@ -1664,13 +1778,18 @@ function mpStart(){
   const bots=Array.from({length:Math.max(0,MP_MAXN-members.length)},(_,i)=>({
     name:'🤖 '+BOT_NAMES[i%BOT_NAMES.length], color:RIVAL_COLORS[(i*3+1)%RIVAL_COLORS.length],
     top:90+i*3.2, slot:members.length+i }));
-  const msg={ seq:++MP.seq, circuit:MP.circuit, members, bots };
+  // Schedule lights-out at a shared FUTURE instant instead of starting ours the
+  // moment we hit send. Previously the host's countdown began immediately and each
+  // guest's began when the packet landed, so every guest's race clock zeroed one
+  // network-latency later — a free head start of exactly that, every race.
+  const msg={ seq:++MP.seq, circuit:MP.circuit, members, bots, startAt:Date.now()+MP_START_LEAD };
   MP.started=true; mpTrackSelf(); mpAdvertise();
   mpSend('start', msg);
   mpBeginRace(msg);                                // broadcast is self:false — run it locally too
 }
 function mpBeginRace(msg){
   MP.raceGen++;
+  MP.raceOff=MP.clockOff;                     // freeze the basis before anything stamps a time
   MP.on=true; MP.done=false; MP.started=true;
   MP.finTimes={}; MP.netCars={}; MP.bots=[];
   MP.country=COUNTRIES.find(c=>c.id===msg.circuit)||COUNTRIES[0];
@@ -1702,8 +1821,21 @@ function mpBeginRace(msg){
     else { r.isRemote=true; r.netP=r.prog; r.netL=r.lateral; r.netV=0; r.netT=0; }  // …everyone else receives them
     MP.bots.push(r); all.push(r);
   }
+  // Anchor this client's countdown to the host's scheduled instant. If we don't yet
+  // have a clock offset (handshake never landed) startWall stays 0 and the countdown
+  // falls back to the old local-timer behaviour rather than starting at a wild time.
+  MP.curSeq = (msg.seq!=null) ? msg.seq : -1;        // host-assigned, identical on every client
+  MP.startWall = (MP.clockOk && msg.startAt) ? msg.startAt : 0;
+  // if that instant reads as absurd (bad offset sample, or the packet crawled in),
+  // don't hand someone a 30-second head start — just run the countdown locally
+  if (MP.startWall){
+    const off=(mpNowHost()-MP.startWall)/1000;
+    if (off < -5 || off > 10) MP.startWall=0;
+  }
+  MP.greenWall = MP.startWall ? MP.startWall + MP_CD*1000 : 0;
   raceTime=0; boostE=100; boostLock=false; MP.sendAcc=0;
-  state='countdown'; cdTimer=0; cdStep=0;
+  state='countdown'; cdStep=0;
+  cdTimer = MP.startWall ? (mpNowHost()-MP.startWall)/1000 : 0;
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
   $('lamps').classList.add('on');
@@ -1735,7 +1867,10 @@ function mpRaceTick(dt){
   MP.sendAcc+=dt;
   if (MP.sendAcc>=0.2){                            // ~5 Hz — dead-reckoning smooths the rest
     MP.sendAcc=0;
-    const msg={ id:myId, p:r1(player.prog), l:r2(player.lateral), s:r1(player.speed), f:player.finished?1:0 };
+    // stamp the send instant on the shared clock so receivers can age this sample from
+    // when it was TAKEN, not from when it happened to land
+    const msg={ id:myId, p:r1(player.prog), l:r2(player.lateral), s:r1(player.speed), f:player.finished?1:0,
+                w:MP.clockOk?mpNowHost():0, s2:MP.curSeq };
     if (MP.isHost) msg.b=MP.bots.map(b=>[r1(b.prog), r2(b.lateral), r1(b.speed), b.finished?r2(b.finishTime):0]);
     mpSend('pos', msg);
   }
@@ -1743,7 +1878,9 @@ function mpRaceTick(dt){
 // dead-reckoning: advance at the last reported speed, softly correct toward the report
 function mpDrive(r, now, dt){
   if (r.gone || r.netP==null) return;
-  const age=Math.min(3,(now-r.netT)/1000);         // stop extrapolating a silent car after 3 s
+  // age = time in transit + time since it landed, so we extrapolate from when the
+  // sample was actually taken rather than from when we received it
+  const age=Math.min(3,(r.netLag||0)+(now-r.netT)/1000);   // stop extrapolating a silent car after 3 s
   const target=r.netP + r.netV*age;
   r.prog += r.netV*dt;
   const err=target-r.prog;
@@ -1790,12 +1927,20 @@ function mpPush(A, B, sym){
 
 /* ---- network events ---- */
 function mpOnNet(ev, p){
+  if (ev==='png' || ev==='pog'){ mpOnClockMsg(ev, p); return; }
   if (ev==='pos'){ mpOnPos(p); return; }
   if (ev==='fin'){
     if (!p || !p.id) return;
+    // a resend from the PREVIOUS race can land after a quick rematch has already
+    // rebuilt the grid — it would mark that car finished at the green light
+    if (p.s!=null && MP.curSeq!==-1 && p.s!==MP.curSeq) return;
     MP.finTimes[p.id]=p.t;
     const r=MP.netCars[p.id];
-    if (r && !r.finished){ r.finished=true; r.finishTime=p.t; }
+    // ALWAYS take the sender's own numbers. The old `!r.finished` guard meant that if
+    // a 'pos' packet flagged them finished first, the estimate it invented stuck and
+    // the real time arriving a moment later was thrown away — so the two players could
+    // end up looking at genuinely different scoreboards.
+    if (r){ r.finished=true; r.finishTime=p.t; if (p.w) r.finWall=p.w; }
     mpMaybeRefreshBoard();
     return;
   }
@@ -1811,16 +1956,38 @@ function mpOnNet(ev, p){
 }
 function mpOnPos(p){
   if (!MP.on || !p || !p.id || p.id===myId) return;
+  // A finished player keeps broadcasting at 5 Hz for up to a minute, so on a rematch
+  // there is essentially always a packet from the previous race in flight. Without
+  // this guard one lands during the new countdown and marks that car finished at
+  // 0.00s — first place before the lights even go out.
+  // (s2, not s — 's' is already this packet's speed field)
+  if (p.s2!=null && MP.curSeq!==-1 && p.s2!==MP.curSeq) return;
   const now=performance.now();
+  // how stale this sample already was when it reached us (transit time), on the
+  // shared clock. Remote cars used to be drawn a full one-way latency behind where
+  // they really were — a few car lengths at racing speed, enough to make a lead you
+  // can see on screen not be a real lead at all.
+  const lag = (p.w && MP.clockOk) ? Math.max(0, Math.min(1.5, (mpNowHost()-p.w)/1000)) : 0;
   const r=MP.netCars[p.id];
   if (r){
-    r.netP=p.p; r.netV=p.s; r.netL=p.l; r.netT=now; r.gone=false;
-    if (p.f && !r.finished){ r.finished=true; r.finishTime=(MP.finTimes[p.id]>0)?MP.finTimes[p.id]:raceTime; }
+    r.netP=p.p; r.netV=p.s; r.netL=p.l; r.netT=now; r.netLag=lag; r.gone=false;
+    if (p.f && !r.finished){
+      r.finished=true; r.finishTime=(MP.finTimes[p.id]>0)?MP.finTimes[p.id]:raceTime;
+      // Estimate their crossing instant rather than leaving it blank. It's a guess —
+      // biased late by up to the 200ms send interval — but it's only reached when all
+      // three 'fin' sends were lost, and the real one overwrites it the moment it
+      // lands. Leaving it blank would be worse: it drops the ENTIRE board off the
+      // shared clock over one unlucky peer, penalising everybody else instead.
+      if (MP.startWall) r.finWall = mpNowHost() - (lag*1000);
+    }
   }
   if (p.id===MP.hostId && Array.isArray(p.b) && !MP.isHost){
     p.b.forEach((t,i)=>{ const b=MP.bots[i]; if (!b || !Array.isArray(t)) return;
-      b.netP=t[0]; b.netL=t[1]; b.netV=t[2]; b.netT=now;
-      if (t[3]>0 && !b.finished){ b.finished=true; b.finishTime=t[3]; } });
+      b.netP=t[0]; b.netL=t[1]; b.netV=t[2]; b.netT=now; b.netLag=lag;
+      // bots run on the host's clock, so their elapsed time converts straight onto
+      // the shared clock via the agreed green-light instant
+      if (t[3]>0 && !b.finished){ b.finished=true; b.finishTime=t[3];
+        if (MP.greenWall) b.finWall=MP.greenWall + t[3]*1000; } });
   }
 }
 
@@ -1828,7 +1995,12 @@ function mpOnPos(p){
 function mpPlayerFinished(){
   MP.done=true;
   MP.finTimes[myId]=player.finishTime;
-  mpSend('fin',{ id:myId, t:r2(player.finishTime) });
+  // Broadcast is at-most-once with no ack, and a dropped 'fin' used to leave everyone
+  // else ranking me off a guessed time. Repeat it a few times — handling is idempotent.
+  const fin={ id:myId, t:r2(player.finishTime), w:player.finWall||0, s:MP.curSeq };
+  mpSend('fin', fin);
+  roomTimer(()=>mpSend('fin', fin), 400);
+  roomTimer(()=>mpSend('fin', fin), 1200);
   Engine.stop();
   $('hud').classList.remove('on'); $('homeBtn').classList.add('hidden');
   $('vignette').classList.remove('on');
@@ -1855,10 +2027,10 @@ function mpRenderBoard(final){
   const medal=myPos===1?'🏆 YOU WON!':(myPos===2?'🥈 P2':myPos===3?'🥉 P3':'🏁 P'+myPos);
   $('finTitle').textContent=medal;
   $('finTitle').style.color=myPos===1?'#ffd54a':myPos<=3?'#39ff88':'#fff';
-  $('finSub').innerHTML=`${MP.country.flag} ${MP.country.name} — online race · ${all.length} racers · your time ${fmt(player.finishTime||raceTime)}`
+  $('finSub').innerHTML=`${MP.country.flag} ${MP.country.name} — online race · ${all.length} racers · your time ${fmt(player.finished?finShow(player):raceTime)}`
     + (final?'':'<br><span style="color:#9fb3d8">Waiting for everyone to finish…</span>');
   $('finBoard').innerHTML=order.map((r,i)=>{
-    const t=r.finished?fmt(r.finishTime):(r.gone?'❌ left':(final?'DNF':'racing…'));
+    const t=r.finished?fmt(finShow(r)):(r.gone?'❌ left':(final?'DNF':'racing…'));
     return `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span>
       <span class="nm">${esc(r.name)}${r.isPlayer?' (you)':''}</span><span style="color:#9fb3d8">${t}</span></div>`;
   }).join('');
