@@ -146,6 +146,8 @@
   #fbModal select { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:10px 12px;
     border-radius:10px; font-size:14px; width:100%; margin-bottom:12px; }
   #fbNote { font-size:13px; margin-top:8px; min-height:16px; }
+  #fbLeft { font-size:12px; color:#9fb3d8; min-height:15px; }
+  #fbLeft b { color:#ffd54a; }
   #fbMine { max-height:190px; overflow-y:auto; margin-top:12px; text-align:left; }
   .fbm { background:#16243f; border:1px solid #2a3c63; border-radius:10px; padding:8px 12px; margin:6px 0;
     font-size:13px; color:#cdd9f0; word-break:break-word; }
@@ -338,6 +340,7 @@
       <button class="btn2 alt" id="fbCancel">Close</button>
     </div>
     <div id="fbNote"></div>
+    <div id="fbLeft"></div>
     <div id="fbMine"></div>
   </div></div>
 
@@ -884,9 +887,19 @@
         fill=document.getElementById('fbFill'), val=document.getElementById('fbVal'),
         note=document.getElementById('fbNote'), sel=document.getElementById('fbGame'),
         msg=document.getElementById('fbMsg'), sendBtn=document.getElementById('fbSend');
+  const FB_MAX=3;                                     // one player may ever send 3 feedbacks
   let rating=0;
   function player(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p; }catch(e){} return null; }
   function slug(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40); }
+  /* who the 3-per-player limit is counted against: a real account follows the player
+     everywhere; guests get one random id per device (they'd all share "guest" otherwise,
+     which would let the first 3 guests on earth use up everyone's slots). */
+  function fbKey(){
+    const p=player(); if(p&&p.name&&!p.guest) return slug(p.name);
+    let d=''; try{ d=localStorage.getItem('ig_fbkey')||''; }catch(e){}
+    if(!d){ d='g_'+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,8);
+            try{ localStorage.setItem('ig_fbkey',d); }catch(e){} }
+    return d; }
   document.querySelectorAll('a.card h2').forEach(function(h){
     const o=document.createElement('option'); o.value=h.textContent; o.textContent='🎮 '+h.textContent; sel.appendChild(o); });
   function setRating(r){ rating=r; fill.style.width=(r/5*100)+'%'; val.textContent=r?(r+' / 5 ⭐'):'Tap to rate'; }
@@ -894,13 +907,20 @@
     const rect=stars.getBoundingClientRect(); const x=e.clientX-rect.left;
     let r=Math.ceil((x/rect.width)*10)/2; r=Math.max(.5,Math.min(5,r)); setRating(r); });
   function escFb(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+  function showLeft(used){
+    const el=document.getElementById('fbLeft'); const left=Math.max(0,FB_MAX-used);
+    sendBtn.disabled=left<=0;
+    el.innerHTML=left>0
+      ? 'You have <b>'+left+'</b> of '+FB_MAX+' feedback'+(left===1?'':'s')+' left.'
+      : '🙏 You have used all <b>'+FB_MAX+'</b> of your feedbacks — thanks for sending them!';
+  }
   async function loadMine(){
-    const box=document.getElementById('fbMine'); const p=player();
-    if(!p){ box.innerHTML=''; return; }
+    const box=document.getElementById('fbMine');
     try{
       const db=await loadSb();
-      const r=await db.rpc('feedback_my',{p_key:slug(p.name)});
-      if(r.error||!r.data||!r.data.length){ box.innerHTML=''; return; }
+      const r=await db.rpc('feedback_my',{p_key:fbKey()});
+      if(r.error||!r.data||!r.data.length){ box.innerHTML=''; showLeft(0); return; }
+      showLeft(r.data.length);
       box.innerHTML='<div style="color:#9fb3d8;font-size:12px;margin-bottom:2px">📬 Your earlier feedback:</div>'
         +r.data.map(function(x){
           return '<div class="fbm"><span class="st">'+(+x.rating)+'⭐</span> '+(x.game?escFb(x.game):'whole website')
@@ -908,9 +928,10 @@
             +(x.message?'<div>'+escFb(x.message)+'</div>':'')
             +(x.reply?'<div class="rp">💬 Ilan: '+escFb(x.reply)+'</div>':'')
             +'</div>'; }).join('');
-    }catch(e){ box.innerHTML=''; }
+    }catch(e){ box.innerHTML=''; document.getElementById('fbLeft').textContent=''; sendBtn.disabled=false; }
   }
-  document.getElementById('feedbackBtn').addEventListener('click',function(){ note.textContent=''; modal.style.display='flex'; loadMine(); });
+  document.getElementById('feedbackBtn').addEventListener('click',function(){
+    note.textContent=''; document.getElementById('fbLeft').textContent=''; modal.style.display='flex'; loadMine(); });
   document.getElementById('fbCancel').addEventListener('click',function(){ modal.style.display='none'; });
   modal.addEventListener('click',function(e){ if(e.target===modal) modal.style.display='none'; });
   let sb=null;
@@ -924,10 +945,17 @@
     sendBtn.disabled=true; note.style.color='#9fb3d8'; note.textContent='Sending…';
     try{
       const p=player(); const db=await loadSb();
-      const r=await db.from('ig_feedback').insert({
-        user_key:p?slug(p.name):'guest', user_name:p?p.name:'Guest', is_guest:!p||!!p.guest,
-        game:sel.value||null, rating:rating, message:msg.value.trim().slice(0,2000) });
+      /* goes through feedback_submit() so the 3-per-player cap is checked on the
+         server — the page can't be edited to sneak a 4th one past it */
+      const r=await db.rpc('feedback_submit',{
+        p_key:fbKey(), p_name:p?p.name:'Guest', p_guest:!p||!!p.guest,
+        p_game:sel.value||null, p_rating:rating, p_message:msg.value.trim().slice(0,2000) });
       if(r.error) throw r.error;
+      if(r.data==='limit'){
+        note.style.color='#ffcc66';
+        note.textContent='You have already sent '+FB_MAX+' feedbacks — that is the limit. 🙏';
+        loadMine(); return; }
+      if(r.data!=='ok') throw new Error('rejected');
       note.style.color='#7CFFB2'; note.textContent='✅ Thanks! Ilan will read it.';
       setTimeout(function(){ modal.style.display='none'; setRating(0); msg.value=''; sel.value=''; note.textContent=''; sendBtn.disabled=false; },1400);
     }catch(e){ note.style.color='#ff8088'; note.textContent='Could not send — check your internet and try again.'; sendBtn.disabled=false; }
