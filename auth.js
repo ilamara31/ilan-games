@@ -141,6 +141,48 @@
     try { const n = Math.round(+JSON.parse(localStorage.getItem("ig_stars") || "0") || 0); if (n > 0) submitScore("stars", n); } catch (e) {}
     ready = true; fire();
     setTimeout(fetchBoard, 800);                // warm the leaderboard cache so it opens instantly
+    holdMyName();                               // keep this device's claim on its own name alive
+  }
+
+  /* Existing players adopt the name they already answer to (p_existing = true),
+     which also refreshes the claim so it never goes stale under them. Purely
+     best-effort: it must never interrupt someone who is already playing. */
+  async function holdMyName() {
+    try {
+      if (!sb || !player || !player.name) return;
+      if (!player.guest) { claimAccountName(player.name, player.pw || ""); return; }
+      const r = await claimGuestName(player.name, true);
+      if (r !== "taken") return;
+      // An auto-assigned "Guest-1234" isn't a name they chose — silently re-roll
+      // it rather than bothering them about a clash they never made.
+      if (isAutoGuest(player.name)) {
+        for (let i = 0; i < 8; i++) {
+          const auto = autoGuestName();
+          if ((await claimGuestName(auto, false)) !== "taken") {
+            try { localStorage.setItem("iglb_guestname", auto); } catch (e) {}
+            savePlayer({ name: auto, guest: true });
+            return;
+          }
+        }
+        return;
+      }
+      if (!localStorage.getItem("iga_name_warned")) {
+        try { localStorage.setItem("iga_name_warned", "1"); } catch (e) {}
+        warnNameTaken(player.name);
+      }
+    } catch (e) {}
+  }
+  function warnNameTaken(name) {
+    try {
+      const ov = modal(
+        `<h2>Someone else has that name</h2>
+         <p>Another player is already using <b>${String(name).replace(/[<>&]/g, "")}</b>. You can keep playing,
+            but pick a different name so your scores and friends stay yours.</p>
+         <button class="iga-btn iga-p" id="iga-rename">Choose a new name</button>
+         <button class="iga-btn iga-g" id="iga-later">Later</button>`);
+      ov.querySelector("#iga-rename").onclick = () => { ov.remove(); openAccount(); };
+      ov.querySelector("#iga-later").onclick = () => ov.remove();
+    } catch (e) {}
   }
 
   // RPC with retry — "Load failed" / fetch errors are often transient (flaky
@@ -158,6 +200,69 @@
     if (/load failed|failed to fetch|networkerror/i.test(m))
       return "Couldn't reach the server. Turn off any ad-blocker / Private Relay for this site, or try another network or browser.";
     return m || "Could not connect.";
+  }
+
+  /* ================= unique display names =================
+     No two players share a name — guests included. The server keeps the
+     register (see names-setup.sql); this device proves which names are its own
+     with a random token it stores once and never shows anyone. */
+  function deviceToken() {
+    let t; try { t = localStorage.getItem("ig_device_token"); } catch (e) {}
+    if (!t) {
+      t = "d" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try { localStorage.setItem("ig_device_token", t); } catch (e) {}
+    }
+    return t;
+  }
+  const NAME_TAKEN_MSG = "That name is already taken — please pick another.";
+  /* free | yours | guest | account | unclaimed | invalid | unknown */
+  async function nameStatus(name) {
+    if (!sb) return "unknown";
+    try {
+      const { data, error } = await callRpc("ig_name_status", { p_name: name, p_token: deviceToken() });
+      if (error) return "unknown";                    // migration not run yet — don't block anyone
+      return data || "unknown";
+    } catch (e) { return "unknown"; }
+  }
+  async function claimGuestName(name, existing) {
+    if (!sb) return "unknown";
+    try {
+      const { data, error } = await callRpc("ig_name_claim_guest", { p_name: name, p_token: deviceToken(), p_existing: !!existing });
+      return error ? "unknown" : (data || "unknown");
+    } catch (e) { return "unknown"; }
+  }
+  async function claimAccountName(name, pw) {
+    if (!sb) return "unknown";
+    try {
+      const { data, error } = await callRpc("ig_name_claim_account", { p_name: name, p_password: pw || "", p_token: deviceToken() });
+      return error ? "unknown" : (data || "unknown");
+    } catch (e) { return "unknown"; }
+  }
+  async function releaseName(name) {
+    if (!sb || !name) return;
+    try { await callRpc("ig_name_release", { p_name: name, p_token: deviceToken() }); } catch (e) {}
+  }
+  /* Live "is this name free?" hint under a name box. Replies can come back out
+     of order on a slow connection, so each check carries a sequence number and
+     only the newest one is allowed to write a message. */
+  function watchNameField(input, msg) {
+    if (!input) return;
+    let seq = 0, timer = null, lastAsked = null;
+    const run = async () => {
+      const name = (input.value || "").trim().slice(0, 16);
+      if (name === lastAsked) return;
+      lastAsked = name;
+      if (!name) { msg("", true); return; }
+      const mine = ++seq;
+      const st = await nameStatus(name);
+      if (mine !== seq) return;                     // a newer keystroke overtook us
+      if (st === "guest" || st === "unclaimed_guest") msg(NAME_TAKEN_MSG);
+      else if (st === "account" || st === "unclaimed_account") msg("That name has an account — type its password to log in.", true);
+      else if (st === "free" || st === "yours") msg("✓ “" + name + "” is available.", true);
+      else msg("", true);                           // invalid / offline → say nothing
+    };
+    input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 400); });
+    input.addEventListener("blur", () => { clearTimeout(timer); run(); });
   }
 
   /* ---------- local leaderboard fallback (always works, even offline / not logged in) ---------- */
@@ -238,11 +343,19 @@
     if (!name) return { error: "Enter a name." };
     if (!pw) return { error: "Enter a password." };
     try {
+      // Don't let a new account be created over a name a guest is already using.
+      // (An existing account's own name still logs in fine — the password decides.)
+      const st = await nameStatus(name);
+      if (st === "guest" || st === "unclaimed_guest") return { error: NAME_TAKEN_MSG };
       const { data, error } = await callRpc("account_auth", { p_name: name, p_password: pw, p_recovery: recovery || null });
       if (error) return { error: error.message };
       if (data === "wrong") return { error: "That name is taken — wrong password." };
       if (data === "invalid") return { error: "Enter a name and password." };
+      // Password verified: bind the name to this device (works from any device).
+      if ((await claimAccountName(name, pw)) === "taken") return { error: NAME_TAKEN_MSG };
+      const had = player && player.guest && player.name;
       savePlayer({ name, pw, guest: false });   // 'ok' or 'created'
+      if (had && had !== name) releaseName(had);
       migrateAndSeed(name);
       return { ok: true };
     } catch (e) { return { error: netMsg(e) }; }
@@ -260,9 +373,26 @@
       return { error: "Could not reset." };
     } catch (e) { return { error: netMsg(e) }; }
   }
-  function guest(name) {
-    name = (name || "").trim().slice(0, 16) || "Guest";
+  function autoGuestName() { return "Guest-" + Math.floor(1000 + Math.random() * 9000); }
+  async function guest(name) {
+    name = (name || "").trim().slice(0, 16);
+    // Typed nothing? Hand out a free auto-name instead of everyone fighting over
+    // the single name "Guest".
+    if (!name) {
+      for (let i = 0; i < 8; i++) {
+        const auto = autoGuestName();
+        if ((await claimGuestName(auto, false)) !== "taken") { name = auto; break; }
+      }
+      if (!name) return { error: "Couldn't find a free guest name — please type one." };
+    } else {
+      // A typed guest name must be free too — "Bob" and "bob" are the same name.
+      const claim = await claimGuestName(name, false);
+      if (claim === "taken") return { error: NAME_TAKEN_MSG };
+      if (claim === "invalid") return { error: "Please pick a name with some letters or numbers in it." };
+    }
+    const had = player && player.guest && player.name;
     savePlayer({ name, guest: true });
+    if (had && had !== name) releaseName(had);      // give the old guest name back
     migrateAndSeed(name);
     return { ok: true };
   }
@@ -286,7 +416,10 @@
       if (data === "invalid") return { error: "Enter a name and password." };
       if (data === "wrong") return { error: "Wrong password for “" + name + "”." };
       if (data === "created") return { error: "No account named “" + name + "” exists. Check the spelling — or make a new account from Log out." };
+      const had = player && player.guest && player.name;
       savePlayer({ name, pw, guest: false });   // data === "ok" → existing account, correct password
+      claimAccountName(name, pw);               // bind the name to this device too
+      if (had && had !== name) releaseName(had);
       return { ok: true };
     } catch (e) { return { error: netMsg(e) }; }
   }
@@ -342,12 +475,18 @@
       <div style="margin-top:8px"><span class="iga-link" id="iga-forgot">Forgot password?</span></div>`);
     const $ = id => ov.querySelector(id);
     const msg = (t, ok) => { const m = $("#iga-m"); m.textContent = t; m.className = "iga-msg " + (ok ? "iga-ok" : "iga-err"); };
+    // Tell them the name is gone while they type, not after they hit the button.
+    watchNameField($("#iga-name"), msg);
     $("#iga-go").onclick = async () => {
       msg("Saving…", true);
       const r = await login($("#iga-name").value, $("#iga-pwd").value, $("#iga-rec").value);
       if (r.error) msg(r.error); else location.reload();
     };
-    $("#iga-guest").onclick = () => { guest($("#iga-name").value); location.reload(); };
+    $("#iga-guest").onclick = async () => {
+      msg("Checking that name…", true);
+      const r = await guest($("#iga-name").value);
+      if (r.error) msg(r.error); else location.reload();
+    };
     $("#iga-forgot").onclick = () => { ov.remove(); openReset(); };
   }
 
