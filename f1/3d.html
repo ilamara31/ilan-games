@@ -55,6 +55,12 @@
   #boostBtn { right:18px; bottom:16px; width:98px; height:98px; font-size:15px; color:#04220f;
     background:radial-gradient(circle at 40% 35%,#9dffc0,#22c55e); box-shadow:0 8px 22px rgba(40,220,120,.5); }
   #boostBtn.dim { filter:grayscale(.7) brightness(.7); }
+  /* The steer buttons (bottom:20px, left:18-194px) sit exactly on top of the bottom-left
+     boost gauge and paint over it, so on phones/tablets the gauge was invisible. Move it
+     under the lap box on touch — same gauge, same reading as desktop. */
+  .touch #boostWrap { top:96px; bottom:auto; left:12px; width:min(52vw,220px); }
+  .touch #boostLbl { font-size:13px; font-weight:bold; }
+  .touch #boostBar { height:16px; }
 
   /* speed vignette when boosting */
   #vignette { position:absolute; inset:0; z-index:4; pointer-events:none; opacity:0; transition:opacity .18s;
@@ -185,7 +191,7 @@
       <button class="tbtn" id="steerL">◀</button>
       <button class="tbtn" id="steerR">▶</button>
       <button class="tbtn" id="brakeBtn">🛑</button>
-      <button class="tbtn" id="boostBtn">⚡<br>DASH</button>
+      <button class="tbtn" id="boostBtn">⚡<br>BOOST</button>
     </div>
     <div id="vignette"></div>
     <button id="muteBtn" title="Sound on/off">🔊</button>
@@ -213,7 +219,7 @@
       <a class="btn alt" href="../">🏠 ALL GAMES</a>
     </div>
     <div class="hintbar">
-      <b>Steer:</b> ← → or A / D (mobile ◀ ▶) — <b>steer into the corners</b> or you run wide onto the grass and slow down. &nbsp;<b>Dash:</b> Space / Shift or ⚡. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
+      <b>Steer:</b> ← → or A / D (mobile ◀ ▶) — <b>steer into the corners</b> or you run wide onto the grass and slow down. &nbsp;<b>Boost:</b> Space / Shift or ⚡ — one burst, then wait for the gauge to refill. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
       You auto-accelerate. Win prize money to buy faster cars; finishing high also earns championship points.
     </div>
   </div>
@@ -852,6 +858,12 @@ let boostE = 100;           // 0..100
 // Boost is a SHORT tactical overtake aid, not a win-everything button:
 // modest multiplier, drains fast, recharges slowly. You win on car + racing line, not dash.
 const BOOST_MUL = 1.20, BOOST_DRAIN = 58, BOOST_RECHARGE = 13, BOOST_MIN = 8;
+// Run the tank down and boost LOCKS until the gauge climbs back past BOOST_READY.
+// Without the lock you can tap on/off around the empty mark and buy a permanent
+// trickle of boost (mash-to-win) — worst on touch, where the button invites mashing.
+// With it, boost is one committed burst then a real wait, the same on key and touch.
+const BOOST_READY = 55;
+let boostLock = false;
 
 function startRace(){
   const f = career();
@@ -863,7 +875,7 @@ function startRace(){
   buildTrack(chosenCountry);                 // rebuild the selected country's circuit
   raceLaps = chosenCountry.laps || 3;
   makeRacers();
-  raceTime = 0; boostE = 100;
+  raceTime = 0; boostE = 100; boostLock = false;
   state = 'countdown'; cdTimer = 0; cdStep = 0;
   $('scr-menu').classList.add('hidden'); $('scr-finish').classList.add('hidden');
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
@@ -981,8 +993,14 @@ function updatePlayer(dt){
 
   // dash / boost
   let boosting = false;
-  if (dashHeld && boostE > BOOST_MIN){ boosting = true; boostE = Math.max(0, boostE - BOOST_DRAIN*dt); }
-  else boostE = Math.min(100, boostE + BOOST_RECHARGE*dt);
+  if (dashHeld && !boostLock && boostE > BOOST_MIN){
+    boosting = true;
+    boostE = Math.max(0, boostE - BOOST_DRAIN*dt);
+    if (boostE <= BOOST_MIN) boostLock = true;          // spent — start the cooldown
+  } else {
+    boostE = Math.min(100, boostE + BOOST_RECHARGE*dt);
+    if (boostLock && boostE >= BOOST_READY) boostLock = false;
+  }
 
   // longitudinal: ease speed toward target; the grass caps you low (go off → slow down)
   let target = brakeHeld ? 0 : player.top * (boosting ? BOOST_MUL : 1);
@@ -1120,8 +1138,9 @@ function updateHud(){
   $('speedo').innerHTML = `<span class="kmh">${kmh}</span><br><span class="unit">km/h</span>`;
   const fill = $('boostFill');
   fill.style.width = boostE + '%';
-  fill.classList.toggle('low', boostE < 25);
-  dashBtn.classList.toggle('dim', boostE <= BOOST_MIN);
+  fill.classList.toggle('low', boostLock || boostE < 25);
+  $('boostLbl').textContent = boostLock ? '⚡ BOOST · recharging…' : '⚡ BOOST';
+  dashBtn.classList.toggle('dim', boostLock || boostE <= BOOST_MIN);
 }
 
 /* ---------------- main loop ---------------- */
@@ -1683,7 +1702,7 @@ function mpBeginRace(msg){
     else { r.isRemote=true; r.netP=r.prog; r.netL=r.lateral; r.netV=0; r.netT=0; }  // …everyone else receives them
     MP.bots.push(r); all.push(r);
   }
-  raceTime=0; boostE=100; MP.sendAcc=0;
+  raceTime=0; boostE=100; boostLock=false; MP.sendAcc=0;
   state='countdown'; cdTimer=0; cdStep=0;
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
