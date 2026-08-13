@@ -12,13 +12,13 @@
 -- that isn't a letter/digit become "_", trimmed, max 40 chars. "DA GOAT",
 -- "da  goat" and "Da-Goat" are therefore the SAME name and cannot coexist.
 create or replace function public.ig_name_key(p text)
-returns text language sql immutable as $$
+returns text language sql immutable as $ig_name_key$
   select left(
            regexp_replace(
              regexp_replace(lower(coalesce(p, '')), '[^a-z0-9]+', '_', 'g'),
            '^_|_$', '', 'g'),
          40);
-$$;
+$ig_name_key$;
 
 create table if not exists public.ig_name (
   name_key text primary key,               -- ig_name_key(name)
@@ -36,7 +36,7 @@ revoke all on public.ig_name from anon, authenticated;
 
 -- A guest name nobody has used for this long stops blocking the name.
 create or replace function public.ig_name_stale()
-returns interval language sql immutable as $$ select interval '90 days' $$;
+returns interval language sql immutable as $ig_name_stale$ select interval '90 days' $ig_name_stale$;
 
 -- ---------------------------------------------------------------------------
 --  Is this name available?
@@ -48,7 +48,7 @@ returns interval language sql immutable as $$ select interval '90 days' $$;
 --              newcomers; the device that already answers to it adopts it on sight.
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_name_status(p_name text, p_token text default null)
-returns text language plpgsql security definer as $$
+returns text language plpgsql security definer as $ig_name_status$
 declare k text; r public.ig_name%rowtype;
 begin
   k := public.ig_name_key(p_name);
@@ -63,7 +63,7 @@ begin
   end if;
   if r.is_guest then return 'guest'; end if;
   return 'account';
-end $$;
+end $ig_name_status$;
 
 -- ---------------------------------------------------------------------------
 --  Guest claim.  p_existing = true only when the device is re-claiming the name
@@ -73,7 +73,7 @@ end $$;
 --  Returns: ok | taken | invalid
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_name_claim_guest(p_name text, p_token text, p_existing boolean default false)
-returns text language plpgsql security definer as $$
+returns text language plpgsql security definer as $ig_name_claim_guest$
 declare k text; r public.ig_name%rowtype;
 begin
   k := public.ig_name_key(p_name);
@@ -105,7 +105,7 @@ begin
   end if;
 
   return 'taken';
-end $$;
+end $ig_name_claim_guest$;
 
 -- ---------------------------------------------------------------------------
 --  Account claim. The password is verified through the existing account_auth(),
@@ -113,7 +113,7 @@ end $$;
 --  any device. Returns: ok | wrong | taken | invalid
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_name_claim_account(p_name text, p_password text, p_token text)
-returns text language plpgsql security definer as $$
+returns text language plpgsql security definer as $ig_name_claim_account$
 declare k text; r public.ig_name%rowtype; v_auth text;
 begin
   k := public.ig_name_key(p_name);
@@ -141,15 +141,15 @@ begin
      set token = p_token, name = p_name, is_guest = false, seen = now()
    where name_key = k;
   return 'ok';
-end $$;
+end $ig_name_claim_account$;
 
 -- Give a name back (guest changing their name). Only the holder can.
 create or replace function public.ig_name_release(p_name text, p_token text)
-returns void language plpgsql security definer as $$
+returns void language plpgsql security definer as $ig_name_release$
 begin
   delete from public.ig_name
    where name_key = public.ig_name_key(p_name) and token = p_token and is_guest;
-end $$;
+end $ig_name_release$;
 
 grant execute on function public.ig_name_key(text)                             to anon, authenticated;
 grant execute on function public.ig_name_stale()                               to anon, authenticated;

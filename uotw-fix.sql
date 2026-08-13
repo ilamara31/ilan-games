@@ -9,6 +9,10 @@
 --      can no longer land in different week buckets.
 --   3. a player who renames keeps their plays (ownership-token merge).
 --
+--  NOTE: every function below is body-quoted with its OWN uniquely named tag.
+--  Identical anonymous tags all look alike to the parser, so one mis-paired
+--  boundary makes it run one function's body into the next.
+--
 --  The old 3-argument public.ig_play_bump(text,text,int) is deliberately LEFT
 --  IN PLACE — browsers with an old cached friends.js still call it, and it
 --  keeps working exactly as before.
@@ -20,7 +24,7 @@ alter table public.ig_weekly add column if not exists owner_token text;
 
 -- The table is world-readable (the leaderboard needs it), but the token must NOT
 -- be — anyone who could read it could claim someone else's plays. Column-level
--- grants hide it; the security-definer functions below still see it fine.
+-- grants hide it; the security-definer functions still see it fine.
 revoke select on public.ig_weekly from anon, authenticated;
 grant select (user_key, user_name, week, plays, updated) on public.ig_weekly to anon, authenticated;
 
@@ -29,35 +33,58 @@ grant select (user_key, user_name, week, plays, updated) on public.ig_weekly to 
 --  Change the one string below to move the rollover, e.g. 'Asia/Kolkata'.
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_week_tz()
-returns text language sql immutable as $$ select 'UTC'::text $$;
+returns text
+language sql
+immutable
+as $ig_week_tz$
+  select 'UTC'::text;
+$ig_week_tz$;
 
 -- The week's id = the day-index of the Friday that started it.
 create or replace function public.ig_week_index(p_ts timestamptz default now())
-returns int language sql stable as $$
-  select (
-      (extract(epoch from date_trunc('day', p_ts at time zone public.ig_week_tz()))::bigint / 86400)::int
-    - ((extract(dow from (p_ts at time zone public.ig_week_tz()))::int - 5 + 7) % 7)
-  );
-$$;
+returns int
+language sql
+stable
+as $ig_week_index$
+  select (extract(epoch from date_trunc('day', p_ts at time zone public.ig_week_tz()))::bigint / 86400)::int
+       - ((extract(dow from (p_ts at time zone public.ig_week_tz()))::int - 5 + 7) % 7);
+$ig_week_index$;
 
 -- Clients ask the server which week it is instead of guessing locally.
 create or replace function public.ig_week_now()
-returns int language sql stable as $$ select public.ig_week_index(now()) $$;
+returns int
+language sql
+stable
+as $ig_week_now$
+  select public.ig_week_index(now());
+$ig_week_now$;
 
 -- ---------------------------------------------------------------------------
 --  Batched, server-timed play credit. Returns the player's new weekly total.
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_play_bump_n(p_name text, p_key text, p_n int, p_token text default null)
-returns int language plpgsql security definer as $$
-declare v_week int; v_n int; v_total int;
+returns int
+language plpgsql
+security definer
+as $ig_bump$
+declare
+  v_week  int;
+  v_n     int;
+  v_total int;
 begin
-  if p_key is null or p_key = '' then return 0; end if;
+  if p_key is null or p_key = '' then
+    return 0;
+  end if;
+
   -- never trust a client-supplied count: one call can add at most 60 plays
   v_n := least(greatest(coalesce(p_n, 0), 0), 60);
-  if v_n = 0 then return 0; end if;
+  if v_n = 0 then
+    return 0;
+  end if;
+
   v_week := public.ig_week_index(now());
 
-  insert into public.ig_weekly(user_key, user_name, week, plays, owner_token)
+  insert into public.ig_weekly (user_key, user_name, week, plays, owner_token)
   values (p_key, coalesce(nullif(p_name, ''), p_key), v_week, v_n, nullif(p_token, ''))
   on conflict (user_key, week) do update
     set plays       = public.ig_weekly.plays + v_n,
@@ -68,7 +95,8 @@ begin
   returning plays into v_total;
 
   return v_total;
-end $$;
+end;
+$ig_bump$;
 
 -- ---------------------------------------------------------------------------
 --  Rename rescue: move every week's plays from an old name-key to the new one.
@@ -76,34 +104,43 @@ end $$;
 --  it can't be used to steal or wipe another player's plays.
 -- ---------------------------------------------------------------------------
 create or replace function public.ig_play_merge(p_old text, p_new text, p_name text, p_token text)
-returns int language plpgsql security definer as $$
-declare v_moved int := 0;
+returns int
+language plpgsql
+security definer
+as $ig_merge$
+declare
+  v_moved int := 0;
 begin
-  if coalesce(p_old, '') = '' or coalesce(p_new, '') = '' or p_old = p_new
-     or coalesce(p_token, '') = '' then
+  if coalesce(p_old, '') = '' or coalesce(p_new, '') = ''
+     or p_old = p_new or coalesce(p_token, '') = '' then
     return 0;
   end if;
 
-  insert into public.ig_weekly(user_key, user_name, week, plays, owner_token)
+  insert into public.ig_weekly (user_key, user_name, week, plays, owner_token)
     select p_new, coalesce(nullif(p_name, ''), p_new), w.week, w.plays, p_token
       from public.ig_weekly w
-     where w.user_key = p_old and w.owner_token = p_token
+     where w.user_key = p_old
+       and w.owner_token = p_token
   on conflict (user_key, week) do update
     set plays       = public.ig_weekly.plays + excluded.plays,
         user_name   = excluded.user_name,
         owner_token = coalesce(public.ig_weekly.owner_token, excluded.owner_token),
         updated     = now();
 
-  delete from public.ig_weekly where user_key = p_old and owner_token = p_token;
+  delete from public.ig_weekly
+   where user_key = p_old
+     and owner_token = p_token;
+
   get diagnostics v_moved = row_count;
   return v_moved;
-end $$;
+end;
+$ig_merge$;
 
-grant execute on function public.ig_week_tz()                              to anon, authenticated;
-grant execute on function public.ig_week_index(timestamptz)                to anon, authenticated;
-grant execute on function public.ig_week_now()                             to anon, authenticated;
-grant execute on function public.ig_play_bump_n(text, text, int, text)     to anon, authenticated;
-grant execute on function public.ig_play_merge(text, text, text, text)     to anon, authenticated;
+grant execute on function public.ig_week_tz()                          to anon, authenticated;
+grant execute on function public.ig_week_index(timestamptz)            to anon, authenticated;
+grant execute on function public.ig_week_now()                         to anon, authenticated;
+grant execute on function public.ig_play_bump_n(text, text, int, text) to anon, authenticated;
+grant execute on function public.ig_play_merge(text, text, text, text) to anon, authenticated;
 
 -- Leaderboard reads order by plays, then by who got there first — no more
 -- random winner when two players tie.
