@@ -704,60 +704,147 @@
   function presenceOf(name) { const v = presState && presState[nameKey(name)]; if (v && v.length) return { online: true, game: v[0].game }; return { online: false }; }
   function presenceOfKey(key) { const v = presState && presState[key]; if (v && v.length) return { online: true, game: v[0].game }; return { online: false }; }
 
-  /* ================= User of the Week (unchanged) ================= */
-  function weekMeta() {
+  /* ================= User of the Week ================= */
+  /* Plays measure REAL PLAYTIME, not how many times you opened a game:
+       • +1 play once you've genuinely played PLAY_FIRST_MS in a game
+       • +1 more for every PLAY_STEP_MS you keep playing, same session
+     "Playing" means the tab is visible AND you've touched the controls within
+     the last IDLE_MS — parking an open tab on a game earns nothing. Credits are
+     banked in localStorage and flushed with retries, so a slow network, a rate
+     limit or closing the tab can never silently lose them. */
+  var PLAY_FIRST_MS = 25000;    // first play of a session
+  var PLAY_STEP_MS = 180000;    // +1 play per 3 further minutes
+  var IDLE_MS = 60000;          // no input for this long = not playing
+  var SESSION_CAP = 40;         // ~2h of credited play per page load
+  var FLUSH_GAP_MS = 20000;     // min spacing between server writes
+
+  /* The week id is decided by the SERVER so every device agrees on it, however
+     its clock or timezone is set. The local formula is only a fallback for when
+     the server can't be reached. */
+  function localWeekMeta() {
     const d = new Date();
     const localMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const dayNum = Math.round(localMidnight / 86400000);
     const sinceFri = (d.getDay() - 5 + 7) % 7;
     return { week: dayNum - sinceFri, daysLeft: 7 - sinceFri };
   }
-  async function bumpPlay() {
+  var _weekNum = null, _weekAt = 0;
+  async function currentWeek() {
+    // re-check periodically so a tab left open across Friday doesn't stay stale
+    if (_weekNum != null && Date.now() - _weekAt < 300000) return _weekNum;
     try {
-      if (gameSlug() === "home") return;
-      const now = Date.now(); if (now - (+rd("ig_lastbump", 0)) < 60000) return; wr("ig_lastbump", now);
-      const s = await ensureSb(); if (!s || !myKey) return;
-      await s.rpc("ig_play_bump", { p_name: myName, p_key: myKey, p_week: weekMeta().week });
+      const s = await ensureSb();
+      if (s) { const r = await s.rpc("ig_week_now"); if (!r.error && r.data != null) { _weekNum = +r.data; _weekAt = Date.now(); return _weekNum; } }
     } catch (e) {}
+    return localWeekMeta().week;   // offline / migration not run yet — don't cache
   }
-  /* Anti-spam: a play only counts toward User of the Week after the player has
-     actually stayed on the game for IG_DWELL_MS. Opening then quickly closing a
-     game (to farm plays) no longer counts. Time spent with the tab hidden /
-     backgrounded is NOT counted, so leaving the tab open in the background
-     doesn't game it either. */
-  var IG_DWELL_MS = 25000;
-  function afterDwell(ms, cb) {
+
+  /* Stable per-device token proving we own this name's plays, so renaming the
+     account carries the plays across instead of stranding them. */
+  function ownerToken() {
+    var t = rd("ig_uotw_token", "") || "";
+    if (!t) { t = "t" + Math.random().toString(36).slice(2) + Date.now().toString(36); wr("ig_uotw_token", t); }
+    return t;
+  }
+
+  /* ---- the play bank: earn locally, flush to the server, never drop ----
+     The bank is a plain count with no week attached — the server stamps the week
+     when it lands, so a bank that survives a tab close can be flushed later
+     without any risk of it being filed under a week the client guessed wrong. */
+  function bank() { const n = +rd("ig_uotw_bank", 0); return n > 0 ? n : 0; }
+  function earnPlays(n) { wr("ig_uotw_bank", bank() + n); }
+  var _flushing = false, _lastFlush = 0, _flushTimer = null;
+  function retryFlush(ms) {
+    if (_flushTimer) return;
+    _flushTimer = setTimeout(function () { _flushTimer = null; flushPlays(); }, ms);
+  }
+  async function flushPlays(force) {
+    const owed = bank(); if (!owed || _flushing) return;
+    const now = Date.now();
+    if (!force && now - _lastFlush < FLUSH_GAP_MS) {   // too soon — retry later, never discard
+      retryFlush(FLUSH_GAP_MS - (now - _lastFlush) + 500); return;
+    }
+    _flushing = true;
+    var sent = 0;
     try {
-      var acc = 0, last = Date.now(), done = false;
-      var iv = setInterval(function () {
-        if (done) return;
+      const s = await ensureSb();
+      if (s && myKey) {
+        const r = await s.rpc("ig_play_bump_n", { p_name: myName, p_key: myKey, p_n: owed, p_token: ownerToken() });
+        if (!r.error) { sent = owed; _lastFlush = Date.now(); wr("ig_uotw_bank", Math.max(0, bank() - sent)); }
+      }
+    } catch (e) {
+    } finally {
+      _flushing = false;
+      // anything still owed (offline, error, or earned while we were sending) retries
+      if (bank()) retryFlush(sent ? FLUSH_GAP_MS : 30000);
+    }
+  }
+
+  /* ---- playtime meter ---- */
+  function startPlayMeter() {
+    if (gameSlug() === "home") return;
+    try {
+      // lastInput starts at 0, not "now": opening a game and walking away must
+      // earn nothing at all, so the clock only starts once you actually play.
+      var acc = 0, credited = 0, nextAt = PLAY_FIRST_MS, last = Date.now(), lastInput = 0;
+      function touched() { lastInput = Date.now(); }
+      ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "click"].forEach(function (ev) {
+        document.addEventListener(ev, touched, { passive: true, capture: true });
+      });
+      document.addEventListener("visibilitychange", function () {
+        last = Date.now();
+        if (document.hidden) flushPlays(true);   // banked plays go out before a close
+      });
+      window.addEventListener("pagehide", function () { flushPlays(true); });
+
+      setInterval(function () {
         var t = Date.now(), d = t - last;
         last = t;
-        // clamp each tick's credit — on tab unfreeze the first tick can fire before
-        // visibilitychange resets `last` and would credit the whole hidden gap
-        if (!document.hidden && d > 0 && d <= 2000) acc += d;
-        if (acc >= ms) { done = true; clearInterval(iv); try { cb(); } catch (e) {} }
+        // Clamp each tick generously: a heavy 3D game can stall the timer well past
+        // its 1s interval, and those laggy ticks used to be thrown away entirely.
+        if (d > 3000) d = 3000;
+        if (document.hidden || t - lastInput > IDLE_MS || d <= 0) return;
+        acc += d;
+        while (acc >= nextAt && credited < SESSION_CAP) {
+          credited++;
+          nextAt += PLAY_STEP_MS;
+          earnPlays(1);
+        }
+        if (bank()) flushPlays();
       }, 1000);
-      document.addEventListener("visibilitychange", function () { last = Date.now(); });
     } catch (e) {}
   }
-  function scheduleBumpPlay() {
-    if (gameSlug() === "home") return;
-    afterDwell(IG_DWELL_MS, function () { bumpPlay(); });
-  }
+
   var _weekWinnerKey = rd("ig_week_winner", "") || "";
   function isWeekWinner(n) { return !!_weekWinnerKey && nameKey(n) === _weekWinnerKey; }
   async function weeklyInfo() {
     const s = await ensureSb(); if (!s) return null;
-    const wm = weekMeta(), wk = wm.week, daysLeft = wm.daysLeft;
-    const info = { daysLeft: daysLeft, leader: null, leaderPlays: 0, prev: null };
-    try { const r = await s.from("ig_weekly").select("user_name,plays").eq("week", wk).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!r.error && r.data && r.data.length) { info.leader = r.data[0].user_name; info.leaderPlays = r.data[0].plays; } } catch (e) {}
-    try { const p = await s.from("ig_weekly").select("user_name,plays").eq("week", wk - 7).neq("user_key", "ilan").order("plays", { ascending: false }).limit(1); if (!p.error && p.data && p.data.length) info.prev = p.data[0].user_name; } catch (e) {}
+    const wk = await currentWeek();
+    // days left is a display-only value, fine to take from the local clock
+    const info = { daysLeft: localWeekMeta().daysLeft, leader: null, leaderPlays: 0, prev: null };
+    // ties break by who reached the score first, so the winner is never random
+    const top = function (w) {
+      return s.from("ig_weekly").select("user_name,plays").eq("week", w).neq("user_key", "ilan")
+        .order("plays", { ascending: false }).order("updated", { ascending: true }).limit(1);
+    };
+    try { const r = await top(wk); if (!r.error && r.data && r.data.length) { info.leader = r.data[0].user_name; info.leaderPlays = r.data[0].plays; } } catch (e) {}
+    try { const p = await top(wk - 7); if (!p.error && p.data && p.data.length) info.prev = p.data[0].user_name; } catch (e) {}
     const holder = info.prev || info.leader;
     _weekWinnerKey = holder ? nameKey(holder) : "";
     wr("ig_week_winner", _weekWinnerKey);
     if (info.prev && myKey && nameKey(info.prev) === myKey && (+rd("ig_uotw_shown", 0)) !== wk) { wr("ig_uotw_shown", wk); winnerPopup(); }
     return info;
+  }
+  /* Renamed account → carry this device's plays over to the new name. */
+  async function migrateKeyOnRename() {
+    try {
+      const prevKey = rd("ig_uotw_key", "") || "";
+      if (prevKey === myKey) return;
+      wr("ig_uotw_key", myKey);
+      if (!prevKey) return;
+      const s = await ensureSb(); if (!s) return;
+      await s.rpc("ig_play_merge", { p_old: prevKey, p_new: myKey, p_name: myName, p_token: ownerToken() });
+    } catch (e) {}
   }
   function winnerPopup() {
     try {
@@ -770,7 +857,7 @@
         '<div style="' + card + '">' +
         '<div style="font-size:64px;line-height:1;animation:igMedal 1.2s ease-in-out infinite">🏅</div>' +
         '<div style="font-size:22px;font-weight:900;color:#fff;margin-top:12px">You’re the User of the Week!</div>' +
-        '<div style="font-size:14px;color:#d7c9ff;margin-top:8px">You played the most games last week. Your crown 👑 now shows on every leaderboard — enjoy it, champion!</div>' +
+        '<div style="font-size:14px;color:#d7c9ff;margin-top:8px">You played more than anyone else last week. Your crown 👑 now shows on every leaderboard — enjoy it, champion!</div>' +
         '<button id="ig-uotw-ok" style="margin-top:18px;width:100%;padding:12px;border:0;border-radius:12px;font-size:15px;font-weight:800;color:#fff;background:linear-gradient(90deg,#8b5cf6,#c026d3);cursor:pointer">Awesome! 🎉</button>' +
         "</div>";
       document.body.appendChild(o);
@@ -807,7 +894,9 @@
     // keeps the radio awake and drains batteries), and catch up on return.
     setInterval(function () { if (document.hidden) return; dbLoad(); loadUnread(); loadGroups(); }, 60000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) { dbLoad(); loadUnread(); loadGroups(); } });
-    scheduleBumpPlay(); weeklyInfo();
+    migrateKeyOnRename();
+    flushPlays(true);        // deliver anything banked before the last tab closed
+    startPlayMeter(); weeklyInfo();
   }
   function onIncomingChat(msg) {
     if (!msg) { loadUnread(); return; }

@@ -607,7 +607,7 @@
     /* star leaderboard (most ⭐ from Game of the Day / Week goals) */
     function openStars(){ if(window.IGAuth && IGAuth.showLeaderboard) IGAuth.showLeaderboard('stars','Star Leaderboard'); else setTimeout(openStars,80); }
     document.getElementById('starLbBtn').onclick=openStars;
-    /* User of the Week (most game-opens this week; excludes the creator) */
+    /* User of the Week (most time actually played this week; excludes the creator) */
     (function uotw(){
       function escu(s){ return String(s).replace(/[<>&]/g,''); }
       function rainbow(s){ var c=['#ffe14a','#7dff9b'], o='', i=0, a=String(s);   // alternating yellow / green letters
@@ -626,7 +626,7 @@
           const when = info.daysLeft===1 ? 'crowned <b>tomorrow (Friday)!</b>' : 'crowned <b>this Friday</b> — '+info.daysLeft+' days left';
           if(info.leader) h+='<div style="font-size:21px;font-weight:900;color:#fff;margin-top:4px">🔥 Leading now: '+rainbow(escu(info.leader))+' <span style="font-size:12px;font-weight:700;color:#c9a6ff">('+info.leaderPlays+' plays)</span></div>';
           else h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:4px">🔥 Play the most games to lead!</div>';
-          h+='<div style="font-size:13px;color:#d7c9ff;margin-top:5px">Winner '+when+'</div>';
+          h+='<div style="font-size:13px;color:#d7c9ff;margin-top:5px">Winner '+when+' — the more you actually play, the more plays you earn</div>';
           if(info.prev) h+='<div style="font-size:12px;color:#9a8cc0;margin-top:9px">👑 Last week’s winner: <b style="color:#b0a0d0">'+escu(info.prev)+'</b></div>';
         }
         h+='</div>';
