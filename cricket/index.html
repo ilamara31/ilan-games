@@ -63,6 +63,12 @@
   .namerow span { width:22px; color:#ffd54a; font-weight:bold; }
   .namerow input { flex:1; background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:8px 10px; border-radius:8px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
+  /* 🏠 back to all games — parked in the title screen's top-left corner so it
+     stays out of the main PLAY / CAREER / PROFILE stack */
+  #homeBtn { position:absolute; top:12px; left:12px; z-index:12; text-decoration:none; cursor:pointer;
+             background:rgba(8,14,28,.72); border:1px solid #2a3c63; color:#9fb3d8; font-weight:bold;
+             font-size:14px; padding:8px 15px; border-radius:20px; transition:transform .1s; }
+  #homeBtn:active { transform:scale(.94); }
   /* tutorial cartoon coach (bottom-left) — big & readable */
   #tutCoach { position:absolute; left:12px; bottom:14px; z-index:9; display:flex; flex-direction:column;
     align-items:flex-start; gap:6px; max-width:88%; pointer-events:none; transition:transform .3s ease, opacity .3s ease; }
@@ -99,9 +105,9 @@
     <button class="btn" onclick="show('scr-modes')" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 CAREER &amp; MANAGER<br><span style="font-size:12px;font-weight:normal">be a player or a manager</span></button>
     <button class="btn alt" onclick="startTutorial()">🎓 HOW TO PLAY</button>
     <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
-    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
     <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('cricket','Super Over Cricket')">🏆 Leaderboard</button>
-    <a href="../" class="btn alt" style="display:inline-block;text-decoration:none">🏠 ALL GAMES</a>
+    <!-- home lives in the corner, not in the stack — see #homeBtn -->
+    <a href="../" id="homeBtn" title="All games">🏠 Home</a>
   </div>
 
   <!-- WELCOME (first launch) -->
@@ -2096,7 +2102,6 @@ if('serviceWorker' in navigator){
   if(act){ profile=act; ensureCareer(act); refreshTitle();
     if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer
   else showAccounts();          // not signed in → the shared login, never a password-free picker
-  if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent = p ? ('👤 '+IGAuth.displayName()) : '👤 Log in'; });
 })();
 </script>
 <script src="../supabase-config.js"></script>
