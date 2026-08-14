@@ -175,7 +175,7 @@ const EMOJI=[
 </script>
 <script>
 /* ======================= SHELL ======================= */
-$('who').textContent = acct ? ('Playing as '+acct.name) : 'Guest — set a name on the home screen to save scores';
+$('who').textContent = acct ? ('Playing as '+acct.name) : 'Not signed in — log in to save your scores';
 /* ---- online leaderboard: one combined "overall progress" metric for key 'puzzles' ---- */
 function igaTotal(){ const p=(acct&&acct.puz)||{};
   return (p.wordleStreak||0)+(p.connWins||0)+(p.searchWins||0)+(p.scrambleBest||0)+(p.best2048||0)+(p.simonBest||0)+(p.emojiBest||0)+(p.sudokuWins||0); }

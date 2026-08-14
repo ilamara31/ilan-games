@@ -326,7 +326,6 @@
   <div><a id="fbAdminLink" href="feedback.html">📋 View all feedback (admin)</a></div>
   <footer>Made with ❤️ by Ilan • More games coming soon</footer>
 
-  <div id="acctModal" class="modal" style="display:none"><div class="modalbox" id="acctBox"></div></div>
 
   <div id="fbModal" class="modal" style="display:none"><div class="modalbox">
     <h2>💬 Feedback</h2>
@@ -358,7 +357,9 @@
        Every goal below is VERIFIED against these — entering a game and walking
        out no longer earns a star. Games missing here fall back to an honest
        "play a round today" goal (carrom etc. — add a metric when they save one). */
-    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return s&&Array.isArray(s.accounts)?(s.accounts.find(a=>a.id===s.activeId)||s.accounts[0]):null; }catch(e){ return null; } }
+    // ONLY the active account — never "the first account on this device", which
+    // showed a signed-out visitor another player's cricket runs / stars progress.
+    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return (s&&Array.isArray(s.accounts)&&s.accounts.find(a=>a.id===s.activeId))||null; }catch(e){ return null; } }
     function acctSlugKey(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); }catch(e){}
       try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); if(s&&Array.isArray(s.accounts)){ const a=s.accounts.find(x=>x.id===s.activeId); if(a&&a.name) return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); } }catch(e){} return 'guest'; }
     function lsGet(key,path){ try{ let o=JSON.parse(localStorage.getItem(key)); for(let i=0;i<path.length;i++){ if(!o) return 0; o=o[path[i]]; } return Math.max(0,+o||0); }catch(e){ return 0; } }
@@ -571,88 +572,34 @@
       window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
     }
 
-    /* ===== shared accounts (same storage all games use) ===== */
-    const STORE_KEY='soc_store_v1';
-    function blankStats(){ return {matches:0,runs:0,balls:0,hs:0,fifties:0,hundreds:0,cups:0,awards:0,tours:0}; }
-    function igLoad(){ try{ const s=JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&Array.isArray(s.accounts)) return s; }catch(e){}
-      return { activeId:null, accounts:[] }; }
-    function igSave(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
-    function igId(){ return 'a'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
-    function igActive(){ return store.accounts.find(a=>a.id===store.activeId)||null; }
-    let store=igLoad();
-
-    const modal=document.getElementById('acctModal'), box=document.getElementById('acctBox'), bar=document.getElementById('acctBar');
+    /* ===== account bar =====
+       Accounts are username + password only (auth.js / Supabase). The old
+       name-only local account picker is gone: it let anyone switch to another
+       player on this device without a password, which is exactly how one
+       player's progress ended up under another player's name. */
+    const bar=document.getElementById('acctBar');
+    function escName(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
     function renderBar(){
+      if(!bar) return;
       const u = window.IGAuth && IGAuth.getUser();
       if(u){
-        const nm = IGAuth.displayName();
-        const guest = IGAuth.isGuest && IGAuth.isGuest();
-        const tag = guest ? `<span style="color:#9fb3d8;font-size:12px">guest</span>` : `<span style="color:#7CFFB2;font-size:12px">online</span>`;
-        bar.innerHTML = `${guest?'👤':'☁️'} <b>${nm}</b> ${tag} <button class="mini" id="acctBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Account</button>`;
-        document.getElementById('acctBtn').onclick=()=>IGAuth.openAccount();
+        bar.innerHTML = `☁️ <b>${escName(IGAuth.displayName())}</b> <span style="color:#7CFFB2;font-size:12px">online</span>`
+          + ` <button class="mini" id="profileBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">👤 My Profile</button>`;
+        bar.style.cursor='pointer';                       // tapping your name opens the profile too
+        bar.onclick=()=>IGAuth.openAccount();
         return;
       }
-      const a=igActive();
-      bar.innerHTML = (a ? `👤 Playing as <b>${a.name}</b> <button class="mini" id="switchBtn">Switch</button>`
-                         : `👤 <b>No player yet</b> <button class="mini" id="switchBtn">Set up</button>`)
-        + ` <button class="mini" id="loginBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">☁️ Log in</button>`;
-      document.getElementById('switchBtn').onclick=openAccounts;
-      document.getElementById('loginBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth(); };
+      bar.style.cursor=''; bar.onclick=null;
+      bar.innerHTML = `👤 <b>Not signed in</b>`
+        + ` <button class="mini" id="loginBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Log in</button>`
+        + ` <button class="mini" id="joinBtn">➕ Create account</button>`;
+      document.getElementById('loginBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth('in'); };
+      document.getElementById('joinBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth('new'); };
     }
-    // keep the bar in sync when the online sign-in state resolves/changes.
+    // keep the bar in sync when the sign-in state resolves/changes.
     // auth.js is deferred, so poll until IGAuth exists before wiring.
     (function wireAuth(){ if(window.IGAuth){ IGAuth.onChange(renderBar); renderBar(); } else setTimeout(wireAuth,60); })();
-    function closeModal(){ modal.style.display='none'; }
-    function openEnter(canCancel){
-      modal.style.display='flex';
-      box.innerHTML = `<h2>Enter your name</h2>
-        <p class="sub" style="margin-bottom:14px">You'll open the batting in cricket, and your high scores are saved to this name.</p>
-        <input id="nmeInput" maxlength="16" placeholder="Your name">
-        <div><button class="btn2" id="nmeOk">Save</button>${canCancel?'<button class="btn2 alt" id="nmeCancel">Back</button>':''}</div>`;
-      const i=document.getElementById('nmeInput');
-      setTimeout(()=>i&&i.focus(),120);
-      i.addEventListener('keydown',e=>{ if(e.key==='Enter') createAcct(); });
-      document.getElementById('nmeOk').addEventListener('click',createAcct);
-      const c=document.getElementById('nmeCancel'); if(c) c.onclick=openAccounts;
-    }
-    function createAcct(){
-      const v=document.getElementById('nmeInput').value.trim(); if(!v){ document.getElementById('nmeInput').focus(); return; }
-      const a={ id:igId(), name:v, ipl:blankStats(), odi:blankStats(), basket:{best:0} };
-      store.accounts.push(a); store.activeId=a.id; igSave();
-      closeModal(); renderBar();
-    }
-    function openAccounts(){
-      if(!store.accounts.length){ openEnter(false); return; }
-      modal.style.display='flex';
-      let h=`<h2>Choose account</h2>`;
-      store.accounts.forEach(a=>{
-        const runs=(a.ipl?a.ipl.runs:0)+(a.odi?a.odi.runs:0), best=a.basket?a.basket.best:0;
-        h+=`<div class="acctrow">
-          <span class="nm"><b>${a.name}</b>${a.id===store.activeId?' <small>• active</small>':''}<br><small>${runs} cricket runs • 🧺 best ${best}</small></span>
-          <button class="btn2" data-play="${a.id}" style="padding:8px 16px;font-size:14px;margin:0">Play</button>
-          <button class="btn2 alt" data-del="${a.id}" style="padding:8px 12px;font-size:14px;margin:0">✕</button></div>`;
-      });
-      h+=`<div style="margin-top:12px"><button class="btn2" id="addAcct">➕ New account</button>
-           <button class="btn2 alt" id="closeAcct">Done</button></div>`;
-      box.innerHTML=h;
-      box.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>{ store.activeId=b.dataset.play; igSave(); closeModal(); renderBar(); });
-      box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(confirm('Delete this account and its stats?')) delAcct(b.dataset.del); });
-      document.getElementById('addAcct').onclick=()=>openEnter(true);
-      document.getElementById('closeAcct').onclick=()=>{ if(igActive()) closeModal(); };
-    }
-    function delAcct(id){
-      store.accounts=store.accounts.filter(a=>a.id!==id);
-      if(store.activeId===id) store.activeId = store.accounts[0]?store.accounts[0].id:null;
-      igSave();
-      if(igActive()) openAccounts(); else openEnter(false);
-      renderBar();
-    }
-    /* boot: make sure there's an active player (unless they're signed in online) */
     renderBar();
-    (function bootAuth(){
-      if(window.IGAuth){ IGAuth.onReady(function(){ renderBar(); if(!igActive() && !IGAuth.getUser()) openEnter(false); }); }
-      else setTimeout(bootAuth, 60);
-    })();
 
     /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
     function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }

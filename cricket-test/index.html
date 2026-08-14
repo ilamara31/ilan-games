@@ -83,13 +83,13 @@
 <div id="wrap">
   <canvas id="game"></canvas>
 
-  <!-- NAME ENTRY (new account) -->
-  <div id="scr-enter" class="screen hidden">
+  <!-- NAME ENTRY — removed: accounts are created in the shared login (auth.js) -->
+  <div id="scr-enter" class="screen hidden" hidden>
     <h1 style="font-size:34px">CREATE ACCOUNT</h1>
     <div class="sub" style="max-width:420px">Enter your name. You will open the batting for whichever team you pick — in every match.</div>
     <input id="playerNameInput" maxlength="16" placeholder="Your name" style="background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:12px 14px;border-radius:10px;font-size:18px;text-align:center;max-width:300px;width:100%;margin:10px 0">
     <div class="row">
-      <button class="btn" onclick="confirmName()">LET'S PLAY</button>
+
       <button class="btn alt" id="enterBack" onclick="showAccounts()" style="display:none">BACK</button>
     </div>
   </div>
@@ -99,7 +99,7 @@
     <h1 style="font-size:30px">CHOOSE ACCOUNT</h1>
     <div class="sub">Saved on this device — pick one or add a new one.</div>
     <div id="accountList" style="max-width:460px;width:100%"></div>
-    <button class="btn" onclick="newAccountScreen()" style="margin-top:8px">➕ NEW ACCOUNT</button>
+    <button class="btn" onclick="showAccounts()" style="margin-top:8px">👤 SIGN IN</button>
   </div>
 
   <!-- TITLE -->
@@ -263,7 +263,7 @@
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn alt" onclick="show('scr-title')">BACK</button>
-      <button class="btn" onclick="showAccounts()">🔄 SWITCH ACCOUNT</button>
+      <button class="btn" onclick="showAccounts()">👤 MY ACCOUNT</button>
     </div>
   </div>
 
@@ -492,17 +492,8 @@ function loadStore(){
 }
 function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 function saveProfile(){ saveStore(); }   // active account lives inside the store
-function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return; store.activeId=id; profile=a; ensureCareer(a); saveStore(); }
+/* the active account is chosen by the shared login, never from inside a game */
 
-/* name entry creates a NEW account, then logs in to it */
-function confirmName(){
-  const inp=document.getElementById('playerNameInput');
-  const v=inp.value.trim();
-  if(!v){ inp.focus(); return; }
-  const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() }; ensureCareer(a);
-  store.accounts.push(a); setActive(a.id);
-  refreshTitle(); show('scr-welcome');     // newcomers: tutorial or skip
-}
 function refreshTitle(){
   document.getElementById('titleSub').innerHTML =
     `Welcome, <b style="color:#ffd54a">${profile?profile.name:'Skipper'}</b> • Pick your mode`;
@@ -513,36 +504,30 @@ function refreshTitle(){
       : `play ${profile?Math.max(0,5-(profile.ipl?profile.ipl.matches:0)):5} IPL matches to unlock`; }
 }
 
-/* ---- account picker (switch / add / remove accounts on this device) ---- */
-function showAccounts(){ renderAccounts(); show('scr-accounts'); }
+/* ---- account = the signed-in Ilan Games account (auth.js) ----
+   This unlisted test build shares soc_store_v1 with the whole site, so its old
+   name-only picker could switch (and delete) any player's account on this
+   device with no password. It now opens the real login, like cricket/. ---- */
+function showAccounts(){
+  renderAccounts(); show('scr-accounts');
+  (function open(){
+    if(window.IGAuth){ if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth(); }
+    else setTimeout(open,150);
+  })();
+}
 function renderAccounts(){
   const wrap=document.getElementById('accountList'); wrap.innerHTML='';
   store.accounts.forEach(a=>{
-    const tot=a.ipl.matches+a.odi.matches, runs=a.ipl.runs+a.odi.runs;
+    const ipl=a.ipl||{}, odi=a.odi||{};
+    const tot=(ipl.matches||0)+(odi.matches||0), runs=(ipl.runs||0)+(odi.runs||0);
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;background:#16243f;padding:10px 14px;border-radius:10px;margin:5px 0';
     row.innerHTML=`<span style="flex:1;text-align:left">
         <b style="color:#ffd54a;font-size:16px">${a.name}</b>${a.id===store.activeId?' <span style="color:#39ff88;font-size:12px">• active</span>':''}
         <br><span style="color:#7e90b5;font-size:12px">${tot} matches • ${runs} runs</span></span>`;
-    const play=document.createElement('button'); play.className='btn'; play.textContent='PLAY';
-    play.style.cssText='padding:8px 18px;font-size:14px;margin:0';
-    play.onclick=()=>{ setActive(a.id); show('scr-title'); refreshTitle(); };
-    const del=document.createElement('button'); del.className='btn alt'; del.textContent='✕';
-    del.style.cssText='padding:8px 12px;font-size:14px;margin:0';
-    del.onclick=()=>{ if(confirm('Delete account "'+a.name+'" and its stats?')) deleteAccount(a.id); };
-    row.appendChild(play); row.appendChild(del); wrap.appendChild(row);
+    wrap.appendChild(row);                      // read-only: switching goes through the login
   });
 }
-function deleteAccount(id){
-  store.accounts=store.accounts.filter(a=>a.id!==id);
-  if(store.activeId===id){ store.activeId = store.accounts[0] ? store.accounts[0].id : null;
-    profile = store.accounts[0] || null; }
-  saveStore();
-  if(store.accounts.length) renderAccounts(); else { const i=document.getElementById('playerNameInput'); if(i) i.value=''; show('scr-enter'); }
-}
-function newAccountScreen(){ const i=document.getElementById('playerNameInput'); if(i){ i.value=''; setTimeout(()=>i.focus(),150); }
-  document.getElementById('enterBack').style.display = store.accounts.length? 'inline-block':'none';
-  show('scr-enter'); }
 /* add a finished interactive match into the player's profile */
 function recordProfile(fmtKey){
   if(!profile || tutorialMode) return;     // tutorial never counts toward stats
@@ -855,7 +840,12 @@ const GEAR=[
 ];
 function fmtCr(v){ return '₹'+(Math.round(v*10)/10)+' cr'; }
 function teamObjById(id){ return TEAMS.find(t=>t.id===id)||TEAMS[0]; }
-function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[]};
+function ensureCareer(a){ if(!a) return null;
+  // Accounts come from the shared login (auth.js) as just {id,name} — fill in
+  // this game's own stats the first time we see one, like every other game.
+  if(!a.ipl) a.ipl=blankStats();
+  if(!a.odi) a.odi=blankStats();
+  if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[]};
   if(a && a.career && !a.career.gear) a.career.gear={bat:0,gloves:0,pads:0};
   return a && a.career; }
 function careerUnlocked(){ return profile && profile.ipl && profile.ipl.matches>=5; }
@@ -2088,7 +2078,6 @@ if('serviceWorker' in navigator){
 /* ---- boot: auto-login the last account, else pick/create one ---- */
 (function boot(){
   const i=document.getElementById('playerNameInput');
-  if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') confirmName(); });
   const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
   if(act){ profile=act; ensureCareer(act); refreshTitle();
     if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer

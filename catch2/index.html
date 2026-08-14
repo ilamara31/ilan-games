@@ -775,8 +775,8 @@ $('acctBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.openAuth());
 
 /* ---------- boot ---------- */
 function boot(){
-  $('who').textContent = acct ? '👤 ' + acct.name : '👤 Guest';
-  $('ovWho').innerHTML = acct ? `Playing as <b>${acct.name}</b>` : 'Playing as <b>Guest</b>';
+  $('who').textContent = acct ? '👤 ' + acct.name : '👤 Not signed in';
+  $('ovWho').innerHTML = acct ? `Playing as <b>${acct.name}</b>` : 'Log in to save your score';
   $('ovCoins').textContent = data.coins;
   $('ovBest').innerHTML = data.best>0 ? `🏆 Your best: <b>${data.best}</b>` : `🏆 No high score yet — set one!`;
   resize();

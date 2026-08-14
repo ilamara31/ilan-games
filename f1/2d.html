@@ -509,7 +509,7 @@ function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.a
 function renderMenu(){
   state='menu';
   const f=career(), car=getCar(f.car);
-  document.getElementById('menuWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Guest (set a name on the home screen)';
+  document.getElementById('menuWho').textContent = acct ? '👤 Racing as '+acct.name : '👤 Not signed in — log in to save your career';
   document.getElementById('wallet').innerHTML=`💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${car.name}</b> (${car.top} km/h)`;
   const list=document.getElementById('locList'); list.innerHTML='';
   // free practice races always show first

@@ -1060,7 +1060,7 @@ function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for (l
 function mpName(){
   try{ if (window.IGAuth && IGAuth.displayName){ const n=IGAuth.displayName(); if (n) return String(n).trim().slice(0,14); } }catch(e){}
   try{ const s=JSON.parse(localStorage.getItem('soc_store_v1'));
-       const a=s && s.accounts && (s.accounts.find(x=>x.id===s.activeId) || s.accounts[0]);
+       const a=s && s.accounts && s.accounts.find(x=>x.id===s.activeId);   // active account only — never the previous player
        if (a && a.name) return String(a.name).trim().slice(0,14); }catch(e){}
   try{ const g=localStorage.getItem('iglb_guestname'); if (g) return String(g).slice(0,14); }catch(e){}
   let n=null; try{ n=localStorage.getItem('carrom_name'); }catch(e){}

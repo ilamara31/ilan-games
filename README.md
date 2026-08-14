@@ -63,6 +63,36 @@ treated as a game automatically (no hard-coded game list to maintain).
 - Optional `cta` button, `start`/`end` dates, and `level` (info/success/warning).
 - Give each message a unique `id`; players can dismiss it and won't see it again.
 
+## Accounts (username + password)
+
+Every player needs an account — there is no guest play. `auth.js` handles it and
+every game gets it for free from the shared `👤` button.
+
+**One-time setup — in Supabase → SQL Editor:** run `accounts-preflight.sql`
+first (read-only, it just checks the database and prints five results), then
+`accounts-setup.sql`. That makes the rules strict:
+- logging in never creates an account (a typo used to silently make a new one),
+- a wrong password is always rejected,
+- new usernames must be 3–16 characters (letters, numbers, space, `-`, `_`),
+- new passwords must be at least 4 characters.
+
+Existing accounts and their current passwords keep working, and the site keeps
+running on the old rules until the file is run. Safe to run more than once.
+
+**There is no password reset.** Instead, a signed-in player can always read their
+own password back from **👤 My Profile** (the account button on the home page and
+in every game), together with their username, when they signed in, and when the
+account was created.
+
+**One account per device at a time.** Game progress lives in the browser's
+localStorage, which every account on a device would otherwise share — that's how
+a brand-new account used to open already holding the previous player's scores.
+`auth.js` now keeps a per-account vault (`ig_vault_<name>`): switching account
+parks the current player's saves and restores the incoming player's, so a new
+account genuinely starts at zero and nothing is ever lost. **If you add a game
+that saves progress to localStorage, add its key to `OWNED_KEYS` in `auth.js`** —
+otherwise that game's progress will leak between accounts on a shared device.
+
 ## Working on a different laptop
 1. Install Git and the GitHub CLI (`gh`).
 2. `gh auth login` and sign in as Ilan.

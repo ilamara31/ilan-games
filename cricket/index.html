@@ -83,23 +83,12 @@
 <div id="wrap">
   <canvas id="game"></canvas>
 
-  <!-- NAME ENTRY (new account) -->
-  <div id="scr-enter" class="screen hidden">
-    <h1 style="font-size:34px">CREATE ACCOUNT</h1>
-    <div class="sub" style="max-width:420px">Enter your name. You will open the batting for whichever team you pick — in every match.</div>
-    <input id="playerNameInput" maxlength="16" placeholder="Your name" style="background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:12px 14px;border-radius:10px;font-size:18px;text-align:center;max-width:300px;width:100%;margin:10px 0">
-    <div class="row">
-      <button class="btn" onclick="confirmName()">LET'S PLAY</button>
-      <button class="btn alt" id="enterBack" onclick="showAccounts()" style="display:none">BACK</button>
-    </div>
-  </div>
-
-  <!-- ACCOUNT PICKER -->
+  <!-- ACCOUNT — handled by the shared Ilan Games login (auth.js) -->
   <div id="scr-accounts" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
-    <h1 style="font-size:30px">CHOOSE ACCOUNT</h1>
-    <div class="sub">Saved on this device — pick one or add a new one.</div>
+    <h1 style="font-size:30px">SIGN IN</h1>
+    <div class="sub">Your cricket career is saved to your Ilan Games account — sign in with your username &amp; password to play it.</div>
     <div id="accountList" style="max-width:460px;width:100%"></div>
-    <button class="btn" onclick="newAccountScreen()" style="margin-top:8px">➕ NEW ACCOUNT</button>
+    <button class="btn" onclick="showAccounts()" style="margin-top:8px">👤 SIGN IN</button>
   </div>
 
   <!-- TITLE -->
@@ -255,7 +244,7 @@
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn alt" onclick="show('scr-title')">BACK</button>
-      <button class="btn" onclick="showAccounts()">🔄 SWITCH ACCOUNT</button>
+      <button class="btn" onclick="showAccounts()">👤 MY ACCOUNT</button>
     </div>
   </div>
 
@@ -486,15 +475,6 @@ function saveStore(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)
 function saveProfile(){ saveStore(); }   // active account lives inside the store
 function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return; store.activeId=id; profile=a; ensureCareer(a); saveStore(); }
 
-/* name entry creates a NEW account, then logs in to it */
-function confirmName(){
-  const inp=document.getElementById('playerNameInput');
-  const v=inp.value.trim();
-  if(!v){ inp.focus(); return; }
-  const a={ id:newId(), name:v, ipl:blankStats(), odi:blankStats() }; ensureCareer(a);
-  store.accounts.push(a); setActive(a.id);
-  refreshTitle(); show('scr-welcome');     // newcomers: tutorial or skip
-}
 function refreshTitle(){
   document.getElementById('titleSub').innerHTML =
     `Welcome, <b style="color:#ffd54a">${profile?profile.name:'Skipper'}</b> • Pick your mode`;
@@ -505,38 +485,34 @@ function refreshTitle(){
       : `play ${profile?Math.max(0,5-(profile.ipl?profile.ipl.matches:0)):5} IPL matches to unlock`; }
 }
 
-/* ---- account picker (switch / add / remove accounts on this device) ---- */
-function showAccounts(){ renderAccounts(); show('scr-accounts'); }
-function renderAccounts(){
-  const wrap=document.getElementById('accountList'); wrap.innerHTML='';
+/* ---- account = the signed-in Ilan Games account (auth.js) ----
+   This used to be a name-only picker: any player could switch to any other
+   account saved on this device WITHOUT a password, play their career and post
+   it to the leaderboard under their own name. Switching now goes through the
+   real login, which asks for that account's password. */
+function showAccounts(){
+  renderAccounts(); show('scr-accounts');
+  (function open(){                       // auth.js is deferred — wait for it
+    if(window.IGAuth){ if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth(); }
+    else setTimeout(open,150);
+  })();
+}
+function renderAccounts(){                // read-only: shows careers, switches nothing
+  const wrap=document.getElementById('accountList'); if(!wrap) return; wrap.innerHTML='';
   store.accounts.forEach(a=>{
-    const tot=a.ipl.matches+a.odi.matches, runs=a.ipl.runs+a.odi.runs;
+    const ipl=a.ipl||{}, odi=a.odi||{};
+    const tot=(ipl.matches||0)+(odi.matches||0), runs=(ipl.runs||0)+(odi.runs||0);
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;background:#16243f;padding:10px 14px;border-radius:10px;margin:5px 0';
     row.innerHTML=`<span style="flex:1;text-align:left">
         <b style="color:#ffd54a;font-size:16px">${a.name}</b>${a.id===store.activeId?' <span style="color:#39ff88;font-size:12px">• active</span>':''}
         <br><span style="color:#7e90b5;font-size:12px">${tot} matches • ${runs} runs</span></span>`;
-    const play=document.createElement('button'); play.className='btn'; play.textContent='PLAY';
-    play.style.cssText='padding:8px 18px;font-size:14px;margin:0';
-    play.onclick=()=>{ setActive(a.id); show('scr-title'); refreshTitle(); };
-    const del=document.createElement('button'); del.className='btn alt'; del.textContent='✕';
-    del.style.cssText='padding:8px 12px;font-size:14px;margin:0';
-    del.onclick=()=>{ if(confirm('Delete account "'+a.name+'" and its stats?')) deleteAccount(a.id); };
-    row.appendChild(play); row.appendChild(del); wrap.appendChild(row);
+    wrap.appendChild(row);
   });
 }
-function deleteAccount(id){
-  store.accounts=store.accounts.filter(a=>a.id!==id);
-  if(store.activeId===id){ store.activeId = store.accounts[0] ? store.accounts[0].id : null;
-    profile = store.accounts[0] || null; }
-  saveStore();
-  if(store.accounts.length) renderAccounts(); else { const i=document.getElementById('playerNameInput'); if(i) i.value=''; show('scr-enter'); }
-}
-function newAccountScreen(){ const i=document.getElementById('playerNameInput'); if(i){ i.value=''; setTimeout(()=>i.focus(),150); }
-  document.getElementById('enterBack').style.display = store.accounts.length? 'inline-block':'none';
-  show('scr-enter'); }
 /* add a finished interactive match into the player's profile */
 function recordProfile(fmtKey){
+  ensureCareer(profile);                     // a brand-new account has no stats block yet
   if(!profile || tutorialMode) return;     // tutorial never counts toward stats
   const me=M.batters.find(b=>b.name===profile.name);
   if(!me) return;
@@ -850,7 +826,14 @@ const GEAR=[
 ];
 function fmtCr(v){ return '₹'+(Math.round(v*10)/10)+' cr'; }
 function teamObjById(id){ return TEAMS.find(t=>t.id===id)||TEAMS[0]; }
-function ensureCareer(a){ if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[],live:null};
+function ensureCareer(a){ if(!a) return null;
+  // Accounts are created by the shared login (auth.js) as just {id,name}, so
+  // cricket fills in its own stats the first time it sees one — every other
+  // game does the same. Without this a new account has no ipl/odi at all:
+  // nothing records, nothing unlocks, and the screens throw.
+  if(!a.ipl) a.ipl=blankStats();
+  if(!a.odi) a.odi=blankStats();
+  if(a && !a.career) a.career={money:0,season:1,teamId:null,form:35,gear:{bat:0,gloves:0,pads:0},seasons:[],live:null};
   if(a && a.career && !a.career.gear) a.career.gear={bat:0,gloves:0,pads:0};
   if(a && a.career && a.career.live===undefined) a.career.live=null;   // in-progress season (resume after closing the app)
   return a && a.career; }
@@ -2116,14 +2099,10 @@ if('serviceWorker' in navigator){
 
 /* ---- boot: auto-login the last account, else pick/create one ---- */
 (function boot(){
-  const i=document.getElementById('playerNameInput');
-  if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') confirmName(); });
   const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
   if(act){ profile=act; ensureCareer(act); refreshTitle();
     if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer
-  else if(store.accounts.length){ showAccounts(); }
-  else { document.getElementById('enterBack').style.display='none';
-    if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }
+  else showAccounts();          // not signed in → the shared login, never a password-free picker
   if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent = p ? ('👤 '+IGAuth.displayName()) : '👤 Log in'; });
 })();
 </script>

@@ -16,9 +16,10 @@
   function myDisplayName() {
     let n = S(function () { return window.IGAuth && IGAuth.displayName && IGAuth.displayName(); });
     if (n) return n;
-    n = S(function () { const s = JSON.parse(localStorage.getItem("soc_store_v1")); const a = s && s.accounts && (s.accounts.find(x => x.id === s.activeId) || s.accounts[0]); return a && a.name; });
-    if (n) return n;
-    n = S(function () { return localStorage.getItem("iglb_guestname"); });
+    // ONLY the active account — falling back to "the first account on this
+    // device" made a signed-out visitor look like the previous player (their
+    // friends, their chat). Signed out = no identity; init() just waits.
+    n = S(function () { const s = JSON.parse(localStorage.getItem("soc_store_v1")); const a = s && s.accounts && s.accounts.find(x => x.id === s.activeId); return a && a.name; });
     return n || null;
   }
   function nameKey(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40); }
