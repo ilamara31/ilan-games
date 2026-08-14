@@ -110,7 +110,9 @@ begin
      and (column_name ilike '%pass%' or column_name ilike '%pw%' or column_name ilike '%hash%'
           or column_name ilike '%secret%' or column_name ilike '%code%' or column_name ilike '%pin%'
           or column_name ilike '%key%')
-   order by (column_name ilike '%pass%') desc, (column_name ilike '%pw%') desc,
+     -- this project stores them in `pin_hash`; the rest is for safety
+   order by (column_name = 'pin_hash') desc,
+            (column_name ilike '%pass%') desc, (column_name ilike '%pw%') desc,
             (column_name ilike '%hash%') desc, column_name               -- deterministic on a re-run
    limit 1;
 

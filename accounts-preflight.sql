@@ -6,8 +6,10 @@
 --  so everything comes back in a single table of (section, detail) rows.
 --
 --  Reading the result:
---    A  every column of public.players. Nothing except `name` should say
---       "WOULD BREAK SIGN-UP" — that means a required column with no default.
+--    A  every column of public.players. "WOULD BREAK SIGN-UP" means a required
+--       column with no default. It is EXPECTED on the password column itself
+--       (`pin_hash` here) — creating an account fills that one in. On any other
+--       column it is a real problem and the setup script refuses to run.
 --    B  who owns the table (should be the role you're running as) and RLS.
 --    C  the account functions that already exist, and their arguments. An
 --       older build called account_auth with only 2 arguments, so there may
