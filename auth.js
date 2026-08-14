@@ -190,9 +190,13 @@
   // Returns an undo(), because the sign-in after it can still fail.
   function offerOrphanSaves(name) {
     const owner0 = lsGet(VOWNER), declined0 = lsGet(VDECLINED);
+    const wroteLive = [];             // live keys this call created
+    let wroteVault = "";              // vault this call created
     const undo = () => {
       if (owner0 == null) lsDel(VOWNER); else lsSet(VOWNER, owner0);
       if (declined0 == null) lsDel(VDECLINED); else lsSet(VDECLINED, declined0);
+      wroteLive.forEach(lsDel);       // …and everything it handed over, or the
+      if (wroteVault) lsDel(wroteVault);   // retry would inherit what it refused
     };
     if (!hasOrphanSaves()) return undo;
     let keep = false;
@@ -207,13 +211,15 @@
       // It's live on the device. Bring back anything parked by an earlier
       // signed-out session too, then hand the lot over — nothing is dropped.
       const parked = vaultBlob(ORPHAN);
-      for (const k in parked) { if (parked[k] != null && lsGet(k) == null) lsSet(k, parked[k]); }
+      for (const k in parked) {
+        if (parked[k] != null && lsGet(k) == null && lsSet(k, parked[k])) wroteLive.push(k);
+      }
       lsSet(VOWNER, mine);
     } else {
       // Someone else's saves are live; the unclaimed ones are parked. Make the
       // parked bucket this account's vault — useProfile restores it in a moment.
       const parked = lsGet(VKEY + ORPHAN);
-      if (parked && !lsGet(VKEY + mine)) lsSet(VKEY + mine, parked);
+      if (parked && !lsGet(VKEY + mine) && lsSet(VKEY + mine, parked)) wroteVault = VKEY + mine;
     }
     lsSet(VDECLINED, "1");                                      // asked, and answered
     return undo;
@@ -451,7 +457,14 @@
         error = r.error; data = r.data === "created" ? "ok" : (r.data === "ok" || r.data === "wrong") ? "taken" : r.data;
       }
       if (error) return { error: error.message };
-      if (data === "taken") return { error: "“" + name + "” is already taken — pick another username." };
+      if (data === "taken") {
+        // The account may be one WE just made, whose sign-in then failed (e.g.
+        // storage was full). Finishing it needs the right password, so this is
+        // simply a log in — someone else's name with a wrong password still
+        // gets the "taken" message below.
+        const retry = await logIn(name, pw, true);
+        return retry.ok ? retry : { error: "“" + name + "” is already taken — pick another username." };
+      }
       if (data === "invalid") return { error: "That username or password isn't allowed." };
       if (data !== "ok") return { error: "Could not create the account. Try again." };
       const problem = enterAccount(name, pw, true);
@@ -459,7 +472,9 @@
     } catch (e) { return { error: netMsg(e) }; }
   }
 
-  async function logIn(name, pw) {
+  // asNew: this is the first time this account has been used on this device, so
+  // it is still offered any pre-account progress sitting here.
+  async function logIn(name, pw, asNew) {
     name = (name || "").trim();
     if (!name) return { error: "Enter your username." };
     if (!pw) return { error: "Enter your password." };
@@ -481,7 +496,7 @@
       if (String(data).slice(0, 2) !== "ok") return { error: "Could not sign in. Try again." };
       const canon = String(data).slice(3).trim();
       if (canon) name = canon;
-      const problem = enterAccount(name, pw, false);
+      const problem = enterAccount(name, pw, !!asNew);
       return problem ? { error: problem } : { ok: true };
     } catch (e) { return { error: netMsg(e) }; }
   }

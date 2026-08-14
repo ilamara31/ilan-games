@@ -244,7 +244,7 @@
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn alt" onclick="show('scr-title')">BACK</button>
-      <button class="btn" onclick="showAccounts()">👤 MY ACCOUNT</button>
+      <button class="btn" onclick="openMyAccount()">👤 MY ACCOUNT</button>
     </div>
   </div>
 
@@ -490,25 +490,18 @@ function refreshTitle(){
    account saved on this device WITHOUT a password, play their career and post
    it to the leaderboard under their own name. Switching now goes through the
    real login, which asks for that account's password. */
-function showAccounts(){
-  renderAccounts(); show('scr-accounts');
-  (function open(){                       // auth.js is deferred — wait for it
-    if(window.IGAuth){ if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth(); }
-    else setTimeout(open,150);
+function openMyAccount(){          // opens the account screen over the game
+  (function open(){
+    if(window.IGAuth && IGAuth.isReady && IGAuth.isReady()){
+      if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth();
+    } else setTimeout(open,150);
   })();
 }
-function renderAccounts(){                // read-only: shows careers, switches nothing
-  const wrap=document.getElementById('accountList'); if(!wrap) return; wrap.innerHTML='';
-  store.accounts.forEach(a=>{
-    const ipl=a.ipl||{}, odi=a.odi||{};
-    const tot=(ipl.matches||0)+(odi.matches||0), runs=(ipl.runs||0)+(odi.runs||0);
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;background:#16243f;padding:10px 14px;border-radius:10px;margin:5px 0';
-    row.innerHTML=`<span style="flex:1;text-align:left">
-        <b style="color:#ffd54a;font-size:16px">${a.name}</b>${a.id===store.activeId?' <span style="color:#39ff88;font-size:12px">• active</span>':''}
-        <br><span style="color:#7e90b5;font-size:12px">${tot} matches • ${runs} runs</span></span>`;
-    wrap.appendChild(row);
-  });
+function showAccounts(){           // no account yet: the sign-in screen + the login
+  renderAccounts(); show('scr-accounts'); openMyAccount();
+}
+function renderAccounts(){         // deliberately shows nobody — see above
+  const wrap=document.getElementById('accountList'); if(wrap) wrap.innerHTML='';
 }
 /* add a finished interactive match into the player's profile */
 function recordProfile(fmtKey){

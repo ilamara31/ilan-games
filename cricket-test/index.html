@@ -84,14 +84,6 @@
   <canvas id="game"></canvas>
 
   <!-- NAME ENTRY — removed: accounts are created in the shared login (auth.js) -->
-  <div id="scr-enter" class="screen hidden" hidden>
-    <h1 style="font-size:34px">CREATE ACCOUNT</h1>
-    <div class="sub" style="max-width:420px">Enter your name. You will open the batting for whichever team you pick — in every match.</div>
-    <input id="playerNameInput" maxlength="16" placeholder="Your name" style="background:#0c1426;border:1px solid #2a3c63;color:#fff;padding:12px 14px;border-radius:10px;font-size:18px;text-align:center;max-width:300px;width:100%;margin:10px 0">
-    <div class="row">
-
-      <button class="btn alt" id="enterBack" onclick="showAccounts()" style="display:none">BACK</button>
-    </div>
   </div>
 
   <!-- ACCOUNT PICKER -->
@@ -263,7 +255,7 @@
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn alt" onclick="show('scr-title')">BACK</button>
-      <button class="btn" onclick="showAccounts()">👤 MY ACCOUNT</button>
+      <button class="btn" onclick="openMyAccount()">👤 MY ACCOUNT</button>
     </div>
   </div>
 
@@ -508,28 +500,22 @@ function refreshTitle(){
    This unlisted test build shares soc_store_v1 with the whole site, so its old
    name-only picker could switch (and delete) any player's account on this
    device with no password. It now opens the real login, like cricket/. ---- */
-function showAccounts(){
-  renderAccounts(); show('scr-accounts');
+function openMyAccount(){          // opens the account screen over the game
   (function open(){
-    if(window.IGAuth){ if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth(); }
-    else setTimeout(open,150);
+    if(window.IGAuth && IGAuth.isReady && IGAuth.isReady()){
+      if(IGAuth.getUser()) IGAuth.openSwitch(); else IGAuth.openAuth();
+    } else setTimeout(open,150);
   })();
 }
-function renderAccounts(){
-  const wrap=document.getElementById('accountList'); wrap.innerHTML='';
-  store.accounts.forEach(a=>{
-    const ipl=a.ipl||{}, odi=a.odi||{};
-    const tot=(ipl.matches||0)+(odi.matches||0), runs=(ipl.runs||0)+(odi.runs||0);
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;background:#16243f;padding:10px 14px;border-radius:10px;margin:5px 0';
-    row.innerHTML=`<span style="flex:1;text-align:left">
-        <b style="color:#ffd54a;font-size:16px">${a.name}</b>${a.id===store.activeId?' <span style="color:#39ff88;font-size:12px">• active</span>':''}
-        <br><span style="color:#7e90b5;font-size:12px">${tot} matches • ${runs} runs</span></span>`;
-    wrap.appendChild(row);                      // read-only: switching goes through the login
-  });
+function showAccounts(){           // no account yet: the sign-in screen + the login
+  renderAccounts(); show('scr-accounts'); openMyAccount();
+}
+function renderAccounts(){         // deliberately shows nobody — see above
+  const wrap=document.getElementById('accountList'); if(wrap) wrap.innerHTML='';
 }
 /* add a finished interactive match into the player's profile */
 function recordProfile(fmtKey){
+  ensureCareer(profile);                     // a brand-new account has no stats block yet
   if(!profile || tutorialMode) return;     // tutorial never counts toward stats
   const me=M.batters.find(b=>b.name===profile.name);
   if(!me) return;
@@ -2077,15 +2063,14 @@ if('serviceWorker' in navigator){
 
 /* ---- boot: auto-login the last account, else pick/create one ---- */
 (function boot(){
-  const i=document.getElementById('playerNameInput');
   const act = store.activeId && store.accounts.find(a=>a.id===store.activeId);
   if(act){ profile=act; ensureCareer(act); refreshTitle();
     if(act.seenWelcome) show('scr-title'); else show('scr-welcome'); }   // newcomers see the tutorial offer
-  else if(store.accounts.length){ showAccounts(); }
-  else { document.getElementById('enterBack').style.display='none';
-    if(i){ i.value=''; setTimeout(()=>i.focus(),200); } show('scr-enter'); }
+  else showAccounts();
 })();
 </script>
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 <script src="../friends.js" defer></script>
