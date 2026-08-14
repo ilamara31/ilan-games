@@ -63,6 +63,22 @@
   .namerow span { width:22px; color:#ffd54a; font-weight:bold; }
   .namerow input { flex:1; background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:8px 10px; border-radius:8px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; justify-content:center; }
+  /* ---- Challenge Hub: target cards, mobile-first, thumb-sized tap targets ---- */
+  .chtab { padding:10px 18px !important; font-size:15px !important; margin:4px !important; }
+  .chtab.on { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; }
+  .chcard { background:#16243f; border:1px solid #2a3c63; border-left:5px solid #39ff88; border-radius:14px;
+            padding:12px 14px; margin:9px 0; text-align:left; }
+  .chcard .chtop { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; }
+  .chcard .chby { color:#cdd9f0; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chcard .chov { color:#9fb3d8; flex:none; }
+  .chcard .chtgt { font-size:26px; font-weight:bold; color:#ffd54a; margin:4px 0 2px; }
+  .chcard .chstats { color:#9fb3d8; font-size:13px; line-height:1.5; }
+  .chcard .chstats b { color:#fff; }
+  .chcard .chdim { color:#7e90b5; font-size:12px; }
+  .chcard .chgo { width:100%; margin:10px 0 0; padding:13px 10px; font-size:16px;
+                  background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .chnote { color:#9fb3d8; font-size:14px; margin:8px 0; min-height:18px; max-width:540px; line-height:1.5; }
+  .chnote .btn { padding:9px 20px; font-size:14px; }
   /* 🏠 back to all games — parked in the title screen's top-left corner so it
      stays out of the main PLAY / CAREER / PROFILE stack */
   #homeBtn { position:absolute; top:12px; left:12px; z-index:12; text-decoration:none; cursor:pointer;
@@ -103,6 +119,7 @@
     <div class="sub" id="titleSub">Timing-based cricket</div>
     <button class="btn" onclick="show('scr-play')">🏏 PLAY<br><span style="font-size:12px;font-weight:normal">quick match • IPL • ODI</span></button>
     <button class="btn" onclick="show('scr-modes')" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 CAREER &amp; MANAGER<br><span style="font-size:12px;font-weight:normal">be a player or a manager</span></button>
+    <button class="btn" onclick="chubEnter()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🎯 CHALLENGE HUB<br><span style="font-size:12px;font-weight:normal">set a target • chase other players</span></button>
     <button class="btn alt" onclick="startTutorial()">🎓 HOW TO PLAY</button>
     <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
     <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('cricket','Super Over Cricket')">🏆 Leaderboard</button>
@@ -133,6 +150,59 @@
     <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • seasons</span></button>
     <button class="btn" onclick="managerEnter()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🧑‍💼 MANAGER MODE<br><span style="font-size:12px;font-weight:normal">buy a squad • auto-play • win the cup</span></button>
     <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+  </div>
+
+  <!-- ============ CHALLENGE HUB ============ -->
+  <div id="scr-chub" class="screen hidden">
+    <h1 style="font-size:28px">🎯 CHALLENGE HUB</h1>
+    <div class="sub">Set a target — then watch the world try to chase it.</div>
+    <button class="btn" onclick="chSetStart()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🏏 SET TARGET<br><span style="font-size:12px;font-weight:normal">bat an innings • publish your score</span></button>
+    <button class="btn" onclick="chBrowse('trending')">🌍 BROWSE TARGETS<br><span style="font-size:12px;font-weight:normal">chase what other players set</span></button>
+    <div id="chubPending"></div>
+    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+  </div>
+
+  <!-- SET TARGET: how long an innings -->
+  <div id="scr-chovers" class="screen hidden">
+    <h1 style="font-size:26px">🏏 SET TARGET</h1>
+    <div class="sub">Bat with no target — whatever you score becomes the challenge.</div>
+    <button class="btn alt" onclick="chSetOvers(5)">5 OVERS<br><span style="font-size:12px;font-weight:normal">5 wickets • quick one</span></button>
+    <button class="btn" onclick="chSetOvers(10)">10 OVERS<br><span style="font-size:12px;font-weight:normal">7 wickets • the classic</span></button>
+    <button class="btn alt" onclick="chSetOvers(15)">15 OVERS<br><span style="font-size:12px;font-weight:normal">10 wickets • the long haul</span></button>
+    <button class="btn alt" onclick="show('scr-chub')">⬅ BACK</button>
+  </div>
+
+  <!-- PUBLISH the innings you just batted -->
+  <div id="scr-chpub" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 id="chPubTitle" style="font-size:28px">🎯 TARGET SET!</h1>
+    <div class="sub" id="chPubSub" style="margin-bottom:8px"></div>
+    <div id="chPubCard" style="max-width:540px;width:100%"></div>
+    <button class="btn" id="chPubBtn" onclick="chPublish()">📢 PUBLISH CHALLENGE</button>
+    <div id="chPubNote" class="chnote"></div>
+    <button class="btn alt" onclick="chPubLater()">Not now</button>
+  </div>
+
+  <!-- BROWSE published targets -->
+  <div id="scr-chlist" class="screen hidden" style="justify-content:flex-start;padding-top:20px;overflow-y:auto">
+    <h1 style="font-size:24px">🌍 BROWSE TARGETS</h1>
+    <div class="row" style="gap:6px;margin-bottom:6px">
+      <button class="btn alt chtab" id="chTab-trending" onclick="chBrowse('trending')">🔥 Trending</button>
+      <button class="btn alt chtab" id="chTab-newest"   onclick="chBrowse('newest')">🆕 Newest</button>
+      <button class="btn alt chtab" id="chTab-hardest"  onclick="chBrowse('hardest')">💀 Hardest</button>
+    </div>
+    <div id="chList" style="max-width:540px;width:100%"></div>
+    <button class="btn alt" id="chMore" onclick="chLoadMore()" style="display:none">LOAD MORE</button>
+    <button class="btn alt" onclick="show('scr-chub')">⬅ BACK</button>
+  </div>
+
+  <!-- result of chasing someone's target -->
+  <div id="scr-chend" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
+    <h1 id="chEndTitle" style="font-size:28px"></h1>
+    <div class="sub" id="chEndSub" style="margin-bottom:8px"></div>
+    <div id="chEndBody" style="max-width:540px;width:100%"></div>
+    <div id="chEndNote" class="chnote"></div>
+    <button class="btn" onclick="chBrowse(chTab)">🌍 MORE TARGETS</button>
+    <button class="btn alt" onclick="show('scr-title')">🏠 MENU</button>
   </div>
 
   <!-- TUTORIAL DONE / EXPLAINER -->
@@ -1089,17 +1159,25 @@ let M = null; // match state
 
 function startMatch(opp, fmt){
   fmt = fmt || FORMATS.quick;
+  // Challenge Hub arms CHNEXT immediately before calling us. Consuming it here —
+  // rather than reading a long-lived global — means every OTHER mode that starts a
+  // match clears it for free, so a stale challenge can never leak into IPL/ODI/Career.
+  CH = CHNEXT; CHNEXT = null;
   const overs = fmt.overs;
   const balls = overs*6;
-  // opponent posts a chase target appropriate to the chosen format
-  const target = fmt.targetLo + Math.floor(Math.random()*(fmt.targetHi-fmt.targetLo+1));
+  // opponent posts a chase target appropriate to the chosen format — except in the
+  // Hub, where you either bat with no target at all, or chase a real player's score
+  const noTarget = !!(CH && CH.mode==='set');
+  const target = noTarget ? Number.MAX_SAFE_INTEGER
+               : (CH && CH.mode==='chase') ? CH.row.target
+               : fmt.targetLo + Math.floor(Math.random()*(fmt.targetHi-fmt.targetLo+1));
   const maxWkts = fmt.maxWkts;
   // batting line-up: named top order + lower order, so maxWkts wickets = all out
   const batters = padNames(myTeam.players, maxWkts+1)
     .map(n=>({ name:n, runs:0, balls:0, out:false, how:'', fifty:false, hundred:false }));
   M = {
     opp, label: fmt.label, difficulty:0,
-    target, balls, ballsTotal: balls,
+    target, noTarget, balls, ballsTotal: balls,
     score:0, wkts:0, maxWkts,
     ballNo:0,
     batters, strikerIdx:0, nonStrikerIdx:1, nextIn:2,
@@ -1126,9 +1204,12 @@ function startMatch(opp, fmt){
   setHud();
   showGo(true);              // wait for first GO press
   // a little Shastri intro to set the scene
-  setTimeout(()=>speak(pick([
-    `We are all set for a cracker here! ${myTeam.name} need ${target} to win. Strap in, it is going to be a humdinger!`,
-    `Here we go! ${myTeam.name} chasing ${target}. Let us see if they have got the firepower, my friend!`]), false), 500);
+  setTimeout(()=>speak(noTarget ? pick([
+      `${myTeam.name} are batting first, and there is no target here — just get as many as you can! Set them a mountain to climb, my friend!`,
+      `Here we go! ${myTeam.name} to set the challenge. Every run counts, put a big one on that board!`])
+    : pick([
+      `We are all set for a cracker here! ${myTeam.name} need ${target} to win. Strap in, it is going to be a humdinger!`,
+      `Here we go! ${myTeam.name} chasing ${target}. Let us see if they have got the firepower, my friend!`]), false), 500);
   wakeLoop();
 }
 function rotateStrike(){ const t=M.strikerIdx; M.strikerIdx=M.nonStrikerIdx; M.nonStrikerIdx=t; }
@@ -1474,6 +1555,7 @@ function endMatch(won){
   if(!M) return;
   if(tutorialMode){ tutorialDone(); return; }   // tutorial wraps up its own way
   M._won = won;
+  if(CH){ chEndMatch(won); return; }            // Challenge Hub has its own result screens
   speechSynthesis && speechSynthesis.cancel();
   speak(won ? `${myTeam.name} have DONE IT! What a chase! The crowd is going berserk! Take a bow, boys, take a bow!`
             : `Oh, so close! But ${M.opp.name} have held their nerve! Heartbreak for ${myTeam.name}, my friend.`);
@@ -1538,10 +1620,13 @@ function setHud(){
   const oversStr = Math.floor(M.ballNo/6)+'.'+(M.ballNo%6);
   const need = Math.max(0, M.target-M.score);
   const reqRR = M.balls>0 ? (need/M.balls*6).toFixed(1) : '0.0';
-  document.getElementById('hud-left').innerHTML =
-    `<b>${myTeam.name}</b> ${M.score}/${M.wkts}<br>`+
-    `Need <b>${need}</b> off <b>${M.balls}</b> &nbsp;<span style="color:#9fb3d8">(RRR ${reqRR})</span><br>`+
-    `<span style="color:#9fb3d8">Overs ${oversStr} • Target ${M.target} • ${M.bowlerType}</span>`;
+  document.getElementById('hud-left').innerHTML = M.noTarget
+    ? `<b>${myTeam.name}</b> ${M.score}/${M.wkts}<br>`+
+      `<b style="color:#39ff88">Set a target!</b> <b>${M.balls}</b> ball${M.balls!==1?'s':''} left<br>`+
+      `<span style="color:#9fb3d8">Overs ${oversStr} • ${M.bowlerType}</span>`
+    : `<b>${myTeam.name}</b> ${M.score}/${M.wkts}<br>`+
+      `Need <b>${need}</b> off <b>${M.balls}</b> &nbsp;<span style="color:#9fb3d8">(RRR ${reqRR})</span><br>`+
+      `<span style="color:#9fb3d8">Overs ${oversStr} • Target ${M.target} • ${M.bowlerType}</span>`;
   const s=striker(), n=nonStriker();
   const row=(b,onStrike)=>`${onStrike?'🏏 ':'&nbsp;&nbsp;&nbsp;'}<b style="color:${onStrike?'#ffd54a':'#cdd9f0'}">${b.name}</b>${onStrike?'*':''} ${b.runs} <span style="color:#7e90b5">(${b.balls})</span>`;
   document.getElementById('hud-right').innerHTML =
@@ -1698,7 +1783,8 @@ function update(dt){
   else if(M.state==='result'){
     M.timer-=dt;
     if(M.timer<=0){
-      const won=M.score>=M.target, allOut=M.wkts>=M.maxWkts, ballsDone=M.balls<=0;
+      // setting a target has nothing to chase — that innings ends only on wickets or overs
+      const won=!M.noTarget && M.score>=M.target, allOut=M.wkts>=M.maxWkts, ballsDone=M.balls<=0;
       if(won||allOut||ballsDone){ M.state='ending'; endMatch(won); }
       // GO appears right away for every outcome — the player can skip the
       // commentary by pressing it, or wait and let the line finish.
@@ -1894,7 +1980,9 @@ function drawScorecard(){
   ctx.fillText(`${myTeam.name}   ${M.score}/${M.wkts}`, W/2, y+26);
   ctx.fillStyle='#9fb3d8'; ctx.font='12px Trebuchet MS';
   const ov=Math.floor(M.ballNo/6)+'.'+(M.ballNo%6);
-  ctx.fillText(`Ov ${ov}  •  Need ${Math.max(0,M.target-M.score)} off ${M.balls}  •  Target ${M.target}`, W/2, y+46);
+  ctx.fillText(M.noTarget
+    ? `Ov ${ov}  •  ${M.balls} ball${M.balls!==1?'s':''} left  •  setting a target`
+    : `Ov ${ov}  •  Need ${Math.max(0,M.target-M.score)} off ${M.balls}  •  Target ${M.target}`, W/2, y+46);
   const s=striker(), n=nonStriker();
   ctx.font='13px Trebuchet MS';
   ctx.textAlign='left';  ctx.fillStyle='#fff';
@@ -2094,6 +2182,351 @@ if('serviceWorker' in navigator){
   let _ref=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_ref) return; _ref=true; location.reload(); });
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); });
+}
+
+/* ============================================================
+   CHALLENGE HUB — you bat an innings, publish the score as a
+   target, and everyone else tries to chase it down.
+   Nothing in here touches IPL / ODI / Career / Manager: the only
+   engine hooks are M.noTarget (bat with nothing to chase) and the
+   CH branch at the top of endMatch().
+   ============================================================ */
+let CH = null;        // the challenge the CURRENT match belongs to (null = ordinary cricket)
+let CHNEXT = null;    // armed just before startMatch(), consumed by it, then forgotten
+let chTab  = 'trending';
+let chPage = 0;
+let chRows = [];
+let chBusy = false;
+let chPending = null;        // an innings batted but not yet published
+let chAttemptPayload = null; // the chase result currently being saved (for RETRY)
+const CH_PAGE = 10;
+const CH_PENDING_KEY = 'cricChalPending_v1';
+const CH_OUTBOX_KEY  = 'cricChalOutbox_v1';
+
+/* ---------- identity ---------- */
+function chUser(){
+  let n = '';
+  try{ if(window.IGAuth && IGAuth.displayName) n = IGAuth.displayName() || ''; }catch(e){}
+  if(!n && profile && profile.name) n = profile.name;
+  return String(n||'').trim().slice(0,30);
+}
+/* usernames are case-sensitive across Ilan Games, so the key is the name verbatim —
+   lower-casing it here would quietly merge two different players into one */
+function chKey(){ return chUser(); }
+
+/* ---------- network: never hang, never assume ---------- */
+let chSb = null;
+function chSbGet(){
+  return new Promise(function(res, rej){
+    if(chSb) return res(chSb);
+    function mk(){
+      try{ chSb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY, {auth:{persistSession:false}}); res(chSb); }
+      catch(e){ rej(e); }
+    }
+    if(window.supabase && window.supabase.createClient) return mk();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload=mk; s.onerror=function(){ rej(new Error('offline')); };
+    document.head.appendChild(s);
+  });
+}
+/* a promise that always settles — a dead connection must surface as an error
+   the player can retry, never as a spinner that spins forever */
+function chCap(p, ms){
+  return new Promise(function(res, rej){
+    let done=false;
+    const t=setTimeout(function(){ if(!done){ done=true; rej(new Error('slow')); } }, ms||12000);
+    Promise.resolve(p).then(
+      function(v){ if(!done){ done=true; clearTimeout(t); res(v); } },
+      function(e){ if(!done){ done=true; clearTimeout(t); rej(e); } });
+  });
+}
+async function chRpc(fn, args, ms){
+  const db = await chCap(chSbGet(), ms||12000);
+  const r  = await chCap(db.rpc(fn, args), ms||12000);
+  if(r.error) throw r.error;
+  return r.data;
+}
+/* every write carries one of these; the server has a unique index on it, so a
+   retry after a dropped connection replays the token and is swallowed */
+function chToken(){
+  return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+}
+function chEsc(t){ const d=document.createElement('div'); d.textContent = t==null?'':String(t); return d.innerHTML; }
+
+/* ---------- entering ---------- */
+function chubEnter(){
+  if(!profile){ showAccounts(); return; }
+  chPending = chPending || chLoadPending();
+  chPaintPending();
+  show('scr-chub');
+  chFlushOutbox();          // quietly resend anything a bad connection lost earlier
+}
+function chPaintPending(){
+  const el=document.getElementById('chubPending');
+  if(!el) return;
+  if(!chPending){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="chnote">📢 You have an unpublished innings — <b>'
+    +(chPending.target|0)+'/'+(chPending.wkts|0)+'</b> in '+(chPending.overs|0)+' overs.'
+    +'<br><button class="btn" onclick="chShowPublish()">PUBLISH IT</button>'
+    +'<button class="btn alt" onclick="chDropPending()">Discard</button></div>';
+}
+function chDropPending(){
+  if(!confirm('Throw away that innings? It will not be published.')) return;
+  chClearPending(); chPaintPending();
+}
+
+/* ---------- SET TARGET ---------- */
+function chSetStart(){
+  if(!profile){ showAccounts(); return; }
+  show('scr-chovers');
+}
+function chFormat(overs){
+  const o = Math.max(1, Math.min(20, overs|0));
+  return { key:'chal', label:'🎯 CHALLENGE', overs:o,
+           maxWkts: o<=5 ? 5 : (o<=10 ? 7 : 10),
+           targetLo:0, targetHi:0, simLo:0, simHi:0, tournament:false };
+}
+function chSetOvers(o){
+  if(!profile){ showAccounts(); return; }
+  chStartInnings(chFormat(o), {mode:'set', overs:o});
+}
+/* one entry point for both hub innings — picks a random side so the player is
+   batting within two taps, and leaves the other modes' state well alone */
+function chStartInnings(fmt, ctx){
+  careerMode=false; managerManual=false; tutorialMode=false; T=null; tour=null;
+  chosenFormat = fmt;
+  const base = TEAMS[Math.floor(Math.random()*TEAMS.length)];
+  myTeam = buildMyTeam(base);
+  const others = TEAMS.filter(function(t){ return t.id!==myTeam.id; });
+  const opp = others[Math.floor(Math.random()*others.length)] || TEAMS[0];
+  chAttemptPayload = null;
+  CHNEXT = ctx;                       // startMatch() consumes this on its first line
+  startMatch(opp, fmt);
+}
+
+/* ---------- the innings finished ---------- */
+function chEndMatch(won){
+  try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+  const rows = M.batters.map(function(b,i){ return {name:b.name, runs:b.runs, balls:b.balls, st:myStatus(b,i)}; });
+  const card = cardTable(myTeam.name+' (you)', myTeam.c1, rows, M.score, M.wkts);
+  const ballsUsed = M.ballsTotal - M.balls;
+
+  if(CH.mode==='set'){
+    const score=M.score, wkts=M.wkts, overs=CH.overs;
+    if(score < 10){
+      // 9 all out is not a challenge anybody wants to chase
+      document.getElementById('chPubTitle').textContent='😅 TOO FEW';
+      document.getElementById('chPubTitle').style.color='#ff6b6b';
+      document.getElementById('chPubSub').innerHTML='You made <b>'+score+'/'+wkts+'</b> — a target needs at least <b>10</b> runs to be worth chasing. Have another go!';
+      document.getElementById('chPubCard').innerHTML=card;
+      const b=document.getElementById('chPubBtn');
+      b.style.display='none';
+      document.getElementById('chPubNote').textContent='';
+      // deliberately leaves chPending alone — an earlier innings still waiting to be
+      // published must survive a short one, not be thrown away by it
+      show('scr-chpub');
+      return;
+    }
+    crowdCheer(1.2); crowdClap();
+    speak('And that is the innings! '+score+' on the board. Let us see who can chase THAT down, my friend!');
+    chPending = { token:chToken(), target:score, wkts:wkts, overs:overs, card:card };
+    chSavePending();
+    chShowPublish();
+    return;
+  }
+
+  /* ----- chasing someone else's target ----- */
+  const r=CH.row;
+  if(won){ crowdCheer(1.4); crowdClap(); }
+  speak(won ? 'They have chased it down! What a knock! Take a bow!'
+            : 'Not enough! The target holds, heartbreak here, my friend.');
+  const need = Math.max(0, r.target - M.score);
+  document.getElementById('chEndTitle').textContent = won ? '🎉 TARGET CHASED!' : '😞 CAME UP SHORT';
+  document.getElementById('chEndTitle').style.color = won ? '#39ff88' : '#ff6b6b';
+  document.getElementById('chEndSub').innerHTML =
+      '<b>'+r.target+'</b> needed off <b>'+r.overs+'</b> overs — set by <b>'+chEsc(r.username)+'</b><br>'
+    + 'You made <b>'+M.score+'/'+M.wkts+'</b> '
+    + (won ? 'with <b>'+M.balls+'</b> ball'+(M.balls!==1?'s':'')+' to spare 🏆'
+           : '— <b>'+need+'</b> run'+(need!==1?'s':'')+' short');
+  document.getElementById('chEndBody').innerHTML = card;
+  show('scr-chend');
+
+  chAttemptPayload = { p_token:chToken(), p_challenge:r.id, p_key:chKey(), p_name:chUser(),
+                       p_score:M.score, p_wkts:M.wkts, p_balls:ballsUsed, p_won:!!won };
+  chSendAttempt();
+}
+
+/* ---------- publishing ---------- */
+function chSavePending(){ try{ localStorage.setItem(CH_PENDING_KEY, JSON.stringify(chPending)); }catch(e){} }
+function chClearPending(){ chPending=null; try{ localStorage.removeItem(CH_PENDING_KEY); }catch(e){} }
+function chLoadPending(){
+  try{
+    const p=JSON.parse(localStorage.getItem(CH_PENDING_KEY));
+    if(p && p.target>=10 && p.overs>0 && p.token) return p;
+  }catch(e){}
+  return null;
+}
+function chShowPublish(){
+  const p=chPending;
+  if(!p){ show('scr-chub'); return; }
+  document.getElementById('chPubTitle').textContent='🎯 TARGET SET!';
+  document.getElementById('chPubTitle').style.color='#39ff88';
+  document.getElementById('chPubSub').innerHTML=
+    'You scored <b>'+p.target+'/'+p.wkts+'</b> in <b>'+p.overs+' overs</b>.<br>Publish it and let everyone try to beat it.';
+  document.getElementById('chPubCard').innerHTML=p.card||'';
+  const b=document.getElementById('chPubBtn');
+  b.style.display=''; b.disabled=false; b.style.opacity=1; b.textContent='📢 PUBLISH CHALLENGE';
+  document.getElementById('chPubNote').textContent='';
+  show('scr-chpub');
+}
+async function chPublish(){
+  const p=chPending;
+  if(!p || chBusy) return;
+  chBusy=true;
+  const b=document.getElementById('chPubBtn'), note=document.getElementById('chPubNote');
+  b.disabled=true; b.style.opacity=.5; b.textContent='PUBLISHING…';
+  note.style.color='#9fb3d8'; note.textContent='Uploading your challenge…';
+  try{
+    const d=await chRpc('cric_publish', { p_token:p.token, p_key:chKey(), p_name:chUser(),
+                                          p_target:p.target, p_overs:p.overs, p_wkts:p.wkts });
+    if(!d || !d.ok) throw new Error((d&&d.err)||'failed');
+    chClearPending(); chPaintPending();
+    note.style.color='#39ff88';
+    note.textContent = d.dup ? '✅ Already up there — your challenge is live.'
+                             : '✅ Published! Other players can chase it now.';
+    b.textContent='✅ PUBLISHED'; b.disabled=true; b.style.opacity=.6;
+    setTimeout(function(){ chBrowse('newest'); }, 1300);
+  }catch(e){
+    // the innings itself is still saved — the player loses nothing by retrying
+    note.style.color='#ff6b6b';
+    note.textContent='Unable to publish challenge. Please try again.';
+    b.disabled=false; b.style.opacity=1; b.textContent='🔄 TRY AGAIN';
+  }finally{ chBusy=false; }
+}
+function chPubLater(){ chPaintPending(); show('scr-chub'); }   // the innings stays saved
+
+/* ---------- saving a chase ---------- */
+async function chSendAttempt(){
+  const pay=chAttemptPayload;
+  if(!pay) return;
+  const note=document.getElementById('chEndNote');
+  note.style.color='#9fb3d8'; note.textContent='Saving your attempt…';
+  try{
+    const d=await chRpc('cric_attempt', pay);
+    if(!d || !d.ok) throw new Error((d&&d.err)||'failed');
+    chAttemptPayload=null;
+    const rate = d.attempts>0 ? Math.round(d.rate) : 0;
+    note.style.color='#9fb3d8';
+    note.innerHTML='📊 Beaten by <b>'+d.wins+'</b> of <b>'+d.attempts+'</b> player'+(d.attempts===1?'':'s')
+                  +' — success rate <b>'+rate+'%</b>';
+    const row=chRows.find(function(x){ return String(x.id)===String(pay.p_challenge); });
+    if(row){ row.attempts=d.attempts; row.wins=d.wins; row.rate=d.rate; }
+  }catch(e){
+    // park it — chubEnter() flushes the outbox next time there is a connection
+    chOutboxAdd(pay);
+    chAttemptPayload=pay;
+    note.style.color='#ff6b6b';
+    note.innerHTML='Could not save your attempt — it is saved on this device and will go up later. '
+                  +'<button class="btn alt" onclick="chSendAttempt()">🔄 RETRY NOW</button>';
+  }
+}
+function chOutbox(){ try{ const a=JSON.parse(localStorage.getItem(CH_OUTBOX_KEY)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function chOutboxSave(a){ try{ localStorage.setItem(CH_OUTBOX_KEY, JSON.stringify(a.slice(-20))); }catch(e){} }
+function chOutboxAdd(p){
+  const a=chOutbox();
+  if(a.some(function(x){ return x.p_token===p.p_token; })) return;   // already queued
+  a.push(p); chOutboxSave(a);
+}
+async function chFlushOutbox(){
+  const a=chOutbox();
+  if(!a.length) return;
+  const keep=[];
+  for(let i=0;i<a.length;i++){
+    try{
+      const d=await chRpc('cric_attempt', a[i], 9000);
+      if(!d || !d.ok) throw new Error('failed');
+    }catch(e){ keep.push(a[i]); }
+  }
+  chOutboxSave(keep);
+}
+
+/* ---------- BROWSE ---------- */
+function chTabsPaint(){
+  ['trending','newest','hardest'].forEach(function(t){
+    const b=document.getElementById('chTab-'+t);
+    if(b) b.classList.toggle('on', t===chTab);
+  });
+}
+async function chBrowse(tab){
+  if(!profile){ showAccounts(); return; }
+  chTab = (tab==='newest'||tab==='hardest') ? tab : 'trending';
+  chPage=0; chRows=[];
+  chTabsPaint();
+  document.getElementById('chList').innerHTML='<div class="chnote">Loading targets…</div>';
+  document.getElementById('chMore').style.display='none';
+  show('scr-chlist');
+  await chFetch(true);
+}
+function chLoadMore(){ chPage++; chFetch(false); }
+async function chFetch(reset){
+  if(chBusy) return;
+  chBusy=true;
+  const more=document.getElementById('chMore');
+  more.disabled=true; more.style.opacity=.5; more.textContent='LOADING…';
+  try{
+    const d=await chRpc('cric_browse', { p_tab:chTab, p_limit:CH_PAGE, p_offset:chPage*CH_PAGE });
+    const rows = Array.isArray(d) ? d : [];
+    chRows = reset ? rows : chRows.concat(rows);
+    chPaint();
+    more.style.display = rows.length<CH_PAGE ? 'none' : 'inline-block';
+  }catch(e){
+    if(reset){
+      chRows=[];
+      document.getElementById('chList').innerHTML=
+        '<div class="chnote">Could not load challenges — check your internet.<br>'
+       +'<button class="btn alt" onclick="chBrowse(chTab)">🔄 RETRY</button></div>';
+    } else {
+      chPage--;                                   // that page never arrived; ask for it again next tap
+      more.style.display='inline-block';
+    }
+  }finally{
+    chBusy=false; more.disabled=false; more.style.opacity=1; more.textContent='LOAD MORE';
+  }
+}
+function chPaint(){
+  const el=document.getElementById('chList');
+  if(!chRows.length){
+    el.innerHTML='<div class="chnote">'
+      +(chTab==='trending' ? 'Nothing has been chased yet this week.' : 'No targets here yet.')
+      +'<br>Be the first — tap <b>SET TARGET</b>! 🎯</div>';
+    return;
+  }
+  el.innerHTML = chRows.map(function(r){
+    const tried = r.attempts|0, beat = r.wins|0;
+    const rate  = tried>0 ? Math.round(r.rate)+'%' : '—';
+    return '<div class="chcard">'
+      +'<div class="chtop"><span class="chby">By '+chEsc(r.username||'Player')+'</span>'
+      +'<span class="chov">'+(r.overs|0)+' overs</span></div>'
+      +'<div class="chtgt">Target: '+(r.target|0)+'</div>'
+      +'<div class="chstats">Completed by <b>'+beat+'</b> player'+(beat===1?'':'s')
+      +' &nbsp;•&nbsp; Success rate <b>'+rate+'</b>'
+      +' <span class="chdim">('+tried+' tried)</span></div>'
+      // id is forced through Number() so nothing from the server can ever reach this attribute as code
+      +'<button class="btn chgo" onclick="chChase('+(Number(r.id)||0)+')">🏏 CHASE IT</button>'
+      +'</div>';
+  }).join('');
+}
+function chChase(id){
+  if(!profile){ showAccounts(); return; }
+  const r=chRows.find(function(x){ return String(x.id)===String(id); });
+  if(!r || !(r.target>0) || !(r.overs>0)){    // a card that arrived broken must not start a match
+    document.getElementById('chList').innerHTML=
+      '<div class="chnote">That target could not be loaded. <button class="btn alt" onclick="chBrowse(chTab)">🔄 REFRESH</button></div>';
+    return;
+  }
+  chStartInnings(chFormat(r.overs),
+    { mode:'chase', overs:r.overs, row:{ id:r.id, target:r.target|0, overs:r.overs|0, username:r.username||'Player' } });
 }
 
 /* ---- boot: auto-login the last account, else pick/create one ---- */
