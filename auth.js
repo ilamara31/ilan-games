@@ -90,12 +90,12 @@
   // refetched from the server for the new account (never carried over).
   const WIPE_ON_SWITCH = ["ig_my_profile", "ig_friends_cache", "ig_friend_keys", "ig_uotw_shown"];
 
-  // The vault id of an account. The server treats usernames case-insensitively
-  // and nothing else, so we do exactly the same — NOT a slug: squashing spaces,
-  // "-" and "_" together would give "Ilan 1" and "Ilan-1" (two real, separate
-  // accounts) one shared vault, and each would open holding the other's saves.
+  // The vault id of an account: the username exactly as it is, nothing folded
+  // together. Usernames are case-sensitive and separators matter, so "Mananalt"
+  // / "mananalt" and "Ilan 1" / "Ilan-1" are each two separate players — give
+  // any two of them one vault id and each opens holding the other's progress.
   // "u:" keeps every real name clear of the ORPHAN bucket below.
-  function acctVault(n) { return "u:" + String(n || "").trim().toLowerCase().slice(0, 64); }
+  function acctVault(n) { return "u:" + String(n || "").trim().slice(0, 64); }
   // Progress on a device that no account has claimed (played before signing up,
   // or after a log out). Real accounts are all "u:…", so this can never clash.
   const ORPHAN = "device:unclaimed";
@@ -239,10 +239,9 @@
   // make `name` the active account, carrying over whatever the player had on this device
   function setActiveByName(name) {
     const s = storeLoad();
-    // case-insensitive, like the server — otherwise signing in as "ilan" after
-    // "Ilan" would make a second, empty soc_store account and every cricket /
-    // F1 / Penalty Kings / Puzzle Pad stat would read as zero.
-    let acct = s.accounts.find(a => String(a.name).trim().toLowerCase() === String(name).trim().toLowerCase());
+    // exact match, like the server — "Mananalt" and "mananalt" are two players
+    // and must keep their own cricket / F1 / Penalty Kings / Puzzle Pad stats.
+    let acct = s.accounts.find(a => String(a.name).trim() === String(name).trim());
     if (!acct) { acct = { id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name }; s.accounts.push(acct); }
     // NOTE: we deliberately do NOT merge scores from other on-device accounts.
     // Each account keeps its own progress + leaderboard — switching must never copy scores.
@@ -489,10 +488,9 @@
       if (data === "nouser") return { error: "No account called “" + name + "”. Check the spelling, or create a new account." };
       if (data === "wrong") return { error: "Wrong password for “" + name + "”. Passwords can't be recovered — try again." };
       if (data === "invalid") return { error: "Enter your username and password." };
-      // account_login answers "ok:<the name as stored>" so we always use the
-      // server's own spelling. Two legacy accounts can differ only by case
-      // ("Bob"/"bob"); keying anything off what was typed would give them one
-      // shared vault and one shared soc_store row.
+      // account_login answers "ok:<the name as stored>" so we always work from
+      // the server's own spelling (it also tidies stray spaces). Names are
+      // case-sensitive: "Mananalt" and "mananalt" are two separate accounts.
       if (String(data).slice(0, 2) !== "ok") return { error: "Could not sign in. Try again." };
       const canon = String(data).slice(3).trim();
       if (canon) name = canon;
@@ -511,7 +509,7 @@
   // Loads that account's own saves + leaderboard — never copies the current one's.
   async function switchAccount(name, pw) {
     name = (name || "").trim();
-    if (player && player.name && name.toLowerCase() === player.name.toLowerCase())
+    if (player && player.name && name === player.name)
       return { error: "You're already signed in as " + name + "." };
     return await logIn(name, pw);
   }

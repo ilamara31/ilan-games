@@ -136,15 +136,12 @@ begin
     raise exception 'accounts-setup: public.players has required column(s) with no default: %. Make them nullable (or give them a default) and run this file again.', blockers;
   end if;
 
-  -- Read the stored hash. Prefers an exact-case name match, then is stable, so
-  -- an old case-variant duplicate ("bob" vs "Bob") can never pick at random.
+  -- Read the stored hash for EXACTLY this name — "Mananalt" and "mananalt" are
+  -- two different players, so capitalisation must never be smoothed over.
   execute format($f$
     create or replace function public.ig_pw_read(p_name text) returns text
     language sql security definer set search_path = extensions, public, pg_temp as $b$
-      select %I from public.players
-       where lower(name) = lower(btrim(p_name))
-       order by (name = btrim(p_name)) desc, name
-       limit 1;
+      select %I from public.players where name = btrim(p_name) limit 1;
     $b$;
   $f$, col);
 
@@ -228,7 +225,7 @@ as $$
 declare h text; ok boolean := false;
 begin
   if p_name is null or btrim(p_name) = '' or p_password is null or p_password = '' then return 'invalid'; end if;
-  if not exists (select 1 from public.players where lower(name) = lower(btrim(p_name))) then return 'nouser'; end if;
+  if not exists (select 1 from public.players where name = btrim(p_name)) then return 'nouser'; end if;
 
   h := public.ig_pw_read(p_name);
   begin
@@ -237,15 +234,11 @@ begin
   end;
 
   -- Last resort for a hash scheme we don't recognise: ask the old function.
-  -- Pass the name exactly as stored, so it can only answer 'ok' or 'wrong' —
-  -- it must never be handed a spelling it would treat as a new account.
+  -- Names are exact, so it gets the one row we mean and can only answer
+  -- 'ok' or 'wrong' — never a spelling it would treat as a new account.
   if not ok and to_regprocedure('public.account_auth_legacy(text,text,text)') is not null then
     begin
-      ok := (public.account_auth_legacy(
-               (select name from public.players
-                 where lower(name) = lower(btrim(p_name))
-                 order by (name = btrim(p_name)) desc, name limit 1),
-               p_password, null) = 'ok');
+      ok := (public.account_auth_legacy(btrim(p_name), p_password, null) = 'ok');
     exception when others then ok := false;
     end;
   end if;
@@ -264,7 +257,9 @@ declare made boolean;
 begin
   if not public.ig_name_ok(p_name) then return 'invalid'; end if;
   if p_password is null or char_length(p_password) < 4 or char_length(p_password) > 64 then return 'invalid'; end if;
-  if exists (select 1 from public.players where lower(name) = lower(btrim(p_name))) then return 'taken'; end if;
+  -- Only the SAME spelling is taken. "Mananalt" and "mananalt" are two
+  -- different players with their own passwords, progress and scores.
+  if exists (select 1 from public.players where name = btrim(p_name)) then return 'taken'; end if;
 
   made := public.ig_pw_create(btrim(p_name), crypt(p_password, gen_salt('bf')));
   if not made then return 'taken'; end if;
@@ -275,10 +270,10 @@ end;
 $$;
 
 -- Sign in to an EXISTING account. Never creates one; a wrong password fails.
--- On success it answers 'ok:<name as stored>'. The game keeps each account's
--- saves apart by name, and two accounts left over from the old code can differ
--- only in capitalisation ("Bob" / "bob") — so it must use the spelling the
--- database holds, never the one that happened to be typed in.
+-- On success it answers 'ok:<name as stored>' so the game always works from
+-- the spelling the database holds. Names are matched EXACTLY: "Mananalt" and
+-- "mananalt" are two separate accounts, each with its own password, progress
+-- and leaderboard place.
 create or replace function public.account_login(p_name text, p_password text)
 returns text
 language plpgsql security definer
@@ -288,9 +283,7 @@ declare res text; canon text;
 begin
   res := public.ig_check(p_name, p_password);
   if res <> 'ok' then return res; end if;
-  select name into canon from public.players
-   where lower(name) = lower(btrim(p_name))
-   order by (name = btrim(p_name)) desc, name limit 1;
+  select name into canon from public.players where name = btrim(p_name) limit 1;
   update public.players set last_login = now() where name = canon;
   return 'ok:' || canon;
 end;
@@ -306,10 +299,7 @@ declare r record;
 begin
   if public.ig_check(p_name, p_password) <> 'ok' then return null; end if;
   select name, created_at, last_login into r
-    from public.players
-   where lower(name) = lower(btrim(p_name))
-   order by (name = btrim(p_name)) desc, name
-   limit 1;
+    from public.players where name = btrim(p_name) limit 1;
   return json_build_object('name', r.name, 'created_at', r.created_at, 'last_login', r.last_login);
 end;
 $$;
