@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v115';
+const CACHE = 'ilan-arcade-v116';
 const ASSETS = [
   './',
   './index.html',
@@ -10,9 +10,12 @@ const ASSETS = [
   './rec.js',
   './supabase-config.js',
   './auth.js',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-180.png',
+  './icon-192.png?v=2',
+  './icon-512.png?v=2',
+  './icon-180.png?v=2',
+  './icon-maskable-512.png?v=2',
+  './og-image.png?v=2',
+  './logo.png',
   './cricket/',
   './cricket/index.html',
   './catch/',

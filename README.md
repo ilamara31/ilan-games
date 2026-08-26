@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="Ilan Games logo" width="180">
+</p>
+
 # Ilan's Arcade 🎮
 
 Games made by Ilan!
