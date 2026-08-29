@@ -103,6 +103,17 @@
   .btn.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
   .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
   .secttl { font-size:13px; font-weight:900; letter-spacing:1px; color:#cfe0ff; margin:8px 0 2px; }
+  .secttl.master { color:#ffd76a; }
+  .mapcard.master { background:linear-gradient(160deg,#2a1c3f,#1a1330); border-color:#6b4ba8; }
+  .mapcard.master.sel { border-color:#ffd76a; }
+  .mapcard .mt { font-size:9px; font-weight:900; letter-spacing:.5px; color:#ffd76a; margin-top:3px; }
+  .masterlock { font-size:12px; color:#9fb3d8; background:#16243f; border:2px dashed #2f4570;
+    border-radius:14px; padding:12px 14px; max-width:560px; width:100%; margin:6px 0 10px; text-align:center; }
+  #crashMsg { position:absolute; left:50%; top:34%; transform:translate(-50%,-50%) scale(.9); z-index:6;
+    pointer-events:none; opacity:0; transition:opacity .15s, transform .15s;
+    background:rgba(180,20,20,.92); color:#fff; font-weight:900; font-size:15px;
+    padding:10px 16px; border-radius:12px; border:2px solid #ff8080; text-align:center; max-width:82vw; }
+  #crashMsg.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
   .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:4px 0; }
   .maps { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; max-width:560px; width:100%; margin:6px 0 10px; }
   .mapcard { background:#16243f; border:2px solid #213254; border-radius:14px; padding:10px 8px; cursor:pointer; transition:transform .1s,border-color .1s; }
@@ -208,6 +219,7 @@
       <button class="tbtn" id="boostBtn">⚡<br>BOOST</button>
     </div>
     <div id="vignette"></div>
+    <div id="crashMsg"></div>
     <button id="muteBtn" title="Sound on/off">🔊</button>
   </div>
   <div id="countdown"></div>
@@ -223,6 +235,9 @@
     <button class="btn" id="mpBtn">🌐 MULTIPLAYER<span class="newb">NEW!</span></button>
     <div class="secttl" style="margin-top:14px">🌍 CHOOSE CIRCUIT · unlock in order</div>
     <div class="maps" id="mapList"></div>
+    <div class="secttl master" style="margin-top:6px">🏆 MASTER MODE · broken bridges &amp; hairpins</div>
+    <div id="masterLock" class="masterlock hidden"></div>
+    <div class="maps" id="masterList"></div>
     <div class="row">
       <button class="btn green" id="startBtn">🏁 START RACE</button>
       <button class="btn alt" id="garageBtn">🛒 GARAGE</button>
@@ -495,8 +510,47 @@ const COUNTRIES = [
     theme:{ sky:['#caa46a','#f0e2c2'], fog:0xe6d3a8, ground:0xc2a15a, road:0x35322c, night:false } },
 ];
 COUNTRIES.forEach((c,i)=>c.idx=i);
+
+/* ============================ MASTER MODE ============================
+   Opens once the wallet clears ₹15,000. Four circuits in countries the
+   World Tour never visits, and the entry fees are brutal: ₹10k up to ₹100k.
+   Two things make them Master-grade:
+     • BROKEN BRIDGES — the deck lifts you up, then simply stops. Carry enough
+       speed off the lip and you fly the gap; back off and you drop into it.
+     • HAIRPINS — a 4th harmonic pinches the loop so corners snap shut on you,
+       and `centrif` multiplies how hard the bend throws you at the outside.
+   Prize is a straight multiple of the entry fee (see MASTER_PAY), so a podium
+   pays and anything below it costs you real money. */
+const MASTER_MIN = 15000;                 // wallet needed before Master Mode opens
+const MASTER_PAY = [2.0, 1.5, 1.0, 0.5];  // P1 doubles your fee, P3 breaks even, P4 halves it
+const MASTER_PAY_TAIL = 0.25;             // P5 and below
+const MASTERS = [
+  { id:'m_iceland', name:'Iceland', flag:'🇮🇸', pace:108, laps:3, fee:10000, master:true, centrif:1.35,
+    gaps:[{at:0.26,len:30},{at:0.68,len:26}],
+    gen:{n:18, base:152, amps:[0.26,0.16,0.10,0.07], phase:[0.4,1.2,0.7,0.2], squash:0.84, rot:0.3},
+    theme:{ sky:['#5c7fa8','#dce9f5'], fog:0xc8dbe8, ground:0x6b7f74, road:0x2b2f36, night:false } },
+  { id:'m_norway', name:'Norway', flag:'🇳🇴', pace:110, laps:3, fee:25000, master:true, centrif:1.5,
+    gaps:[{at:0.18,len:32},{at:0.52,len:30},{at:0.81,len:28}],
+    gen:{n:20, base:148, amps:[0.28,0.18,0.12,0.09], phase:[1.1,0.5,1.4,0.8], squash:0.78, rot:0.9},
+    theme:{ sky:['#3f6b8c','#cfe2ee'], fog:0xb9d2e0, ground:0x2f6b4a, road:0x2a2e34, night:false } },
+  { id:'m_swiss', name:'Switzerland', flag:'🇨🇭', pace:112, laps:4, fee:50000, master:true, centrif:1.65,
+    gaps:[{at:0.14,len:34},{at:0.41,len:32},{at:0.66,len:34},{at:0.88,len:30}],
+    gen:{n:21, base:144, amps:[0.30,0.20,0.14,0.10], phase:[0.2,1.5,0.9,1.2], squash:0.88, rot:0.4},
+    theme:{ sky:['#7fa6c8','#e8f2fa'], fog:0xd6e6f2, ground:0x8fa39a, road:0x2c3037, night:false } },
+  { id:'m_nepal', name:'Nepal', flag:'🇳🇵', pace:114, laps:4, fee:100000, master:true, centrif:1.85,
+    gaps:[{at:0.11,len:36},{at:0.33,len:34},{at:0.55,len:36},{at:0.74,len:32},{at:0.92,len:34}],
+    gen:{n:22, base:140, amps:[0.32,0.22,0.16,0.12], phase:[0.8,0.3,1.6,0.5], squash:0.82, rot:1.2},
+    theme:{ sky:['#16233f','#3d5a80'], fog:0x24344f, ground:0x4a5568, road:0x24272e, night:true } },
+];
+MASTERS.forEach((c,i)=>{ c.idx = COUNTRIES.length + i; c.win = Math.round(c.fee*MASTER_PAY[0]); });
+// every circuit, base tour + Master, for lookups by id
+const ALL_TRACKS = COUNTRIES.concat(MASTERS);
+function masterOpen(){ return (career().money||0) > MASTER_MIN; }
 // a circuit is playable if it's the free race or its index is within the unlocked count
-function isUnlocked(c){ return c.free || c.idx < career().unlocked; }
+function isUnlocked(c){
+  if (c.master) return masterOpen();          // Master circuits gate on the wallet, not race order
+  return c.free || c.idx < career().unlocked;
+}
 // start on the furthest circuit the player has unlocked (nicer than always India)
 let chosenCountry = COUNTRIES.slice().reverse().find(c=>!c.free && isUnlocked(c)) || COUNTRIES[0];
 
@@ -505,7 +559,10 @@ function starTrack(g){
   const N = g.n, pts = [];
   for (let i=0;i<N;i++){
     const th = (i/N)*Math.PI*2 + (g.rot||0);
-    const R = g.base*(1 + g.amps[0]*Math.sin(th+g.phase[0]) + g.amps[1]*Math.sin(2*th+g.phase[1]) + g.amps[2]*Math.sin(3*th+g.phase[2]));
+    let R = g.base*(1 + g.amps[0]*Math.sin(th+g.phase[0]) + g.amps[1]*Math.sin(2*th+g.phase[1]) + g.amps[2]*Math.sin(3*th+g.phase[2]));
+    // 4th harmonic (Master circuits only): pinches the loop into genuine hairpins —
+    // the radius collapses hard on the inside of a bend instead of easing round it
+    if (g.amps[3]) R += g.base*g.amps[3]*Math.sin(4*th+(g.phase[3]||0));
     pts.push(new THREE.Vector3(Math.cos(th)*R, 0, Math.sin(th)*R*(g.squash||1)));
   }
   return pts;
@@ -514,6 +571,42 @@ function starTrack(g){
 // track state — rebuilt by buildTrack() for each country
 const FRAMES = 600;
 let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [], frameCurv = [];
+/* ---- broken bridges (Master circuits) ----
+   Per frame we store the deck height and whether the deck is MISSING there.
+   A gap reads as: road ramps up onto the bridge, the deck stops dead, open air
+   for `len` units, then the deck resumes at the same height and ramps back down. */
+const BRIDGE_H = 5.2, BRIDGE_APPROACH = 46;
+let frameDeckY = [], frameHole = [], gapRanges = [];
+function buildGaps(country){
+  frameDeckY = new Array(FRAMES).fill(0);
+  frameHole  = new Array(FRAMES).fill(false);
+  gapRanges  = [];
+  for (const g of (country.gaps || [])){
+    const st = g.at*TRACK_LEN, en = st + g.len;
+    gapRanges.push({ s:st, e:en, len:g.len });
+    for (let i=0;i<FRAMES;i++){
+      const prog = (i/FRAMES)*TRACK_LEN;
+      const dS = wrapDelta(prog - st), dE = wrapDelta(prog - en);
+      if (dS > 0 && dE < 0){ frameHole[i] = true; frameDeckY[i] = BRIDGE_H; }
+      else if (dS <= 0 && dS > -BRIDGE_APPROACH) frameDeckY[i] = Math.max(frameDeckY[i], BRIDGE_H*(1 + dS/BRIDGE_APPROACH));
+      else if (dE >= 0 && dE <  BRIDGE_APPROACH) frameDeckY[i] = Math.max(frameDeckY[i], BRIDGE_H*(1 - dE/BRIDGE_APPROACH));
+    }
+  }
+}
+// deck height under a given progress (0 on every normal circuit)
+function deckYAt(prog){
+  if (!frameDeckY.length) return 0;
+  let u = (prog % TRACK_LEN) / TRACK_LEN; if (u < 0) u += 1;
+  const f = u*FRAMES, i = Math.floor(f)%FRAMES, j = (i+1)%FRAMES, a = f - Math.floor(f);
+  return frameDeckY[i]*(1-a) + frameDeckY[j]*a;
+}
+// the gap straddling this progress, or null if there's solid deck underneath
+function gapAt(prog){
+  for (const g of gapRanges){
+    if (wrapDelta(prog-g.s) > 0 && wrapDelta(prog-g.e) < 0) return g;
+  }
+  return null;
+}
 let worldGroup = null;
 function buildFrames(){
   framePos = []; frameTan = []; frameRight = []; frameCurv = [];
@@ -535,6 +628,7 @@ function buildTrack(country){
   curve = new THREE.CatmullRomCurve3(starTrack(country.gen), true, 'catmullrom', 0.5);
   TRACK_LEN = curve.getLength();
   buildFrames();
+  buildGaps(country);          // deck heights + holes for this circuit (no-op off Master Mode)
   const th = country.theme;
   const oldBg = scene.background;
   scene.background = makeSkyTexture(th.sky);
@@ -574,13 +668,16 @@ function ribbonGeometry(latA, latB, yLift){
   const N = FRAMES, pos = new Float32Array(N*2*3), idx = [];
   for (let i=0; i<N; i++){
     const P = framePos[i], R = frameRight[i];
+    const y = (frameDeckY[i] || 0) + yLift;        // ride up over the bridge deck
     const ax = P.x + R.x*latA, az = P.z + R.z*latA;
     const bx = P.x + R.x*latB, bz = P.z + R.z*latB;
-    pos[i*6+0]=ax; pos[i*6+1]=yLift; pos[i*6+2]=az;
-    pos[i*6+3]=bx; pos[i*6+4]=yLift; pos[i*6+5]=bz;
+    pos[i*6+0]=ax; pos[i*6+1]=y; pos[i*6+2]=az;
+    pos[i*6+3]=bx; pos[i*6+4]=y; pos[i*6+5]=bz;
   }
   for (let i=0; i<N; i++){
-    const i0=i*2, i1=i*2+1, j0=((i+1)%N)*2, j1=((i+1)%N)*2+1;
+    const k=(i+1)%N;
+    if (frameHole[i] || frameHole[k]) continue;   // the bridge is out here — leave a hole
+    const i0=i*2, i1=i*2+1, j0=k*2, j1=k*2+1;
     idx.push(i0,i1,j1, i0,j1,j0);
   }
   const g = new THREE.BufferGeometry();
@@ -595,18 +692,20 @@ function dashGeometry(lat, dashLen, gapLen, width, yLift){
   let prev = null;
   for (let i=0; i<=FRAMES; i++){
     const k = i % FRAMES;
+    if (frameHole[k]){ prev = null; continue; }      // no markings across an open gap
     const P = framePos[k], R = frameRight[k];
     const cx = P.x + R.x*lat, cz = P.z + R.z*lat;
+    const y  = (frameDeckY[k] || 0) + yLift;        // sit on the bridge deck where there is one
     const lx = cx - R.x*width/2, lz = cz - R.z*width/2;
     const rx = cx + R.x*width/2, rz = cz + R.z*width/2;
     if (on){
       if (prev){
         const base = v;
-        positions.push(prev.lx,yLift,prev.lz, prev.rx,yLift,prev.rz, lx,yLift,lz, rx,yLift,rz);
+        positions.push(prev.lx,prev.y,prev.lz, prev.rx,prev.y,prev.rz, lx,y,lz, rx,y,rz);
         idx.push(base,base+1,base+3, base,base+3,base+2); v += 4;
       }
     }
-    prev = on ? {lx,lz,rx,rz} : null;
+    prev = on ? {lx,lz,rx,rz,y} : null;
     acc += step;
     if (on && acc >= dashLen){ on=false; acc=0; prev=null; }
     else if (!on && acc >= gapLen){ on=true; acc=0; }
@@ -644,8 +743,44 @@ function buildWorld(group, theme){
   group.add(new THREE.Mesh(dashGeometry(-HALF_W-0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
   group.add(new THREE.Mesh(dashGeometry( HALF_W+0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
 
+  makeBridges(group);            // rails + broken-edge hazard stripes (Master circuits only)
   makeStartLine(group);          // start / finish checkered line
   makeRoadside(group, theme);    // instanced roadside posts + trees
+}
+/* Rails down both sides of every bridge deck, and a red hazard bar across each
+   broken edge so the drop is readable at speed rather than a nasty surprise. */
+function makeBridges(group){
+  if (!gapRanges.length) return;
+  const railMat = new THREE.MeshLambertMaterial({ color:0x8b96a8 });
+  const warnMat = new THREE.MeshBasicMaterial({ color:0xff3b3b });
+  const railGeo = [];
+  for (let side of [-1, 1]){
+    const lat = side * (HALF_W + 0.9);
+    for (let i=0; i<FRAMES; i++){
+      const k=(i+1)%FRAMES;
+      if ((frameDeckY[i]||0) < 0.6 || frameHole[i] || frameHole[k]) continue;
+      const P=framePos[i], R=frameRight[i], Q=framePos[k], R2=frameRight[k];
+      const g = new THREE.BoxGeometry(0.35, 1.5, framePos[i].distanceTo(framePos[k])+0.4);
+      const m = new THREE.Mesh(g, railMat);
+      m.position.set((P.x+R.x*lat + Q.x+R2.x*lat)/2, (frameDeckY[i]+frameDeckY[k])/2 + 0.75,
+                     (P.z+R.z*lat + Q.z+R2.z*lat)/2);
+      m.lookAt(Q.x+R2.x*lat, m.position.y, Q.z+R2.z*lat);
+      railGeo.push(m);
+    }
+  }
+  railGeo.forEach(m=>group.add(m));
+  // hazard bar on the take-off lip and the far landing lip of every gap
+  for (const g of gapRanges){
+    for (const prog of [g.s, g.e]){
+      let u=(prog%TRACK_LEN)/TRACK_LEN; if(u<0)u+=1;
+      const i=Math.floor(u*FRAMES)%FRAMES;
+      const P=framePos[i], R=frameRight[i], T=frameTan[i];
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(HALF_W*2, 0.5, 0.9), warnMat);
+      bar.position.set(P.x, (frameDeckY[i]||0)+0.3, P.z);
+      bar.lookAt(P.x+T.x, (frameDeckY[i]||0)+0.3, P.z+T.z);
+      group.add(bar);
+    }
+  }
 }
 function makeStartLine(group){
   // checker canvas
@@ -764,6 +899,13 @@ const MAX_LAT = HALF_W - 1.4;           // rivals stay on the tarmac
 const OFF_EDGE = HALF_W - 0.7;          // past this the player's wheels are on the grass
 const PLAYER_MAX_LAT = HALF_W + 7;      // how far off the track the player can stray
 const CENTRIF = 4.6;                    // corner-out force strength (× speed × curvature)
+/* ---- broken-bridge flight ----
+   Lift off the lip is proportional to SPEED, so the gap is a speed check: brake
+   into a broken bridge and you drop straight into it. Airtime = 2·vy/GRAV, so at
+   ~90 units/s you clear ~47 units and the widest gap (36) is comfortably makeable,
+   while dawdling in at 60 gets you barely 21 and a long look at the canyon. */
+const AIR_GRAV = 34, AIR_VY_MUL = 0.10, AIR_VY_MAX = 14;
+const CRASH_HOLD = 1.2;                 // seconds lost being lifted back onto the deck
 
 let player, rivals = [], all = [];
 function disposeObj(o){
@@ -801,6 +943,7 @@ function mkRacer(color, isPlayer, opts){
   return {
     mesh, color, isPlayer,
     prog: 0, lateral: 0, speed: 0, top: 100,
+    y: 0, vy: 0, air: false, crashT: 0, _gap: null,      // broken-bridge flight state
     targetLat: 0, laneTimer: 0, wheelSpin: 0, finished:false, finishTime:0,
   };
 }
@@ -825,6 +968,7 @@ function gridPlace(r, slot){
   r.lateral = (col === 0 ? -1 : 1) * (LANE_W*0.7);
   r.targetLat = r.lateral;
   r.speed = 0;
+  r.y = deckYAt(r.prog); r.vy = 0; r.air = false; r.crashT = 0; r._gap = null;
 }
 
 /* ---------------- input ---------------- */
@@ -882,6 +1026,9 @@ let boostLock = false;
 
 function startRace(){
   const f = career();
+  if (chosenCountry.master && !masterOpen()){
+    flashWallet(`🔒 Master Mode opens above ₹${MASTER_MIN.toLocaleString()} — you have ₹${(f.money||0).toLocaleString()}.`); return;
+  }
   if (!isUnlocked(chosenCountry)){ flashWallet('🔒 That circuit is still locked.'); return; }
   if (!chosenCountry.free && f.money < chosenCountry.fee){
     flashWallet(`💸 Need ₹${chosenCountry.fee} entry — race the free 🇦🇫 practice to earn.`); return;
@@ -918,7 +1065,7 @@ function resetShowcase(){
   all.forEach(r => { if (r.mesh){ scene.remove(r.mesh); disposeObj(r.mesh); } });
   rivals = []; all = [];
   player = mkPlayer(); player.name='You'; player.top=chosenCar.top;
-  player.prog = 0; player.lateral = 0; all.push(player);
+  player.prog = 0; player.lateral = 0; player.y = deckYAt(0); all.push(player);
   updateCarMesh(player);
 }
 function finishRace(){
@@ -1028,20 +1175,28 @@ function updatePlayer(dt){
     player.prog += player.speed * dt;
     return;
   }
+  if (player.crashT > 0){                          // being lifted back onto the deck
+    player.crashT -= dt; player.speed = 0;
+    player.y = deckYAt(player.prog);
+    return;
+  }
   const f = sampleAt(player.prog);                 // curvature under the car (only .curv used here)
   const steer = (rightHeld?1:0) - (leftHeld?1:0);
   player._steer = steer;
 
   // off-track? a wheel is on the grass past the white line
-  const offTrack = Math.abs(player.lateral) > OFF_EDGE;
+  const offTrack = Math.abs(player.lateral) > OFF_EDGE && !player.air;   // no grass in mid-air
 
   // steering authority — strong at speed, sluggish (understeer) on the grass
-  const grip = (0.35 + 0.65*Math.min(1, player.speed/player.top)) * (offTrack ? 0.55 : 1);
+  // airborne you have almost no authority — the line you leave the lip on is the line you land on
+  const grip = (0.35 + 0.65*Math.min(1, player.speed/player.top)) * (offTrack ? 0.55 : 1) * (player.air ? 0.22 : 1);
   player.lateral += steer * 26 * grip * dt;
 
   // F1 cornering: the bend flings you toward its OUTSIDE. Steer INTO the corner to hold
   // the racing line — do nothing and you run wide onto the grass and bleed speed.
-  const centrif = THREE.MathUtils.clamp(-f.curv * player.speed * CENTRIF, -22, 22);
+  // Master circuits crank this up — their hairpins genuinely try to spit you off
+  const cMul = chosenCountry.centrif || 1;
+  const centrif = player.air ? 0 : THREE.MathUtils.clamp(-f.curv * player.speed * CENTRIF * cMul, -30, 30);
   player.lateral += centrif * dt;
 
   // dash / boost
@@ -1063,6 +1218,7 @@ function updatePlayer(dt){
   player.speed += (target - player.speed) * rate * dt;
   if (player.speed < 0) player.speed = 0;
   player.prog += player.speed * dt;
+  updateAir(player, dt);                 // broken-bridge launch / flight / landing
 
   player._boosting = boosting;
   player._offTrack = offTrack;
@@ -1075,6 +1231,47 @@ function updatePlayer(dt){
   $('vignette').classList.toggle('on', boosting || offTrack);
 }
 
+/* Rivals take a scripted arc across a gap — they always make it. The gap is a
+   test for the human, not a lottery that randomly deletes half the AI field. */
+function riderArc(r){
+  const gap = gapAt(r.prog);
+  if (!gap){ r.y = deckYAt(r.prog); return; }
+  const t = THREE.MathUtils.clamp(wrapDelta(r.prog-gap.s)/gap.len, 0, 1);
+  r.y = deckYAt(r.prog) + Math.sin(Math.PI*t)*7;
+}
+// pull the player out of a canyon: set down just past the gap, all momentum gone
+function rescueFromGap(r){
+  const g = r._gap || gapAt(r.prog) || gapRanges[0];
+  // keep the lap! gap coords are first-lap values, so re-base them onto the current lap
+  if (g) r.prog = Math.floor(r.prog / TRACK_LEN)*TRACK_LEN + g.e + 8;
+  r.lateral = 0; r.speed = 0; r.vy = 0; r.air = false; r._gap = null;
+  r.y = deckYAt(r.prog); r.crashT = CRASH_HOLD;
+  if (r.isPlayer){
+    const el = $('crashMsg');
+    el.textContent = '💥 INTO THE GAP — carry more speed off the lip!';
+    el.classList.add('on'); setTimeout(()=>el.classList.remove('on'), 1500);
+  }
+}
+function updateAir(r, dt){
+  if (!gapRanges.length){ r.y = 0; return; }          // ordinary circuit — stays flat
+  if (!r.isPlayer){ riderArc(r); return; }
+  const gap = gapAt(r.prog);
+  if (!r.air){
+    if (!gap){ r.y = deckYAt(r.prog); return; }
+    r.air = true; r._gap = gap;                        // just ran off the broken edge
+    r.vy = Math.min(AIR_VY_MAX, r.speed*AIR_VY_MUL);
+  }
+  r.vy -= AIR_GRAV*dt;
+  r.y  += r.vy*dt;
+  const deck = deckYAt(r.prog), overGap = !!gapAt(r.prog);
+  if (!overGap && r.y <= deck){                        // wheels back on solid deck
+    r.y = deck; r.vy = 0; r.air = false; r._gap = null;
+    if (Math.abs(r.lateral) > HALF_W) return rescueFromGap(r);   // came down off the side
+    r.speed *= 0.92;                                   // scrub a little on touchdown
+    return;
+  }
+  if (overGap && r.y < deck - 16) rescueFromGap(r);    // didn't make it across
+}
 function updateRival(r, dt){
   // pace: hold cruise; a mild pull toward the player keeps the pack tight & the
   // race exciting without teleporting (bounded, so it can't cause bugs).
@@ -1084,6 +1281,7 @@ function updateRival(r, dt){
   const target = THREE.MathUtils.clamp(r.cruise + rubber, 60, 118);
   r.speed += (target - r.speed) * 1.2 * dt;
   r.prog += r.speed * dt;
+  updateAir(r, dt);                      // arc them over any broken bridge
 
   // lane-change AI
   r.laneTimer -= dt;
@@ -1121,7 +1319,11 @@ function clampLaterals(){
   // the player may run wide onto the grass (penalised in updatePlayer); rivals hold the tarmac.
   // remote humans get the player limit — they really can be on the grass on their own screen.
   for (const r of all){
-    const lim = (r.isPlayer || (r.isRemote && !r.mpBot)) ? PLAYER_MAX_LAT : MAX_LAT;
+    // On a raised bridge deck the rails hold you on — there is no grass to run wide onto.
+    // In MID-AIR the limit opens back up: drift off line over a gap and you miss the deck.
+    const onDeck = !r.air && deckYAt(r.prog) > 1;
+    const lim = onDeck ? HALF_W
+              : (r.isPlayer || (r.isRemote && !r.mpBot)) ? PLAYER_MAX_LAT : MAX_LAT;
     r.lateral = THREE.MathUtils.clamp(r.lateral, -lim, lim);
   }
 }
@@ -1159,6 +1361,7 @@ const _wp = new THREE.Vector3(), _look = new THREE.Vector3(), _camGoal = new THR
 function updateCarMesh(r){
   const f = sampleAt(r.prog);
   _wp.copy(f.pos).addScaledVector(f.right, r.lateral);
+  _wp.y += (r.y || 0);                    // bridge deck height + airtime
   r.mesh.position.copy(_wp);
   // face along tangent (car front is -z)
   _look.copy(_wp).add(f.tan);
@@ -1174,6 +1377,10 @@ function updateCarMesh(r){
     r._yaw = (r._yaw ?? 0) + (yawT - (r._yaw ?? 0)) * 0.18;
     r.mesh.rotateY(r._yaw);
   }
+  // pitch nose-up on the way out, nose-down on the way in
+  if (r.air || (r.vy && Math.abs(r.vy) > 0.01)){
+    r.mesh.rotateX(THREE.MathUtils.clamp((r.vy||0)*0.028, -0.34, 0.34));
+  }
   // spin wheels by speed
   r.wheelSpin += r.speed * 0.02;
   const ws = r.mesh.userData.wheels;
@@ -1182,6 +1389,7 @@ function updateCarMesh(r){
 function placeCamera(snap){
   const f = sampleAt(player.prog);
   _wp.copy(f.pos).addScaledVector(f.right, player.lateral);
+  _wp.y += (player.y || 0);               // follow the car up onto the bridge and into the air
   // behind & above, along the track tangent
   _camGoal.copy(_wp).addScaledVector(f.tan, -13).addScaledVector(UP, 6.2);
   if (snap) camera.position.copy(_camGoal);
@@ -1253,6 +1461,11 @@ function loop(now){
 /* ---------------- economy helpers ---------------- */
 // prize scales with finishing position between a floor (half the fee) and the win purse
 function prizeFor(pos,total,L){
+  // Master Mode pays a flat multiple of the entry fee: win big or lose real money
+  if (L.master){
+    const mul = MASTER_PAY[pos-1] != null ? MASTER_PAY[pos-1] : MASTER_PAY_TAIL;
+    return Math.round((L.fee||0) * mul);
+  }
   const floor = Math.round((L.fee||0)*0.5);
   return Math.round(floor + (L.win-floor)*Math.pow((total-pos)/Math.max(1,total-1),1.6));
 }
@@ -1285,11 +1498,44 @@ function buildMenu(){
       <div class="fee">${info}</div>
     </div>`;
   }).join('');
+  // ---- Master Mode: wallet-gated, brutal entry fees, pays a flat multiple ----
+  const open = masterOpen();
+  const lock = $('masterLock'), mlist = $('masterList');
+  lock.classList.toggle('hidden', open);
+  if (!open){
+    lock.innerHTML = `🔒 <b>Master Mode locks until your balance passes ₹${MASTER_MIN.toLocaleString()}</b><br>`
+      + `You have ₹${(f.money||0).toLocaleString()} — win ₹${Math.max(0, MASTER_MIN+1-(f.money||0)).toLocaleString()} more on the World Tour.`;
+  }
+  mlist.innerHTML = MASTERS.map(c=>{
+    const afford = (f.money||0) >= c.fee;
+    const pay = `P1 ₹${Math.round(c.fee*MASTER_PAY[0]).toLocaleString()} · P3 breaks even`;
+    return `<div class="mapcard master ${c.id===chosenCountry.id?'sel':''} ${open&&afford?'':'locked'}" data-id="${c.id}">
+      <div class="fl">${open?c.flag:'🔒'}</div>
+      <div class="mn">${c.name}</div>
+      <div class="md">${c.laps} laps · ${c.gaps.length} 🌉${c.theme.night?' · 🌙':''}</div>
+      <div class="fee">Entry ₹${c.fee.toLocaleString()}${afford?'':' · need more'}</div>
+      <div class="mt">${pay}</div>
+    </div>`;
+  }).join('');
+  mlist.querySelectorAll('.mapcard').forEach(el=>{
+    el.onclick = ()=>{
+      const c = MASTERS.find(x=>x.id===el.dataset.id);
+      if (!masterOpen()){ flashWallet(`🔒 Master Mode needs more than ₹${MASTER_MIN.toLocaleString()}.`); return; }
+      if ((career().money||0) < c.fee){ flashWallet(`💸 ${c.name} costs ₹${c.fee.toLocaleString()} to enter.`); return; }
+      chosenCountry = c;
+      $('mapList').querySelectorAll('.mapcard').forEach(x=>x.classList.remove('sel'));
+      mlist.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
+      buildTrack(chosenCountry);
+      if (state==='menu') resetShowcase();
+    };
+  });
+
   maps.querySelectorAll('.mapcard').forEach(el=>{
     el.onclick = ()=>{
       const c = COUNTRIES.find(x=>x.id===el.dataset.id);
       if (!isUnlocked(c)){ flashWallet(`🔒 Win ${COUNTRIES[c.idx-1].name} first to unlock ${c.name}.`); return; }
       chosenCountry = c;
+      $('masterList').querySelectorAll('.mapcard').forEach(x=>x.classList.remove('sel'));
       maps.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
       buildTrack(chosenCountry);              // refresh the menu backdrop to this country
       if (state==='menu') resetShowcase();    // re-seat the idling car on the new circuit

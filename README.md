@@ -15,7 +15,7 @@ Games made by Ilan!
 - 🧺 **Basket Catch** — `catch/` — move the basket and catch the falling things.
 - 🍔 **Basket Catch 2** — `catch2/` — catch fruit & dodge junk food; junk fills a one-way 🤢 Tummy meter, 5 lives, plus 🎉 Cheat Day / 🌪️ Junk Storm events.
 - ✋ **Hand Cricket League** — `handcricket/` — pick numbers 1–10; Normal & Crazy modes (same number = number²!), an AI that learns your patterns (Easy→Expert), real-time **online rooms** with a friend (Supabase), plus League / Tournament / World Cup with group stages & knockouts, a themes shop, and stats.
-- 🏎️ **Indian Grand Prix** — `f1/` — pseudo-3D F1 racer, beat the grid over 3 laps for the podium.
+- 🏎️ **Indian Grand Prix** — `f1/` — pseudo-3D F1 racer, beat the grid over 3 laps for the podium. **🏆 Master Mode** opens once your balance passes ₹15,000: four brutal circuits (Iceland, Norway, Switzerland, Nepal) with entry fees from ₹10,000 to ₹100,000, **broken bridges** you have to jump and land, and hairpins that fight you. Win and you double your fee; finish off the podium and you lose real money.
 - ⚽ **Penalty Kings** — `football/` — penalty shootout knockout tournament.
 - 🌈 **Rainbow Obby** — `obby/` — 3D obstacle course (Three.js): 50 stages across 5 worlds, coins, checkpoints, and a shop of skins, trails, auras &amp; power coils.
 - 🏓 **Ping Pong Tour** — `pptour/` — first-person table tennis: tutorial, tournament ladder (Quarter-Final → World Championship), coins, and a shop of racket designs.
