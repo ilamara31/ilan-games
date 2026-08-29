@@ -106,6 +106,8 @@
   .seg{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
   .chip{border:2px solid var(--cardb);background:rgba(255,255,255,.04);color:var(--ink);border-radius:999px;
     padding:9px 16px;font-weight:800;font-size:14px;cursor:pointer;transition:.15s;}
+  .chip.locked{opacity:.38;filter:grayscale(.75);}
+  .stakepill{font-size:11px;font-weight:900;padding:3px 9px;border-radius:999px;background:rgba(120,230,160,.18);color:var(--good);margin-left:6px;display:inline-block;}
   .chip.on{border-color:var(--accent);background:linear-gradient(150deg,rgba(255,207,61,.25),rgba(255,94,138,.18));box-shadow:0 0 16px rgba(255,207,61,.25);}
   .label{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;}
 
@@ -311,6 +313,20 @@
           <select class="numsel" id="roomCustomMax"></select>
         </div>
       </div>
+      <div class="card" id="stakeCard">
+        <div class="label">💰 Coin Match (host picks)</div>
+        <div class="muted" style="font-size:12px;margin-top:4px;text-align:left">Both players put in half the pot. <b>Winner takes it all.</b> Tie = everyone gets their coins back. Quit = you lose your coins.</div>
+        <div class="seg" id="roomStakeSeg" style="margin-top:10px;flex-wrap:wrap;gap:6px">
+          <button class="chip on" data-stake="0">🤝 Friendly</button>
+          <button class="chip" data-stake="100">🪙 100</button>
+          <button class="chip" data-stake="500">🪙 500</button>
+          <button class="chip" data-stake="1000">💰 1000</button>
+          <button class="chip" data-stake="1500">💰 1500</button>
+          <button class="chip" data-stake="2000">💎 2000</button>
+          <button class="chip" data-stake="5000">👑 5000</button>
+        </div>
+        <div class="muted" id="stakeInfo" style="margin-top:10px;font-size:12px">No coins at stake — just for fun.</div>
+      </div>
       <button class="btn g block" id="createRoomBtn">➕ Create Room</button>
       <div class="card">
         <div class="field"><div class="label" style="text-align:left">Have a code?</div>
@@ -334,10 +350,11 @@
           <button class="btn sm b" id="shareMail">✉️ Email</button>
           <button class="btn sm gray" id="shareCopy">🔗 Copy link</button>
         </div>
-        <div class="pill-tag" id="lobbyMode" style="margin-top:10px;display:inline-block">Normal</div>
+        <div class="pill-tag" id="lobbyMode" style="margin-top:10px;display:inline-block">Normal</div><span class="stakepill" id="lobbyStake" style="display:none"></span>
       </div>
       <div class="label">Players (<span id="lobbyCount">1</span>/10)</div>
       <div id="lobbyList" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn b block" id="stakeAccept" style="display:none">💰 Accept stake</button>
       <button class="btn g block" id="lobbyStart" style="display:none">▶ Start Match</button>
       <div class="muted" id="lobbyWait" style="text-align:center">Waiting for the host to start…</div>
       <div class="muted" style="text-align:center;font-size:12px">2 players = quick match (rematch on). 3+ = tournament: everyone plays everyone → top players qualify → knockouts.</div>
@@ -1029,6 +1046,9 @@ const HOST_SILENCE_MS=22000, PLAYER_SILENCE_MS=22000, PING_MS=4000;
 // silence = 2-3 missed beats = genuinely gone → award the walkover in ~11s, not 45s.
 const OPP_GONE_MS=11000;
 let roomMode='normal', roomCustom=false, roomMaxN=10, R=null, RGEN=0, LWDog=null;
+/* ---- coin matches: the pot both players play for. Each side puts in HALF, winner takes the lot. ---- */
+let roomStake=0;
+const stakeHalf = st => ((st|0)/2)|0;
 
 const MP={
   sb:null, ch:null, code:null, isHost:false,
@@ -1101,9 +1121,25 @@ function hostDir(ev,payload){ payload.seq=++R.seq; R.lastDir={ev,payload}; MP.se
 function startHeartbeat(){ if(HB)return; const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!R||!R.isHost){ clearInterval(HB); HB=null; return; } if(R.lastDir) MP.send(R.lastDir.ev, R.lastDir.payload); }, 3500); }
 function leaveRoom(){ RGEN++; if(HB){ clearInterval(HB); HB=null; } if(LWDog){ clearInterval(LWDog); LWDog=null; } if(MP.ch)MP.leave(); R=null; G.online=false; G.tourney=false; }
 
-function openRoom(){ roomMode='normal'; roomCustom=false; roomMaxN=10;
+function openRoom(){ roomMode='normal'; roomCustom=false; roomMaxN=10; roomStake=0;
   segOn('roomModeSeg',$('roomModeSeg').querySelector('[data-rmode="normal"]'));
+  segOn('roomStakeSeg',$('roomStakeSeg').querySelector('[data-stake="0"]')); renderStakePicker();
   $('roomCustomCard').classList.remove('on'); $('joinCode').value=''; show('room'); }
+/* grey out pots this player can't cover, and spell out the cost */
+function renderStakePicker(){
+  $('roomStakeSeg').querySelectorAll('[data-stake]').forEach(b=>{
+    const st=parseInt(b.dataset.stake,10)||0;
+    b.classList.toggle('locked', st>0 && SV.coins<stakeHalf(st));
+  });
+  const h=stakeHalf(roomStake);
+  $('stakeInfo').innerHTML = roomStake>0
+    ? 'You each put in <b>'+h+'</b> 🪙 — winner takes <b>'+roomStake+'</b> 🪙. You have '+SV.coins+' 🪙.'
+    : 'No coins at stake — just for fun.';
+}
+$('roomStakeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-stake]'); if(!b)return;
+  const st=parseInt(b.dataset.stake,10)||0;
+  if(st>0 && SV.coins<stakeHalf(st)){ toast('You need '+stakeHalf(st)+' coins for that match'); return; }
+  Sound.click(); segOn('roomStakeSeg',b); roomStake=st; renderStakePicker(); });
 $('roomModeSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-rmode]'); if(!b)return; Sound.click();
   segOn('roomModeSeg',b);
   if(b.dataset.rmode==='custom'){ roomCustom=true; $('roomCustomCard').classList.add('on');
@@ -1115,7 +1151,7 @@ $('roomCustomMax').addEventListener('change',()=>{ roomMaxN=parseInt($('roomCust
 
 async function createRoomFlow(code){
   code=(typeof code==='string' && code.length>=4)?code:genCode();
-  R={ code, isHost:true, hostId:myId, mode:roomMode, maxN:roomMaxN, phase:'lobby', players:[], format:null,
+  R={ code, isHost:true, hostId:myId, mode:roomMode, maxN:roomMaxN, stake:roomStake|0, stakeOk:{}, coinsOf:{}, phase:'lobby', players:[], format:null,
       schedule:[], roundIndex:0, results:{}, roundPairs:[], roundResults:{}, koSeeds:[], koBye:null, koStep:0, champion:null,
       seq:0, lastDir:null, lastHostMsg:performance.now(), seen:{}, startedAt:0 };
   showLobby(code,true);
@@ -1126,7 +1162,7 @@ $('joinRoomBtn').addEventListener('click',()=> joinRoom(($('joinCode').value||''
 async function joinRoom(code){
   if(!code || code.length<4){ toast('Enter the 4-letter code'); return; }
   Sound.click();
-  R={ code, isHost:false, hostId:null, mode:roomMode, maxN:roomMaxN, phase:'lobby', players:[], lastSeq:0, lastHostMsg:performance.now(), seen:{} };
+  R={ code, isHost:false, hostId:null, mode:roomMode, maxN:roomMaxN, stake:0, stakeOkMe:false, phase:'lobby', players:[], lastSeq:0, lastHostMsg:performance.now(), seen:{} };
   showLobby(code,false);
   try{ await MP.open(code,false); MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); startLiveWatch(); }
   catch(e){ toast('Connection failed — check internet'); leaveRoom(); show('room'); }
@@ -1150,11 +1186,46 @@ function renderLobby(){
   const lm=$('lobbyMode'); if(lm&&R) lm.textContent=modeLabel(R.mode,R.maxN);
   $('lobbyList').innerHTML = ps.map((p,i)=>'<div class="statrow" style="border:none;background:var(--card);border-radius:12px;padding:10px 12px">'+
     '<span>'+(i+1)+'. <span style="font-size:18px">'+p.av+'</span> <b>'+esc(p.name)+'</b>'+(p.id===R.hostId?' <span class="pill-tag">HOST</span>':'')+(p.id===myId?' <span style="color:var(--good);font-size:12px">• you</span>':'')+'</span></div>').join('');
-  if(R&&R.isHost){ const n=ps.length; const b=$('lobbyStart'); b.style.display='block'; b.disabled=n<2;
-    b.textContent = n<2?'Waiting for players…' : (n===2?'▶ Start Quick Match':'▶ Start Tournament ('+n+' players)'); }
+  renderLobbyStake(ps);
 }
+/* Coin-match state in the lobby: the pot pill, the guest's Accept button, and the
+   host's Start gate. A staked match is 1-v-1 only, and it cannot start until BOTH
+   players have accepted and can actually cover their half of the pot. */
+function renderLobbyStake(ps){
+  const st=R?(R.stake|0):0, half=stakeHalf(st);
+  const pill=$('lobbyStake');
+  if(pill){ pill.style.display = st>0?'inline-block':'none';
+    pill.textContent = st>0 ? '💰 '+st+' pot · '+half+' each' : ''; }
+  const sa=$('stakeAccept');
+  if(sa){
+    if(R && !R.isHost && st>0){
+      sa.style.display='block';
+      if(SV.coins<half){ sa.disabled=true; sa.className='btn gray block'; sa.textContent='❌ You need '+half+' 🪙 (you have '+SV.coins+')'; }
+      else if(R.stakeOkMe){ sa.disabled=false; sa.className='btn gray block'; sa.textContent='✅ Accepted — waiting for host…'; }
+      else { sa.disabled=false; sa.className='btn b block'; sa.textContent='💰 Accept — put in '+half+' 🪙'; }
+    } else sa.style.display='none';
+  }
+  if(R&&R.isHost){
+    const n=ps.length, b=$('lobbyStart'); b.style.display='block';
+    const others=ps.filter(x=>x.id!==myId);
+    let block=null;
+    if(n<2) block='Waiting for players…';
+    else if(st>0 && n>2) block='Coin match needs exactly 2 players';
+    else if(st>0 && SV.coins<half) block='You need '+half+' 🪙';
+    else if(st>0 && others.some(o=>!(R.stakeOk&&R.stakeOk[o.id]))) block='Waiting for opponent to accept…';
+    else if(st>0 && others.some(o=>((R.coinsOf&&R.coinsOf[o.id])|0)<half)) block='Opponent can\'t afford it';
+    b.disabled=!!block;
+    b.textContent = block || (n===2?(st>0?'▶ Start '+st+' 🪙 Match':'▶ Start Quick Match'):'▶ Start Tournament ('+n+' players)');
+  }
+}
+$('stakeAccept').addEventListener('click',()=>{ if(!R||R.isHost)return;
+  const half=stakeHalf(R.stake|0);
+  if(SV.coins<half){ toast('Not enough coins'); return; }
+  Sound.click(); R.stakeOkMe=!R.stakeOkMe;
+  MP.send('hello',{id:myId,name:SV.name,av:SV.avatar,stakeOk:R.stakeOkMe,coins:SV.coins});
+  renderLobby(); });
 function hostLobbyUpdate(){ if(!R||!R.isHost)return; R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId;
-  MP.send('lobby',{hostId:myId,mode:R.mode,maxN:R.maxN,players:R.players}); renderLobby(); }
+  MP.send('lobby',{hostId:myId,mode:R.mode,maxN:R.maxN,stake:R.stake|0,players:R.players}); renderLobby(); }
 $('lobbyStart').addEventListener('click',()=>{ if(!R||!R.isHost)return; Sound.click(); hostStart(); });
 
 /* ---- host: start ---- */
@@ -1162,6 +1233,8 @@ function hostStart(){
   R.players=MP.presenceList().slice(0,MAX_PLAYERS); R.hostId=myId; R.mode=roomMode; R.maxN=roomMaxN;
   if(R.players.length<2){ toast('Need at least 2 players'); return; }
   R.format = R.players.length===2 ? 'quick' : 'tourney';
+  if((roomStake|0)>0 && R.format!=='quick') toast('Coin match needs exactly 2 players — playing friendly');
+  R.stake = (R.format==='quick') ? (roomStake|0) : 0;    // tournaments are never staked
   R.results={}; R.koStep=0;
   R.startedAt=performance.now(); R.seen={}; R.players.forEach(p=>R.seen[p.id]=performance.now());
   hostDir('begin',{mode:R.mode,maxN:R.maxN,players:R.players,format:R.format,hostId:myId});
@@ -1179,8 +1252,16 @@ function hostQuickMatch(){
   R.players=list;
   if(R.players.length<2){ toast('Your opponent left the room'); return; }
   const [a,b]=R.players, matchId='q'+(R.koStep++), batFirst=Math.random()<.5?'a':'b';
-  hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN});
-  beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN,quick:true});
+  // re-check the pot at kick-off: a rematch can come round when someone has since gone broke
+  let st=R.stake|0; const half=stakeHalf(st);
+  if(st>0){
+    const other=R.players.find(x=>x.id!==myId);
+    const oc=(other&&R.coinsOf)?(R.coinsOf[other.id]|0):0;
+    if(SV.coins<half){ toast('You need '+half+' coins for a rematch'); return; }
+    if(other&&oc<half){ toast('Opponent is out of coins — playing friendly'); st=0; R.stake=0; }
+  }
+  hostDir('quickmatch',{matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN,stake:st});
+  beginNetMatch({matchId,a:a.id,b:b.id,batFirst,mode:R.mode,maxN:R.maxN,quick:true,stake:st});
 }
 /* ---- host: group rounds ---- */
 function hostStartRound(){
@@ -1298,10 +1379,14 @@ function onNet(kind,payload){
   } return; }
   if(kind==='presence'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
   if(kind==='leave'){ if(R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }  // lobby only; in-game leaves handled by the liveness watchdog
-  if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby') hostLobbyUpdate(); return; }
-  if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.maxN=payload.maxN||10; R.players=payload.players||[]; renderLobby(); } return; }
+  if(kind==='hello'){ if(R&&R.isHost&&R.phase==='lobby'){
+    if(payload&&payload.id){ (R.stakeOk||(R.stakeOk={}))[payload.id]=!!payload.stakeOk; (R.coinsOf||(R.coinsOf={}))[payload.id]=payload.coins|0; }
+    hostLobbyUpdate(); } return; }
+  if(kind==='lobby'){ if(R&&!R.isHost){ R.hostId=payload.hostId; R.mode=payload.mode; R.maxN=payload.maxN||10; R.players=payload.players||[];
+    const ns=payload.stake|0; if(ns!==(R.stake|0)){ R.stake=ns; R.stakeOkMe=false; }   // host changed the pot -> must accept again
+    renderLobby(); } return; }
   if(kind==='begin'){ if(R&&!R.isHost){ R.players=payload.players||[]; R.mode=payload.mode; R.maxN=payload.maxN||10; R.format=payload.format; R.hostId=payload.hostId; R.phase=payload.format==='quick'?'quick':'group'; } return; }
-  if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,maxN:payload.maxN,quick:true}); return; }
+  if(kind==='quickmatch'){ if(!R.isHost) beginNetMatch({matchId:payload.matchId,a:payload.a,b:payload.b,batFirst:payload.batFirst,mode:payload.mode,maxN:payload.maxN,quick:true,stake:payload.stake|0}); return; }
   if(kind==='round'){ if(!R.isHost) clientOnRound(payload); return; }
   if(kind==='result'){ if(payload&&payload.matchId){ delete LIVE[payload.matchId]; if(cur==='twait') renderTwaitLive(); } hostOnResult(payload); return; }
   if(kind==='standings'){ if(!R.isHost){ if(R)R.players=R.players; clientOnStandings(payload); } return; }
@@ -1380,7 +1465,15 @@ function beginNetMatch(m){
   G.aName=pname(m.a); G.aAv=pav(m.a); G.bName=pname(m.b); G.bAv=pav(m.b);
   G.firstBat=m.batFirst;
   MP.openMatch(m.matchId);                    // moves for this match go on their own channel
-  $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+modeLabel(m.mode,m.maxN);
+  // ---- coin match: put this player's half of the pot in escrow up front ----
+  // Deducting at kick-off (rather than paying out at the end) is what makes a
+  // rage-quit cost real coins: leaving mid-match simply never refunds it.
+  G.stake=m.stake|0; G.stakeHalf=stakeHalf(G.stake); G.stakeEsc=false;
+  if(G.stake>0){
+    if(SV.coins>=G.stakeHalf){ SV.coins-=G.stakeHalf; save(); G.stakeEsc=true; }
+    else { G.stake=0; G.stakeHalf=0; toast('Not enough coins — playing friendly'); }
+  }
+  $('gameTag').textContent = (m.quick?'🌐 Quick':'🏆 '+(R&&R.roundNameNow||'Match'))+' · '+modeLabel(m.mode,m.maxN)+(G.stake>0?' · 💰 '+G.stake:'');
   startInnings();
 }
 // opponent's move (arrives on the per-match channel)
@@ -1420,7 +1513,7 @@ setInterval(()=>{ if(R && !R.isHost && (R.phase==='group'||R.phase==='ko'||R.pha
 // lobby: keep re-announcing until the match starts. A single dropped 'hello' plus a
 // missed presence-join used to leave the HOST stuck on "Waiting for players…" with the
 // guest invisible; this idempotent re-send heals it within a few seconds.
-setInterval(()=>{ if(R && !R.isHost && cur==='lobby' && !document.hidden) MP.send('hello',{id:myId,name:SV.name,av:SV.avatar}); }, 3000);
+setInterval(()=>{ if(R && !R.isHost && cur==='lobby' && !document.hidden) MP.send('hello',{id:myId,name:SV.name,av:SV.avatar,stakeOk:!!R.stakeOkMe,coins:SV.coins}); }, 3000);
 // live spectate: active tournament players broadcast a lightweight score so WAITING
 // players can watch the other matches. Only in tournaments (quick 2-player has no waiters).
 setInterval(()=>{ if(R && G.online && G.tourney && !G.quick && cur==='game' && G.matchId){
@@ -1479,12 +1572,28 @@ function reportOrRematch(res, iWon){
   const oppN=esc(pname(G.oppId));
   showTwait(iWon?'✅':'❌', iWon?'You won!':'You lost', 'vs '+oppN+' — waiting for the other matches…');
 }
+/* Pay out the coin match. Both players escrowed half at kick-off, so:
+     win  -> collect the whole pot (your half back + theirs)
+     tie  -> take your own half back, nobody profits
+     lose -> the half you already staked stays gone
+   Runs exactly once per match, and every ending (played out, AFK, disconnect,
+   walkover) reaches here through showQuickResult. */
+function settleStake(tie, iWon){
+  if(!(G.stake>0 && G.stakeEsc)) return '';
+  G.stakeEsc=false;                                  // settle once, never twice
+  if(tie){ SV.coins+=G.stakeHalf; save(); return '🤝 Tie — your '+G.stakeHalf+' 🪙 came back'; }
+  if(iWon){ SV.coins+=G.stake; save(); Sound.coin();
+    return '💰 You won the pot — <b>+'+G.stake+'</b> 🪙 (staked '+G.stakeHalf+')'; }
+  save();
+  return '💸 You lost your stake — <b>-'+G.stakeHalf+'</b> 🪙';
+}
 function showQuickResult(res, iWon){
   const hero=$('resHero'); const tie=res.winner==null;
   hero.className='result-hero '+(tie?'tie':iWon?'win':'lose');
   hero.textContent = tie?'TIE MATCH!':(iWon?'YOU WIN! 🏆':'YOU LOST');
   $('resScore').innerHTML = esc(G.aName)+' <b>'+G.a+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+G.b+'</b>';
-  $('resExtra').innerHTML=''; $('resReward').innerHTML='';
+  $('resExtra').innerHTML='';
+  $('resReward').innerHTML = settleStake(tie, iWon);
   if(iWon){ Sound.win(); confetti(120); fxStart(); } else if(!tie) Sound.lose();
   $('resNext').style.display=''; $('resNext').textContent = MP.isHost?'🔁 Rematch':'⏳ Host may rematch';
   $('resMenu').textContent='Leave Room';
