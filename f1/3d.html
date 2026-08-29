@@ -517,8 +517,8 @@ COUNTRIES.forEach((c,i)=>c.idx=i);
    Two things make them Master-grade:
      • BROKEN BRIDGES — the deck lifts you up, then simply stops. Carry enough
        speed off the lip and you fly the gap; back off and you drop into it.
-     • HAIRPINS — a 4th harmonic pinches the loop so corners snap shut on you,
-       and `centrif` multiplies how hard the bend throws you at the outside.
+     • HAIRPINS — real out-and-back U-turns (see masterTrack), taken on a free-body
+       driving model with finite grip, so each one has a speed you must brake to.
    Prize is a straight multiple of the entry fee (see MASTER_PAY), so a podium
    pays and anything below it costs you real money. */
 const MASTER_MIN = 15000;                 // wallet needed before Master Mode opens
@@ -547,8 +547,6 @@ const MASTERS = [
     theme:{ sky:['#16233f','#3d5a80'], fog:0x24344f, ground:0x4a5568, road:0x24272e, night:true } },
 ];
 MASTERS.forEach((c,i)=>{ c.idx = COUNTRIES.length + i; c.win = Math.round(c.fee*MASTER_PAY[0]); });
-// every circuit, base tour + Master, for lookups by id
-const ALL_TRACKS = COUNTRIES.concat(MASTERS);
 function masterOpen(){ return (career().money||0) > MASTER_MIN; }
 // a circuit is playable if it's the free race or its index is within the unlocked count
 function isUnlocked(c){
@@ -564,8 +562,7 @@ function starTrack(g){
   for (let i=0;i<N;i++){
     const th = (i/N)*Math.PI*2 + (g.rot||0);
     let R = g.base*(1 + g.amps[0]*Math.sin(th+g.phase[0]) + g.amps[1]*Math.sin(2*th+g.phase[1]) + g.amps[2]*Math.sin(3*th+g.phase[2]));
-    // 4th harmonic (Master circuits only): pinches the loop into genuine hairpins —
-    // the radius collapses hard on the inside of a bend instead of easing round it
+    // optional 4th harmonic; unused today (Master circuits use masterTrack instead)
     if (g.amps[3]) R += g.base*g.amps[3]*Math.sin(4*th+(g.phase[3]||0));
     pts.push(new THREE.Vector3(Math.cos(th)*R, 0, Math.sin(th)*R*(g.squash||1)));
   }
@@ -819,7 +816,7 @@ function makeHammers(group){
     const bx=f.pos.x, bz=f.pos.z, rx=f.right.x, rz=f.right.z;
     for (const sgn of [-1,1]){                                  // gantry legs
       const leg = new THREE.Mesh(new THREE.BoxGeometry(1, HAM_PIVOT_H+dy, 1), steel);
-      leg.position.set(bx+rx*sgn*(HALF_W+1.8), dy+HAM_PIVOT_H/2, bz+rz*sgn*(HALF_W+1.8));
+      leg.position.set(bx+rx*sgn*(HALF_W+1.8), (dy+HAM_PIVOT_H)/2, bz+rz*sgn*(HALF_W+1.8));
       group.add(leg);
     }
     const bar = new THREE.Mesh(new THREE.BoxGeometry((HALF_W+1.8)*2, 1, 1), steel);
@@ -845,10 +842,12 @@ function updateHammers(t){
    and the rest of the cycle is your way through. */
 function hammerHit(r){
   for (const h of hammers){
-    if (Math.abs(wrapDelta(r.prog - h.prog)) > 3.2) continue;
+    // window widens with how far this frame moved, so a hazard can't be skipped over
+    // at high frame-times (dt is clamped to 50ms; at boost speed that is ~8 units)
+    if (Math.abs(wrapDelta(r.prog - h.prog)) > Math.max(3.2, (r._stepLen||0)*0.6 + 3.2)) continue;
     if (HAM_PIVOT_H - HAM_ARM*Math.cos(h.angle) > HAM_DANGER_H) continue;   // swung clear overhead
     if ((r.y||0) - h.deck > 3) continue;                                    // sailing over it mid-air
-    if (Math.abs(r.lateral - Math.sin(h.angle)*HAM_ARM) < HAM_HALF + 1.4) return h;
+    if (Math.abs(r.lateral + Math.sin(h.angle)*HAM_ARM) < HAM_HALF + 1.4) return h;   // +: pivot local +X is -frameRight
   }
   return null;
 }
@@ -1018,6 +1017,7 @@ function projectTrack(x, z, hint){
   };
   if (hint == null){ for (let i=0;i<FRAMES;i++) scan(i); }
   else { for (let i=hint-90;i<=hint+90;i++) scan(i); }
+  if (best < 0) best = 0;         // NaN input would leave -1 here and throw every frame
   const P = framePos[best], R = frameRight[best];
   return { idx:best, u:best/FRAMES, lateral:(x-P.x)*R.x + (z-P.z)*R.z };
 }
@@ -1335,7 +1335,7 @@ function updatePlayerFree(dt){
 
   const steer = (rightHeld?1:0) - (leftHeld?1:0);
   P._steer = steer;
-  const onRoad = Math.abs(P.lateral) <= OFF_EDGE;
+  const onRoad = Math.abs(P.lateral) <= OFF_EDGE || P.air;   // no grass in mid-air — a jump must keep its speed
 
   let boosting = false;
   if (dashHeld && !boostLock && boostE > BOOST_MIN){
@@ -1358,8 +1358,9 @@ function updatePlayerFree(dt){
   // have almost no authority, off-road the front end washes out.
   const gripMul = (onRoad ? 1 : 0.42) * (P.air ? 0.15 : 1);
   const omega = Math.min(FREE_TURN_MAX, FREE_LAT_ACC/Math.max(P.speed, 10)) * gripMul;
-  P.fh += steer * omega * dt;
+  P.fh -= steer * omega * dt;      // -= : +fh rotates toward -frameRight, and frameRight is screen-right
 
+  P._stepLen = P.speed * dt;             // hammer sweep window uses this
   P.fx += Math.sin(P.fh) * P.speed * dt;
   P.fz += Math.cos(P.fh) * P.speed * dt;
   syncFromWorld(P);
@@ -1399,9 +1400,7 @@ function updatePlayer(dt){
 
   // F1 cornering: the bend flings you toward its OUTSIDE. Steer INTO the corner to hold
   // the racing line — do nothing and you run wide onto the grass and bleed speed.
-  // Master circuits crank this up — their hairpins genuinely try to spit you off
-  const cMul = chosenCountry.centrif || 1;
-  const centrif = player.air ? 0 : THREE.MathUtils.clamp(-f.curv * player.speed * CENTRIF * cMul, -30, 30);
+  const centrif = player.air ? 0 : THREE.MathUtils.clamp(-f.curv * player.speed * CENTRIF, -22, 22);
   player.lateral += centrif * dt;
 
   // dash / boost
@@ -1450,7 +1449,13 @@ function rescueFromGap(r){
   // (no gap involved) -> set down where you left the road. Either way the lap is
   // preserved: gap coords are first-lap values, re-based onto the current lap.
   const g = r._gap;
-  const prog = g ? Math.floor(r.prog / TRACK_LEN)*TRACK_LEN + g.e + 8 : r.prog;
+  let prog = g ? Math.floor(r.prog / TRACK_LEN)*TRACK_LEN + g.e + 8 : r.prog;
+  // falling off the SIDE keeps advancing prog for the whole ~1s drop, so the landing
+  // spot can end up inside the hole. Walk it past whatever gap it lands in.
+  for (let k=0; k<gapRanges.length+1; k++){
+    const gi = gapAt(prog); if (!gi) break;
+    prog = Math.floor(prog / TRACK_LEN)*TRACK_LEN + gi.e + 8;
+  }
   const msg = g ? '💥 INTO THE GAP — carry more speed off the lip!'
                 : '💥 OFF THE BRIDGE — keep it straight on the deck!';
   if (freeDrive && r.isPlayer) placeOnTrack(r, prog);
@@ -1460,6 +1465,7 @@ function rescueFromGap(r){
 }
 // a swinging hammer got you: restart the lap you are on, from its start line
 function hammerSmash(r){
+  if (r.prog < 0) return;                       // still behind the start line — nothing to restart
   const lap = Math.max(0, Math.floor(r.prog / TRACK_LEN));
   if (freeDrive) placeOnTrack(r, lap*TRACK_LEN);
   else { r.prog = lap*TRACK_LEN; r.lateral = 0; r.y = deckYAt(r.prog); r.vy = 0; r.air = false; }
@@ -1511,7 +1517,17 @@ function updateRival(r, dt){
 }
 
 // solid collision: you can brush past but never pass THROUGH a car.
-function resolveCollisions(){
+// Nudge a car sideways. A rail car just moves its lateral offset; a free-driving
+// car must be moved in the WORLD, or syncFromWorld recomputes lateral next frame
+// and the push vanishes.
+function pushApart(r, d){
+  if (r.isPlayer && freeDrive && r.fx != null){
+    const f = sampleAt(r.prog);
+    r.fx += f.right.x * d; r.fz += f.right.z * d;
+  }
+  r.lateral += d;
+}
+function resolveCollisions(dt){
   for (let i=0;i<all.length;i++){
     for (let j=i+1;j<all.length;j++){
       const A=all[i], B=all[j];
@@ -1524,11 +1540,12 @@ function resolveCollisions(){
       // don't oscillate hard against each other frame-to-frame)
       const pen = (CAR_W - Math.abs(lat)) * 0.55;
       const dir = lat >= 0 ? 1 : -1;         // push B to +side, A to -side
-      A.lateral -= dir * pen * 0.5;
-      B.lateral += dir * pen * 0.5;
-      // gentle speed rub so ramming isn't free, but never a hard stop
+      pushApart(A, -dir * pen * 0.5);
+      pushApart(B,  dir * pen * 0.5);
+      // gentle speed rub so ramming isn't free, but never a hard stop.
+      // per-SECOND, not per-frame: at 60fps the old 0.975/frame scrubbed 78%/s.
       const behind = along > 0 ? A : B;      // the one behind is doing the hitting
-      behind.speed *= 0.975;
+      behind.speed *= Math.pow(0.975, Math.min(3, (dt||1/60)*60));
     }
   }
 }
@@ -1660,6 +1677,7 @@ function loop(now){
 
   if (state === 'countdown'){
     updateCountdown(dt);
+    if (hammers.length) updateHammers(now*0.001);   // already swinging when the lights go out
     // keep engines idling in place; camera settled
     all.forEach(updateCarMesh); placeCamera(0);
   } else if (state === 'race'){
@@ -1677,7 +1695,7 @@ function loop(now){
       updateHammers(now*0.001);
       if (player.crashT <= 0 && hammerHit(player)) hammerSmash(player);
     }
-    if (MP.on){ mpRaceTick(dt); mpResolveCollisions(); } else resolveCollisions();
+    if (MP.on){ mpRaceTick(dt); mpResolveCollisions(); } else resolveCollisions(dt);
     clampLaterals();
     all.forEach(updateCarMesh);
     placeCamera(0);
@@ -2143,7 +2161,8 @@ async function mpOpenRoom(code, asHost){
   MP.myT=Date.now(); MP.roomT=MP.myT;
   // the host IS the reference clock; guests measure themselves against it
   MP.clockOff=0; MP.clockRtt=1e9; MP.clockTries=0; MP.clockOk=asHost;
-  if (asHost) MP.circuit=(chosenCountry.free?'india':chosenCountry.id);
+  // multiplayer is World Tour only — never advertise a Master circuit id
+  if (asHost) MP.circuit=(chosenCountry.free||chosenCountry.master?'india':chosenCountry.id);
   await mpConnectRoom(code);
   mpSyncClock();                                     // no-op for the host
   state='mproom'; showScreenMp('scr-mproom');
@@ -2285,6 +2304,7 @@ function mpStart(){
   mpBeginRace(msg);                                // broadcast is self:false — run it locally too
 }
 function mpBeginRace(msg){
+  freeDrive = false;                     // multiplayer is always the rail model
   MP.raceGen++;
   MP.raceOff=MP.clockOff;                     // freeze the basis before anything stamps a time
   MP.on=true; MP.done=false; MP.started=true;
