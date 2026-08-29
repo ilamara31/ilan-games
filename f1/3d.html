@@ -525,25 +525,25 @@ const MASTER_MIN = 15000;                 // wallet needed before Master Mode op
 const MASTER_PAY = [2.0, 1.5, 1.0, 0.5];  // P1 doubles your fee, P3 breaks even, P4 halves it
 const MASTER_PAY_TAIL = 0.25;             // P5 and below
 const MASTERS = [
-  { id:'m_iceland', name:'Iceland', flag:'🇮🇸', pace:104, laps:3, fee:10000, master:true,
-    gaps:[{at:0.30,len:30},{at:0.72,len:26}],
-    hammers:[{at:0.15},{at:0.58}],
+  { id:'m_iceland', name:'Iceland', flag:'🇮🇸', pace:76, laps:3, fee:10000, master:true,
+    gaps:[{at:0.553,len:28},{at:0.875,len:29}],
+    hammers:[{at:0.072},{at:0.273}],
     gen:{n:10, base:170, hairpins:[2,7], hairLen:58, hairW:27, squash:0.92, rot:0.3, wob:0.06},
     theme:{ sky:['#5c7fa8','#dce9f5'], fog:0xc8dbe8, ground:0x6b7f74, road:0x2b2f36, night:false } },
-  { id:'m_norway', name:'Norway', flag:'🇳🇴', pace:106, laps:3, fee:25000, master:true,
-    gaps:[{at:0.22,len:32},{at:0.63,len:30}],
-    hammers:[{at:0.09},{at:0.44},{at:0.85}],
+  { id:'m_norway', name:'Norway', flag:'🇳🇴', pace:73, laps:3, fee:25000, master:true,
+    gaps:[{at:0.23,len:21},{at:0.757,len:19}],
+    hammers:[{at:0.143},{at:0.303},{at:0.493}],
     gen:{n:11, base:176, hairpins:[1,5,9], hairLen:60, hairW:26, squash:0.88, rot:0.9, wob:0.07},
     theme:{ sky:['#3f6b8c','#cfe2ee'], fog:0xb9d2e0, ground:0x2f6b4a, road:0x2a2e34, night:false } },
-  { id:'m_swiss', name:'Switzerland', flag:'🇨🇭', pace:108, laps:4, fee:50000, master:true,
-    gaps:[{at:0.17,len:34},{at:0.49,len:32},{at:0.80,len:30}],
-    hammers:[{at:0.07},{at:0.35},{at:0.66},{at:0.91}],
+  { id:'m_swiss', name:'Switzerland', flag:'🇨🇭', pace:73, laps:4, fee:50000, master:true,
+    gaps:[{at:0.243,len:24},{at:0.583,len:23},{at:0.913,len:21}],
+    hammers:[{at:0.138},{at:0.390},{at:0.512},{at:0.725}],
     gen:{n:12, base:182, hairpins:[1,5,9], hairLen:64, hairW:25, squash:0.94, rot:0.4, wob:0.08},
     theme:{ sky:['#7fa6c8','#e8f2fa'], fog:0xd6e6f2, ground:0x8fa39a, road:0x2c3037, night:false } },
-  { id:'m_nepal', name:'Nepal', flag:'🇳🇵', pace:110, laps:4, fee:100000, master:true,
-    gaps:[{at:0.13,len:36},{at:0.40,len:34},{at:0.68,len:36},{at:0.90,len:32}],
-    hammers:[{at:0.05},{at:0.27},{at:0.53},{at:0.79},{at:0.95}],
-    gen:{n:13, base:188, hairpins:[1,4,7,10], hairLen:66, hairW:24, squash:0.90, rot:1.2, wob:0.09},
+  { id:'m_nepal', name:'Nepal', flag:'🇳🇵', pace:70, laps:4, fee:100000, master:true,
+    gaps:[{at:0.188,len:23},{at:0.387,len:25},{at:0.68,len:22}],
+    hammers:[{at:0.28},{at:0.53},{at:0.80}],
+    gen:{n:13, base:188, hairpins:[1,4,7,10], hairLen:34, hairW:20, squash:0.9, rot:1.2, wob:0.09},
     theme:{ sky:['#16233f','#3d5a80'], fog:0x24344f, ground:0x4a5568, road:0x24272e, night:true } },
 ];
 MASTERS.forEach((c,i)=>{ c.idx = COUNTRIES.length + i; c.win = Math.round(c.fee*MASTER_PAY[0]); });
@@ -595,6 +595,14 @@ function masterTrack(g){
     }
   }
   return pts;
+}
+
+// radius of the corner under a given progress (Infinity on a straight)
+function cornerRadiusAt(prog){
+  if (!frameCurv.length) return Infinity;
+  let u = (prog % TRACK_LEN)/TRACK_LEN; if (u < 0) u += 1;
+  const i = Math.floor(u*FRAMES) % FRAMES, c = Math.abs(frameCurv[i]);
+  return c > 1e-6 ? (TRACK_LEN/FRAMES)/c : Infinity;
 }
 
 // track state — rebuilt by buildTrack() for each country
@@ -1075,6 +1083,7 @@ function makeRacers(){
     // rivals vary around the country's pace; harder countries pack faster grids.
     r.top = pace - 6 + Math.random()*12;        // pace±6
     r.cruise = r.top;
+    r.corner = 0.94 + (i % 5) * 0.02;      // small spread in cornering skill across the field
     gridPlace(r, i);
     rivals.push(r); all.push(r);
   }
@@ -1190,7 +1199,7 @@ function startRace(){
     player._pidx = null;
   }
   raceTime = 0; boostE = 100; boostLock = false;
-  state = 'countdown'; cdTimer = 0; cdStep = 0;
+  state = 'countdown'; cdTimer = 0; cdStep = 0; hazTime = 0;
   $('scr-menu').classList.add('hidden'); $('scr-finish').classList.add('hidden');
   $('hud').classList.add('on'); $('homeBtn').classList.remove('hidden');
   $('lamps').classList.add('on');
@@ -1335,7 +1344,9 @@ function updatePlayerFree(dt){
 
   const steer = (rightHeld?1:0) - (leftHeld?1:0);
   P._steer = steer;
-  const onRoad = Math.abs(P.lateral) <= OFF_EDGE || P.air;   // no grass in mid-air — a jump must keep its speed
+  // no grass in mid-air, and a bridge deck has no verge at all — its edge IS HALF_W
+  const edge = deckYAt(P.prog) > 1 ? HALF_W : OFF_EDGE;
+  const onRoad = Math.abs(P.lateral) <= edge || P.air;
 
   let boosting = false;
   if (dashHeld && !boostLock && boostE > BOOST_MIN){
@@ -1494,7 +1505,13 @@ function updateAir(r, dt){
     r.speed *= 0.92;                                   // scrub a little on touchdown
     return;
   }
-  if (r.y < deck - 16) rescueFromGap(r);               // long way down
+  // Over an OPEN gap there is nothing to land on, so dropping back to deck level is
+  // the fall. Previously the crash only fired 16 units below the deck and landing
+  // snapped you back up from there, which gave ~1.1s of airtime whatever your speed —
+  // every gap cleared from a standstill. Now airtime is 2*vy/g and vy scales with
+  // speed, so a gap is a real speed check again.
+  if (overGap && r.y <= deck) rescueFromGap(r);
+  else if (r.y < deck - 16) rescueFromGap(r);          // long way down
 }
 function updateRival(r, dt){
   // pace: hold cruise; a mild pull toward the player keeps the pack tight & the
@@ -1502,7 +1519,16 @@ function updateRival(r, dt){
   const rel = wrapDelta(player.prog - r.prog);           // >0: player ahead
   // online bots hold their own pace — rubber-banding toward one player would be unfair to the rest
   const rubber = r.mpBot ? 0 : THREE.MathUtils.clamp(rel*0.02, -6, 8); // catch up if far behind
-  const target = THREE.MathUtils.clamp(r.cruise + rubber, 60, 118);
+  let target = THREE.MathUtils.clamp(r.cruise + rubber, 60, 118);
+  // Master circuits: rivals are held to the SAME grip limit as the player. Without
+  // this they sail through a 14-unit hairpin at 110 u/s while the player has to brake
+  // to 28, which made Master Mode arithmetically unwinnable — every entry fee was a
+  // guaranteed loss. They look ahead like a driver so they brake BEFORE the corner.
+  if (curTrack && curTrack.master){
+    let vmax = Infinity;
+    for (let d=0; d<=48; d+=8) vmax = Math.min(vmax, Math.sqrt(FREE_LAT_ACC * cornerRadiusAt(r.prog + d)));
+    target = Math.min(target, vmax * (r.corner || 1));
+  }
   r.speed += (target - r.speed) * 1.2 * dt;
   r.prog += r.speed * dt;
   updateAir(r, dt);                      // arc them over any broken bridge
@@ -1668,6 +1694,7 @@ function updateHud(){
 }
 
 /* ---------------- main loop ---------------- */
+let hazTime = 0;            // hazard clock: starts at the countdown, so a lap replays identically
 let last = performance.now(), frameNo = 0;
 function loop(now){
   requestAnimationFrame(loop);
@@ -1677,7 +1704,8 @@ function loop(now){
 
   if (state === 'countdown'){
     updateCountdown(dt);
-    if (hammers.length) updateHammers(now*0.001);   // already swinging when the lights go out
+    hazTime += dt;
+    if (hammers.length) updateHammers(hazTime);     // already swinging when the lights go out
     // keep engines idling in place; camera settled
     all.forEach(updateCarMesh); placeCamera(0);
   } else if (state === 'race'){
@@ -1692,7 +1720,8 @@ function loop(now){
     // finish line, where they used to form a wall of stationary cars on your last lap
     for (const r of rivals){ if (!r.finished) updateRival(r, dt); else r.prog += r.speed * dt; }
     if (hammers.length){
-      updateHammers(now*0.001);
+      hazTime += dt;
+      updateHammers(hazTime);
       if (player.crashT <= 0 && hammerHit(player)) hammerSmash(player);
     }
     if (MP.on){ mpRaceTick(dt); mpResolveCollisions(); } else resolveCollisions(dt);
