@@ -525,21 +525,25 @@ const MASTER_MIN = 15000;                 // wallet needed before Master Mode op
 const MASTER_PAY = [2.0, 1.5, 1.0, 0.5];  // P1 doubles your fee, P3 breaks even, P4 halves it
 const MASTER_PAY_TAIL = 0.25;             // P5 and below
 const MASTERS = [
-  { id:'m_iceland', name:'Iceland', flag:'🇮🇸', pace:108, laps:3, fee:10000, master:true, centrif:1.35,
-    gaps:[{at:0.26,len:30},{at:0.68,len:26}],
-    gen:{n:18, base:152, amps:[0.26,0.16,0.10,0.07], phase:[0.4,1.2,0.7,0.2], squash:0.84, rot:0.3},
+  { id:'m_iceland', name:'Iceland', flag:'🇮🇸', pace:104, laps:3, fee:10000, master:true,
+    gaps:[{at:0.30,len:30},{at:0.72,len:26}],
+    hammers:[{at:0.15},{at:0.58}],
+    gen:{n:10, base:170, hairpins:[2,7], hairLen:58, hairW:27, squash:0.92, rot:0.3, wob:0.06},
     theme:{ sky:['#5c7fa8','#dce9f5'], fog:0xc8dbe8, ground:0x6b7f74, road:0x2b2f36, night:false } },
-  { id:'m_norway', name:'Norway', flag:'🇳🇴', pace:110, laps:3, fee:25000, master:true, centrif:1.5,
-    gaps:[{at:0.18,len:32},{at:0.52,len:30},{at:0.81,len:28}],
-    gen:{n:20, base:148, amps:[0.28,0.18,0.12,0.09], phase:[1.1,0.5,1.4,0.8], squash:0.78, rot:0.9},
+  { id:'m_norway', name:'Norway', flag:'🇳🇴', pace:106, laps:3, fee:25000, master:true,
+    gaps:[{at:0.22,len:32},{at:0.63,len:30}],
+    hammers:[{at:0.09},{at:0.44},{at:0.85}],
+    gen:{n:11, base:176, hairpins:[1,5,9], hairLen:60, hairW:26, squash:0.88, rot:0.9, wob:0.07},
     theme:{ sky:['#3f6b8c','#cfe2ee'], fog:0xb9d2e0, ground:0x2f6b4a, road:0x2a2e34, night:false } },
-  { id:'m_swiss', name:'Switzerland', flag:'🇨🇭', pace:112, laps:4, fee:50000, master:true, centrif:1.65,
-    gaps:[{at:0.14,len:34},{at:0.41,len:32},{at:0.66,len:34},{at:0.88,len:30}],
-    gen:{n:21, base:144, amps:[0.30,0.20,0.14,0.10], phase:[0.2,1.5,0.9,1.2], squash:0.88, rot:0.4},
+  { id:'m_swiss', name:'Switzerland', flag:'🇨🇭', pace:108, laps:4, fee:50000, master:true,
+    gaps:[{at:0.17,len:34},{at:0.49,len:32},{at:0.80,len:30}],
+    hammers:[{at:0.07},{at:0.35},{at:0.66},{at:0.91}],
+    gen:{n:12, base:182, hairpins:[1,5,9], hairLen:64, hairW:25, squash:0.94, rot:0.4, wob:0.08},
     theme:{ sky:['#7fa6c8','#e8f2fa'], fog:0xd6e6f2, ground:0x8fa39a, road:0x2c3037, night:false } },
-  { id:'m_nepal', name:'Nepal', flag:'🇳🇵', pace:114, laps:4, fee:100000, master:true, centrif:1.85,
-    gaps:[{at:0.11,len:36},{at:0.33,len:34},{at:0.55,len:36},{at:0.74,len:32},{at:0.92,len:34}],
-    gen:{n:22, base:140, amps:[0.32,0.22,0.16,0.12], phase:[0.8,0.3,1.6,0.5], squash:0.82, rot:1.2},
+  { id:'m_nepal', name:'Nepal', flag:'🇳🇵', pace:110, laps:4, fee:100000, master:true,
+    gaps:[{at:0.13,len:36},{at:0.40,len:34},{at:0.68,len:36},{at:0.90,len:32}],
+    hammers:[{at:0.05},{at:0.27},{at:0.53},{at:0.79},{at:0.95}],
+    gen:{n:13, base:188, hairpins:[1,4,7,10], hairLen:66, hairW:24, squash:0.90, rot:1.2, wob:0.09},
     theme:{ sky:['#16233f','#3d5a80'], fog:0x24344f, ground:0x4a5568, road:0x24272e, night:true } },
 ];
 MASTERS.forEach((c,i)=>{ c.idx = COUNTRIES.length + i; c.win = Math.round(c.fee*MASTER_PAY[0]); });
@@ -568,6 +572,34 @@ function starTrack(g){
   return pts;
 }
 
+/* Master circuits are laid out explicitly rather than as a smooth star, because a
+   smooth loop can never contain a real U-turn. A hairpin here is a genuine
+   out-and-back spike: you run out along one leg, turn ~180° round a tip only
+   `hairW` wide, and come back down the other leg. Turn radius at the tip is
+   roughly hairW, and with FREE_LAT_ACC grip that fixes the speed you can take it
+   at — miss the braking point and you simply run out of road. */
+function masterTrack(g){
+  const pts = [], N = g.n, R = g.base, sq = g.squash || 1, rot = g.rot || 0;
+  const hair = new Set(g.hairpins || []);
+  const P = (x,z)=>pts.push(new THREE.Vector3(x, 0, z*sq));
+  for (let i=0;i<N;i++){
+    const th = (i/N)*Math.PI*2 + rot, ct = Math.cos(th), st = Math.sin(th);
+    const tx = -st, tz = ct;                       // unit vector around the loop
+    if (hair.has(i)){
+      const L = g.hairLen, w = g.hairW;
+      P(R*ct     - tx*w*2.4, R*st     - tz*w*2.4);   // approach the braking zone
+      P((R+L)*ct - tx*w,     (R+L)*st - tz*w);       // out leg
+      P((R+L+11)*ct,         (R+L+11)*st);           // the tip — the U itself
+      P((R+L)*ct + tx*w,     (R+L)*st + tz*w);       // back leg
+      P(R*ct     + tx*w*2.4, R*st     + tz*w*2.4);   // rejoin
+    } else {
+      const rr = R*(1 + (g.wob||0)*Math.sin(3*th + (g.wph||0)));
+      P(rr*ct, rr*st);
+    }
+  }
+  return pts;
+}
+
 // track state — rebuilt by buildTrack() for each country
 const FRAMES = 600;
 let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [], frameCurv = [];
@@ -576,7 +608,13 @@ let curve = null, TRACK_LEN = 1, framePos = [], frameTan = [], frameRight = [], 
    A gap reads as: road ramps up onto the bridge, the deck stops dead, open air
    for `len` units, then the deck resumes at the same height and ramps back down. */
 const BRIDGE_H = 5.2, BRIDGE_APPROACH = 46;
-let frameDeckY = [], frameHole = [], gapRanges = [];
+let frameDeckY = [], frameHole = [], gapRanges = [], curTrack = null;
+/* ---- swinging hammers (Master circuits) ----
+   A gantry over the road with a weight swinging across it. The head is only
+   dangerous near the bottom of its arc, so each one is a timing gate: read the
+   swing, pick your moment, or lose the whole lap. */
+const HAM_ARM = 13, HAM_PIVOT_H = 15, HAM_SWING = 1.15, HAM_RATE = 1.6, HAM_HALF = 3.4, HAM_DANGER_H = 4.2;
+let hammers = [];
 function buildGaps(country){
   frameDeckY = new Array(FRAMES).fill(0);
   frameHole  = new Array(FRAMES).fill(false);
@@ -625,9 +663,12 @@ function buildFrames(){
   }
 }
 function buildTrack(country){
-  curve = new THREE.CatmullRomCurve3(starTrack(country.gen), true, 'catmullrom', 0.5);
+  curve = new THREE.CatmullRomCurve3(
+    country.master ? masterTrack(country.gen) : starTrack(country.gen),
+    true, 'catmullrom', 0.5);
   TRACK_LEN = curve.getLength();
   buildFrames();
+  curTrack = country;
   buildGaps(country);          // deck heights + holes for this circuit (no-op off Master Mode)
   const th = country.theme;
   const oldBg = scene.background;
@@ -743,42 +784,94 @@ function buildWorld(group, theme){
   group.add(new THREE.Mesh(dashGeometry(-HALF_W-0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
   group.add(new THREE.Mesh(dashGeometry( HALF_W+0.8, 6, 6, 1.4, 0.03), new THREE.MeshLambertMaterial({ color:0xff3b3b })));
 
-  makeBridges(group);            // rails + broken-edge hazard stripes (Master circuits only)
+  makeBridges(group);            // broken-edge hazard stripes (Master circuits only)
+  makeHammers(group);            // swinging gantry hammers (Master circuits only)
+  makeSlowBoards(group);         // ⚠ SLOW warning boards on the approach to each hairpin
   makeStartLine(group);          // start / finish checkered line
   makeRoadside(group, theme);    // instanced roadside posts + trees
 }
-/* Rails down both sides of every bridge deck, and a red hazard bar across each
-   broken edge so the drop is readable at speed rather than a nasty surprise. */
+/* The bridge deck has NO rails — falling off the side is the whole point. All we
+   give you is a red hazard bar on the take-off lip and the far landing lip, so the
+   drop is readable at speed. */
 function makeBridges(group){
   if (!gapRanges.length) return;
-  const railMat = new THREE.MeshLambertMaterial({ color:0x8b96a8 });
   const warnMat = new THREE.MeshBasicMaterial({ color:0xff3b3b });
-  const railGeo = [];
-  for (let side of [-1, 1]){
-    const lat = side * (HALF_W + 0.9);
-    for (let i=0; i<FRAMES; i++){
-      const k=(i+1)%FRAMES;
-      if ((frameDeckY[i]||0) < 0.6 || frameHole[i] || frameHole[k]) continue;
-      const P=framePos[i], R=frameRight[i], Q=framePos[k], R2=frameRight[k];
-      const g = new THREE.BoxGeometry(0.35, 1.5, framePos[i].distanceTo(framePos[k])+0.4);
-      const m = new THREE.Mesh(g, railMat);
-      m.position.set((P.x+R.x*lat + Q.x+R2.x*lat)/2, (frameDeckY[i]+frameDeckY[k])/2 + 0.75,
-                     (P.z+R.z*lat + Q.z+R2.z*lat)/2);
-      m.lookAt(Q.x+R2.x*lat, m.position.y, Q.z+R2.z*lat);
-      railGeo.push(m);
-    }
-  }
-  railGeo.forEach(m=>group.add(m));
-  // hazard bar on the take-off lip and the far landing lip of every gap
   for (const g of gapRanges){
     for (const prog of [g.s, g.e]){
       let u=(prog%TRACK_LEN)/TRACK_LEN; if(u<0)u+=1;
       const i=Math.floor(u*FRAMES)%FRAMES;
-      const P=framePos[i], R=frameRight[i], T=frameTan[i];
+      const P=framePos[i], T=frameTan[i];
       const bar=new THREE.Mesh(new THREE.BoxGeometry(HALF_W*2, 0.5, 0.9), warnMat);
       bar.position.set(P.x, (frameDeckY[i]||0)+0.3, P.z);
       bar.lookAt(P.x+T.x, (frameDeckY[i]||0)+0.3, P.z+T.z);
       group.add(bar);
+    }
+  }
+}
+function makeHammers(group){
+  hammers = [];
+  const list = (curTrack && curTrack.hammers) || [];
+  if (!list.length) return;
+  const steel = new THREE.MeshLambertMaterial({ color:0x707a8c });
+  const headM = new THREE.MeshLambertMaterial({ color:0xd23b2e });
+  list.forEach((spec, i)=>{
+    const prog = spec.at*TRACK_LEN, f = sampleAt(prog), dy = deckYAt(prog);
+    const bx=f.pos.x, bz=f.pos.z, rx=f.right.x, rz=f.right.z;
+    for (const sgn of [-1,1]){                                  // gantry legs
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(1, HAM_PIVOT_H+dy, 1), steel);
+      leg.position.set(bx+rx*sgn*(HALF_W+1.8), dy+HAM_PIVOT_H/2, bz+rz*sgn*(HALF_W+1.8));
+      group.add(leg);
+    }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry((HALF_W+1.8)*2, 1, 1), steel);
+    bar.position.set(bx, dy+HAM_PIVOT_H, bz);
+    bar.lookAt(bx+f.tan.x, dy+HAM_PIVOT_H, bz+f.tan.z);
+    group.add(bar);
+    const pivot = new THREE.Group();                            // the swinging arm
+    pivot.position.set(bx, dy+HAM_PIVOT_H, bz);
+    pivot.lookAt(bx+f.tan.x, dy+HAM_PIVOT_H, bz+f.tan.z);       // swing plane lies ACROSS the road
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.5, HAM_ARM, 0.5), steel);
+    shaft.position.y = -HAM_ARM/2; pivot.add(shaft);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(HAM_HALF*2, 3.2, 3.2), headM);
+    head.position.y = -HAM_ARM; pivot.add(head);
+    group.add(pivot);
+    hammers.push({ prog, pivot, phase: i*1.7, angle: 0, deck: dy });
+  });
+}
+function updateHammers(t){
+  for (const h of hammers){ h.angle = Math.sin(t*HAM_RATE + h.phase) * HAM_SWING; h.pivot.rotation.z = h.angle; }
+}
+/* Head lateral = ARM·sinθ; head height above the deck = PIVOT_H − ARM·cosθ.
+   Only a LOW head can hit you, so the bottom of each swing is the danger window
+   and the rest of the cycle is your way through. */
+function hammerHit(r){
+  for (const h of hammers){
+    if (Math.abs(wrapDelta(r.prog - h.prog)) > 3.2) continue;
+    if (HAM_PIVOT_H - HAM_ARM*Math.cos(h.angle) > HAM_DANGER_H) continue;   // swung clear overhead
+    if ((r.y||0) - h.deck > 3) continue;                                    // sailing over it mid-air
+    if (Math.abs(r.lateral - Math.sin(h.angle)*HAM_ARM) < HAM_HALF + 1.4) return h;
+  }
+  return null;
+}
+/* ⚠ SLOW boards ~50 units before anything tighter than a 45-unit radius, so a
+   hairpin is something you can read and brake for rather than an ambush. */
+function makeSlowBoards(group){
+  if (!curTrack || !curTrack.master) return;
+  const step = TRACK_LEN/FRAMES, seen = [];
+  const mat = new THREE.MeshBasicMaterial({ color:0xffd23b, side:THREE.DoubleSide });
+  for (let i=0;i<FRAMES;i++){
+    const R = Math.abs(frameCurv[i]) > 1e-6 ? step/Math.abs(frameCurv[i]) : Infinity;
+    if (R > 45) continue;
+    const prog = i*step;
+    if (seen.some(q=>Math.abs(wrapDelta(prog-q)) < 120)) continue;   // one board per corner
+    seen.push(prog);
+    const at = prog - 50, f = sampleAt(at), dy = deckYAt(at);
+    for (const sgn of [-1,1]){
+      const off = HALF_W + 3.2;
+      const px = f.pos.x + f.right.x*sgn*off, pz = f.pos.z + f.right.z*sgn*off;
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(5, 3.4), mat);
+      b.position.set(px, dy+3.4, pz);
+      b.lookAt(px - f.tan.x, dy+3.4, pz - f.tan.z);   // face oncoming traffic
+      group.add(b);
     }
   }
 }
@@ -905,6 +998,54 @@ const CENTRIF = 4.6;                    // corner-out force strength (× speed �
    ~90 units/s you clear ~47 units and the widest gap (36) is comfortably makeable,
    while dawdling in at 60 gets you barely 21 and a long look at the canyon. */
 const AIR_GRAV = 34, AIR_VY_MUL = 0.10, AIR_VY_MAX = 14;
+/* ---- FREE DRIVING (Master circuits only) ----
+   The World Tour puts the car on a rail: it follows the curve and you steer a
+   lateral offset, so you physically cannot miss a corner or leave the road.
+   Master Mode drives for real — world position, heading, velocity. The track
+   only answers two questions: where am I on it, and is there tarmac under me?
+   Cornering is grip-limited (turn radius = v²/FREE_LAT_ACC), so a hairpin has a
+   speed you must brake to. Blow the braking point and you run straight on. */
+let freeDrive = false;
+const FREE_LAT_ACC = 58;     // cornering grip; radius = v²/58 -> 104 u/s needs 186 units
+const FREE_TURN_MAX = 2.3;   // rad/s ceiling when crawling
+// nearest point on the circuit to a world position -> {idx, u, lateral}
+function projectTrack(x, z, hint){
+  let best = -1, bestD = Infinity;
+  const scan = i => {
+    const k = ((i % FRAMES) + FRAMES) % FRAMES, P = framePos[k];
+    const d = (P.x-x)*(P.x-x) + (P.z-z)*(P.z-z);
+    if (d < bestD){ bestD = d; best = k; }
+  };
+  if (hint == null){ for (let i=0;i<FRAMES;i++) scan(i); }
+  else { for (let i=hint-90;i<=hint+90;i++) scan(i); }
+  const P = framePos[best], R = frameRight[best];
+  return { idx:best, u:best/FRAMES, lateral:(x-P.x)*R.x + (z-P.z)*R.z };
+}
+// drop a free-driving car back onto the racing line at a given progress
+function placeOnTrack(P, prog){
+  const f = sampleAt(prog);
+  P.prog = prog; P.lateral = 0;
+  P.fx = f.pos.x; P.fz = f.pos.z; P.fh = Math.atan2(f.tan.x, f.tan.z);
+  P.lap = Math.floor(prog / TRACK_LEN);
+  P._u = ((prog % TRACK_LEN)/TRACK_LEN + 1) % 1;
+  P._pidx = null;
+  P.y = deckYAt(prog); P.vy = 0; P.air = false; P._gap = null;
+}
+// re-derive prog / lateral / lap from where the car actually is in the world
+function syncFromWorld(P){
+  const pr = projectTrack(P.fx, P.fz, P._pidx);
+  P._pidx = pr.idx; P.lateral = pr.lateral;
+  const u = pr.u, pu = (P._u == null ? u : P._u);
+  if (pu > 0.75 && u < 0.25) P.lap++;            // crossed the line forward
+  else if (pu < 0.25 && u > 0.75) P.lap--;       // ...or backwards
+  P._u = u;
+  P.prog = P.lap*TRACK_LEN + u*TRACK_LEN;
+}
+function hudMsg(text, ms){
+  const el = $('crashMsg'); el.textContent = text;
+  el.classList.add('on'); clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('on'), ms||1500);
+}
 const CRASH_HOLD = 1.2;                 // seconds lost being lifted back onto the deck
 
 let player, rivals = [], all = [];
@@ -1037,6 +1178,17 @@ function startRace(){
   buildTrack(chosenCountry);                 // rebuild the selected country's circuit
   raceLaps = chosenCountry.laps || 3;
   makeRacers();
+  // Master circuits hand the player real control: free body, finite grip, no rail
+  freeDrive = !!chosenCountry.master;
+  if (freeDrive){
+    const gf = sampleAt(player.prog);
+    player.fx = gf.pos.x + gf.right.x*player.lateral;
+    player.fz = gf.pos.z + gf.right.z*player.lateral;
+    player.fh = Math.atan2(gf.tan.x, gf.tan.z);
+    player.lap = Math.floor(player.prog / TRACK_LEN);
+    player._u = ((player.prog % TRACK_LEN)/TRACK_LEN + 1) % 1;
+    player._pidx = null;
+  }
   raceTime = 0; boostE = 100; boostLock = false;
   state = 'countdown'; cdTimer = 0; cdStep = 0;
   $('scr-menu').classList.add('hidden'); $('scr-finish').classList.add('hidden');
@@ -1065,6 +1217,7 @@ function resetShowcase(){
   all.forEach(r => { if (r.mesh){ scene.remove(r.mesh); disposeObj(r.mesh); } });
   rivals = []; all = [];
   player = mkPlayer(); player.name='You'; player.top=chosenCar.top;
+  freeDrive = false;                       // menu backdrop always uses the simple rail
   player.prog = 0; player.lateral = 0; player.y = deckYAt(0); all.push(player);
   updateCarMesh(player);
 }
@@ -1169,7 +1322,59 @@ function updateCountdown(dt){
   }
 }
 
+/* Master Mode's driving model. Nothing steers for you: heading is yours, grip is
+   finite, and the road is just a surface you can leave. */
+function updatePlayerFree(dt){
+  const P = player;
+  if (P.finished){
+    P.speed += (0 - P.speed) * Math.min(1, dt*1.2);
+    P.fx += Math.sin(P.fh)*P.speed*dt; P.fz += Math.cos(P.fh)*P.speed*dt;
+    syncFromWorld(P); return;
+  }
+  if (P.crashT > 0){ P.crashT -= dt; P.speed = 0; P.y = deckYAt(P.prog); return; }
+
+  const steer = (rightHeld?1:0) - (leftHeld?1:0);
+  P._steer = steer;
+  const onRoad = Math.abs(P.lateral) <= OFF_EDGE;
+
+  let boosting = false;
+  if (dashHeld && !boostLock && boostE > BOOST_MIN){
+    boosting = true; boostE = Math.max(0, boostE - BOOST_DRAIN*dt);
+    if (boostE <= BOOST_MIN) boostLock = true;
+  } else {
+    boostE = Math.min(100, boostE + BOOST_RECHARGE*dt);
+    if (boostLock && boostE >= BOOST_READY) boostLock = false;
+  }
+
+  // off the tarmac you barely move — running wide out of a hairpin really costs you
+  let target = brakeHeld ? 0 : P.top * (boosting ? BOOST_MUL : 1);
+  if (!onRoad) target = Math.min(target, P.top*0.30);
+  let rate = brakeHeld ? 2.6 : (P.speed < target ? 1.4 : 1.0);
+  if (!onRoad && P.speed > target) rate = 3.2;
+  P.speed += (target - P.speed) * rate * dt;
+  if (P.speed < 0) P.speed = 0;
+
+  // grip-limited cornering: the faster you go the wider you turn. Airborne you
+  // have almost no authority, off-road the front end washes out.
+  const gripMul = (onRoad ? 1 : 0.42) * (P.air ? 0.15 : 1);
+  const omega = Math.min(FREE_TURN_MAX, FREE_LAT_ACC/Math.max(P.speed, 10)) * gripMul;
+  P.fh += steer * omega * dt;
+
+  P.fx += Math.sin(P.fh) * P.speed * dt;
+  P.fz += Math.cos(P.fh) * P.speed * dt;
+  syncFromWorld(P);
+  updateAir(P, dt);
+
+  P._boosting = boosting; P._offTrack = !onRoad;
+  P.mesh.userData.flame.visible = boosting;
+  const targetFov = BASE_FOV + (boosting?10:0) + Math.min(6, P.speed/P.top*4);
+  camera.fov += (targetFov - camera.fov) * Math.min(1, dt*6);
+  camera.updateProjectionMatrix();
+  $('vignette').classList.toggle('on', boosting || !onRoad);
+}
+
 function updatePlayer(dt){
+  if (freeDrive) return updatePlayerFree(dt);
   if (player.finished){                            // crossed the line — coast to a stop (multiplayer keeps simulating others)
     player.speed += (0 - player.speed) * Math.min(1, dt*1.2);
     player.prog += player.speed * dt;
@@ -1241,36 +1446,49 @@ function riderArc(r){
 }
 // pull the player out of a canyon: set down just past the gap, all momentum gone
 function rescueFromGap(r){
-  const g = r._gap || gapAt(r.prog) || gapRanges[0];
-  // keep the lap! gap coords are first-lap values, so re-base them onto the current lap
-  if (g) r.prog = Math.floor(r.prog / TRACK_LEN)*TRACK_LEN + g.e + 8;
-  r.lateral = 0; r.speed = 0; r.vy = 0; r.air = false; r._gap = null;
-  r.y = deckYAt(r.prog); r.crashT = CRASH_HOLD;
-  if (r.isPlayer){
-    const el = $('crashMsg');
-    el.textContent = '💥 INTO THE GAP — carry more speed off the lip!';
-    el.classList.add('on'); setTimeout(()=>el.classList.remove('on'), 1500);
-  }
+  // Missed a jump -> set down just past that gap. Fell off the SIDE of a bridge
+  // (no gap involved) -> set down where you left the road. Either way the lap is
+  // preserved: gap coords are first-lap values, re-based onto the current lap.
+  const g = r._gap;
+  const prog = g ? Math.floor(r.prog / TRACK_LEN)*TRACK_LEN + g.e + 8 : r.prog;
+  const msg = g ? '💥 INTO THE GAP — carry more speed off the lip!'
+                : '💥 OFF THE BRIDGE — keep it straight on the deck!';
+  if (freeDrive && r.isPlayer) placeOnTrack(r, prog);
+  else { r.prog = prog; r.lateral = 0; r.y = deckYAt(prog); r.vy = 0; r.air = false; r._gap = null; }
+  r.speed = 0; r.crashT = CRASH_HOLD;
+  if (r.isPlayer) hudMsg(msg);
+}
+// a swinging hammer got you: restart the lap you are on, from its start line
+function hammerSmash(r){
+  const lap = Math.max(0, Math.floor(r.prog / TRACK_LEN));
+  if (freeDrive) placeOnTrack(r, lap*TRACK_LEN);
+  else { r.prog = lap*TRACK_LEN; r.lateral = 0; r.y = deckYAt(r.prog); r.vy = 0; r.air = false; }
+  r.speed = 0; r.crashT = CRASH_HOLD;
+  hudMsg('🔨 SMASHED — restart lap ' + (lap+1), 1900);
 }
 function updateAir(r, dt){
   if (!gapRanges.length){ r.y = 0; return; }          // ordinary circuit — stays flat
   if (!r.isPlayer){ riderArc(r); return; }
-  const gap = gapAt(r.prog);
+  const gap0 = gapAt(r.prog), deck0 = deckYAt(r.prog);
+  const offSide0 = Math.abs(r.lateral) > HALF_W;
   if (!r.air){
-    if (!gap){ r.y = deckYAt(r.prog); return; }
-    r.air = true; r._gap = gap;                        // just ran off the broken edge
-    r.vy = Math.min(AIR_VY_MAX, r.speed*AIR_VY_MUL);
+    if (gap0){                                         // ran off the broken edge
+      r.air = true; r._gap = gap0;
+      r.vy = Math.min(AIR_VY_MAX, r.speed*AIR_VY_MUL);
+    } else if (deck0 > 1 && offSide0){                 // drove off the SIDE of the bridge
+      r.air = true; r._gap = null; r.vy = 0;
+    } else { r.y = deck0; return; }
   }
   r.vy -= AIR_GRAV*dt;
   r.y  += r.vy*dt;
   const deck = deckYAt(r.prog), overGap = !!gapAt(r.prog);
-  if (!overGap && r.y <= deck){                        // wheels back on solid deck
+  const offSide = Math.abs(r.lateral) > HALF_W;
+  if (!overGap && !offSide && r.y <= deck){            // wheels back on solid deck
     r.y = deck; r.vy = 0; r.air = false; r._gap = null;
-    if (Math.abs(r.lateral) > HALF_W) return rescueFromGap(r);   // came down off the side
     r.speed *= 0.92;                                   // scrub a little on touchdown
     return;
   }
-  if (overGap && r.y < deck - 16) rescueFromGap(r);    // didn't make it across
+  if (r.y < deck - 16) rescueFromGap(r);               // long way down
 }
 function updateRival(r, dt){
   // pace: hold cruise; a mild pull toward the player keeps the pack tight & the
@@ -1319,11 +1537,11 @@ function clampLaterals(){
   // the player may run wide onto the grass (penalised in updatePlayer); rivals hold the tarmac.
   // remote humans get the player limit — they really can be on the grass on their own screen.
   for (const r of all){
-    // On a raised bridge deck the rails hold you on — there is no grass to run wide onto.
-    // In MID-AIR the limit opens back up: drift off line over a gap and you miss the deck.
-    const onDeck = !r.air && deckYAt(r.prog) > 1;
-    const lim = onDeck ? HALF_W
-              : (r.isPlayer || (r.isRemote && !r.mpBot)) ? PLAYER_MAX_LAT : MAX_LAT;
+    // Master Mode: the player is a free body. Clamping their lateral offset is
+    // exactly the invisible rail that made bridges impossible to fall off, so
+    // they are never clamped — where they drive is where they end up.
+    if (r.isPlayer && freeDrive) continue;
+    const lim = (r.isPlayer || (r.isRemote && !r.mpBot)) ? PLAYER_MAX_LAT : MAX_LAT;
     r.lateral = THREE.MathUtils.clamp(r.lateral, -lim, lim);
   }
 }
@@ -1359,13 +1577,20 @@ function checkFinish(){
 /* ---------------- render transforms ---------------- */
 const _wp = new THREE.Vector3(), _look = new THREE.Vector3(), _camGoal = new THREE.Vector3();
 function updateCarMesh(r){
-  const f = sampleAt(r.prog);
-  _wp.copy(f.pos).addScaledVector(f.right, r.lateral);
-  _wp.y += (r.y || 0);                    // bridge deck height + airtime
-  r.mesh.position.copy(_wp);
-  // face along tangent (car front is -z)
-  _look.copy(_wp).add(f.tan);
-  r.mesh.lookAt(_look);
+  if (r.isPlayer && freeDrive && r.fx != null){
+    _wp.set(r.fx, (r.y || 0), r.fz);            // free body: its own position & heading
+    r.mesh.position.copy(_wp);
+    _look.set(r.fx + Math.sin(r.fh), (r.y || 0), r.fz + Math.cos(r.fh));
+    r.mesh.lookAt(_look);
+  } else {
+    const f = sampleAt(r.prog);
+    _wp.copy(f.pos).addScaledVector(f.right, r.lateral);
+    _wp.y += (r.y || 0);                  // bridge deck height + airtime
+    r.mesh.position.copy(_wp);
+    // face along tangent (car front is -z)
+    _look.copy(_wp).add(f.tan);
+    r.mesh.lookAt(_look);
+  }
   // bank into the swerve — cheap but big feel win (driven by lateral velocity)
   const dLat = r.lateral - (r._prevLat ?? r.lateral); r._prevLat = r.lateral;
   const leanT = THREE.MathUtils.clamp(-dLat * 3.2, -0.32, 0.32);
@@ -1387,11 +1612,19 @@ function updateCarMesh(r){
   if (ws) for (const w of ws) w.rotation.x = r.wheelSpin;
 }
 function placeCamera(snap){
-  const f = sampleAt(player.prog);
-  _wp.copy(f.pos).addScaledVector(f.right, player.lateral);
-  _wp.y += (player.y || 0);               // follow the car up onto the bridge and into the air
-  // behind & above, along the track tangent
-  _camGoal.copy(_wp).addScaledVector(f.tan, -13).addScaledVector(UP, 6.2);
+  let fx, fz;
+  if (freeDrive && player.fx != null){
+    _wp.set(player.fx, (player.y||0), player.fz);
+    fx = Math.sin(player.fh); fz = Math.cos(player.fh);      // chase the car's own heading
+  } else {
+    const f = sampleAt(player.prog);
+    _wp.copy(f.pos).addScaledVector(f.right, player.lateral);
+    _wp.y += (player.y || 0);
+    fx = f.tan.x; fz = f.tan.z;
+  }
+  const _tan = new THREE.Vector3(fx, 0, fz);
+  // behind & above, along the direction of travel
+  _camGoal.copy(_wp).addScaledVector(_tan, -13).addScaledVector(UP, 6.2);
   if (snap) camera.position.copy(_camGoal);
   else camera.position.lerp(_camGoal, Math.min(1, 0.12));
   // subtle shake while dashing sharpens the speed sensation
@@ -1399,7 +1632,7 @@ function placeCamera(snap){
     camera.position.x += (Math.random()-0.5)*0.22;
     camera.position.y += (Math.random()-0.5)*0.18;
   }
-  _look.copy(_wp).addScaledVector(f.tan, 12).addScaledVector(UP, 1.8);
+  _look.copy(_wp).addScaledVector(_tan, 12).addScaledVector(UP, 1.8);
   camera.lookAt(_look);
 }
 
@@ -1440,6 +1673,10 @@ function loop(now){
     // finished rivals coast onward at their cool-down speed instead of parking ON the
     // finish line, where they used to form a wall of stationary cars on your last lap
     for (const r of rivals){ if (!r.finished) updateRival(r, dt); else r.prog += r.speed * dt; }
+    if (hammers.length){
+      updateHammers(now*0.001);
+      if (player.crashT <= 0 && hammerHit(player)) hammerSmash(player);
+    }
     if (MP.on){ mpRaceTick(dt); mpResolveCollisions(); } else resolveCollisions();
     clampLaterals();
     all.forEach(updateCarMesh);
