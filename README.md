@@ -12,6 +12,8 @@ App/Assets.xcassets/   1024px app icon + launch colour
 App/Info.plist         portrait-only, full-screen, status bar hidden
 project.yml            XcodeGen spec — regenerate with `xcodegen generate`
 tools/make-icon.js     regenerates the app icon
+tools/verify-build.sh  simulator build check — no Apple account needed
+tools/archive.sh       signed archive + .ipa export for App Store Connect
 ```
 
 Bundle id `com.ilangames.stacktower`, version 1.0 (build 1), iOS 15+.
@@ -29,13 +31,17 @@ Bundle id `com.ilangames.stacktower`, version 1.0 (build 1), iOS 15+.
 
 ## Build
 
-Requires **full Xcode** from the Mac App Store — you currently have Command Line
-Tools only, which cannot build iOS apps.
+Requires **Xcode 26.3** — install with `xcodes install 26.3`. Not 26.4 or newer:
+those need macOS 26.2, and this Mac is on 15.7.7. The App Store copy of Xcode is
+26.6, so it will not install here either.
 
 ```
-xcodegen generate          # only if you edit project.yml
+tools/verify-build.sh      # compiles for the simulator, no signing needed
 open StackTower.xcodeproj
 ```
+
+`xcodegen generate` regenerates the project after editing `project.yml`; the
+scripts do it for you.
 
 In Xcode: select the StackTower target → Signing & Capabilities → check
 *Automatically manage signing* → pick your Team. Then Product → Run on a simulator
@@ -49,9 +55,13 @@ or device.
    - Platform iOS, Name `Stack Tower` (must be globally unique — see
      `store-metadata.md` for fallbacks), Primary language English,
      Bundle ID `com.ilangames.stacktower`, SKU `stacktower-ios`.
-3. **Upload the build**: Xcode → set destination to *Any iOS Device (arm64)* →
-   Product → Archive → Distribute App → App Store Connect → Upload.
-   Processing takes 15–60 min before the build is selectable.
+3. **Upload the build**: either
+   ```
+   TEAM_ID=XXXXXXXXXX tools/archive.sh
+   ```
+   which archives, signs and exports an `.ipa`, or in Xcode set the destination to
+   *Any iOS Device (arm64)* → Product → Archive → Distribute App → App Store Connect.
+   Processing takes 15–60 min before the build is selectable in App Store Connect.
 4. **Fill the listing** using `store-metadata.md`: description, keywords, support
    URL, screenshots, age rating, and App Privacy (answer **Data Not Collected** —
    the app collects nothing).
