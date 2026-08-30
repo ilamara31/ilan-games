@@ -1,33 +1,47 @@
 # Stack Tower — iOS
 
-Standalone native iOS app for the Stack Tower game from `ilan-games`. The game runs
-fully offline inside a `WKWebView`; nothing is fetched at runtime.
+Standalone native iOS game — Stack Tower, rewritten in Swift and SpriteKit. No
+web view, no bundled HTML: the tower, physics, audio and menus are all native.
+It is fully offline and makes no network calls.
 
 ## What's here
 
 ```
-App/Sources/           Swift app shell (3 files)
-App/www/index.html     the game, bundled — no network, no site dependencies
-App/Assets.xcassets/   1024px app icon + launch colour
-App/Info.plist         portrait-only, full-screen, status bar hidden
-project.yml            XcodeGen spec — regenerate with `xcodegen generate`
-tools/make-icon.js     regenerates the app icon
-tools/verify-build.sh  simulator build check — no Apple account needed
-tools/archive.sh       signed archive + .ipa export for App Store Connect
+App/Sources/
+  GameScene.swift       the game: tower, slicing, combos, camera, debris
+  GameViewController.swift  hosts the scene and the menu card
+  MenuOverlayView.swift  title / game-over card (UIKit, SF Symbols)
+  CoachBubble.swift      the tutorial's speech bubble
+  ToneGenerator.swift    AVAudioEngine blips — the old WebAudio tones, natively
+  Haptics.swift          drop / perfect / topple feedback
+  Scores.swift           best score + tutorial flag in UserDefaults
+  Palette.swift          shared colours and layout constants
+UITests/                 drives real taps and asserts a run plays through
+App/Assets.xcassets/     1024px app icon + launch colour
+App/Info.plist           portrait-only, full-screen, status bar hidden
+project.yml              XcodeGen spec — regenerate with `xcodegen generate`
+tools/make-icon.js       regenerates the app icon
+tools/verify-build.sh    simulator build check — no Apple account needed
+tools/archive.sh         signed archive + .ipa export for App Store Connect
 ```
 
 Bundle id `com.ilangames.stacktower`, version 1.0 (build 1), iOS 15+.
 
 ## How it differs from the web version
 
-- The site-wide scripts (`auth.js`, `friends.js`, `analytics.js`, `supabase-config.js`,
-  `announce.js`, `rec.js`) are stripped — the app makes no network calls at all.
-- Log in / Leaderboard / All Games buttons removed; a button that does nothing is a
-  review rejection. Tutorial and local best score stay.
+Same game, same numbers — block height, speeds, the 7pt perfect tolerance, the
+combo widening rule and the camera easing are all carried over unchanged.
+
+- Rendered by SpriteKit rather than a canvas, so there is no web view at all.
+- Sound is synthesised with `AVAudioEngine` instead of WebAudio, on the `.ambient`
+  session so it never interrupts the player's music.
+- Best score lives in `UserDefaults`, so it survives updates and is backed up.
+- The site's login / leaderboard / all-games buttons are gone — they needed the
+  Supabase backend, and a dead button is a review rejection.
+- SF Symbols replace the emoji in the UI, so no glyph can go missing.
 - Native haptics on each landed block, on a perfect stack, and on game over.
-- HUD and tower respect the notch and home indicator via safe-area insets.
-- Served over a `stacktower://` scheme rather than `file://`, so `localStorage`
-  (the best score) persists — it is unreliable on file origins in WKWebView.
+- HUD and tower clear the Dynamic Island and home indicator via safe-area insets.
+- The score is exposed to VoiceOver.
 
 ## Build
 
@@ -71,9 +85,20 @@ or device.
 
 ## Worth knowing before you submit
 
-Guideline **4.2 Minimum Functionality** is the realistic rejection risk for a small
-single-mode game. It is aimed at repackaged websites, and this build is deliberately
-not that: fully offline, no browser chrome, native haptics, a tutorial. It is a real
-game, which is the main thing reviewers look for. If it is rejected anyway, the usual
-fix is more depth — game modes, Game Center leaderboards, unlockables — rather than
-an appeal.
+Guideline **4.2 Minimum Functionality** is the residual risk for any small
+single-mode game, but the usual trigger — a repackaged website in a web view — does
+not apply here: this is a native SpriteKit game with no web content of any kind.
+If it is still rejected, the fix is more depth (game modes, Game Center
+leaderboards, unlockables) rather than an appeal.
+
+## Tests
+
+```
+xcodebuild test -project StackTower.xcodeproj -scheme StackTowerUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max,OS=latest'
+```
+
+The UI test plays a real run — clears the tutorial, starts from the title card and
+stacks until the tower topples — and attaches screenshots at each stage. Extract
+them with `xcrun xcresulttool export attachments --path <.xcresult> --output-path <dir>`;
+they double as App Store screenshot sources.

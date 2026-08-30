@@ -20,9 +20,6 @@ targets:
     sources:
       - path: App/Sources
       - path: App/Assets.xcassets
-      # www ships verbatim as a folder reference so the scheme handler can resolve paths.
-      - path: App/www
-        type: folder
     settings:
       base:
         INFOPLIST_FILE: App/Info.plist
@@ -32,3 +29,16 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         GENERATE_INFOPLIST_FILE: NO
+
+  StackTowerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: StackTower
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ilangames.stacktower.uitests
+        TEST_TARGET_NAME: StackTower
+        GENERATE_INFOPLIST_FILE: YES

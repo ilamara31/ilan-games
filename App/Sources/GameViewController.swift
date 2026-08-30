@@ -1,66 +1,73 @@
 import UIKit
-import WebKit
+import SpriteKit
 
-/// Full-screen host for the game. The web layer draws everything; this side owns
-/// the chrome (status bar, home indicator, safe areas) and the haptics.
+/// Hosts the SpriteKit scene and the menu card over it.
 final class GameViewController: UIViewController {
 
-    private var webView: WKWebView!
-    private let backdrop = UIColor(red: 0.043, green: 0.071, blue: 0.149, alpha: 1) // #0b1226
-
-    // Kept warm so the first tap of a run doesn't pay for generator setup.
-    private let lightTap = UIImpactFeedbackGenerator(style: .light)
-    private let heavyTap = UIImpactFeedbackGenerator(style: .medium)
-    private let notice = UINotificationFeedbackGenerator()
+    private var skView: SKView!
+    private var scene: GameScene!
+    private let menu = MenuOverlayView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = backdrop
+        view.backgroundColor = Palette.backdrop
 
-        guard let www = Bundle.main.url(forResource: "www", withExtension: nil) else {
-            fatalError("www/ is missing from the app bundle")
-        }
+        skView = SKView(frame: view.bounds)
+        skView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        skView.ignoresSiblingOrder = true
+        view.addSubview(skView)
 
-        let config = WKWebViewConfiguration()
-        config.setURLSchemeHandler(BundleSchemeHandler(root: www), forURLScheme: BundleSchemeHandler.scheme)
-        config.userContentController.add(self, name: "haptic")
-        // The game's sound effects are triggered by taps, so no gesture gate is needed.
-        config.allowsInlineMediaPlayback = true
-        config.mediaTypesRequiringUserActionForPlayback = []
+        scene = GameScene(size: view.bounds.size)
+        scene.scaleMode = .resizeFill
+        scene.gameDelegate = self
+        skView.presentScene(scene)
 
-        webView = WKWebView(frame: view.bounds, configuration: config)
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        webView.isOpaque = false
-        webView.backgroundColor = backdrop
-        webView.scrollView.backgroundColor = backdrop
-        webView.scrollView.bounces = false
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.contentInsetAdjustmentBehavior = .never
-        webView.allowsBackForwardNavigationGestures = false
-        webView.navigationDelegate = self
-        view.addSubview(webView)
+        menu.frame = view.bounds
+        menu.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        menu.onStart = { [weak self] in self?.startRun(tutorial: false) }
+        menu.onTutorial = { [weak self] in self?.startRun(tutorial: true) }
+        view.addSubview(menu)
 
-        webView.load(URLRequest(url: BundleSchemeHandler.startURL))
-
-        [lightTap, heavyTap].forEach { $0.prepare() }
-        notice.prepare()
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification, object: nil)
     }
 
-    /// CSS env(safe-area-inset-*) proved unreliable here, so the real UIKit insets
-    /// are pushed into the page instead. Keeps the HUD clear of the Dynamic Island
-    /// and the home indicator.
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        scene.size = view.bounds.size
+        pushSafeAreaInsets()
+    }
+
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
         pushSafeAreaInsets()
     }
 
     private func pushSafeAreaInsets() {
-        let insets = view.safeAreaInsets
-        webView.evaluateJavaScript(
-            "window.__setSafe && window.__setSafe(\(insets.top), \(insets.bottom))",
-            completionHandler: nil
-        )
+        scene.updateSafeArea(top: view.safeAreaInsets.top, bottom: view.safeAreaInsets.bottom)
     }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Straight into the tutorial the first time, like the web build did.
+        if Scores.hasSeenTutorial {
+            menu.showTitle(best: Scores.best)
+        } else {
+            startRun(tutorial: true)
+        }
+    }
+
+    private func startRun(tutorial: Bool) {
+        menu.isHidden = true
+        scene.startRun(tutorial: tutorial)
+    }
+
+    @objc private func appDidBecomeActive() { scene.resumeAudio() }
+    @objc private func appWillResignActive() { scene.pauseAudio() }
 
     // The game is a portrait tower; full-screen with no status bar.
     override var prefersStatusBarHidden: Bool { true }
@@ -68,28 +75,12 @@ final class GameViewController: UIViewController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
 }
 
-extension GameViewController: WKScriptMessageHandler {
-    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "haptic", let kind = message.body as? String else { return }
-        switch kind {
-        case "tick":     lightTap.impactOccurred(); lightTap.prepare()
-        case "perfect":  heavyTap.impactOccurred(intensity: 1.0); heavyTap.prepare()
-        case "over":     notice.notificationOccurred(.error); notice.prepare()
-        default:         break
-        }
-    }
-}
-
-extension GameViewController: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        pushSafeAreaInsets()
+extension GameViewController: GameSceneDelegate {
+    func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int) {
+        menu.showGameOver(score: score, best: best)
     }
 
-    /// Everything ships in the bundle; nothing should ever navigate out.
-    func webView(_ webView: WKWebView,
-                 decidePolicyFor action: WKNavigationAction,
-                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        let isLocal = action.request.url?.scheme == BundleSchemeHandler.scheme
-        decisionHandler(isLocal ? .allow : .cancel)
+    func gameSceneDidFinishTutorial(_ scene: GameScene) {
+        menu.showTitle(best: Scores.best)
     }
 }
