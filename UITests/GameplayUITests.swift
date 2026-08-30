@@ -80,3 +80,43 @@ final class LeaderboardUITests: XCTestCase {
         XCTAssertTrue(app.cells.count > 0, "the shared board should return rows")
     }
 }
+
+/// The sign-in sheet, which shares accounts with the website.
+final class SignInUITests: XCTestCase {
+    func testSignInSheetRenders() {
+        let app = XCUIApplication()
+        app.launch()
+        Thread.sleep(forTimeInterval: 2.5)
+
+        let centre = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        for _ in 0..<4 {
+            centre.tap()
+            Thread.sleep(forTimeInterval: 1.0)
+        }
+        Thread.sleep(forTimeInterval: 1.5)
+
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 8))
+        signIn.tap()
+        Thread.sleep(forTimeInterval: 1.5)
+
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "20-signin"
+        shot.lifetime = .keepAlways
+        add(shot)
+
+        XCTAssertTrue(app.textFields["Username"].exists, "username field should be present")
+        XCTAssertTrue(app.secureTextFields["Password"].exists, "password field should be present")
+
+        // Validation should reject a too-short username without hitting the network.
+        app.textFields["Username"].tap()
+        app.textFields["Username"].typeText("ab")
+        app.buttons["Continue"].tap()
+        Thread.sleep(forTimeInterval: 1.0)
+
+        let warned = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        warned.name = "21-signin-validation"
+        warned.lifetime = .keepAlways
+        add(warned)
+    }
+}

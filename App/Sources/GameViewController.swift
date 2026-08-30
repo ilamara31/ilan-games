@@ -66,11 +66,28 @@ final class GameViewController: UIViewController {
     private func presentAccount() {
         let auth = AuthViewController()
         auth.onSignedIn = { [weak self] in self?.menu.refreshAccountButton() }
-        present(UINavigationController(rootViewController: auth), animated: true)
+        present(darkSheet(auth), animated: true)
     }
 
     private func presentLeaderboard() {
-        present(UINavigationController(rootViewController: LeaderboardViewController()), animated: true)
+        present(darkSheet(LeaderboardViewController()), animated: true)
+    }
+
+    /// The sheets sit on the game's dark backdrop, so the navigation bar needs
+    /// matching colours — the default is dark text on dark.
+    private func darkSheet(_ root: UIViewController) -> UINavigationController {
+        let nav = UINavigationController(rootViewController: root)
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = Palette.backdrop
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+        nav.navigationBar.tintColor = Palette.gold
+        nav.overrideUserInterfaceStyle = .dark
+        return nav
     }
 
     private func startRun(tutorial: Bool) {
