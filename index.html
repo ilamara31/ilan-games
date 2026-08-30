@@ -847,12 +847,12 @@
 <script>
 /* Home-page search + category filters (Poki-style) */
 (function(){
-  const CATS={ 'drawrush/':['multiplayer','arcade'], 'meme/':['arcade'], 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
-    'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['3d','sports'], 'airhockey/':['arcade','sports'],
-    'cricket/':['sports'], 'football/':['sports'], 'tennis/':['sports'], 'karate/':['sports'], 'archer/':['sports'],
-    'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
+  const CATS={ 'drawrush/':['multiplayer','arcade'], 'meme/':['multiplayer','arcade'], 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
+    'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['multiplayer','3d','sports'], 'airhockey/':['arcade','sports'],
+    'cricket/':['sports'], 'football/':['sports'], 'tennis/':['multiplayer','sports'], 'karate/':['sports'], 'archer/':['sports'],
+    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
+  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';
