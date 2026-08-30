@@ -26,6 +26,8 @@ final class GameViewController: UIViewController {
         menu.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         menu.onStart = { [weak self] in self?.startRun(tutorial: false) }
         menu.onTutorial = { [weak self] in self?.startRun(tutorial: true) }
+        menu.onAccount = { [weak self] in self?.presentAccount() }
+        menu.onLeaderboard = { [weak self] in self?.presentLeaderboard() }
         view.addSubview(menu)
 
         NotificationCenter.default.addObserver(
@@ -61,6 +63,16 @@ final class GameViewController: UIViewController {
         }
     }
 
+    private func presentAccount() {
+        let auth = AuthViewController()
+        auth.onSignedIn = { [weak self] in self?.menu.refreshAccountButton() }
+        present(UINavigationController(rootViewController: auth), animated: true)
+    }
+
+    private func presentLeaderboard() {
+        present(UINavigationController(rootViewController: LeaderboardViewController()), animated: true)
+    }
+
     private func startRun(tutorial: Bool) {
         menu.isHidden = true
         scene.startRun(tutorial: tutorial)
@@ -78,6 +90,8 @@ final class GameViewController: UIViewController {
 extension GameViewController: GameSceneDelegate {
     func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int) {
         menu.showGameOver(score: score, best: best)
+        // Only the personal best goes up, matching the website's behaviour.
+        Task { await Account.submit(score: best) }
     }
 
     func gameSceneDidFinishTutorial(_ scene: GameScene) {

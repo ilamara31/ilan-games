@@ -6,6 +6,8 @@ final class MenuOverlayView: UIView {
 
     var onStart: (() -> Void)?
     var onTutorial: (() -> Void)?
+    var onAccount: (() -> Void)?
+    var onLeaderboard: (() -> Void)?
 
     private let titleLabel = UILabel()
     private let gradientLayer = CAGradientLayer()
@@ -13,6 +15,9 @@ final class MenuOverlayView: UIView {
     private let scoreLabel = UILabel()
     private let startButton = UIButton(type: .system)
     private let tutorialButton = UIButton(type: .system)
+    private let accountButton = UIButton(type: .system)
+    private let leaderboardButton = UIButton(type: .system)
+    private let secondaryRow = UIStackView()
     private let column = UIStackView()
 
     override init(frame: CGRect) {
@@ -51,12 +56,13 @@ final class MenuOverlayView: UIView {
 
         configureStartButton()
         configureTutorialButton()
+        configureSecondaryRow()
 
         column.axis = .vertical
         column.alignment = .center
         column.spacing = 16
         column.translatesAutoresizingMaskIntoConstraints = false
-        [gradientHost, bodyLabel, startButton, scoreLabel, tutorialButton].forEach(column.addArrangedSubview)
+        [gradientHost, bodyLabel, startButton, scoreLabel, secondaryRow].forEach(column.addArrangedSubview)
         column.setCustomSpacing(22, after: bodyLabel)
         addSubview(column)
 
@@ -93,12 +99,58 @@ final class MenuOverlayView: UIView {
         config.cornerStyle = .capsule
         config.baseForegroundColor = UIColor(red: 0.875, green: 0.894, blue: 1, alpha: 1)
         config.baseBackgroundColor = UIColor(white: 1, alpha: 0.08)
-        config.contentInsets = NSDirectionalEdgeInsets(top: 11, leading: 20, bottom: 11, trailing: 20)
+        config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 13, bottom: 10, trailing: 13)
+        config.titleLineBreakMode = .byClipping
         config.attributedTitle = AttributedString("Tutorial", attributes: .init([
-            .font: UIFont.systemFont(ofSize: 15, weight: .semibold)
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
         ]))
         tutorialButton.configuration = config
+        tutorialButton.titleLabel?.numberOfLines = 1
+        tutorialButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         tutorialButton.addAction(UIAction { [weak self] _ in self?.onTutorial?() }, for: .touchUpInside)
+    }
+
+    private func configureSecondaryRow() {
+        func ghost(_ title: String, _ symbol: String) -> UIButton {
+            let button = UIButton(type: .system)
+            var config = UIButton.Configuration.gray()
+            config.image = UIImage(systemName: symbol)
+            config.imagePadding = 6
+            config.cornerStyle = .capsule
+            config.baseForegroundColor = UIColor(red: 0.875, green: 0.894, blue: 1, alpha: 1)
+            config.baseBackgroundColor = UIColor(white: 1, alpha: 0.08)
+            config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 13, bottom: 10, trailing: 13)
+            config.titleLineBreakMode = .byClipping
+            config.attributedTitle = AttributedString(title, attributes: .init([
+                .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
+            ]))
+            button.configuration = config
+            button.titleLabel?.numberOfLines = 1
+            button.setContentCompressionResistancePriority(.required, for: .horizontal)
+            return button
+        }
+
+        accountButton.configuration = ghost("Sign in", "person.crop.circle").configuration
+        accountButton.addAction(UIAction { [weak self] _ in self?.onAccount?() }, for: .touchUpInside)
+
+        leaderboardButton.configuration = ghost("Leaderboard", "trophy").configuration
+        leaderboardButton.addAction(UIAction { [weak self] _ in self?.onLeaderboard?() }, for: .touchUpInside)
+
+        secondaryRow.axis = .horizontal
+        secondaryRow.spacing = 8
+        secondaryRow.alignment = .center
+        secondaryRow.distribution = .equalSpacing
+        [tutorialButton, accountButton, leaderboardButton].forEach(secondaryRow.addArrangedSubview)
+    }
+
+    /// Reflects who is signed in, so the button reads as an account button once you are.
+    func refreshAccountButton() {
+        let title = Account.name.map { String($0.prefix(12)) } ?? "Sign in"
+        accountButton.configuration?.attributedTitle = AttributedString(title, attributes: .init([
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
+        ]))
+        accountButton.configuration?.image = UIImage(
+            systemName: Account.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
     }
 
     override func layoutSubviews() {
@@ -120,6 +172,7 @@ final class MenuOverlayView: UIView {
             attributes: [.font: UIFont.systemFont(ofSize: 16)]
         ) : nil
         tutorialButton.isHidden = false
+        refreshAccountButton()
         isHidden = false
     }
 
@@ -140,6 +193,7 @@ final class MenuOverlayView: UIView {
         ))
         scoreLabel.attributedText = text
         tutorialButton.isHidden = true
+        refreshAccountButton()
         isHidden = false
     }
 

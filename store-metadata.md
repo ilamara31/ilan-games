@@ -33,8 +33,12 @@ Blocks speed up the higher you climb. There is no timer and no lives. One miss e
 • One tap to play — no tutorial needed, though there's a short one if you want it
 • Perfect-drop combos that widen the tower and reward precision
 • Your best score is kept on device
-• Plays completely offline — no account, no ads, no internet needed
-• Collects no data whatsoever
+• Play offline with no account at all — nothing is sent
+• Optional account puts you on a leaderboard shared with the web version
+• No ads, no tracking
+
+Sign in with the same username you use on the Ilan Games website and your scores
+sit on one shared leaderboard across web and iPhone.
 
 Short runs, quick restarts. Beat your best.
 ```
@@ -66,8 +70,25 @@ All questionnaire answers are **None**. No violence, no user content, no web acc
 no gambling. Result: **4+**.
 
 ## App Privacy
-Select **Data is not collected from this app**. Accurate — there is no analytics,
-no account, no network call of any kind. Nothing else in the section needs answering.
+**This changed when accounts were added — it is no longer "Data Not Collected".**
+
+Declare, under *Data Linked to You*:
+
+| Category | Type | Purpose |
+|---|---|---|
+| Identifiers | User ID (the username) | App Functionality |
+| User Content | Other (game scores) | App Functionality |
+
+Answer **No** to tracking — nothing is shared with third parties, there is no
+analytics and no advertising. The only network calls are to your own Supabase
+project, for signing in, posting a score, and reading the leaderboard.
+
+Playing without an account still sends nothing at all; the account is optional.
+
+## Account deletion — required
+Guideline 5.1.1(v) requires in-app account deletion. The UI is built, but the
+`account_delete` function does not exist on the backend yet. See
+`SUPABASE-SETUP.md`. **This must be working before you submit.**
 
 ## Pricing
 Free, all territories. No in-app purchases.
