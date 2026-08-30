@@ -6,7 +6,8 @@ cd "$(dirname "$0")/.."
 
 command -v xcodegen >/dev/null && xcodegen generate >/dev/null
 
-DEST='platform=iOS Simulator,name=iPhone 16 Pro,OS=latest'
+DEVICE="${DEVICE:-iPhone 17 Pro Max}"   # 6.9" — the size App Store screenshots must come from
+DEST="platform=iOS Simulator,name=$DEVICE,OS=latest"
 echo "Building StackTower for the simulator…"
 xcodebuild \
   -project StackTower.xcodeproj \

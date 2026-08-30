@@ -46,6 +46,22 @@ final class GameViewController: UIViewController {
         notice.prepare()
     }
 
+    /// CSS env(safe-area-inset-*) proved unreliable here, so the real UIKit insets
+    /// are pushed into the page instead. Keeps the HUD clear of the Dynamic Island
+    /// and the home indicator.
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        pushSafeAreaInsets()
+    }
+
+    private func pushSafeAreaInsets() {
+        let insets = view.safeAreaInsets
+        webView.evaluateJavaScript(
+            "window.__setSafe && window.__setSafe(\(insets.top), \(insets.bottom))",
+            completionHandler: nil
+        )
+    }
+
     // The game is a portrait tower; full-screen with no status bar.
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
@@ -65,6 +81,10 @@ extension GameViewController: WKScriptMessageHandler {
 }
 
 extension GameViewController: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pushSafeAreaInsets()
+    }
+
     /// Everything ships in the bundle; nothing should ever navigate out.
     func webView(_ webView: WKWebView,
                  decidePolicyFor action: WKNavigationAction,

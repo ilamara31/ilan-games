@@ -37,7 +37,9 @@ const cv=document.getElementById('g'),ctx=cv.getContext('2d');let W=0,H=0,DPR=1,
 /* PW/X0: logical playfield band, capped at phone-ish width so the block's travel
    range feels the same on desktop as on mobile; X0 centres the band on screen. */
 let SAFE_T=0,SAFE_B=0;
-function readSafe(){const e=document.getElementById('safe');if(!e)return;const c=getComputedStyle(e);SAFE_T=parseFloat(c.paddingTop)||0;SAFE_B=parseFloat(c.paddingBottom)||0;}
+let NATIVE_SAFE=false;
+window.__setSafe=function(t,b){NATIVE_SAFE=true;SAFE_T=t||0;SAFE_B=b||0;wakeLoop();};
+function readSafe(){if(NATIVE_SAFE)return;const e=document.getElementById('safe');if(!e)return;const c=getComputedStyle(e);SAFE_T=parseFloat(c.paddingTop)||0;SAFE_B=parseFloat(c.paddingBottom)||0;}
 function resize(){readSafe();DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);PW=Math.min(W,480);X0=(W-PW)/2;}
 addEventListener('resize',()=>{resize();wakeLoop();});resize();
 /* per-account save: each logged-in account keeps its own progress.
@@ -61,7 +63,7 @@ function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,
 function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=14,x=W/2,tx0=x-maxw/2+pad+40;
   ctx.font='600 17px Trebuchet MS';ctx.textAlign='left';ctx.textBaseline='top';
   const words=coachMsg.split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxw-pad*2-44&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);
-  const lh=23,bh=lines.length*lh+pad*2,by=Math.max(12,H*0.06),bx=x-maxw/2;
+  const lh=23,bh=lines.length*lh+pad*2,by=SAFE_T+12,bx=x-maxw/2;
   ctx.fillStyle='rgba(8,12,30,.92)';rrect(bx,by,maxw,bh,14);ctx.fill();ctx.strokeStyle='rgba(255,213,74,.75)';ctx.lineWidth=2;rrect(bx,by,maxw,bh,14);ctx.stroke();
   ctx.font='26px serif';ctx.fillText('🧑',bx+10,by+pad+4);
   ctx.fillStyle='#fff';ctx.font='600 17px Trebuchet MS';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);}
@@ -110,7 +112,7 @@ function loop(now){rafId=null;const dt=Math.min(.04,(now-last)/1000||0);last=now
   // perfect flashes
   for(const p of parts){if(p.perfect){const yy=sy2(p.y);ctx.globalAlpha=Math.max(0,p.life*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(stack[stack.length-1].x-4,yy-BH-4,stack[stack.length-1].w+8,BH+8);ctx.globalAlpha=1;}}
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px Trebuchet MS';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,SAFE_T+70);ctx.globalAlpha=1;
+  if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px Trebuchet MS';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,SAFE_T+(coachMsg?150:70));ctx.globalAlpha=1;
     if(combo>=2){ctx.fillStyle='#ffd54a';ctx.font='900 22px Trebuchet MS';ctx.fillText('PERFECT x'+combo+'!',W/2,SAFE_T+100);}
     ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#c7d2f0';ctx.fillText('best '+best,W/2,H-16-SAFE_B);}
   if(tutMode)drawCoach();
