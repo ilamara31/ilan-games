@@ -38,6 +38,9 @@
   .btn.gold{ background:linear-gradient(135deg,#ffe14a,#ff9b3d); }
   .btn.alt{ background:linear-gradient(135deg,#b9c6da,#7e90b5); color:#10203a; }
   .btn:active{ transform:scale(.97); }
+  /* the difficulty PLAY will use — dimmed until chosen, ringed when it is */
+  .btn.diff{ opacity:.55; box-shadow:none; }
+  .btn.diff.sel{ opacity:1; outline:3px solid #fff; outline-offset:2px; }
   #nameIn{ width:min(330px,86vw); padding:12px 16px; border-radius:14px; border:2px solid #2f5f9e; background:#0e2240; color:#fff; font-size:17px; text-align:center; outline:none; margin-bottom:12px; }
   #nameIn:focus{ border-color:#7ee0ff; }
   .row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:min(560px,94vw); }
@@ -142,13 +145,12 @@
   </div>
   <div class="sub" style="margin:6px 0 12px;font-size:12px">↑ your name &amp; jersey number (shown on your shirt)</div>
   <button class="btn green" id="playBtn" style="font-size:23px;padding:17px">▶ PLAY</button>
-  <div id="playModes" class="hidden">
-    <button class="btn green" id="quickBtn">⚡ Quick Match</button>
-    <div class="sub hidden" id="quickLbl" style="margin:4px 0 2px;font-size:13px;color:#bcd4ee">Choose difficulty:</div>
-    <div class="row hidden" id="quickRow">
-      <button class="btn green" data-mode="quick" data-diff="easy" style="flex:1">😀 Easy</button>
-      <button class="btn" data-mode="quick" data-diff="medium" style="flex:1">😅 Medium</button>
-      <button class="btn" data-mode="quick" data-diff="hard" style="flex:1;background:linear-gradient(135deg,#ff7a7a,#d11f3a);color:#fff">😈 Hard</button>
+  <div id="playModes">
+    <div class="sub" style="margin:4px 0 2px;font-size:13px;color:#bcd4ee">Difficulty — <b id="diffNow">Medium</b></div>
+    <div class="row" id="quickRow">
+      <button class="btn green diff" data-mode="quick" data-diff="easy" style="flex:1">😀 Easy</button>
+      <button class="btn green diff" data-mode="quick" data-diff="medium" style="flex:1">😅 Medium</button>
+      <button class="btn diff" data-mode="quick" data-diff="hard" style="flex:1;background:linear-gradient(135deg,#ff7a7a,#d11f3a);color:#fff">😈 Hard</button>
     </div>
     <button class="btn" data-mode="tournament" style="margin-top:8px">🏆 Tournament</button>
     <button class="btn gold" data-mode="career">🎓 Career Mode</button>
@@ -159,7 +161,7 @@
     <button class="btn alt" id="shopBtn">🛒 Shop</button>
     <button class="btn alt" id="setBtn">⚙️ Settings</button>
   </div>
-  <button class="btn alt" id="IGA_lb" type="button" onclick="window.IGAuth && IGAuth.showLeaderboard('tennis','Tennis')" style="margin-top:6px">🏆 Leaderboard</button>
+  <button class="btn alt" id="IGA_lb" type="button" onclick="window.IGAuth && IGAuth.showLeaderboard('tennis','Tennis')" style="margin-top:6px">📊 Leaderboard</button>
   <div class="foot">Desktop: ◀ ▶ move • <b>Space</b> shot • <b>X</b> smash. Mobile: joystick + HIT.<br>Timing: early = lob • perfect = smash • late = weak. First to <b>5 points</b> wins!</div>
 </div>
 
@@ -729,16 +731,31 @@ function feedShop(){ alert('Not enough coins!'); }
 /* ---------- menu wiring ---------- */
 function refreshMenu(){ $('nameIn').value=S.name||''; $('numIn').value=S.jerseyNum||''; }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ S.name=($('nameIn').value.trim()||'You'); S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||'10')).slice(0,2); save();
-  const m=b.dataset.mode; if(m==='quick') toCards(makeQuickCtx(b.dataset.diff)); else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
-$('playBtn').onclick=()=>{ $('playModes').classList.toggle('hidden'); };
-$('quickBtn').onclick=()=>{ const hid=$('quickRow').classList.toggle('hidden'); $('quickLbl').classList.toggle('hidden',hid); };
+  const m=b.dataset.mode; if(m==='quick'){ S.diff=b.dataset.diff; save(); markDiff(); toCards(makeQuickCtx(S.diff)); }
+  else if(m==='tournament') toCards(makeTournCtx(0)); else openCareer(); });
+/* PLAY starts a match immediately at the remembered difficulty. It used to be a
+   disclosure toggle: PLAY -> Quick Match -> Medium was three taps before the game
+   began, and the two most inviting buttons on the screen played nothing. */
+function markDiff(){
+  const d = S.diff || 'medium';
+  document.querySelectorAll('#quickRow [data-diff]').forEach(b=>b.classList.toggle('sel', b.dataset.diff===d));
+  const lbl = $('diffNow'); if (lbl) lbl.textContent = (QMODES[d]||QMODES.medium).lbl;
+}
+function startQuick(diff){
+  S.name=($('nameIn').value.trim()||'You');
+  S.jerseyNum=(($('numIn').value.replace(/[^0-9]/g,'')||'10')).slice(0,2);
+  S.diff = diff || S.diff || 'medium';                 // remember it for next time
+  save(); markDiff();
+  toCards(makeQuickCtx(S.diff));
+}
+$('playBtn').onclick=()=>startQuick(null);
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{ show('menu'); refreshMenu(); });
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>$(x.dataset.close).classList.add('hidden'));
 $('shopBtn').onclick=openShop; $('setBtn').onclick=()=>$('setModal').classList.remove('hidden');
 $('swMusic').onclick=function(){ S.music=!S.music; this.classList.toggle('on',S.music); if(musicGain) musicGain.gain.value=S.music?0.1:0; if(!S.music) stopMusic(); else if(actx&&!musicTimer) startMusic(); save(); };
 $('swSfx').onclick=function(){ S.sfx=!S.sfx; this.classList.toggle('on',S.sfx); save(); };
 $('resetBtn').onclick=()=>{ if(confirm('Reset all progress?')){ localStorage.removeItem(SK); location.reload(); } };
-refreshMenu();
+refreshMenu(); markDiff();
 ['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended') actx.resume(); }));
 
 /* ============================================================ ONLINE MULTIPLAYER (2 players) ============================================================
