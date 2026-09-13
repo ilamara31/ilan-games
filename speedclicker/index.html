@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Speed Clicker</title>
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#0b1226" />
+<meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Speed Clicker" />
+<link rel="apple-touch-icon" href="../icon-180.png?v=2" /><link rel="icon" href="../icon-192.png?v=2" />
+<meta name="description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ilan Games">
+<meta property="og:title" content="Speed Clicker — Ilan Games">
+<meta property="og:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
+<meta property="og:url" content="https://ilamara31.github.io/ilan-games/speedclicker/">
+<meta property="og:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ilan Games logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Speed Clicker — Ilan Games">
+<meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
+<meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;overflow:hidden;background:#0b1226;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff;touch-action:none;overscroll-behavior:none}
+  body{background:radial-gradient(120% 90% at 50% 12%,#1b2b60 0%,#101a3c 45%,#080d20 100%)}
+
+  /* particle burst layer — never eats a tap */
+  #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+
+  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;z-index:2;
+        padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
+
+  /* ---------- HUD: score / time / best ---------- */
+  #hud{width:100%;max-width:460px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  .stat{flex:1;text-align:center}
+  .stat b{display:block;font-size:22px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat span{display:block;font-size:10px;letter-spacing:.16em;color:#8fa2d4;font-weight:700;margin-top:3px}
+  .stat.score b{font-size:clamp(46px,14vw,68px);background:linear-gradient(90deg,#ffd54a,#ff7bd5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat.score span{color:#c7d2f0;font-size:11px}
+  #timeVal.low{color:#ff6b6b}
+
+  /* ---------- the orb ---------- */
+  #stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;min-height:0}
+  #orbBox{position:relative;width:min(74vmin,330px);height:min(74vmin,330px);display:flex;align-items:center;justify-content:center}
+  #ring{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
+  #ringFg{transition:stroke .3s}
+  #glow{position:absolute;width:100%;height:100%;border-radius:50%;opacity:.35;
+        background:radial-gradient(circle,rgba(255,180,60,.85) 0%,rgba(255,90,180,.35) 45%,rgba(255,90,180,0) 70%);
+        transform:scale(1.12);will-change:opacity,transform;pointer-events:none}
+  #orb{position:relative;width:80%;height:80%;border-radius:50%;border:none;cursor:pointer;
+       background:radial-gradient(circle at 34% 28%,#ffe89a 0%,#ffc23d 30%,#ff7a3d 62%,#e0426f 100%);
+       box-shadow:0 18px 44px rgba(255,110,60,.42),inset 0 -16px 34px rgba(120,10,60,.42),inset 0 12px 26px rgba(255,255,255,.42);
+       display:flex;align-items:center;justify-content:center;flex-direction:column;
+       will-change:transform;transform:translateZ(0);touch-action:none}
+  #orb::after{content:'';position:absolute;top:9%;left:16%;width:44%;height:26%;border-radius:50%;
+              background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,0));filter:blur(2px)}
+  #orbIcon{font-size:clamp(46px,15vmin,80px);line-height:1;filter:drop-shadow(0 3px 6px rgba(90,0,40,.45))}
+  #orbTxt{margin-top:6px;font-size:clamp(13px,3.4vmin,17px);font-weight:900;letter-spacing:.12em;color:#5a1500;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+  body.playing #orbTxt{opacity:0}
+  body:not(.playing) #glow{animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.28;transform:scale(1.10)}50%{opacity:.5;transform:scale(1.18)}}
+
+  #hint{min-height:20px;font-size:14px;color:#a9b8e0;text-align:center;margin-top:2px}
+
+  /* ---------- bottom buttons ---------- */
+  .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(180,180,255,.3);color:#dfe4ff;border-radius:22px;
+         padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit}
+  .ghost:active{background:rgba(255,255,255,.16)}
+  .ghost.off{opacity:.45}
+
+  /* ---------- sheets (result + leaderboard) ---------- */
+  .sheet{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px;
+         background:rgba(6,9,24,.72);backdrop-filter:blur(4px)}
+  .sheet.hidden{display:none}
+  .sheet,.card{touch-action:pan-y}   /* the sheets must still scroll, body is touch-action:none */
+  .card{width:100%;max-width:400px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+        background:linear-gradient(180deg,#182449,#101733);border:1px solid rgba(150,170,255,.22);
+        border-radius:20px;padding:20px 18px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .card h2{font-size:24px;margin-bottom:2px}
+  .newbest{display:inline-block;margin:6px 0 0;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:900;
+           letter-spacing:.1em;background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500}
+  .final{font-size:66px;font-weight:900;line-height:1.05;margin:6px 0 0;
+         background:linear-gradient(90deg,#ffd54a,#ff7bd5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .finalsub{font-size:12px;letter-spacing:.16em;color:#8fa2d4;font-weight:700}
+  .title{margin:14px 0 4px;font-size:30px;font-weight:900;color:#ffd54a}
+  .titlesub{font-size:13px;color:#a9b8e0}
+  .bestline{margin-top:10px;font-size:14px;color:#c7d2f0}
+  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:14px 38px;font-size:18px;
+       font-weight:900;border-radius:28px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4);margin-top:16px;font-family:inherit}
+  .note{margin-top:10px;font-size:12px;color:#8fa2d4;line-height:1.5}
+  .note b{color:#ffd54a}
+
+  .lbhead{margin:18px 0 8px;font-size:12px;letter-spacing:.16em;color:#8fa2d4;font-weight:700}
+  .lb-list{text-align:left}
+  .lbrow{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;font-size:14px}
+  .lbrow:nth-child(odd){background:rgba(255,255,255,.045)}
+  .lbrow.me{background:rgba(255,213,74,.16);box-shadow:inset 0 0 0 1px rgba(255,213,74,.4)}
+  .lbrow .rk{width:26px;flex:none;color:#8fa2d4;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
+  .lbrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .lbrow .sc{flex:none;font-weight:900;color:#ffd54a;font-variant-numeric:tabular-nums}
+  .lbempty{color:#8fa2d4;font-size:13px;padding:10px 0;text-align:center}
+
+  @media (max-height:620px){ #orbBox{width:min(56vmin,240px);height:min(56vmin,240px)} .stat.score b{font-size:44px} }
+</style></head>
+<body>
+<canvas id="fx"></canvas>
+
+<div id="wrap">
+  <div id="hud">
+    <div class="stat"><b id="timeVal">15.0</b><span>TIME</span></div>
+    <div class="stat score"><b id="scoreVal">0</b><span>SCORE</span></div>
+    <div class="stat"><b id="bestVal">0</b><span>BEST</span></div>
+  </div>
+
+  <div id="stage">
+    <div id="orbBox">
+      <div id="glow"></div>
+      <svg id="ring" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="3"></circle>
+        <circle id="ringFg" cx="50" cy="50" r="47" fill="none" stroke="#ffd54a" stroke-width="3"
+                stroke-linecap="round" stroke-dasharray="295.31" stroke-dashoffset="0"></circle>
+      </svg>
+      <button id="orb" aria-label="Tap"><span id="orbIcon">⚡</span><span id="orbTxt">TAP TO START</span></button>
+    </div>
+  </div>
+
+  <div id="hint">Tap as fast as you can for 15 seconds!</div>
+
+  <div class="row ui">
+    <button class="ghost" id="lbBtn">🏆 Leaderboard</button>
+    <a class="ghost" id="IGA_login" onclick="window.IGAuth&amp;&amp;IGAuth.openAuth()">👤 Log in</a>
+    <button class="ghost" id="sndBtn" title="Sound">🔊</button>
+    <button class="ghost" id="vibBtn" title="Vibration">📳</button>
+    <a class="ghost" href="../">🏠</a>
+  </div>
+</div>
+
+<!-- result -->
+<div class="sheet hidden ui" id="resultSheet"><div class="card">
+  <h2>⏱️ Time's up!</h2>
+  <div id="newBest" class="newbest" style="display:none">NEW BEST!</div>
+  <div class="final" id="finalVal">0</div>
+  <div class="finalsub">TAPS IN 15 SECONDS</div>
+  <div class="title" id="titleVal">🐢 Turtle</div>
+  <div class="titlesub" id="titleSub"></div>
+  <div class="bestline">Your best: <b id="bestVal2">0</b></div>
+  <div class="note" id="loginNote" style="display:none">Log in to put your score on the <b>leaderboard</b>.</div>
+  <button class="btn" id="againBtn">PLAY AGAIN ▶</button>
+  <div class="lbhead">🏆 TOP 20 PLAYERS</div>
+  <div class="lb-list" id="lb1"><div class="lbempty">Loading…</div></div>
+</div></div>
+
+<!-- leaderboard -->
+<div class="sheet hidden ui" id="boardSheet"><div class="card">
+  <h2>🏆 Speed Clicker</h2>
+  <div class="finalsub">TOP 20 — BEST TAPS IN 15s</div>
+  <div class="lb-list" id="lb2" style="margin-top:14px"><div class="lbempty">Loading…</div></div>
+  <button class="btn" id="closeBoard">CLOSE</button>
+</div></div>
+
+<script>
+"use strict";
+
+/* ---------------- per-account save (site convention, see auth.js OWNED_KEYS) --------------- */
+function acctKey(){try{var p=JSON.parse(localStorage.getItem('ig_player'));if(p&&p.name)return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}catch(e){}try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(s&&s.accounts){var a=s.accounts.find(function(x){return x.id===s.activeId;});if(a&&a.name)return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);}}catch(e){}return 'guest';}
+function _claimOK(){try{var s=JSON.parse(localStorage.getItem('soc_store_v1'));if(!s||!s.accounts||s.accounts.length<=1)return true;var a=s.accounts.find(function(x){return x.id===s.activeId;});return !!(a&&a.id===s.accounts[0].id);}catch(e){return true;}}
+function acctSaveKey(base){var k=base+'__'+acctKey();try{if(!localStorage.getItem(k)&&localStorage.getItem(base+'__claimed')!=='1'){var old=localStorage.getItem(base);if(old&&_claimOK()){localStorage.setItem(k,old);localStorage.setItem(base+'__claimed','1');}}}catch(e){}return k;}
+const SKEY = acctSaveKey('speedClicker_v1');
+const GAME = 'speedclicker', ROUND_MS = 15000;
+
+let save = { best:0, snd:true, vib:true };
+try { const s = JSON.parse(localStorage.getItem(SKEY)); if (s) save = Object.assign(save, s); } catch(e){}
+save.best = Math.max(0, Math.round(+save.best || 0));
+function persist(){ try{ localStorage.setItem(SKEY, JSON.stringify(save)); }catch(e){} }
+
+const $ = id => document.getElementById(id);
+const scoreEl=$('scoreVal'), timeEl=$('timeVal'), bestEl=$('bestVal'), ringEl=$('ringFg'),
+      orbEl=$('orb'), glowEl=$('glow'), hintEl=$('hint');
+const RING_LEN = 2 * Math.PI * 47;
+
+/* ---------------- particles: one fixed pool, nothing allocated while playing -------------- */
+const cv=$('fx'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0); }
+resize(); addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,120));
+
+const POOL = 360, P = new Array(POOL);
+for (let i=0;i<POOL;i++) P[i] = {x:0,y:0,vx:0,vy:0,life:0,max:1,r:3,h:40};
+let pHead = 0, pAlive = 0;
+function burst(cx, cy, radius, hot){
+  const n = 7;
+  for (let i=0;i<n;i++){
+    const p = P[pHead]; pHead = (pHead+1) % POOL;
+    const a = Math.random()*Math.PI*2, sp = 150 + Math.random()*320;
+    p.x = cx + Math.cos(a)*radius*0.82;
+    p.y = cy + Math.sin(a)*radius*0.82;
+    p.vx = Math.cos(a)*sp; p.vy = Math.sin(a)*sp - 40;
+    p.max = 0.42 + Math.random()*0.34; p.life = p.max;
+    p.r = 2 + Math.random()*3.4;
+    p.h = 32 + hot*22 + Math.random()*30;
+  }
+  pAlive = Math.min(POOL, pAlive + n);
+}
+
+/* ---------------- audio: soft click, one shared context ---------------- */
+let AC=null, master=null, lastSnd=0;
+function audioReady(){
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext||window.webkitAudioContext)();
+        master = AC.createGain(); master.gain.value = 0.45; master.connect(AC.destination); } catch(e){ AC=null; }
+}
+function click(hot){
+  if (!save.snd || !AC) return;
+  const t = AC.currentTime;
+  if (t - lastSnd < 0.022) return;            // faster than the ear resolves — skip, keeps it clean
+  lastSnd = t;
+  try {
+    const o = AC.createOscillator(), g = AC.createGain();
+    const f = 430 + hot * 260;                 // pitch drifts up as you speed up — satisfying, never shrill
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f*0.62, t+0.055);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.075);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+0.09);
+  } catch(e){}
+}
+let lastVib = 0;
+function buzz(now){
+  if (!save.vib || !navigator.vibrate) return;
+  if (now - lastVib < 55) return;              // never a continuous hum, however fast they tap
+  lastVib = now; try { navigator.vibrate(7); } catch(e){}
+}
+
+/* ---------------- game state ---------------- */
+let state='idle', score=0, endAt=0, remain=ROUND_MS;
+let scale=1, sv=0, heat=0, dirty=true, rafId=null, last=0;
+
+function setHint(t){ if (hintEl.textContent !== t) hintEl.textContent = t; }
+
+function startRound(){
+  state='play'; score=0; endAt = performance.now() + ROUND_MS; remain = ROUND_MS;
+  document.body.classList.add('playing'); dirty = true; setHint('');
+  wake();
+}
+
+function tap(now){
+  score++; dirty = true;
+  sv -= 7.2;                                   // squash impulse; the spring bounces it back
+  if (scale > 0.9) scale = Math.max(0.9, scale - 0.04);
+  heat = Math.min(1, heat + 0.16);
+  const r = orbEl.getBoundingClientRect();
+  burst(r.left + r.width/2, r.top + r.height/2, r.width/2, heat);
+  click(heat); buzz(now);
+}
+
+/* One handler for the whole play surface: a tap that slips off the orb still
+   counts, so frantic tapping never loses a point. UI chrome opts out. */
+function onDown(e){
+  if (e.target.closest && e.target.closest('.ui')) return;   // buttons / open sheets
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  audioReady();
+  const now = performance.now();
+  if (state === 'idle'){ startRound(); tap(now); }
+  else if (state === 'play'){ tap(now); }
+}
+addEventListener('pointerdown', onDown, {passive:false});
+addEventListener('keydown', e => {
+  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  if (e.repeat) return;                        // held key must not auto-fire
+  if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.ui')) return;
+  e.preventDefault(); audioReady();
+  const now = performance.now();
+  if (state === 'idle'){ startRound(); tap(now); } else if (state === 'play'){ tap(now); }
+});
+/* a tap that starts on the orb must not also drag/scroll or fire a ghost click */
+orbEl.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('dragstart', e => e.preventDefault());
+
+/* ---------------- frame loop ---------------- */
+function frame(now){
+  rafId = null;
+  const dt = Math.min(0.05, (now - last)/1000 || 0); last = now;
+
+  if (state === 'play'){
+    remain = endAt - now;
+    if (remain <= 0){ remain = 0; finish(); }
+    dirty = true;
+  }
+
+  // orb spring (transform only — stays on the compositor)
+  sv += (1 - scale) * 520 * dt;
+  sv -= sv * 26 * dt;
+  scale += sv * dt;
+  if (scale < 0.86){ scale = 0.86; if (sv < 0) sv = 0; }
+  if (scale > 1.12){ scale = 1.12; if (sv > 0) sv = 0; }
+  orbEl.style.transform = 'scale(' + scale.toFixed(4) + ')';
+
+  heat = Math.max(0, heat - dt * 1.15);
+  if (state === 'play'){
+    glowEl.style.opacity = (0.3 + heat * 0.62).toFixed(3);
+    glowEl.style.transform = 'scale(' + (1.08 + heat * 0.16).toFixed(4) + ')';
+  }
+
+  if (dirty){
+    scoreEl.textContent = score;
+    const secs = remain / 1000;
+    timeEl.textContent = secs.toFixed(1);
+    timeEl.classList.toggle('low', secs <= 5 && state === 'play');
+    ringEl.style.strokeDashoffset = (RING_LEN * (1 - remain / ROUND_MS)).toFixed(2);
+    ringEl.setAttribute('stroke', secs <= 5 && state === 'play' ? '#ff6b6b' : '#ffd54a');
+    dirty = false;
+  }
+
+  // particles
+  ctx.clearRect(0,0,W,H);
+  if (pAlive > 0){
+    let alive = 0;
+    for (let i=0;i<POOL;i++){
+      const p = P[i]; if (p.life <= 0) continue;
+      p.life -= dt;
+      if (p.life <= 0) continue;
+      p.vy += 620 * dt; p.vx *= 0.985;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      const a = p.life / p.max;
+      ctx.globalAlpha = a * a;
+      ctx.fillStyle = 'hsl(' + p.h + ',100%,' + (58 + a*18) + '%)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.4 + a*0.6), 0, 6.2832); ctx.fill();
+      alive++;
+    }
+    ctx.globalAlpha = 1;
+    pAlive = alive;
+  }
+
+  // park the loop whenever nothing is moving (battery)
+  if (state === 'play' || pAlive > 0 || Math.abs(1-scale) > 0.001 || Math.abs(sv) > 0.01 || heat > 0.01) wake();
+}
+function wake(){ if (rafId == null){ last = performance.now(); rafId = requestAnimationFrame(frame); } }
+
+/* ---------------- titles ---------------- */
+function titleFor(s){
+  if (s <= 20)  return ['🐢','Turtle',    'Take your time…'];
+  if (s <= 45)  return ['🐰','Rabbit',    'Nice and quick!'];
+  if (s <= 100) return ['🐆','Cheetah',   'Seriously fast.'];
+  if (s <= 200) return ['⚡','Lightning', 'Your thumb is a blur!'];
+  return          ['🚀','Rocket',    'Are you even human?'];
+}
+
+/* ---------------- end of round ---------------- */
+function finish(){
+  state = 'over';
+  document.body.classList.remove('playing');
+  setHint('Tap as fast as you can for 15 seconds!');
+  const beat = score > save.best;
+  if (beat){ save.best = score; persist(); }
+  bestEl.textContent = save.best;
+
+  const [emo, name, sub] = titleFor(score);
+  $('finalVal').textContent = score;
+  $('titleVal').textContent = emo + ' ' + name;
+  $('titleSub').textContent = sub;
+  $('bestVal2').textContent = save.best;
+  $('newBest').style.display = beat && score > 0 ? 'inline-block' : 'none';
+  $('loginNote').style.display = (window.IGAuth && IGAuth.getUser()) ? 'none' : 'block';
+
+  submitBest();
+  $('resultSheet').classList.remove('hidden');
+  refreshBoard();
+  try { window.track && window.track('game_over', { game: GAME, score: score }); } catch(e){}
+}
+
+$('againBtn').onclick = () => {
+  $('resultSheet').classList.add('hidden');
+  state = 'idle'; score = 0; remain = ROUND_MS; dirty = true; heat = 0;
+  glowEl.style.opacity = ''; glowEl.style.transform = '';
+  wake();
+};
+
+/* ---------------- leaderboard (shared `leaderboard` table via IGAuth) --------------- */
+function submitBest(){ try { if (window.IGAuth && save.best > 0) IGAuth.submitScore(GAME, save.best); } catch(e){} }
+
+function esc(s){ return String(s == null ? 'Player' : s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+async function refreshBoard(){
+  const boxes = document.querySelectorAll('.lb-list');
+  if (!window.IGAuth || !IGAuth.topScores){
+    boxes.forEach(b => b.innerHTML = '<div class="lbempty">Leaderboard unavailable offline.</div>');
+    return;
+  }
+  let rows = [];
+  try { rows = await IGAuth.topScores(GAME, 200) || []; } catch(e){}
+  // One row per player, highest score wins — the local fallback board and the
+  // server both hold a row for you, and they must never show up as two entries.
+  const byName = new Map();
+  for (const r of rows){
+    const k = r.name || 'Player';
+    const prev = byName.get(k);
+    if (!prev || r.score > prev.score) byName.set(k, { name: k, score: r.score });
+  }
+  const list = [...byName.values()].sort((a,b) => b.score - a.score).slice(0, 20);
+  const me = (window.IGAuth && IGAuth.displayName && IGAuth.displayName()) || null;
+  const html = list.length
+    ? list.map((r,i) => '<div class="lbrow' + (me && r.name === me ? ' me' : '') + '">' +
+        '<span class="rk">' + (i+1) + '</span><span class="nm">' + esc(r.name) + '</span>' +
+        '<span class="sc">' + r.score + '</span></div>').join('')
+    : '<div class="lbempty">No scores yet — be the first!</div>';
+  boxes.forEach(b => b.innerHTML = html);
+}
+
+let boardTimer = null;
+$('lbBtn').onclick = () => {
+  $('boardSheet').classList.remove('hidden');
+  refreshBoard();
+  if (!boardTimer) boardTimer = setInterval(refreshBoard, 25000);
+};
+$('closeBoard').onclick = () => {
+  $('boardSheet').classList.add('hidden');
+  if (boardTimer){ clearInterval(boardTimer); boardTimer = null; }
+};
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (!$('boardSheet').classList.contains('hidden') || !$('resultSheet').classList.contains('hidden')) refreshBoard();
+});
+
+/* ---------------- sound / vibration toggles ---------------- */
+function paintToggles(){
+  $('sndBtn').textContent = save.snd ? '🔊' : '🔇';
+  $('sndBtn').classList.toggle('off', !save.snd);
+  const vb = $('vibBtn');
+  if (!('vibrate' in navigator)) { vb.style.display = 'none'; return; }   // desktop: no fake button
+  vb.classList.toggle('off', !save.vib);
+}
+$('sndBtn').onclick = () => { save.snd = !save.snd; persist(); paintToggles(); if (save.snd){ audioReady(); click(0.2); } };
+$('vibBtn').onclick = () => { save.vib = !save.vib; persist(); paintToggles(); if (save.vib) buzz(1e9); };
+
+/* ---------------- boot ---------------- */
+bestEl.textContent = save.best;
+paintToggles();
+wake();
+</script>
+
+<script src="../supabase-config.js"></script>
+<script src="../auth.js" defer></script>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
+  IGAuth.onChange(function(p){
+    var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
+    // account switched: this device's vault swapped in that player's own best
+    try{ var s=JSON.parse(localStorage.getItem(SKEY)); save.best=Math.max(0,Math.round(+(s&&s.best)||0));
+         document.getElementById('bestVal').textContent=save.best; }catch(e){}
+    submitBest(); refreshBoard();
+  });
+});</script>
+<script src="../analytics.js" defer></script>
+<script src="../announce.js" defer></script>
+<script src="../friends.js" defer></script>
+<script src="../rec.js" defer></script>
+</body></html>

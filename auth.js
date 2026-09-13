@@ -19,7 +19,8 @@
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
-    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", stars: "⭐ Stars"
+    scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush",
+    speedclicker: "Speed Clicker", stars: "⭐ Stars"
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
@@ -32,6 +33,7 @@
     tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
     scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
+    speedclicker: "Best taps in 15s",
     stars: "Stars earned (Game of the Day & Week goals)"
   };
   // player = {name, pw, guest:false, loginAt, since}
@@ -74,14 +76,14 @@
     "basketCatch2_guest", "basketCatchHigh", "basketScoop_v1", "cb_secret_agent_v1",
     "cricTourLive_v1", "cw_save_v1", "draw_rush_v1", "dr_gallery_key", "fruitArena_v1",
     "hcl_save_v1", "ilanObbySave_v1", "karateChamp_v1", "ms_pub_count_v1", "omt_save_v1",
-    "paperTerritory_v1", "penaltyKings_v1", "ppTour_v2", "soc_profile_v2",
+    "paperTerritory_v1", "penaltyKings_v1", "ppTour_v2", "soc_profile_v2", "speedClicker_v1",
     "stackTower_v1", "tennisTour_v1", "thisOrThat_v2",
     // hub: stars, passport, Game of the Day/Week goal tracking
     "iglb_local",                       // this account's offline copy of the board
     "ig_stars", "ig_played", "ig_lastplay", "ig_champion",
     "ig_day_base", "ig_week_base", "ig_claim_day", "ig_claim_week"
   ];
-  const OWNED_PREFIXES = ["igsent_", "pcreator_", "stackTower_v1__", "tennisTour_v1__", "archerDuel_v1__"];
+  const OWNED_PREFIXES = ["igsent_", "pcreator_", "stackTower_v1__", "tennisTour_v1__", "archerDuel_v1__", "speedClicker_v1__"];
   const NOT_OWNED = ["pcreator_searchState", "pcreator_seeded"];   // UI state, not progress
   // Bookkeeping the hub rewrites on every visit — real progress must exist
   // alongside these before we call a device "has unclaimed progress".

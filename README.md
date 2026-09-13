@@ -22,6 +22,7 @@ Games made by Ilan!
 - 🍉 **Fruit Arena** — `fruit-arena/` — slice fruit, dodge bombs, chain power-ups, spam the giant fruit; coach-guided tutorial, progressive missions, and a shop of blades & effects.
 - 🟩 **Paper Territory** — `paper/` — claim land with your trail, dodge rivals, own the most territory; global leaderboard.
 - 🏗️ **Stack Tower** — `stack/` — tap to drop & align blocks, build as high as you can with perfect-stack combos; global leaderboard.
+- ⚡ **Speed Clicker** — `speedclicker/` — 15 seconds, one glowing orb: tap as fast as you can. Live score, countdown ring and personal best, a title for your speed (🐢 Turtle → 🚀 Rocket), and a global top-20 leaderboard.
 - 🏹 **Archer Duel** — `archer/` — aim, power & arc your arrows to KO tougher rivals each round; global leaderboard.
 
 ## How to play locally
