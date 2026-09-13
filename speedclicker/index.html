@@ -163,17 +163,19 @@
 
   <div id="hint">Tap as fast as you can for 15 seconds!</div>
 
-  <div class="row ui">
-    <button class="ghost" id="lbBtn">🏆 Leaderboard</button>
-    <a class="ghost" id="IGA_login" onclick="window.IGAuth&amp;&amp;IGAuth.openAuth()">👤 Log in</a>
-    <button class="ghost" id="sndBtn" title="Sound">🔊</button>
-    <button class="ghost" id="vibBtn" title="Vibration">📳</button>
-    <a class="ghost" href="../">🏠</a>
+  <!-- `ui` marks what must NOT count as a game tap; it belongs on each control,
+       not on the row, or the gaps between them become a dead band -->
+  <div class="row">
+    <button class="ghost ui" id="lbBtn">🏆 Leaderboard</button>
+    <a class="ghost ui" id="IGA_login" onclick="window.IGAuth&amp;&amp;IGAuth.openAuth()">👤 Log in</a>
+    <button class="ghost ui" id="sndBtn" title="Sound">🔊</button>
+    <button class="ghost ui" id="vibBtn" title="Vibration">📳</button>
+    <a class="ghost ui" href="../">🏠</a>
   </div>
 </div>
 
 <!-- result -->
-<div class="sheet hidden ui" id="resultSheet"><div class="card">
+<div class="sheet hidden ui" id="resultSheet" style="z-index:10"><div class="card">
   <div class="cbody">
     <h2>⏱️ Time's up!</h2>
     <div id="newBest" class="newbest" style="display:none">NEW BEST!</div>
@@ -429,6 +431,7 @@ function finish(){
   $('loginNote').style.display = (window.IGAuth && IGAuth.getUser()) ? 'none' : 'block';
 
   submitBest();
+  $('boardSheet').classList.add('hidden');      // the round is over — the score card wins
   $('resultSheet').classList.remove('hidden');
   refreshBoard(); startPoll();
   try { window.track && window.track('game_over', { game: GAME, score: score }); } catch(e){}
@@ -531,7 +534,7 @@ function paintToggles(){
 $('sndBtn').onclick = () => { save.snd = !save.snd; persist(); paintToggles(); if (save.snd){ audioReady(); click(0.2); } };
 $('vibBtn').onclick = () => { save.vib = !save.vib; persist(); paintToggles(); if (save.vib) buzz(1e9); };
 // clicking a button leaves it focused, which would make Space/Enter stop playing
-document.querySelectorAll('.row.ui .ghost').forEach(b => b.addEventListener('click', () => b.blur()));
+document.querySelectorAll('.ghost, .btn').forEach(b => b.addEventListener('click', () => b.blur()));
 
 /* ---------------- keep clear of the site's fixed bottom banner ---------------
    announce.js appends a position:fixed banner at the bottom of every game with
@@ -549,6 +552,7 @@ document.querySelectorAll('.row.ui .ghost').forEach(b => b.addEventListener('cli
        instead — it has its own ✕ and is gone for good once dismissed. */
     const roomForGame = 272;
     wrapEl.style.setProperty('--chrome', Math.max(0, Math.min(pad, innerHeight - roomForGame)) + 'px');
+    measureOrb();          // this moved the orb; the burst origin must follow it
   }
   try { new MutationObserver(fit).observe(document.body, { childList: true }); } catch(e){}
   addEventListener('resize', fit);
