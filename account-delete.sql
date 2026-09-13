@@ -14,7 +14,9 @@ language plpgsql
 security definer
 -- Pin the search_path: a SECURITY DEFINER function without this can be hijacked
 -- by a caller who puts their own `players` or `crypt` earlier in their path.
-set search_path = public, pg_temp
+-- `extensions` must be on it — Supabase installs pgcrypto there, not in public,
+-- so pinning to public alone makes crypt() vanish and every call error out.
+set search_path = public, extensions, pg_temp
 as $$
 declare
   h text;

@@ -33,19 +33,38 @@ Two things worth knowing about how it is written:
   hijacked by a caller who puts their own `players` or `crypt` earlier in the
   path. Your `account_auth` does not pin it — worth fixing there too.
 - It deletes the player's scores using `to_regclass` guards rather than assuming
-  a table name, because the `leaderboard` view's base table is not visible from
-  the client. If your scores table is not called `scores`, the account will be
-  removed but its rows may survive. I can verify this empirically once the
-  function exists — see below.
+  a table name. **Verified against the live project: the base table is
+  `public.scores`, the guard fires, and scores are removed** — no orphans.
 
 Verify before shipping:
 
-Once it is installed, I can verify the whole path end to end without touching a
-real account: create a throwaway player, post a score as them, confirm it shows
-on the board, delete the account, then confirm both the player and the score are
-gone. That also settles the scores-table question above. Just say when it is in.
+**Verified end to end against the live project** with a throwaway account:
 
-## 2. Password rules are weak
+| Check | Result |
+|---|---|
+| Wrong password rejected | `false` |
+| Score untouched after a failed attempt | unchanged |
+| Correct password deletes | `true` |
+| Score removed from the board | gone |
+| Deleting a second time | `false` |
+| Username free again (player row really gone) | `created` |
+
+One thing this caught that review alone would not: the first version pinned
+`search_path = public, pg_temp`, and every call died with
+`function crypt(text, text) does not exist`. Supabase installs pgcrypto in
+`extensions`, so that schema has to be on the path.
+
+## 2. Optional: pin search_path on the other definer functions
+
+`harden-search-path.sql`. `account_auth` and `post_score` are `SECURITY DEFINER`
+but inherit the caller's `search_path`, so a caller who defines their own
+`players` or `crypt` earlier on that path can steer them while they still run as
+the owner. These are `ALTER`s — no body rewritten, no data touched.
+
+Not required for review, and not urgent for a play-money leaderboard, but it is
+a one-line fix per function.
+
+## 3. Password rules are weak
 
 The website allows 4-character passwords, and the app matches it so the same
 accounts work in both places. That is a genuine weakness — these passwords guard a
