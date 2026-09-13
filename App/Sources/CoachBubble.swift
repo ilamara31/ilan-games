@@ -24,23 +24,27 @@ final class CoachBubble: SKNode {
 
     required init?(coder: NSCoder) { fatalError("not used") }
 
-    func setMessage(_ text: String, in size: CGSize, safeTop: CGFloat) {
-        let maxWidth = min(size.width * 0.92, 520)
-        label.preferredMaxLayoutWidth = maxWidth - 28
+    func setMessage(_ text: String, in size: CGSize, safeTop: CGFloat, scale: CGFloat) {
+        label.fontSize = 17 * scale
+        label.preferredMaxLayoutWidth = min(size.width * 0.92, 520 * scale) - 28 * scale
         label.text = text
-        layout(in: size, safeTop: safeTop)
+        layout(in: size, safeTop: safeTop, scale: scale)
     }
 
-    func layout(in size: CGSize, safeTop: CGFloat) {
-        let maxWidth = min(size.width * 0.92, 520)
-        let textHeight = max(label.frame.height, 20)
-        let height = textHeight + 28
+    func layout(in size: CGSize, safeTop: CGFloat, scale: CGFloat) {
+        let maxWidth = min(size.width * 0.92, 520 * scale)
+        let textHeight = max(label.frame.height, 20 * scale)
+        let height = textHeight + 28 * scale
 
         background.path = CGPath(roundedRect: CGRect(x: -maxWidth / 2, y: -height / 2,
                                                      width: maxWidth, height: height),
-                                 cornerWidth: 14, cornerHeight: 14, transform: nil)
+                                 cornerWidth: 14 * scale, cornerHeight: 14 * scale, transform: nil)
+        background.lineWidth = 2 * scale
         label.position = .zero
-        // Camera-space: y is measured from the screen centre.
-        position = CGPoint(x: 0, y: size.height / 2 - safeTop - 12 - height / 2)
+        // Camera-space: y is measured from the screen centre. iPads have no notch
+        // and the status bar is hidden, so safeTop is 0 there — hence a floor, or
+        // the bubble sits flush against the top edge.
+        let topMargin = max(safeTop + 12 * scale, 28 * scale)
+        position = CGPoint(x: 0, y: size.height / 2 - topMargin - height / 2)
     }
 }

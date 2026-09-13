@@ -38,6 +38,15 @@ final class GameScene: SKScene {
     private var playfieldWidth: CGFloat = 0
     private var playfieldX: CGFloat = 0
 
+    /// Everything is sized off a reference phone width. Without this the 480pt
+    /// playfield is a narrow ribbon down the middle of an iPad with dead bands
+    /// either side, and the blocks look like confetti. Scaling the band, the
+    /// block height, the travel speed and the perfect-tolerance together keeps
+    /// the game playing exactly the same — only bigger.
+    private var uiScale: CGFloat = 1
+    private var blockHeight: CGFloat { Layout.blockHeight * uiScale }
+    private var perfectTolerance: CGFloat { Layout.perfectTolerance * uiScale }
+
     private let cam = SKCameraNode()
     private let towerLayer = SKNode()
     private let debrisLayer = SKNode()
@@ -73,7 +82,8 @@ final class GameScene: SKScene {
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
-        playfieldWidth = min(size.width, Layout.maxPlayfieldWidth)
+        uiScale = min(1.9, max(1.0, size.width / 440))
+        playfieldWidth = min(size.width, Layout.maxPlayfieldWidth * uiScale)
         playfieldX = (size.width - playfieldWidth) / 2
         buildBackdrop()
         layoutHUD()
@@ -81,7 +91,7 @@ final class GameScene: SKScene {
     }
 
     /// Camera y that puts world y = 0 at `60 + safeBottom` above the screen bottom.
-    private var cameraBase: CGFloat { size.height / 2 - 60 - safeBottom }
+    private var cameraBase: CGFloat { size.height / 2 - 60 * uiScale - safeBottom }
 
     private func resetCamera() {
         cam.position = CGPoint(x: size.width / 2, y: cameraBase + cameraOffset)
@@ -140,7 +150,6 @@ final class GameScene: SKScene {
     }
 
     private func buildHUD() {
-        scoreLabel.fontSize = 60
         scoreLabel.fontColor = UIColor(white: 1, alpha: 0.9)
         scoreLabel.zPosition = 400
         scoreLabel.isHidden = true
@@ -148,13 +157,11 @@ final class GameScene: SKScene {
         scoreLabel.isAccessibilityElement = true
         cam.addChild(scoreLabel)
 
-        comboLabel.fontSize = 22
         comboLabel.fontColor = Palette.gold
         comboLabel.zPosition = 400
         comboLabel.isHidden = true
         cam.addChild(comboLabel)
 
-        bestLabel.fontSize = 14
         bestLabel.fontColor = Palette.subtitle
         bestLabel.zPosition = 400
         bestLabel.isHidden = true
@@ -163,11 +170,14 @@ final class GameScene: SKScene {
     }
 
     private func layoutHUD() {
+        scoreLabel.fontSize = 60 * uiScale
+        comboLabel.fontSize = 22 * uiScale
+        bestLabel.fontSize = 14 * uiScale
         let halfH = size.height / 2
-        scoreLabel.position = CGPoint(x: 0, y: halfH - safeTop - 90)
-        comboLabel.position = CGPoint(x: 0, y: halfH - safeTop - 120)
-        bestLabel.position = CGPoint(x: 0, y: -halfH + safeBottom + 16)
-        coach?.layout(in: size, safeTop: safeTop)
+        scoreLabel.position = CGPoint(x: 0, y: halfH - safeTop - 90 * uiScale)
+        comboLabel.position = CGPoint(x: 0, y: halfH - safeTop - 120 * uiScale)
+        bestLabel.position = CGPoint(x: 0, y: -halfH + safeBottom + 16 * uiScale)
+        coach?.layout(in: size, safeTop: safeTop, scale: uiScale)
     }
 
     func updateSafeArea(top: CGFloat, bottom: CGFloat) {
@@ -194,7 +204,7 @@ final class GameScene: SKScene {
         debrisLayer.removeAllChildren()
         stack.removeAll()
 
-        let width = min(playfieldWidth * 0.5, 260)
+        let width = min(playfieldWidth * 0.5, 260 * uiScale)
         stack.append(Block(x: (size.width - width) / 2, width: width))
         addBlockNode(stack[0], index: 0)
 
@@ -219,13 +229,13 @@ final class GameScene: SKScene {
 
     private func spawnBlock() {
         guard let top = stack.last else { return }
-        current = Block(x: playfieldX + 10, width: top.width)
+        current = Block(x: playfieldX + 10 * uiScale, width: top.width)
         direction = 1
         blockSpeed = Layout.baseSpeed + CGFloat(score) * Layout.speedPerBlock
         if mode == .tutorial { blockSpeed = Layout.tutorialSpeed }
         currentNode?.removeFromParent()
         let node = makeBlockNode(width: top.width, index: stack.count, current: true)
-        node.position = CGPoint(x: current!.x, y: CGFloat(stack.count) * Layout.blockHeight)
+        node.position = CGPoint(x: current!.x, y: CGFloat(stack.count) * blockHeight)
         towerLayer.addChild(node)
         currentNode = node
     }
@@ -234,13 +244,13 @@ final class GameScene: SKScene {
 
     private func makeBlockNode(width: CGFloat, index: Int, current: Bool = false) -> SKSpriteNode {
         let node = SKSpriteNode(color: Palette.block(index, current: current),
-                                size: CGSize(width: width, height: Layout.blockHeight))
+                                size: CGSize(width: width, height: blockHeight))
         node.anchorPoint = CGPoint(x: 0, y: 0)
 
         let highlight = SKSpriteNode(color: UIColor(white: 1, alpha: current ? 0.18 : 0.14),
                                      size: CGSize(width: width, height: 4))
         highlight.anchorPoint = CGPoint(x: 0, y: 0)
-        highlight.position = CGPoint(x: 0, y: Layout.blockHeight - 4)
+        highlight.position = CGPoint(x: 0, y: blockHeight - 4)
         node.addChild(highlight)
 
         if !current {
@@ -254,7 +264,7 @@ final class GameScene: SKScene {
 
     private func addBlockNode(_ block: Block, index: Int) {
         let node = makeBlockNode(width: block.width, index: index)
-        node.position = CGPoint(x: block.x, y: CGFloat(index) * Layout.blockHeight)
+        node.position = CGPoint(x: block.x, y: CGFloat(index) * blockHeight)
         towerLayer.addChild(node)
     }
 
@@ -286,7 +296,7 @@ final class GameScene: SKScene {
         }
 
         let offset = abs(cur.x - top.x)
-        if offset < Layout.perfectTolerance {
+        if offset < perfectTolerance {
             combo += 1
             score += 1
             flash = 0.4
@@ -355,9 +365,9 @@ final class GameScene: SKScene {
     private func spawnDebris(x: CGFloat, width: CGFloat, index: Int, velocityX: CGFloat) {
         guard width > 0.5 else { return }
         let node = SKSpriteNode(color: Palette.block(index),
-                                size: CGSize(width: width, height: Layout.blockHeight))
+                                size: CGSize(width: width, height: blockHeight))
         node.anchorPoint = CGPoint(x: 0, y: 0)
-        node.position = CGPoint(x: x, y: CGFloat(index) * Layout.blockHeight)
+        node.position = CGPoint(x: x, y: CGFloat(index) * blockHeight)
         debrisLayer.addChild(node)
 
         // Tumble away and fade, then clean itself up.
@@ -369,9 +379,9 @@ final class GameScene: SKScene {
 
     private func flashPerfect(x: CGFloat, width: CGFloat, index: Int) {
         let outline = SKShapeNode(rect: CGRect(x: x - 4,
-                                               y: CGFloat(index) * Layout.blockHeight - 4,
+                                               y: CGFloat(index) * blockHeight - 4,
                                                width: width + 8,
-                                               height: Layout.blockHeight + 8))
+                                               height: blockHeight + 8))
         outline.strokeColor = .white
         outline.lineWidth = 3
         outline.fillColor = .clear
@@ -401,9 +411,9 @@ final class GameScene: SKScene {
             cam.addChild(bubble)
             coach = bubble
         }
-        coach?.setMessage(message, in: size, safeTop: safeTop)
+        coach?.setMessage(message, in: size, safeTop: safeTop, scale: uiScale)
         // Nudge the score clear of the bubble while it's up.
-        scoreLabel.position = CGPoint(x: 0, y: size.height / 2 - safeTop - 170)
+        scoreLabel.position = CGPoint(x: 0, y: size.height / 2 - safeTop - 170 * uiScale)
     }
 
     private func dismissCoach() {
@@ -419,13 +429,13 @@ final class GameScene: SKScene {
         lastUpdate = currentTime
 
         if mode != .idle, var cur = current, let node = currentNode {
-            cur.x += direction * blockSpeed * 60 * CGFloat(delta)
-            if cur.x < playfieldX + 10 {
-                cur.x = playfieldX + 10
+            cur.x += direction * blockSpeed * uiScale * 60 * CGFloat(delta)
+            if cur.x < playfieldX + 10 * uiScale {
+                cur.x = playfieldX + 10 * uiScale
                 direction = 1
             }
-            if cur.x + cur.width > playfieldX + playfieldWidth - 10 {
-                cur.x = playfieldX + playfieldWidth - 10 - cur.width
+            if cur.x + cur.width > playfieldX + playfieldWidth - 10 * uiScale {
+                cur.x = playfieldX + playfieldWidth - 10 * uiScale - cur.width
                 direction = -1
             }
             current = cur
@@ -433,7 +443,7 @@ final class GameScene: SKScene {
         }
 
         // Camera trails the top of the tower.
-        let target = max(0, CGFloat(stack.count) * Layout.blockHeight - size.height * 0.55)
+        let target = max(0, CGFloat(stack.count) * blockHeight - size.height * 0.55)
         cameraOffset += (target - cameraOffset) * min(1, CGFloat(delta) * 6)
 
         var shakeX: CGFloat = 0

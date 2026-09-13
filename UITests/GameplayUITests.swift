@@ -111,7 +111,9 @@ final class SignInUITests: XCTestCase {
         // Validation should reject a too-short username without hitting the network.
         app.textFields["Username"].tap()
         app.textFields["Username"].typeText("ab")
-        app.buttons["Continue"].tap()
+        // iOS 26's password AutoFill bar also carries a "Continue", so scope the
+        // query to the sheet's own button rather than matching both.
+        app.buttons["Continue"].firstMatch.tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         let warned = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
