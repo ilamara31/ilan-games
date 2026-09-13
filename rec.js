@@ -9,6 +9,9 @@
     'fruit-arena': 'both', paper: 'pc', obby: 'both', puzzles: 'both',
     'try': 'pc', 'anime-tycoon': 'both', tennis: 'both', karate: 'both', stack: 'both', archer: 'both',
     thisorthat: 'both', carrom: 'both'
+    // speedclicker is deliberately absent: the chip sits top-centre for 7s,
+    // right over the live score of a game that only lasts 15s. The home page
+    // still recommends it for any device via its own DEV map.
   };
   var LABEL = { both: '👍 Best on any device', mobile: '📱 Best on phone', pc: '💻 Best on PC / laptop' };
 

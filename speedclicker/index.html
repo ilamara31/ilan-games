@@ -28,11 +28,16 @@
   /* particle burst layer — never eats a tap */
   #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 
-  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;z-index:2;
-        padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
+  /* --chrome reserves room for the site-wide announcement banner, which is
+     position:fixed at the bottom of every game and would otherwise sit right
+     on top of the button row. Measured at runtime; 0 when there's no banner. */
+  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;z-index:2;--chrome:0px;
+        padding-left:16px;padding-right:16px;
+        padding-top:calc(14px + env(safe-area-inset-top));
+        padding-bottom:calc(14px + env(safe-area-inset-bottom) + var(--chrome))}
 
   /* ---------- HUD: score / time / best ---------- */
-  #hud{width:100%;max-width:460px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  #hud{width:100%;max-width:460px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex:none}
   .stat{flex:1;text-align:center}
   .stat b{display:block;font-size:22px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
   .stat span{display:block;font-size:10px;letter-spacing:.16em;color:#8fa2d4;font-weight:700;margin-top:3px}
@@ -41,8 +46,11 @@
   #timeVal.low{color:#ff6b6b}
 
   /* ---------- the orb ---------- */
-  #stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;min-height:0}
-  #orbBox{position:relative;width:min(74vmin,330px);height:min(74vmin,330px);display:flex;align-items:center;justify-content:center}
+  #stage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;padding:8px 0}
+  /* aspect-ratio + max-height means the orb shrinks to whatever the stage has
+     left, so it can never ride up over the HUD on a short landscape screen. */
+  #orbBox{position:relative;flex:none;aspect-ratio:1;height:min(76vmin,440px);max-height:100%;max-width:100%;
+          display:flex;align-items:center;justify-content:center}
   #ring{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
   #ringFg{transition:stroke .3s}
   #glow{position:absolute;width:100%;height:100%;border-radius:50%;opacity:.35;
@@ -55,16 +63,23 @@
        will-change:transform;transform:translateZ(0);touch-action:none}
   #orb::after{content:'';position:absolute;top:9%;left:16%;width:44%;height:26%;border-radius:50%;
               background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,0));filter:blur(2px)}
-  #orbIcon{font-size:clamp(46px,15vmin,80px);line-height:1;filter:drop-shadow(0 3px 6px rgba(90,0,40,.45))}
-  #orbTxt{margin-top:6px;font-size:clamp(13px,3.4vmin,17px);font-weight:900;letter-spacing:.12em;color:#5a1500;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+  #orbIcon{font-size:clamp(26px,12vmin,72px);line-height:1;filter:drop-shadow(0 3px 6px rgba(90,0,40,.45))}
+  #orbTxt{margin-top:6px;font-size:clamp(10px,3.2vmin,17px);font-weight:900;letter-spacing:.12em;color:#5a1500;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+  /* size the orb's contents against the ORB, not the viewport — on a squeezed
+     screen a viewport-sized glyph ends up bigger than the orb holding it */
+  @supports (font-size:1cqmin){
+    #orbBox{container-type:size}
+    #orbIcon{font-size:34cqmin}
+    #orbTxt{font-size:8cqmin;margin-top:4cqmin}
+  }
   body.playing #orbTxt{opacity:0}
   body:not(.playing) #glow{animation:breathe 2.6s ease-in-out infinite}
   @keyframes breathe{0%,100%{opacity:.28;transform:scale(1.10)}50%{opacity:.5;transform:scale(1.18)}}
 
-  #hint{min-height:20px;font-size:14px;color:#a9b8e0;text-align:center;margin-top:2px}
+  #hint{min-height:20px;font-size:14px;color:#a9b8e0;text-align:center;margin-top:2px;flex:none}
 
   /* ---------- bottom buttons ---------- */
-  .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;flex:none}
   .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(180,180,255,.3);color:#dfe4ff;border-radius:22px;
          padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit}
   .ghost:active{background:rgba(255,255,255,.16)}
@@ -74,21 +89,27 @@
   .sheet{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px;
          background:rgba(6,9,24,.72);backdrop-filter:blur(4px)}
   .sheet.hidden{display:none}
-  .sheet,.card{touch-action:pan-y}   /* the sheets must still scroll, body is touch-action:none */
-  .card{width:100%;max-width:400px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  /* the card is a scroll body + a pinned footer, so the one button that matters
+     is on screen even when 20 leaderboard rows overflow a short viewport */
+  .card{width:100%;max-width:400px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;
         background:linear-gradient(180deg,#182449,#101733);border:1px solid rgba(150,170,255,.22);
-        border-radius:20px;padding:20px 18px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+        border-radius:20px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .cbody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:20px 18px 10px}
+  .cfoot{flex:none;padding:10px 18px calc(12px + env(safe-area-inset-bottom));
+         border-top:1px solid rgba(150,170,255,.16);background:rgba(14,20,44,.92);
+         box-shadow:0 -14px 20px -12px rgba(6,9,24,.95)}   /* shows the list runs on underneath */
   .card h2{font-size:24px;margin-bottom:2px}
   .newbest{display:inline-block;margin:6px 0 0;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:900;
            letter-spacing:.1em;background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500}
-  .final{font-size:66px;font-weight:900;line-height:1.05;margin:6px 0 0;
+  .final{font-size:clamp(44px,13vh,66px);font-weight:900;line-height:1.05;margin:6px 0 0;
          background:linear-gradient(90deg,#ffd54a,#ff7bd5);-webkit-background-clip:text;background-clip:text;color:transparent}
   .finalsub{font-size:12px;letter-spacing:.16em;color:#8fa2d4;font-weight:700}
   .title{margin:14px 0 4px;font-size:30px;font-weight:900;color:#ffd54a}
   .titlesub{font-size:13px;color:#a9b8e0}
   .bestline{margin-top:10px;font-size:14px;color:#c7d2f0}
-  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:14px 38px;font-size:18px;
-       font-weight:900;border-radius:28px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4);margin-top:16px;font-family:inherit}
+  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:13px 38px;font-size:18px;
+       font-weight:900;border-radius:28px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4);font-family:inherit;
+       width:100%;max-width:300px}
   .note{margin-top:10px;font-size:12px;color:#8fa2d4;line-height:1.5}
   .note b{color:#ffd54a}
 
@@ -102,7 +123,21 @@
   .lbrow .sc{flex:none;font-weight:900;color:#ffd54a;font-variant-numeric:tabular-nums}
   .lbempty{color:#8fa2d4;font-size:13px;padding:10px 0;text-align:center}
 
-  @media (max-height:620px){ #orbBox{width:min(56vmin,240px);height:min(56vmin,240px)} .stat.score b{font-size:44px} }
+  /* short landscape: drop the hint line and shrink the readouts so the orb keeps its room */
+  @media (max-height:480px){
+    #hint{display:none}
+    .stat b{font-size:18px}
+    .stat.score b{font-size:clamp(28px,10vh,46px)}
+    .title{margin:8px 0 2px;font-size:24px}
+    .titlesub,.finalsub{display:none}
+    .lbhead{margin:10px 0 6px}
+    .card h2{font-size:20px}
+    /* claw back every spare pixel for the orb */
+    .ghost{padding:7px 12px;font-size:13px}
+    .row{margin-top:8px;gap:6px}
+    #stage{padding:4px 0}
+    #wrap{padding-top:calc(8px + env(safe-area-inset-top))}
+  }
 </style></head>
 <body>
 <canvas id="fx"></canvas>
@@ -139,25 +174,29 @@
 
 <!-- result -->
 <div class="sheet hidden ui" id="resultSheet"><div class="card">
-  <h2>⏱️ Time's up!</h2>
-  <div id="newBest" class="newbest" style="display:none">NEW BEST!</div>
-  <div class="final" id="finalVal">0</div>
-  <div class="finalsub">TAPS IN 15 SECONDS</div>
-  <div class="title" id="titleVal">🐢 Turtle</div>
-  <div class="titlesub" id="titleSub"></div>
-  <div class="bestline">Your best: <b id="bestVal2">0</b></div>
-  <div class="note" id="loginNote" style="display:none">Log in to put your score on the <b>leaderboard</b>.</div>
-  <button class="btn" id="againBtn">PLAY AGAIN ▶</button>
-  <div class="lbhead">🏆 TOP 20 PLAYERS</div>
-  <div class="lb-list" id="lb1"><div class="lbempty">Loading…</div></div>
+  <div class="cbody">
+    <h2>⏱️ Time's up!</h2>
+    <div id="newBest" class="newbest" style="display:none">NEW BEST!</div>
+    <div class="final" id="finalVal">0</div>
+    <div class="finalsub">TAPS IN 15 SECONDS</div>
+    <div class="title" id="titleVal">🐢 Turtle</div>
+    <div class="titlesub" id="titleSub"></div>
+    <div class="bestline">Your best: <b id="bestVal2">0</b></div>
+    <div class="note" id="loginNote" style="display:none">Log in to put your score on the <b>leaderboard</b>.</div>
+    <div class="lbhead">🏆 TOP 20 PLAYERS</div>
+    <div class="lb-list" id="lb1"><div class="lbempty">Loading…</div></div>
+  </div>
+  <div class="cfoot"><button class="btn" id="againBtn">PLAY AGAIN ▶</button></div>
 </div></div>
 
 <!-- leaderboard -->
 <div class="sheet hidden ui" id="boardSheet"><div class="card">
-  <h2>🏆 Speed Clicker</h2>
-  <div class="finalsub">TOP 20 — BEST TAPS IN 15s</div>
-  <div class="lb-list" id="lb2" style="margin-top:14px"><div class="lbempty">Loading…</div></div>
-  <button class="btn" id="closeBoard">CLOSE</button>
+  <div class="cbody">
+    <h2>🏆 Speed Clicker</h2>
+    <div class="finalsub">TOP 20 — BEST TAPS IN 15s</div>
+    <div class="lb-list" id="lb2" style="margin-top:14px"><div class="lbempty">Loading…</div></div>
+  </div>
+  <div class="cfoot"><button class="btn" id="closeBoard">CLOSE</button></div>
 </div></div>
 
 <script>
@@ -176,32 +215,39 @@ save.best = Math.max(0, Math.round(+save.best || 0));
 function persist(){ try{ localStorage.setItem(SKEY, JSON.stringify(save)); }catch(e){} }
 
 const $ = id => document.getElementById(id);
-const scoreEl=$('scoreVal'), timeEl=$('timeVal'), bestEl=$('bestVal'), ringEl=$('ringFg'),
+const wrapEl=$('wrap'), scoreEl=$('scoreVal'), timeEl=$('timeVal'), bestEl=$('bestVal'), ringEl=$('ringFg'),
       orbEl=$('orb'), glowEl=$('glow'), hintEl=$('hint');
 const RING_LEN = 2 * Math.PI * 47;
 
 /* ---------------- particles: one fixed pool, nothing allocated while playing -------------- */
 const cv=$('fx'), ctx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
+/* orb centre + radius, measured once per layout instead of once per tap —
+   a getBoundingClientRect() on every tap is a forced layout 20+ times a second */
+let orbCX=0, orbCY=0, orbRad=0;
+function measureOrb(){ const b=orbEl.getBoundingClientRect(), s=scale||1;
+  orbCX=b.left+b.width/2; orbCY=b.top+b.height/2; orbRad=(b.width/2)/s; }
 function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight;
   cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); cv.style.width=W+'px'; cv.style.height=H+'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0); }
-resize(); addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,120));
+  ctx.setTransform(DPR,0,0,DPR,0,0); measureOrb(); }
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,120));
 
 const POOL = 360, P = new Array(POOL);
 for (let i=0;i<POOL;i++) P[i] = {x:0,y:0,vx:0,vy:0,life:0,max:1,r:3,h:40};
 let pHead = 0, pAlive = 0;
-function burst(cx, cy, radius, hot){
+function burst(hot){
   const n = 7;
   for (let i=0;i<n;i++){
     const p = P[pHead]; pHead = (pHead+1) % POOL;
     const a = Math.random()*Math.PI*2, sp = 150 + Math.random()*320;
-    p.x = cx + Math.cos(a)*radius*0.82;
-    p.y = cy + Math.sin(a)*radius*0.82;
+    p.x = orbCX + Math.cos(a)*orbRad*0.82;
+    p.y = orbCY + Math.sin(a)*orbRad*0.82;
     p.vx = Math.cos(a)*sp; p.vy = Math.sin(a)*sp - 40;
     p.max = 0.42 + Math.random()*0.34; p.life = p.max;
     p.r = 2 + Math.random()*3.4;
-    p.h = 32 + hot*22 + Math.random()*30;
+    // the orb runs gold -> hot pink, so the sparks do too (no green in the mix)
+    p.h = Math.random() < 0.72 ? 30 + Math.random()*24 : 330 + Math.random()*18;
   }
   pAlive = Math.min(POOL, pAlive + n);
 }
@@ -230,9 +276,13 @@ function click(hot){
     o.connect(g); g.connect(master); o.start(t); o.stop(t+0.09);
   } catch(e){}
 }
+/* desktop Chrome defines navigator.vibrate as a no-op, so 'vibrate' in navigator
+   is not enough on its own to know the device can actually buzz */
+const CAN_VIBRATE = ('vibrate' in navigator) &&
+  (navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer:coarse)').matches));
 let lastVib = 0;
 function buzz(now){
-  if (!save.vib || !navigator.vibrate) return;
+  if (!save.vib || !CAN_VIBRATE) return;
   if (now - lastVib < 55) return;              // never a continuous hum, however fast they tap
   lastVib = now; try { navigator.vibrate(7); } catch(e){}
 }
@@ -241,11 +291,10 @@ function buzz(now){
 let state='idle', score=0, endAt=0, remain=ROUND_MS;
 let scale=1, sv=0, heat=0, dirty=true, rafId=null, last=0;
 
-function setHint(t){ if (hintEl.textContent !== t) hintEl.textContent = t; }
-
 function startRound(){
   state='play'; score=0; endAt = performance.now() + ROUND_MS; remain = ROUND_MS;
-  document.body.classList.add('playing'); dirty = true; setHint('');
+  document.body.classList.add('playing'); dirty = true;
+  measureOrb();
   wake();
 }
 
@@ -254,30 +303,41 @@ function tap(now){
   sv -= 7.2;                                   // squash impulse; the spring bounces it back
   if (scale > 0.9) scale = Math.max(0.9, scale - 0.04);
   heat = Math.min(1, heat + 0.16);
-  const r = orbEl.getBoundingClientRect();
-  burst(r.left + r.width/2, r.top + r.height/2, r.width/2, heat);
+  burst(heat);
   click(heat); buzz(now);
 }
 
-/* One handler for the whole play surface: a tap that slips off the orb still
-   counts, so frantic tapping never loses a point. UI chrome opts out. */
-function onDown(e){
-  if (e.target.closest && e.target.closest('.ui')) return;   // buttons / open sheets
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  e.preventDefault();
-  audioReady();
-  const now = performance.now();
+/* A tap only counts if it landed on OUR play surface. The site injects overlays
+   that are not part of this page — the account gate (.iga-ov), the announcement
+   banner and the rec chip — and a tap on one of those must never score a point
+   or start the clock behind the dialog. */
+function countable(t){
+  if (!t || !t.closest) return false;
+  if (t.closest('.ui')) return false;                 // our own buttons + sheets
+  if (t === document.body || t === document.documentElement) return true;
+  return wrapEl.contains(t);
+}
+function hit(now){
   if (state === 'idle'){ startRound(); tap(now); }
   else if (state === 'play'){ tap(now); }
 }
-addEventListener('pointerdown', onDown, {passive:false});
+addEventListener('pointerdown', e => {
+  if (!countable(e.target)) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  audioReady();
+  hit(performance.now());
+}, {passive:false});
 addEventListener('keydown', e => {
-  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  if (e.key === 'Escape'){ if (!$('boardSheet').classList.contains('hidden')) closeBoard(); return; }
+  if (e.code !== 'Space' && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
   if (e.repeat) return;                        // held key must not auto-fire
-  if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.ui')) return;
+  // a focused button must keep its own Space/Enter behaviour; pointer clicks on
+  // those buttons blur them (below) so this never silently swallows play
+  const a = document.activeElement;
+  if (a && a.closest && a.closest('.ui')) return;
   e.preventDefault(); audioReady();
-  const now = performance.now();
-  if (state === 'idle'){ startRound(); tap(now); } else if (state === 'play'){ tap(now); }
+  hit(performance.now());
 });
 /* a tap that starts on the orb must not also drag/scroll or fire a ghost click */
 orbEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -356,7 +416,6 @@ function titleFor(s){
 function finish(){
   state = 'over';
   document.body.classList.remove('playing');
-  setHint('Tap as fast as you can for 15 seconds!');
   const beat = score > save.best;
   if (beat){ save.best = score; persist(); }
   bestEl.textContent = save.best;
@@ -371,77 +430,135 @@ function finish(){
 
   submitBest();
   $('resultSheet').classList.remove('hidden');
-  refreshBoard();
+  refreshBoard(); startPoll();
   try { window.track && window.track('game_over', { game: GAME, score: score }); } catch(e){}
 }
 
 $('againBtn').onclick = () => {
   $('resultSheet').classList.add('hidden');
+  if ($('boardSheet').classList.contains('hidden')) stopPoll();
   state = 'idle'; score = 0; remain = ROUND_MS; dirty = true; heat = 0;
   glowEl.style.opacity = ''; glowEl.style.transform = '';
   wake();
 };
 
-/* ---------------- leaderboard (shared `leaderboard` table via IGAuth) --------------- */
+/* ---------------- leaderboard ---------------------------------------------
+   Scores are saved through the site's shared `leaderboard` table via
+   IGAuth.submitScore (best score only, one row per player per game).
+   Reading is done straight from that table filtered to THIS game, rather than
+   through IGAuth.topScores: the shared reader pulls the top 1000 rows across
+   every game ordered by score, and a tap count (50-300) is the smallest number
+   on the site — once the table passes 1000 rows that board would quietly drop
+   Speed Clicker altogether. -------------------------------------------------- */
 function submitBest(){ try { if (window.IGAuth && save.best > 0) IGAuth.submitScore(GAME, save.best); } catch(e){} }
 
 function esc(s){ return String(s == null ? 'Player' : s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+// auto-generated "Guest-1234" identities are test noise, not players (mirrors auth.js)
+function isAutoGuest(n){ return /^guest[-_ ]?\d{3,}$/i.test(String(n || '').trim()); }
+// the offline fallback board auth.js keeps, so your own just-played score shows
+// up immediately and still shows with no network
+function localRows(){
+  try { const a = JSON.parse(localStorage.getItem('iglb_local'));
+        return Array.isArray(a) ? a.filter(r => r && r.game === GAME) : []; } catch(e){ return []; }
+}
 
 async function refreshBoard(){
   const boxes = document.querySelectorAll('.lb-list');
-  if (!window.IGAuth || !IGAuth.topScores){
-    boxes.forEach(b => b.innerHTML = '<div class="lbempty">Leaderboard unavailable offline.</div>');
-    return;
-  }
-  let rows = [];
-  try { rows = await IGAuth.topScores(GAME, 200) || []; } catch(e){}
-  // One row per player, highest score wins — the local fallback board and the
-  // server both hold a row for you, and they must never show up as two entries.
+  let server = null;                                   // null = we never reached the server
+  try {
+    if (window.SUPABASE_URL && window.SUPABASE_KEY){
+      const url = window.SUPABASE_URL + '/rest/v1/leaderboard?select=name,score&game=eq.' +
+                  encodeURIComponent(GAME) + '&order=score.desc&limit=60';
+      const r = await fetch(url, { headers: { apikey: window.SUPABASE_KEY,
+                                              Authorization: 'Bearer ' + window.SUPABASE_KEY } });
+      if (r.ok){ const j = await r.json(); server = Array.isArray(j) ? j : []; }
+    }
+  } catch(e){}
+
   const byName = new Map();
-  for (const r of rows){
-    const k = r.name || 'Player';
-    const prev = byName.get(k);
-    if (!prev || r.score > prev.score) byName.set(k, { name: k, score: r.score });
+  for (const r of (server || []).concat(localRows())){
+    if (!r) continue;
+    const n = String(r.name == null ? 'Player' : r.name);
+    if (isAutoGuest(n)) continue;
+    const sc = Math.max(0, Math.round(Number(r.score) || 0));   // never trust this into innerHTML raw
+    const prev = byName.get(n);
+    if (!prev || sc > prev.score) byName.set(n, { name: n, score: sc });
   }
   const list = [...byName.values()].sort((a,b) => b.score - a.score).slice(0, 20);
   const me = (window.IGAuth && IGAuth.displayName && IGAuth.displayName()) || null;
-  const html = list.length
-    ? list.map((r,i) => '<div class="lbrow' + (me && r.name === me ? ' me' : '') + '">' +
-        '<span class="rk">' + (i+1) + '</span><span class="nm">' + esc(r.name) + '</span>' +
-        '<span class="sc">' + r.score + '</span></div>').join('')
-    : '<div class="lbempty">No scores yet — be the first!</div>';
+
+  let html;
+  if (list.length) {
+    html = list.map((r,i) => '<div class="lbrow' + (me && r.name === me ? ' me' : '') + '">' +
+      '<span class="rk">' + (i+1) + '</span><span class="nm">' + esc(r.name) + '</span>' +
+      '<span class="sc">' + r.score + '</span></div>').join('');
+  } else if (server === null) {
+    html = '<div class="lbempty">Can\'t reach the leaderboard — check your connection.</div>';
+  } else {
+    html = '<div class="lbempty">No scores yet — be the first!</div>';
+  }
   boxes.forEach(b => b.innerHTML = html);
 }
 
+/* auto-refresh while either sheet is showing the board */
 let boardTimer = null;
-$('lbBtn').onclick = () => {
-  $('boardSheet').classList.remove('hidden');
-  refreshBoard();
-  if (!boardTimer) boardTimer = setInterval(refreshBoard, 25000);
-};
-$('closeBoard').onclick = () => {
+function boardOpen(){ return !$('boardSheet').classList.contains('hidden') ||
+                             !$('resultSheet').classList.contains('hidden'); }
+function startPoll(){ if (!boardTimer) boardTimer = setInterval(() => {
+  if (boardOpen()) refreshBoard(); else stopPoll(); }, 25000); }
+function stopPoll(){ if (boardTimer){ clearInterval(boardTimer); boardTimer = null; } }
+
+function openBoard(){ $('boardSheet').classList.remove('hidden'); refreshBoard(); startPoll(); }
+function closeBoard(){
   $('boardSheet').classList.add('hidden');
-  if (boardTimer){ clearInterval(boardTimer); boardTimer = null; }
-};
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) return;
-  if (!$('boardSheet').classList.contains('hidden') || !$('resultSheet').classList.contains('hidden')) refreshBoard();
-});
+  if ($('resultSheet').classList.contains('hidden')) stopPoll();
+}
+$('lbBtn').onclick = openBoard;
+$('closeBoard').onclick = closeBoard;
+// tapping the dimmed backdrop closes the board too (the result sheet deliberately
+// does NOT close this way — you've just been tapping, a stray tap must not eat it)
+$('boardSheet').addEventListener('pointerdown', e => { if (e.target === $('boardSheet')) closeBoard(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && boardOpen()) refreshBoard(); });
 
 /* ---------------- sound / vibration toggles ---------------- */
 function paintToggles(){
   $('sndBtn').textContent = save.snd ? '🔊' : '🔇';
   $('sndBtn').classList.toggle('off', !save.snd);
   const vb = $('vibBtn');
-  if (!('vibrate' in navigator)) { vb.style.display = 'none'; return; }   // desktop: no fake button
+  if (!CAN_VIBRATE){ vb.style.display = 'none'; return; }   // desktop: no fake button
   vb.classList.toggle('off', !save.vib);
 }
 $('sndBtn').onclick = () => { save.snd = !save.snd; persist(); paintToggles(); if (save.snd){ audioReady(); click(0.2); } };
 $('vibBtn').onclick = () => { save.vib = !save.vib; persist(); paintToggles(); if (save.vib) buzz(1e9); };
+// clicking a button leaves it focused, which would make Space/Enter stop playing
+document.querySelectorAll('.row.ui .ghost').forEach(b => b.addEventListener('click', () => b.blur()));
+
+/* ---------------- keep clear of the site's fixed bottom banner ---------------
+   announce.js appends a position:fixed banner at the bottom of every game with
+   z-index 99999. Left alone it sits exactly on top of the button row. */
+(function () {
+  function fit(){
+    let pad = 0;
+    document.querySelectorAll('body > div[role="status"]').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.height && r.bottom > innerHeight * 0.6) pad = Math.max(pad, innerHeight - r.top + 10);
+    });
+    /* On a short landscape phone the banner wants more height than the whole
+       playfield has. Reserving all of it shrinks the orb to a marble, so keep
+       enough for HUD + a usable orb + the button row and let the banner overlap
+       instead — it has its own ✕ and is gone for good once dismissed. */
+    const roomForGame = 272;
+    wrapEl.style.setProperty('--chrome', Math.max(0, Math.min(pad, innerHeight - roomForGame)) + 'px');
+  }
+  try { new MutationObserver(fit).observe(document.body, { childList: true }); } catch(e){}
+  addEventListener('resize', fit);
+  setTimeout(fit, 1200); setTimeout(fit, 3500);
+})();
 
 /* ---------------- boot ---------------- */
 bestEl.textContent = save.best;
 paintToggles();
+resize();
 wake();
 </script>
 
