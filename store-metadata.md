@@ -4,11 +4,14 @@ Copy these into App Store Connect. Character limits are Apple's.
 
 ## Name (30 max)
 ```
-Stack Tower
+Ilan Stack Tower
 ```
-`Stack Tower` is a common game name and may already be taken. Fallbacks, in order:
-`Stack Tower — Ilan Games` (24), `Ilan Stack Tower` (16), `Stack Tower Blocks` (18).
-The name only has to be unique on the App Store; the bundle id stays the same either way.
+`Stack Tower` on its own was already taken. This keeps the searchable phrase
+intact with the brand in front. 16 characters.
+
+The name under the home screen icon is a separate thing — `CFBundleDisplayName`
+in Info.plist — and stays **Stack Tower**. That is deliberate: the store listing
+needs to be globally unique, the icon does not.
 
 ## Subtitle (30 max)
 ```
@@ -22,7 +25,7 @@ How high can you get? Line up each falling block, keep the overhang off, and cha
 
 ## Description (4000 max)
 ```
-Stack Tower is a one-tap game about timing.
+Ilan Stack Tower is a one-tap game about timing.
 
 A block slides back and forth above your tower. Tap to drop it. Land it clean and the tower grows. Land it off-centre and the overhang is sliced away — your next block is narrower, and the one after that narrower still.
 
@@ -45,9 +48,14 @@ Short runs, quick restarts. Beat your best.
 
 ## Keywords (100 max, comma separated, no spaces after commas)
 ```
-stack,tower,blocks,tap,arcade,casual,offline,timing,reflex,one tap,builder,skill,highscore,tower blocks
+blocks,tap,arcade,casual,offline,timing,reflex,builder,skill,highscore,drop,balance,tall,stacking
 ```
-(93 characters.)
+(96 characters.)
+
+`stack` and `tower` are deliberately **absent**: Apple indexes the app name, the
+subtitle and the keyword field together, so repeating words already in the name
+wastes characters. Dropping them freed room for `drop`, `balance`, `tall` and
+`stacking`.
 
 ## What's New (first version)
 ```
@@ -56,10 +64,12 @@ First release.
 
 ## URLs
 - **Support URL** (required): `https://ilamara31.github.io/ilan-games/`
+- **Privacy Policy URL** (required): `https://ilamara31.github.io/ilan-games/privacy.html`
 - **Marketing URL** (optional): `https://ilamara31.github.io/ilan-games/stack/`
 
-A support URL is mandatory and must resolve. The games index page is acceptable;
-a page with a contact email on it is better.
+All must resolve before submitting. The privacy page is written
+(`privacy.html` in the ilan-games repo) but still has a placeholder email and
+has not been pushed — do both, then confirm the URL loads.
 
 ## Category
 - Primary: **Games** → Arcade
