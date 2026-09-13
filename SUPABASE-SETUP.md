@@ -19,50 +19,31 @@ POST /rest/v1/rpc/account_delete   { "p_name": ..., "p_password": ... }
 That function does not exist on your backend yet, so the button will currently
 fail with "the server didn't complete the request". It needs adding.
 
-The exact SQL depends on your table names, which aren't visible from the client.
-Check what `account_auth` does (Supabase dashboard → Database → Functions) and
-mirror its table and password-hashing scheme. The shape is:
+Your accounts live in `players(name, pin_hash, recovery_hash)`, with bcrypt
+hashes via pgcrypto — `crypt(password, gen_salt('bf'))`, verified as
+`h = crypt(password, h)`. `account_delete` mirrors that check exactly.
 
-```sql
-create or replace function public.account_delete(p_name text, p_password text)
-returns boolean
-language plpgsql
-security definer
-as $$
-declare
-  ok boolean;
-begin
-  -- Verify the password exactly the way account_auth does — same table,
-  -- same hashing. Do not weaken this: it is the only thing stopping
-  -- someone deleting another player's account.
-  select true into ok
-    from accounts                      -- ← your real accounts table
-   where name = p_name
-     and password_hash = crypt(p_password, password_hash);   -- ← your real scheme
+**The SQL is written and ready: `account-delete.sql`.** It parses clean against
+the real PostgreSQL parser. Run it in Supabase → SQL Editor. It is safe to
+re-run.
 
-  if not found then
-    return false;
-  end if;
+Two things worth knowing about how it is written:
 
-  delete from scores  where name = p_name;   -- ← whatever feeds `leaderboard`
-  delete from accounts where name = p_name;
-  return true;
-end;
-$$;
-
-grant execute on function public.account_delete(text, text) to anon;
-```
+- It pins `search_path`. A `SECURITY DEFINER` function without that can be
+  hijacked by a caller who puts their own `players` or `crypt` earlier in the
+  path. Your `account_auth` does not pin it — worth fixing there too.
+- It deletes the player's scores using `to_regclass` guards rather than assuming
+  a table name, because the `leaderboard` view's base table is not visible from
+  the client. If your scores table is not called `scores`, the account will be
+  removed but its rows may survive. I can verify this empirically once the
+  function exists — see below.
 
 Verify before shipping:
 
-```bash
-curl -s -X POST "https://xanrofecdpoljnerpsow.supabase.co/rest/v1/rpc/account_delete" \
-  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"p_name":"<test account>","p_password":"<wrong>"}'      # must be false
-```
-
-Make a throwaway account and delete it for real before you submit — a reviewer will
-press that button.
+Once it is installed, I can verify the whole path end to end without touching a
+real account: create a throwaway player, post a score as them, confirm it shows
+on the board, delete the account, then confirm both the player and the score are
+gone. That also settles the scores-table question above. Just say when it is in.
 
 ## 2. Password rules are weak
 
