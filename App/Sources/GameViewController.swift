@@ -7,6 +7,8 @@ final class GameViewController: UIViewController {
     private var skView: SKView!
     private var scene: GameScene!
     private let menu = MenuOverlayView()
+    /// The score from the run just finished, for the share message.
+    private var lastScore = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,6 +30,7 @@ final class GameViewController: UIViewController {
         menu.onTutorial = { [weak self] in self?.startRun(tutorial: true) }
         menu.onAccount = { [weak self] in self?.presentAccount() }
         menu.onLeaderboard = { [weak self] in self?.presentLeaderboard() }
+        menu.onShare = { [weak self] anchor in self?.presentShare(from: anchor) }
         view.addSubview(menu)
 
         NotificationCenter.default.addObserver(
@@ -69,6 +72,20 @@ final class GameViewController: UIViewController {
         present(darkSheet(auth), animated: true)
     }
 
+    /// The system share sheet — WhatsApp, Messages, anything installed.
+    private func presentShare(from anchor: UIView) {
+        let items: [Any] = [
+            ShareText.message(score: lastScore, best: Scores.best),
+            ShareText.inviteURL,
+        ]
+        let share = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        // On iPad this presents as a popover, and an unanchored popover is a crash,
+        // not a layout glitch.
+        share.popoverPresentationController?.sourceView = anchor
+        share.popoverPresentationController?.sourceRect = anchor.bounds
+        present(share, animated: true)
+    }
+
     private func presentLeaderboard() {
         present(darkSheet(LeaderboardViewController()), animated: true)
     }
@@ -106,6 +123,7 @@ final class GameViewController: UIViewController {
 
 extension GameViewController: GameSceneDelegate {
     func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int) {
+        lastScore = score
         menu.showGameOver(score: score, best: best)
         // Only the personal best goes up, matching the website's behaviour.
         Task { await Account.submit(score: best) }

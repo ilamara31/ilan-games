@@ -8,6 +8,9 @@ final class MenuOverlayView: UIView {
     var onTutorial: (() -> Void)?
     var onAccount: (() -> Void)?
     var onLeaderboard: (() -> Void)?
+    /// Hands back the button so the share sheet can anchor to it — an unanchored
+    /// popover crashes on iPad.
+    var onShare: ((UIView) -> Void)?
 
     private let titleLabel = UILabel()
     private let gradientLayer = CAGradientLayer()
@@ -17,6 +20,8 @@ final class MenuOverlayView: UIView {
     private let tutorialButton = UIButton(type: .system)
     private let accountButton = UIButton(type: .system)
     private let leaderboardButton = UIButton(type: .system)
+    private let shareButton = UIButton(type: .system)
+    private let actionRow = UIStackView()
     private let secondaryRow = UIStackView()
     private let column = UIStackView()
 
@@ -57,12 +62,18 @@ final class MenuOverlayView: UIView {
         configureStartButton()
         configureTutorialButton()
         configureSecondaryRow()
+        configureShareButton()
+
+        actionRow.axis = .horizontal
+        actionRow.spacing = 10
+        actionRow.alignment = .center
+        [startButton, shareButton].forEach(actionRow.addArrangedSubview)
 
         column.axis = .vertical
         column.alignment = .center
         column.spacing = 16
         column.translatesAutoresizingMaskIntoConstraints = false
-        [gradientHost, bodyLabel, startButton, scoreLabel, secondaryRow].forEach(column.addArrangedSubview)
+        [gradientHost, bodyLabel, actionRow, scoreLabel, secondaryRow].forEach(column.addArrangedSubview)
         column.setCustomSpacing(22, after: bodyLabel)
         addSubview(column)
 
@@ -143,6 +154,21 @@ final class MenuOverlayView: UIView {
         [tutorialButton, accountButton, leaderboardButton].forEach(secondaryRow.addArrangedSubview)
     }
 
+    private func configureShareButton() {
+        var config = UIButton.Configuration.filled()
+        config.image = UIImage(systemName: "square.and.arrow.up")
+        config.baseBackgroundColor = UIColor(white: 1, alpha: 0.12)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        config.contentInsets = NSDirectionalEdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20)
+        shareButton.configuration = config
+        shareButton.accessibilityLabel = "Share your score"
+        shareButton.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.onShare?(self.shareButton)
+        }, for: .touchUpInside)
+    }
+
     /// Reflects who is signed in, so the button reads as an account button once you are.
     func refreshAccountButton() {
         let title = Account.name.map { String($0.prefix(12)) } ?? "Sign in"
@@ -172,6 +198,7 @@ final class MenuOverlayView: UIView {
             attributes: [.font: UIFont.systemFont(ofSize: 16)]
         ) : nil
         tutorialButton.isHidden = false
+        shareButton.isHidden = Scores.best == 0
         refreshAccountButton()
         isHidden = false
     }
@@ -193,6 +220,7 @@ final class MenuOverlayView: UIView {
         ))
         scoreLabel.attributedText = text
         tutorialButton.isHidden = true
+        shareButton.isHidden = false
         refreshAccountButton()
         isHidden = false
     }

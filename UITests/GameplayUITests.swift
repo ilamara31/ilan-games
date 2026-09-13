@@ -122,3 +122,52 @@ final class SignInUITests: XCTestCase {
         add(warned)
     }
 }
+
+/// The share sheet after a run — the growth path, so it needs to actually open.
+final class ShareUITests: XCTestCase {
+    func testShareSheetOpensWithScore() {
+        let app = XCUIApplication()
+        app.launch()
+        Thread.sleep(forTimeInterval: 2.5)
+
+        let centre = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        for _ in 0..<4 {          // clear the tutorial
+            centre.tap()
+            Thread.sleep(forTimeInterval: 1.0)
+        }
+        Thread.sleep(forTimeInterval: 1.5)
+
+        // Play until it topples, so there's a real score to share.
+        if app.buttons["STACK"].waitForExistence(timeout: 6) {
+            app.buttons["STACK"].tap()
+        }
+        Thread.sleep(forTimeInterval: 1.0)
+        // Tapping on a fixed interval syncs with the block's sweep and can survive
+        // indefinitely — vary it so the drops land off-centre and the run ends.
+        var taps = 0
+        let rhythm: [TimeInterval] = [0.30, 0.52, 0.41, 0.68, 0.35, 0.59]
+        while taps < 120 && !app.buttons["Share your score"].exists {
+            centre.tap()
+            Thread.sleep(forTimeInterval: rhythm[taps % rhythm.count])
+            taps += 1
+        }
+
+        let share = app.buttons["Share your score"]
+        XCTAssertTrue(share.waitForExistence(timeout: 10), "share button should appear on the game-over card")
+
+        let gameOver = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        gameOver.name = "30-gameover"
+        gameOver.lifetime = .keepAlways
+        add(gameOver)
+
+        share.tap()
+        Thread.sleep(forTimeInterval: 4.0)
+
+        let sheet = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        sheet.name = "31-sharesheet"
+        sheet.lifetime = .keepAlways
+        add(sheet)
+
+        XCTAssertEqual(app.state, .runningForeground, "app should survive presenting the share sheet")
+    }
+}
