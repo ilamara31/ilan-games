@@ -33,9 +33,12 @@ launch; on first run it opens a short three-drop tutorial, then the title screen
 **Demo account (already created, ready to use):**
 
     Username: AppReview
-    Password: Review2026
+    Password: <fill in before sending — do not commit it>
 
-This account already has a score of 28 on the leaderboard.
+This account already has a score on the leaderboard.
+
+(The real password is deliberately not in this file: the repository is public.
+Create the account with a password of your choosing and type it into the reply.)
 
 - **Play:** tap STACK on the title screen, then tap anywhere to drop each block.
 - **Leaderboard:** tap Leaderboard on the title screen. Visible without signing in.
@@ -91,7 +94,7 @@ Apple asks that it starts from launch and shows the typical flow:
 3. On the title screen, tap STACK and play a normal run until the tower topples.
    Show the game-over card.
 4. Tap Leaderboard. Let it load so the shared scores are visible. Close it.
-5. Tap Sign in. Enter AppReview / Review2026. Show that it signs in and the
+5. Tap Sign in. Enter the demo credentials. Show that it signs in and the
    button now shows the username.
 6. Open the Leaderboard again so the signed-in account is visible on it.
 7. Tap the account button, then **Delete account**, and confirm.
