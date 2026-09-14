@@ -1,0 +1,46 @@
+name: StackTower
+options:
+  bundleIdPrefix: com.ilangames
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "2"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 7MJUYV3Z3R  # "Magizhan Selvan" — the personal Individual team, not a Juspay one
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  StackTower:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+      - path: App/Assets.xcassets
+      # Required since May 2024: UserDefaults is a "required reason" API.
+      - path: App/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        INFOPLIST_FILE: App/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.ilangames.stacktower
+        PRODUCT_NAME: StackTower
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        GENERATE_INFOPLIST_FILE: NO
+
+  StackTowerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: StackTower
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ilangames.stacktower.uitests
+        TEST_TARGET_NAME: StackTower
+        GENERATE_INFOPLIST_FILE: YES
