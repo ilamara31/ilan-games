@@ -134,15 +134,47 @@ $$;
 -- Password in, canonical username out. NULL means "not you".
 -- ig_check is revoked from anon; we can still call it because these
 -- functions run as the owner.
+/* Password in, canonical username out. NULL means "not you".
+ *
+ * Two things matter here.
+ *
+ * FIRST, it never creates an account. The name must already exist in
+ * players before any password is checked. The legacy account_auth creates
+ * an account for an unknown name and answers 'created' -- harmless as a
+ * login, but a game that hands every new wallet 100 coins must not be a
+ * sign-up form.
+ *
+ * SECOND, it works on both vintages of this project. accounts-setup.sql
+ * introduces the strict ig_check; projects that have not run it yet still
+ * only have the older account_auth. Calling ig_check directly made every
+ * single Time Duel function fail with "function public.ig_check(text,text)
+ * does not exist". So the checker is chosen at runtime, and this file has
+ * no hard dependency on which of the two is installed. Run
+ * accounts-setup.sql whenever you like and this silently starts using the
+ * stricter one. */
 create or replace function public.td_who(p_name text, p_password text)
 returns text
 language plpgsql security definer
 set search_path = extensions, public, pg_temp
 as $$
-declare canon text;
+declare canon text; res text;
 begin
-  if public.ig_check(p_name, p_password) <> 'ok' then return null; end if;
+  if p_name is null or p_password is null then return null; end if;
+
   select name into canon from public.players where name = btrim(p_name) limit 1;
+  if canon is null then return null; end if;      -- no account, no wallet
+
+  if to_regprocedure('public.ig_check(text,text)') is not null then
+    execute 'select public.ig_check($1,$2)' into res using p_name, p_password;
+  elsif to_regprocedure('public.account_auth(text,text,text)') is not null then
+    execute 'select public.account_auth($1,$2,null)' into res using p_name, p_password;
+  elsif to_regprocedure('public.account_auth(text,text)') is not null then
+    execute 'select public.account_auth($1,$2)' into res using p_name, p_password;
+  else
+    return null;
+  end if;
+
+  if res is distinct from 'ok' then return null; end if;
   return canon;
 end;
 $$;
