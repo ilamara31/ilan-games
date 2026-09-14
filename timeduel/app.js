@@ -56,8 +56,8 @@
     b.classList.add("on");
   }
 
-  var BACKABLE = { mode: "menu", size: "mode", arena: null, room: null,
-                   practice: "menu", profile: "menu" };
+  var BACKABLE = { multi: "menu", join: "multi", mode: "multi", size: "mode",
+                   arena: null, practice: "menu", profile: "menu" };
 
   function show(name) {
     S.screen = name;
@@ -77,15 +77,19 @@
     var tb = document.querySelector(".topbar");
     if (tb) tb.style.display = (name === "round") ? "none" : "flex";
     if (name === "menu") banner("");
+    // Re-read the balance whenever the player lands somewhere it is shown or
+    // spent. It used to refresh at only a few moments, so it could sit stale
+    // for a whole session and make the coin rules look broken when they were
+    // not. Throttled, so flicking between screens does not spam the API.
+    if (name === "menu" || name === "multi" || name === "arena" ||
+        name === "join" || name === "lobby") coinsSoon();
     TDSound.duck(name === "round");
   }
 
   function back() {
     if (S.screen === "lobby") { leaveRoom(); return; }
-    if (S.screen === "arena")  { show(S.tournament ? "size" : "mode"); return; }
-    if (S.screen === "room")   { show("arena"); renderArenas(); return; }
-    var to = BACKABLE[S.screen];
-    show(to || "menu");
+    if (S.screen === "arena") { show(S.tournament ? "size" : "mode"); return; }
+    show(BACKABLE[S.screen] || "menu");
   }
 
   /* ============================================================ the wallet */
@@ -94,6 +98,15 @@
     if (n == null) return;
     S.coins = n;
     $("coinVal").textContent = n;
+  }
+
+  var coinsAt = 0;
+  function coinsSoon() {
+    if (Date.now() - coinsAt < 2500) return;
+    coinsAt = Date.now();
+    refreshCoins().then(function () {
+      if (S.screen === "arena") renderArenas();
+    });
   }
 
   async function refreshCoins() {
@@ -129,11 +142,19 @@
     b.addEventListener("click", function () {
       TDSound.click();
       var to = b.getAttribute("data-go");
-      if (to === "mode" && needAccount()) return;
+      if (to === "multi" && needAccount()) return;
       if (to === "profile") { openProfile(); return; }
       if (to === "practice") { openPractice(); return; }
       show(to);
     });
+  });
+
+  $("goCreate").addEventListener("click", function () {
+    TDSound.click(); show("mode");
+  });
+  $("goJoin").addEventListener("click", function () {
+    TDSound.click(); $("joinCode").value = ""; show("join");
+    setTimeout(function () { try { $("joinCode").focus(); } catch (e) {} }, 120);
   });
 
   els("[data-mode]").forEach(function (c) {
@@ -182,9 +203,11 @@
   function renderArenas() {
     var list = $("arenaList");
     list.innerHTML = "";
-    $("arenaSub").textContent = S.tournament
-      ? S.capacity + " players · " + (S.mode === "blind" ? "Blind" : "Classic") + " · winner takes the pot"
-      : (S.mode === "blind" ? "Blind duel" : "Classic duel") + " · 2 players";
+    $("arenaSub").textContent =
+      (S.tournament
+        ? S.capacity + " players · " + (S.mode === "blind" ? "Blind" : "Classic")
+        : (S.mode === "blind" ? "Blind duel" : "Classic duel") + " · 2 players") +
+      "  ·  you have " + (S.coins == null ? "…" : S.coins) + " 🪙";
 
     ARENAS.forEach(function (a) {
       var pot = a.entry * S.capacity;
@@ -198,10 +221,15 @@
         (S.capacity > 2 ? "up to " + pot : pot) + " 🪙</b>" +
         (S.capacity > 2 ? " — the entry fees of whoever actually plays" : "") + "</div>";
       d.addEventListener("click", function () {
-        if (poor) { TDSound.error(); toast("You need " + a.entry + " coins for " + a.name); return; }
+        if (poor) {
+          TDSound.error();
+          toast("You have " + (S.coins == null ? "too few" : S.coins) +
+                " coins — " + a.name + " costs " + a.entry + " to enter.");
+          return;
+        }
         TDSound.click();
         S.arena = a.id;
-        openRoomPicker();
+        createRoom();
       });
       makeFocusable(d);
       list.appendChild(d);
@@ -211,17 +239,6 @@
   function arenaById(id) {
     for (var i = 0; i < ARENAS.length; i++) if (ARENAS[i].id === id) return ARENAS[i];
     return ARENAS[0];
-  }
-
-  function openRoomPicker() {
-    var a = arenaById(S.arena);
-    $("roomTitle").textContent = a.icon + " " + a.name + " · " +
-      (S.mode === "blind" ? "Blind" : "Classic");
-    $("roomSub").textContent = "Entry " + a.entry + " 🪙 · up to " + S.capacity +
-      " players · pot " + (S.capacity > 2 ? "up to " : "") + (a.entry * S.capacity) +
-      " 🪙, the entry fees of whoever plays. Your entry is taken when you sit down, and refunded if the room breaks up.";
-    $("joinCode").value = "";
-    show("room");
   }
 
   /* ============================================================ room flows */
@@ -241,16 +258,14 @@
     return "Something went wrong. Try again.";
   }
 
-  $("createBtn").addEventListener("click", async function () {
+  async function createRoom() {
     if (needAccount() || S.busy) return;
-    S.busy = true; TDSound.click();
-    $("createBtn").setAttribute("disabled", "");
+    S.busy = true;
     var r = await TDDB.createRoom(S.mode, S.arena, S.capacity);
-    $("createBtn").removeAttribute("disabled");
     S.busy = false;
-    if (!r.ok) { TDSound.error(); toast(rpcError(r)); return; }
+    if (!r.ok) { TDSound.error(); toast(rpcError(r)); refreshCoins(); return; }
     enterRoom(r);
-  });
+  }
 
   $("joinBtn").addEventListener("click", async function () {
     if (needAccount() || S.busy) return;
@@ -340,7 +355,17 @@
     var r = await TDDB.joinRoom(S.code);
     S.busy = false;
     $("rejoinBtn").removeAttribute("disabled");
-    if (!r.ok) { TDSound.error(); toast(rpcError(r)); return; }
+    if (!r.ok) {
+      TDSound.error();
+      if (r.error === "broke") {
+        var need = r.need != null ? r.need : (S.room ? S.room.entry : 0);
+        $("lobbyHint").textContent = "You don't have enough coins for this round — " +
+          "it costs " + need + " 🪙 and you have " + (r.coins == null ? "fewer" : r.coins) + ".";
+      }
+      toast(rpcError(r));
+      refreshCoins();
+      return;
+    }
     S.resultKey = null;
     TDNet.shout();
     onRoom(r, true);
@@ -367,11 +392,16 @@
     S.room = r;
 
     if (r.status === "lobby") {
+      // Still looking at the result of the last round? Leave it up and just
+      // re-label the buttons. Yanking people to a lobby the instant the host
+      // hits rematch is how the winner vanished before anyone could read it.
+      if (S.screen === "result") { resultActions(r); return; }
       var first = (S.screen !== "lobby");
       if (changed || first) renderLobby(r);
       if (first) show("lobby");
     }
     else if (r.status === "playing") {
+      if (S.screen === "result" && !mySeat(r)) { resultActions(r); return; }
       if (r.seated === false) {
         // Not in this round — the host restarted without us. Never arm a
         // round we cannot see the target for.
@@ -387,6 +417,7 @@
     }
     else if (r.status === "done")    { enterResult(r); }
     else if (r.status === "aborted") {
+      if (S.screen === "result") { resultActions(r); refreshCoins(); return; }
       toast("The host closed the room — your entry was refunded.");
       TDNet.close(); rememberRoom(null); S.code = null; show("menu"); refreshCoins();
     }
@@ -514,6 +545,7 @@
     $("countnum").textContent = "";
     $("countnum").style.display = "block";
     $("bigtime").style.display = "none";
+    $("blindclock").style.display = "none";
     $("bigtime").className = "mono " + (opts.blind ? "blind" : "live");
     $("roundHint").textContent = "Get ready…";
     $("roundBail").style.display = "none";
@@ -527,10 +559,17 @@
         var c = $("countnum");
         if (n === "GO") {
           c.style.display = "none";
-          $("bigtime").style.display = "block";
-          $("bigtime").textContent = opts.blind ? "· · ·" : "0.00";
+          if (opts.blind) {
+            // The clock is running; you just can't read it.
+            $("bigtime").style.display = "none";
+            $("blindclock").style.display = "grid";
+          } else {
+            $("blindclock").style.display = "none";
+            $("bigtime").style.display = "block";
+            $("bigtime").textContent = "0.00";
+          }
           $("roundHint").textContent = opts.blind
-            ? "No timer. Go on feel — tap at " + TDClock.secs(opts.targetMs, 3) + "s"
+            ? "Count it yourself — tap at " + TDClock.secs(opts.targetMs, 3) + "s"
             : "Tap anywhere to stop";
           TDSound.go();
         } else if (typeof n === "number" && n > 0 && n <= 3) {
@@ -598,6 +637,8 @@
     if (ms == null) return;
     S.myStop = ms;
     TDSound.stop();
+    // Whatever the mode, your own time is revealed the instant you stop.
+    $("blindclock").style.display = "none";
     $("bigtime").className = "mono";
     $("bigtime").textContent = TDClock.secs(ms, 3);
     $("bigtime").style.display = "block";
@@ -660,9 +701,15 @@
 
   /* =============================================================== result */
 
+  /* The result is the payoff of the whole round, so it STAYS on screen.
+   * Nothing drags the player off it automatically any more: if the host opens
+   * another round the winner is still shown and the button simply becomes
+   * "Take your seat"; if the host closes the room the winner is still shown
+   * and the button becomes "Back to menu". */
   function enterResult(r) {
-    if (S.screen === "result" && S.resultKey === r.code + "#" + r.round) return;
-    S.resultKey = r.code + "#" + r.round;
+    var key = r.code + "#" + r.round;
+    if (S.screen === "result" && S.resultKey === key) { resultActions(r); return; }
+    S.resultKey = key;
     if (S.round) { S.round.cancel(); S.round = null; }
 
     var seats = (r.seats || []).slice().sort(function (a, b) {
@@ -671,83 +718,128 @@
       return a.diff_ms - b.diff_ms;
     });
     var me = mySeat(r);
-    var iWon = (r.winner && r.winner === myName()) ||
-               (me && me.diff_ms != null && seats[0] && me.diff_ms === seats[0].diff_ms);
+    var best = (seats.length && seats[0].diff_ms != null) ? seats[0].diff_ms : null;
+    var winners = seats.filter(function (x) { return x.diff_ms != null && x.diff_ms === best; });
+    var iWon = !!(me && best != null && me.diff_ms === best);
     var voided = !r.winner;
 
-    // Mirror the database's split: everyone on the best difference shares.
-    var best = seats.length && seats[0].diff_ms != null ? seats[0].diff_ms : null;
-    var winners = seats.filter(function (s) { return s.diff_ms != null && s.diff_ms === best; }).length || 1;
-    // Mirror td_settle exactly, odd coins included: share goes to every
-    // winner and the remainder to the recorded champion. Guessing
-    // floor(pot/winners) understated a split-pot champion's reward.
-    var share = Math.floor(r.pot / winners);
-    var extra = r.pot - (share * winners);
+    // Mirror td_settle exactly, odd coins and all.
+    var share = winners.length ? Math.floor(r.pot / winners.length) : 0;
+    var extra = r.pot - (share * (winners.length || 1));
     var payout = iWon ? share + (r.winner === myName() ? extra : 0) : 0;
     var delta = voided ? 0 : payout - r.entry;
 
-    var v = $("verdict");
+    var crown = $("resultCrown"), nameEl = $("winnerName"), subEl = $("winnerSub");
+
     if (voided) {
-      v.className = "verdict"; v.textContent = "Round void";
-      $("rewardLine").textContent = "Nobody stopped the timer — entries refunded.";
-      $("rewardLine").className = "reward";
-    } else if (me && me.diff_ms === 0) {
-      v.className = "verdict dot"; v.textContent = "DOT! PERFECT";
-      TDSound.dot();
-    } else if (iWon) {
-      v.className = "verdict win"; v.textContent = winners > 1 ? "Split pot!" : "You win!";
-      TDSound.win();
+      crown.textContent = "⏳";
+      nameEl.className = "winner void";
+      nameEl.textContent = "Nobody stopped the clock";
+      subEl.className = "winner-sub";
+      subEl.textContent = "Every entry fee was returned.";
     } else {
-      v.className = "verdict lose"; v.textContent = me && me.diff_ms == null ? "Too slow" : "Beaten";
-      TDSound.lose();
+      var dot = winners.some(function (x) { return x.diff_ms === 0; });
+      crown.textContent = dot ? "🎯" : "🏆";
+      nameEl.className = "winner" + (dot ? " dot" : "");
+      nameEl.textContent = winners.length > 1
+        ? winners.map(function (x) { return x.name; }).join("  &  ")
+        : (r.winner || "—");
+      subEl.className = "winner-sub" + (delta < 0 ? " neg" : "");
+      subEl.textContent = (winners.length > 1 ? "split " : "wins ") + r.pot + " 🪙" +
+        (me ? "   ·   you " + (delta >= 0 ? "+" : "") + delta + " 🪙" : "");
+      if (me && me.diff_ms === 0) TDSound.dot();
+      else if (iWon) TDSound.win();
+      else TDSound.lose();
     }
 
-    if (!voided) {
-      var rl = $("rewardLine");
-      rl.textContent = (delta >= 0 ? "+" : "") + delta + " 🪙";
-      rl.className = "reward" + (delta < 0 ? " neg" : "");
-    }
-
-    $("rTarget").textContent = TDClock.secs(r.target_ms, 3);
-    $("rYours").textContent  = me && me.stop_ms != null ? TDClock.secs(me.stop_ms, 3) : "—";
-    $("rDiff").textContent   = me ? TDClock.diffLabel(me.diff_ms) : "—";
-
-    var board = $("resultBoard");
+    // The target, then every player's time. Large, and nothing else.
+    var board = $("timesBoard");
     board.innerHTML = "";
-    seats.forEach(function (s, i) {
-      var isWin = !voided && s.diff_ms != null && s.diff_ms === best;
-      var d = document.createElement("div");
-      d.className = "row" + (isWin ? " win" : "") + (s.name === myName() ? " me" : "");
-      d.innerHTML = '<span class="pl">' + (isWin ? "🏆" : (i + 1)) + "</span>" +
-        '<span class="nm"></span>' +
-        (s.diff_ms === 0 ? '<span class="dotpill">DOT</span>' : "") +
-        '<span class="rt">' + (s.stop_ms == null ? "no time"
-          : TDClock.secs(s.stop_ms, 3) + "  ±" + TDClock.secs(s.diff_ms, 3)) + "</span>";
-      el(".nm", d).textContent = s.name;
-      board.appendChild(d);
+    var t = document.createElement("div");
+    t.className = "trow";
+    t.innerHTML = '<span class="tn" style="color:var(--dim);font-size:15px;letter-spacing:.14em">TARGET</span>' +
+                  '<span class="tt" style="color:var(--gold)"></span>';
+    el(".tt", t).textContent = TDClock.secs(r.target_ms, 3) + "s";
+    board.appendChild(t);
+
+    seats.forEach(function (x) {
+      var isWin = !voided && x.diff_ms != null && x.diff_ms === best;
+      var row = document.createElement("div");
+      row.className = "trow" + (isWin ? " win" : "") + (x.name === myName() ? " me" : "");
+      row.innerHTML = '<span class="tn"></span><span class="td"></span><span class="tt"></span>';
+      el(".tn", row).textContent = (isWin ? "🏆 " : "") + x.name;
+      el(".tt", row).textContent = x.stop_ms == null ? "—" : TDClock.secs(x.stop_ms, 3) + "s";
+      el(".td", row).textContent = x.diff_ms == null ? "no time" : TDClock.diffLabel(x.diff_ms);
+      board.appendChild(row);
     });
 
-    var isHost = (r.host === myName());
-    $("againBtn").style.display = isHost ? "block" : "none";
-    $("againBtn").textContent = "↻ Play again (" + r.entry + " 🪙)";
-    // A guest can't call a rematch, but they can wait for one — and they need
-    // to be told that, or "Back to menu" (which gives up the room) looks like
-    // the only thing left to do.
-    $("resultWait").style.display = isHost ? "none" : "block";
-    $("resultWait").textContent = "Waiting to see if " + r.host + " starts another round…";
-    $("resultMenuBtn").textContent = isHost ? "Back to menu" : "Leave the room";
+    resultActions(r);
     show("result");
     refreshCoins();
+  }
+
+  /* What the two buttons mean depends on what the room has done since. */
+  function resultActions(r) {
+    var isHost = (r.host === myName());
+    var seated = !!mySeat(r);
+    var again = $("againBtn"), note = $("resultNote");
+
+    if (r.status === "aborted") {
+      again.style.display = "none";
+      $("resultMenuBtn").textContent = "Back to menu";
+      note.textContent = "The host closed the room. Your entry fee was refunded.";
+      return;
+    }
+
+    if (r.status === "lobby") {
+      // A new round is open. Don't move the player — offer them the seat.
+      note.textContent = seated
+        ? "You're in the next round. Waiting for " + r.host + " to start…"
+        : r.host + " opened another round.";
+      again.style.display = seated ? "none" : "block";
+      again.textContent = "🎟 Take your seat (" + r.entry + " 🪙)";
+      again.setAttribute("data-act", "join");
+      $("resultMenuBtn").textContent = "Leave room";
+      return;
+    }
+
+    again.style.display = isHost ? "block" : "none";
+    again.textContent = "↻ Rematch (" + r.entry + " 🪙 each)";
+    again.setAttribute("data-act", "rematch");
+    note.textContent = isHost
+      ? "A rematch costs every player another " + r.entry + " 🪙."
+      : "Waiting to see if " + r.host + " starts another round…";
+    $("resultMenuBtn").textContent = "Leave room";
   }
 
   $("againBtn").addEventListener("click", async function () {
     if (S.busy) return;
     if (S.inPractice) { openPractice(); return; }
+    var act = $("againBtn").getAttribute("data-act");
     S.busy = true; TDSound.click();
-    var r = await TDDB.rematch(S.code);
+    $("againBtn").setAttribute("disabled", "");
+    var r = (act === "join") ? await TDDB.joinRoom(S.code) : await TDDB.rematch(S.code);
     S.busy = false;
-    if (!r.ok) { TDSound.error(); toast(rpcError(r)); return; }
-    S.armedKey = null; S.resultKey = null;
+    $("againBtn").removeAttribute("disabled");
+
+    if (!r.ok) {
+      TDSound.error();
+      if (r.error === "broke") {
+        // Name the shortfall plainly instead of a generic failure.
+        var need = r.need != null ? r.need : (S.room ? S.room.entry : 0);
+        var have = r.coins != null ? r.coins : S.coins;
+        $("resultNote").textContent =
+          "You don't have enough coins to play again — this round costs " +
+          need + " \ud83e\ude99 and you have " + (have == null ? "fewer" : have) + ".";
+        toast("Not enough coins for another round");
+      } else {
+        $("resultNote").textContent = rpcError(r);
+      }
+      refreshCoins();
+      return;
+    }
+    S.resultKey = null;
+    S.armedKey = null;
     TDNet.shout();
     onRoom(r, true);
     refreshCoins();
@@ -826,39 +918,54 @@
   async function practiceResult(ms) {
     var target = S.practice.targetMs;
     var d = Math.abs(Math.round(ms) - target);
-    $("roundHint").textContent = "Scoring…";
+    $("roundHint").textContent = "Scoring\u2026";
 
     var r = await TDDB.practice(ms);
-
     S.resultKey = "practice#" + Date.now();
-    var v = $("verdict");
-    if (d === 0) { v.className = "verdict dot"; v.textContent = "DOT! PERFECT"; TDSound.dot(); }
-    else if (d <= 50) { v.className = "verdict win"; v.textContent = "So close!"; TDSound.win(); }
-    else { v.className = "verdict"; v.textContent = d <= 200 ? "Nice one" : "Keep practising"; TDSound.stop(); }
 
-    var rl = $("rewardLine");
+    var crown = $("resultCrown"), nameEl = $("winnerName"), subEl = $("winnerSub");
+    if (d === 0)        { crown.textContent = "\ud83c\udfaf"; nameEl.className = "winner dot"; nameEl.textContent = "DOT! PERFECT"; TDSound.dot(); }
+    else if (d <= 50)   { crown.textContent = "\ud83d\udd25"; nameEl.className = "winner";     nameEl.textContent = "So close!";     TDSound.win(); }
+    else if (d <= 200)  { crown.textContent = "\ud83d\udc4d"; nameEl.className = "winner";     nameEl.textContent = "Nice one";      TDSound.stop(); }
+    else                { crown.textContent = "\u23f1\ufe0f"; nameEl.className = "winner void"; nameEl.textContent = "Keep practising"; TDSound.stop(); }
+
     if (r && r.ok) {
-      rl.textContent = r.reward > 0 ? "+" + r.reward + " 🪙" : "No reward this time";
-      rl.className = "reward" + (r.reward > 0 ? "" : " neg");
-      if (r.capped) rl.textContent += " (daily practice cap reached)";
+      subEl.className = "winner-sub" + (r.reward > 0 ? "" : " neg");
+      subEl.textContent = r.reward > 0
+        ? "+" + r.reward + " \ud83e\ude99" + (r.capped ? "  (daily practice cap reached)" : "")
+        : "No reward this time";
       setCoins(r.coins);
-    } else if (r && (r.error === "not_armed" || r.error === "impossible")) {
-      rl.textContent = "Not scored — that round wasn't timed by the server.";
-      rl.className = "reward neg";
     } else {
-      rl.textContent = r && r.error === "no_db" ? "Not scored — database not set up." : "Not scored — you're offline.";
-      rl.className = "reward neg";
+      subEl.className = "winner-sub neg";
+      subEl.textContent = (r && r.error === "no_db") ? "Not scored \u2014 database not set up."
+        : (r && (r.error === "not_armed" || r.error === "impossible"))
+          ? "Not scored \u2014 that round wasn't timed by the server."
+          : "Not scored \u2014 you're offline.";
       if (r && r.error === "no_db") showNoDb();
     }
 
-    $("rTarget").textContent = TDClock.secs(target, 3);
-    $("rYours").textContent = TDClock.secs(ms, 3);
-    $("rDiff").textContent = TDClock.diffLabel(d);
-    $("resultBoard").innerHTML = "";
-    $("resultWait").style.display = "none";
-    $("resultMenuBtn").textContent = "Back to menu";
+    var board = $("timesBoard");
+    board.innerHTML = "";
+    [["TARGET", TDClock.secs(target, 3) + "s", "var(--gold)"],
+     ["YOUR TIME", TDClock.secs(ms, 3) + "s", "var(--cyan)"],
+     ["DIFFERENCE", TDClock.diffLabel(d), d === 0 ? "var(--green)" : "var(--ink)"]
+    ].forEach(function (row) {
+      var el2 = document.createElement("div");
+      el2.className = "trow";
+      el2.innerHTML = '<span class="tn" style="color:var(--dim);font-size:15px;letter-spacing:.14em"></span>' +
+                      '<span class="tt"></span>';
+      el(".tn", el2).textContent = row[0];
+      var tt = el(".tt", el2);
+      tt.textContent = row[1];
+      tt.style.color = row[2];
+      board.appendChild(el2);
+    });
+
+    $("resultNote").textContent = "";
     $("againBtn").style.display = "block";
-    $("againBtn").textContent = "↻ Practise again";
+    $("againBtn").textContent = "\u21bb Practise again";
+    $("againBtn").setAttribute("data-act", "practice");
+    $("resultMenuBtn").textContent = "Back to menu";
     show("result");
   }
 

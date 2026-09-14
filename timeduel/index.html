@@ -116,10 +116,14 @@
   .backBtn{position:fixed;right:13px;
     bottom:calc(env(safe-area-inset-bottom,0px) + 13px + var(--lift,0px));
     transition:bottom .2s ease;
-    z-index:40;border-radius:14px;background:var(--card);border:1px solid var(--line);
-    color:var(--dim);font-size:14.5px;font-weight:800;padding:12px 18px;cursor:pointer;
+    z-index:40;border-radius:16px;
+    background:linear-gradient(135deg,#3f4d78,#2b3557);
+    border:1.5px solid rgba(150,190,255,.55);color:#fff;
+    font-size:16px;font-weight:900;padding:14px 24px;cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.45);
     display:none;font-family:inherit}
   .backBtn.on{display:block}
+  .backBtn:active{transform:scale(.95)}
 
   /* ---------- the round ---------- */
   #sc-round{padding:0;justify-content:stretch}
@@ -135,7 +139,25 @@
   #countnum{font-size:clamp(96px,30vw,190px);font-weight:900;line-height:1;
     color:var(--ink);animation:pop .42s cubic-bezier(.2,1.5,.4,1)}
   @keyframes pop{from{transform:scale(.45);opacity:0}to{transform:scale(1);opacity:1}}
-  .hint{color:var(--dim);font-size:15px;margin-top:20px;font-weight:700}
+  .hint{color:var(--dim);font-size:15px;margin-top:20px;font-weight:700;
+    max-width:420px;line-height:1.5}
+
+  /* Blind mode. It must LOOK like a running clock — a housing, a bezel, the
+     glow of a display — while giving away nothing. The digits behind the
+     glass are a fixed "8.88", never the real elapsed time, so nothing leaks
+     even to a screenshot or an un-blurred DOM: the number is simply not
+     there. */
+  #blindclock{position:relative;width:min(86vw,440px);height:clamp(120px,26vw,180px);
+    border-radius:22px;background:linear-gradient(180deg,#131b33,#0a0f1f);
+    border:3px solid rgba(150,190,255,.3);
+    box-shadow:0 14px 44px rgba(0,0,0,.6), inset 0 2px 18px rgba(120,170,255,.14);
+    display:grid;place-items:center;overflow:hidden}
+  #blindclock::before{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg,rgba(140,180,255,.07) 0 2px,transparent 2px 5px)}
+  .bc-face{font-size:clamp(56px,17vw,104px);font-weight:900;color:var(--violet);
+    filter:blur(17px);opacity:.55;letter-spacing:.06em;user-select:none}
+  .bc-seal{position:absolute;font-size:clamp(17px,4.6vw,25px);font-weight:900;
+    letter-spacing:.4em;color:#c9d6f5;text-shadow:0 3px 16px rgba(0,0,0,.9)}
 
   /* ---------- lists ---------- */
   .row{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:14px;
@@ -173,17 +195,27 @@
   .stat.wide{grid-column:1/-1}
 
   /* ---------- result ---------- */
-  .verdict{font-size:clamp(30px,9vw,46px);font-weight:900;line-height:1.1;margin-bottom:5px}
-  .verdict.win{color:var(--gold);text-shadow:0 5px 30px rgba(255,200,80,.35)}
-  .verdict.lose{color:var(--red)}
-  .verdict.dot{color:var(--green);text-shadow:0 5px 30px rgba(72,224,138,.35)}
+  .crown{font-size:clamp(44px,13vw,68px);line-height:1;margin-bottom:6px}
+  .winner{font-size:clamp(38px,12vw,68px);font-weight:900;line-height:1.05;
+    color:var(--gold);text-shadow:0 6px 34px rgba(255,200,80,.4);
+    word-break:break-word;margin-bottom:4px}
+  .winner.dot{color:var(--green);text-shadow:0 6px 34px rgba(72,224,138,.4)}
+  .winner.void{color:var(--dim);text-shadow:none;font-size:clamp(26px,8vw,40px)}
+  .winner-sub{font-size:clamp(17px,5vw,23px);font-weight:900;color:var(--cyan);margin-bottom:22px}
+  .winner-sub.neg{color:var(--red)}
+
+  /* One row per player. Who, and how close — both readable across a room. */
+  .trow{display:flex;align-items:baseline;gap:12px;padding:14px 16px;border-radius:16px;
+    background:var(--card);border:1.5px solid var(--line);margin-bottom:9px;text-align:left}
+  .trow.win{border-color:var(--gold);background:rgba(255,212,94,.13)}
+  .trow.me{border-color:rgba(79,214,255,.6)}
+  .trow .tn{font-size:clamp(19px,5.4vw,26px);font-weight:900;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .trow .tt{font-size:clamp(22px,6.4vw,32px);font-weight:900;color:var(--cyan);white-space:nowrap}
+  .trow.win .tt{color:var(--gold)}
+  .trow .td{font-size:13px;font-weight:800;color:var(--dim);white-space:nowrap}
   .reward{font-size:24px;font-weight:900;color:var(--green);margin:9px 0 3px}
   .reward.neg{color:var(--red)}
-  .measure{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0 6px}
-  .measure div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 6px}
-  .measure .k{color:var(--dim);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800}
-  .measure .v{font-size:clamp(16px,4.6vw,21px);font-weight:900;margin-top:3px}
-
   /* ---------- overlays ---------- */
   .ov{position:fixed;inset:0;background:rgba(5,9,20,.78);backdrop-filter:blur(7px);
     z-index:60;display:none;align-items:center;justify-content:center;padding:20px}
@@ -251,6 +283,28 @@
     </div>
   </section>
 
+  <!-- ============ MULTIPLAYER: two doors ============ -->
+  <section class="screen" id="sc-multi">
+    <div class="wrap">
+      <h2>Multiplayer</h2>
+      <div class="sub">Start a room and invite someone, or type a friend's code.</div>
+      <button class="btn gold" id="goCreate">➕ Create Room</button>
+      <button class="btn" id="goJoin">🔑 Join Room</button>
+    </div>
+  </section>
+
+  <!-- ============ JOIN: a code, and nothing else ============ -->
+  <section class="screen" id="sc-join">
+    <div class="wrap">
+      <h2>Enter code</h2>
+      <div class="sub">Ask your friend for their 4-letter room code.</div>
+      <input type="text" id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off"
+             autocapitalize="characters" spellcheck="false" inputmode="text"
+             enterkeyhint="go" />
+      <button class="btn gold" id="joinBtn">Join</button>
+    </div>
+  </section>
+
   <!-- ============ CHOOSE MODE ============ -->
   <section class="screen" id="sc-mode">
     <div class="wrap">
@@ -298,19 +352,6 @@
     </div>
   </section>
 
-  <!-- ============ CREATE OR JOIN ============ -->
-  <section class="screen" id="sc-room">
-    <div class="wrap">
-      <h2 id="roomTitle">Bronze · Classic</h2>
-      <div class="sub" id="roomSub"></div>
-      <button class="btn gold" id="createBtn">➕ Create Room</button>
-      <div class="sub" style="margin:16px 0 9px">or join a friend's room</div>
-      <input type="text" id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off"
-             autocapitalize="characters" spellcheck="false" inputmode="text" />
-      <button class="btn ghost" id="joinBtn">🔑 Join Room</button>
-    </div>
-  </section>
-
   <!-- ============ LOBBY ============ -->
   <section class="screen" id="sc-lobby">
     <div class="wrap">
@@ -335,6 +376,10 @@
       <div style="height:22px"></div>
       <div id="countnum" class="mono"></div>
       <div id="bigtime" class="mono" style="display:none">0.00</div>
+      <div id="blindclock" style="display:none">
+        <div class="bc-face"><span class="mono">8.88</span></div>
+        <div class="bc-seal">HIDDEN</div>
+      </div>
       <div class="hint" id="roundHint"></div>
       <button class="btn ghost" id="roundBail" style="display:none;max-width:280px;margin-top:18px"></button>
     </div>
@@ -343,18 +388,13 @@
   <!-- ============ RESULT ============ -->
   <section class="screen" id="sc-result">
     <div class="wrap">
-      <div class="verdict" id="verdict">—</div>
-      <div class="reward" id="rewardLine"></div>
-      <div class="measure">
-        <div><div class="k">Target</div><div class="v mono" id="rTarget">—</div></div>
-        <div><div class="k">Your time</div><div class="v mono" id="rYours">—</div></div>
-        <div><div class="k">Difference</div><div class="v mono" id="rDiff">—</div></div>
-      </div>
-      <div id="resultBoard" style="margin-top:14px"></div>
-      <div style="height:10px"></div>
-      <div class="sub" id="resultWait" style="display:none;margin:4px 0 12px"></div>
-      <button class="btn" id="againBtn">↻ Play again</button>
-      <button class="btn ghost" id="resultMenuBtn">Back to menu</button>
+      <div class="crown" id="resultCrown">🏆</div>
+      <div class="winner" id="winnerName">—</div>
+      <div class="winner-sub" id="winnerSub"></div>
+      <div id="timesBoard"></div>
+      <div class="sub" id="resultNote" style="margin-top:14px"></div>
+      <button class="btn gold" id="againBtn">↻ Rematch</button>
+      <button class="btn ghost" id="resultMenuBtn">Leave room</button>
     </div>
   </section>
 
