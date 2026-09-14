@@ -87,13 +87,14 @@ window.TDDB = (function () {
     var lastErr = null;
     for (var i = 0; i < tries; i++) {
       var t0 = Date.now();
+      var ctl = null, killer = 0;
       try {
         // supabase-js has no default timeout, so a captive portal or a
         // half-open socket leaves the promise unsettled forever — which left
         // Create/Join/Start disabled and S.busy stuck with no message.
-        var ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
-        var killer = ctl ? setTimeout(function () { try { ctl.abort(); } catch (e) {} },
-                                      opts.timeout || 12000) : 0;
+        ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+        killer = ctl ? setTimeout(function () { try { ctl.abort(); } catch (e) {} },
+                                  opts.timeout || 12000) : 0;
         var q = c.rpc(fn, args || {});
         if (ctl && q.abortSignal) q = q.abortSignal(ctl.signal);
         var res = await q;
@@ -108,6 +109,7 @@ window.TDDB = (function () {
           return normalise(res.data);
         }
       } catch (e) {
+        clearTimeout(killer);      // a throw skipped this, leaking a 12s timer
         lastErr = e;
         if (isMissingFn(e)) { installed = false; return { ok: false, error: "no_db" }; }
       }
@@ -222,6 +224,15 @@ window.TDDB = (function () {
 
   // td_tick and td_state now need an account: the room's target and every
   // rival's time used to be readable by anyone who guessed a 4-letter code.
+  // Hand back the entry fees of rooms nobody came back to. Fired once at
+  // boot; cheap, and it is the only thing that unsticks a stake left behind
+  // by a browser that was closed mid-lobby.
+  function sweep() {
+    var p = me(); if (!p) return;
+    rpc("td_sweep", { p_name: p.name, p_password: p.pw }, { tries: 1 })
+      .catch(function () {});
+  }
+
   async function tick(code) {
     var p = me(); if (!p) return { ok: false, error: "auth" };
     return rpc("td_tick", { p_name: p.name, p_password: p.pw, p_code: code }, { tries: 2 });
@@ -259,7 +270,7 @@ window.TDDB = (function () {
     profile: profile, history: history,
     createRoom: createRoom, joinRoom: joinRoom, leaveRoom: leaveRoom,
     startRound: startRound, stopRound: stopRound, rematch: rematch,
-    tick: tick, state: state, practice: practice, practiceArm: practiceArm,
+    tick: tick, state: state, practice: practice, practiceArm: practiceArm, sweep: sweep,
     serverNow: serverNow,
     isInstalled: function () { return installed; }
   };

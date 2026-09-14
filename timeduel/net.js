@@ -28,6 +28,7 @@ window.TDNet = (function () {
   var failures = 0;
   var gen = 0;            // bumped by every open()/close(); stale work is dropped
   var lastReopen = 0;
+  var attachAt = 0;       // when the current channel started joining
 
   var MIN_GAP = 700;      // never read faster than this, poke or no poke
   var lastRead = 0;
@@ -36,6 +37,7 @@ window.TDNet = (function () {
     close();
     var myGen = ++gen;
     code = roomCode; onState = cb; failures = 0; pendingPoke = false;
+    lastReopen = 0; attachAt = Date.now();
 
     var sb = await TDDB.client();
     // We may have been closed (player hit Leave) while the SDK was loading.
@@ -73,13 +75,22 @@ window.TDNet = (function () {
     // Polling means the game still works, but this client would silently stop
     // accelerating everyone else for the rest of the session. Watch the socket
     // and rebuild it rather than letting it rot.
+    attachAt = Date.now();
     clearInterval(watchTimer);
     watchTimer = setInterval(function () {
       if (myGen !== gen || !ch) return;
       var st = "";
       try { st = ch.state; } catch (e) {}
+
+      // A channel that is still joining is not a broken channel. The earlier
+      // version treated "not yet subscribed" exactly like "errored", so on a
+      // cold mobile websocket — where the phoenix join routinely takes more
+      // than 3s — it killed the join in flight, restarted it, and killed that
+      // one too, forever. Those clients never got realtime at all, silently,
+      // because polling covered for it.
       var dead = (st === "closed" || st === "errored");
-      if ((dead || !subscribed) && Date.now() - lastReopen > 6000) {
+      var stuck = !subscribed && (Date.now() - attachAt > 10000);
+      if ((dead || stuck) && Date.now() - lastReopen > 8000) {
         lastReopen = Date.now();
         reopen(myGen);
       }

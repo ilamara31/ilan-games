@@ -108,6 +108,7 @@ drop function if exists public.td_state(text);
 drop function if exists public.td_tick(text);
 drop function if exists public.td_stop(text, text, text, integer);
 drop function if exists public.td_practice(text, text, integer, integer);
+drop function if exists public.td_sweep();
 
 
 -- ---------------------------------------------------------------------
@@ -254,17 +255,27 @@ $$;
 
 -- Rooms that were abandoned in the lobby give every coin back. Called
 -- opportunistically by clients; cheap, and keeps the list clean.
-create or replace function public.td_sweep()
+/* Give back the entry fees of rooms nobody came back to.
+ *
+ * Requires an account, because the unauthenticated version was a full scan
+ * of td_room that anyone holding the publishable key could fire in a loop.
+ * Rooms are taken in CODE order, the same order td_lock_rooms uses, so a
+ * sweep can never deadlock against a player joining or leaving. */
+create or replace function public.td_sweep(p_name text, p_password text)
 returns integer
 language plpgsql security definer
 set search_path = extensions, public, pg_temp
 as $$
-declare r record; n integer := 0;
+declare canon text; r record; n integer := 0;
 begin
+  canon := public.td_who(p_name, p_password);
+  if canon is null then return 0; end if;
+
   for r in
     select code from public.td_room
      where status in ('lobby','playing')
        and updated_at < now() - interval '30 minutes'
+     order by code
      limit 25
   loop
     perform public.td_refund_room(r.code, 'aborted');
@@ -286,14 +297,18 @@ begin
   select * into r from public.td_room where code = p_code for update;
   if not found or r.status in ('done','aborted') then return; end if;
 
-  -- Zero the stake in the SAME statement that reads it, so a concurrent
-  -- refund cannot pay the same escrowed coins out a second time.
+  -- The room lock above already means only one refund can run for this room.
+  -- FOR UPDATE re-checks stake > 0 after taking each seat row, so a stake that
+  -- was zeroed by a settle in between is skipped rather than paid again. Name
+  -- order keeps player-row locking deterministic across concurrent refunds.
   for s in
-    update public.td_seat set stake = 0
+    select name, stake from public.td_seat
      where code = p_code and stake > 0
-     returning name, stake as was
+     order by name
+       for update
   loop
-    update public.td_player set coins = coins + s.was where name = s.name;
+    update public.td_player set coins = coins + s.stake where name = s.name;
+    update public.td_seat set stake = 0 where code = p_code and name = s.name;
   end loop;
 
   update public.td_room
@@ -328,12 +343,18 @@ begin
   fee := public.td_entry_for(p_arena);
   if fee < 0 then return json_build_object('ok', false, 'error', 'bad_arena'); end if;
 
-  -- Serialise this player against their own concurrent calls, and take every
-  -- room lock up front in a consistent order (see td_lock_rooms). Then give
-  -- back any stale lobby seat BEFORE checking the balance, or a player whose
-  -- coins are escrowed in a room they already left is wrongly told they are
-  -- broke.
-  perform 1 from public.td_player where name = canon for update;
+  -- Take every room lock up front, in code order (see td_lock_rooms), then
+  -- give back any stale lobby seat BEFORE checking the balance -- otherwise a
+  -- player whose coins are escrowed in a room they already left is wrongly
+  -- told they are broke.
+  --
+  -- LOCK ORDER, and it matters: rooms first, player rows only ever underneath
+  -- them. An earlier version grabbed the player row FIRST to stop one player
+  -- staking two rooms at once, which inverted the order against td_settle and
+  -- td_refund_room (both of which hold a room lock and then credit players)
+  -- and deadlocked outright. Two simultaneous joins can now leave a player
+  -- seated in two rooms, which is untidy but costs nothing: both stakes are
+  -- real coins, correctly debited, and both are settled or refunded normally.
   perform public.td_lock_rooms(canon, null);
   perform public.td_quit_open_rooms(canon);
 
@@ -377,10 +398,8 @@ begin
 
   v_code := upper(btrim(coalesce(p_code, '')));
 
-  -- One player, one seat purchase at a time: this row lock is what stops two
-  -- simultaneous joins to two DIFFERENT rooms from double-staking (they take
-  -- no common room lock, so nothing else would serialise them).
-  perform 1 from public.td_player where name = canon for update;
+  -- Rooms first, in code order, and never a player row above them. See the
+  -- lock-order note in td_create.
   perform public.td_lock_rooms(canon, v_code);
 
   select * into r from public.td_room where td_room.code = v_code;
@@ -479,7 +498,6 @@ declare canon text;
 begin
   canon := public.td_who(p_name, p_password);
   if canon is null then return json_build_object('ok', false, 'error', 'auth'); end if;
-  perform 1 from public.td_player where name = canon for update;
   perform public.td_lock_rooms(canon, null);
   perform public.td_quit_open_rooms(canon);
   return json_build_object('ok', true);
@@ -665,7 +683,11 @@ begin
            rank() over (order by (st.diff_ms is null), st.diff_ms asc) as place_r
       from public.td_seat st
      where st.code = v_code
-     order by place_r, st.name
+     -- Name order, NOT placing order: this loop locks a player row per
+     -- iteration, and two rooms settling at once that share players would
+     -- deadlock if they took those rows in different orders. place_r is
+     -- already computed by the window function, so ordering is free here.
+     order by st.name
   loop
     declare
       gain bigint := 0;
@@ -782,6 +804,10 @@ begin
   end if;
 
   perform public.td_wallet(canon);
+  -- Lock the wallet the same way td_practice does. Without it two tabs arming
+  -- at once interleave, and whichever UPDATE lands last decides the target for
+  -- BOTH rounds -- so one player is scored against a target they never saw.
+  perform 1 from public.td_player where name = canon for update;
   update public.td_player
      set practice_target_ms = p_target_ms,
          practice_armed_at  = now() + interval '3 seconds'
@@ -794,11 +820,17 @@ $$;
 
 /* Score an armed practice round.
  *
- * The wallet row is LOCKED first. The old version read the daily cap and the
- * cooldown from an unlocked snapshot and then wrote back earned + granted
- * from that stale value, so fifty concurrent calls each added 50 coins while
- * the counter stayed at 50 -- an unbounded printer, and the client could pick
- * both numbers so every call was a free DOT. */
+ * The wallet row is LOCKED first. An earlier version read the daily cap from
+ * an unlocked snapshot and wrote back earned + granted from that stale value,
+ * so fifty concurrent calls each added 50 coins while the counter stayed at 50
+ * -- an unbounded printer, and the client picked both the target and the stop
+ * time, so every call was a free DOT.
+ *
+ * Rate limiting is now structural rather than a timer: a reward needs an arm,
+ * an arm is spent by the first answer whether it scores or not, and the answer
+ * must be consistent with the time actually elapsed since that arm. The 500
+ * coins/day cap is the backstop. (last_practice_at is still recorded, but it
+ * is history now, not a cooldown.) */
 create or replace function public.td_practice(
   p_name text, p_password text, p_stop_ms integer)
 returns json
@@ -821,12 +853,19 @@ begin
   if tgt is null or w.practice_armed_at is null then
     return json_build_object('ok', false, 'error', 'not_armed');
   end if;
+  -- A rejected answer still SPENDS the arm. Leaving it live let a caller
+  -- resubmit different stop times against one armed round until one landed
+  -- inside the window, which is exactly the farming this flow exists to stop.
   if p_stop_ms is null or p_stop_ms < 0 or p_stop_ms > 20000 then
+    update public.td_player set practice_target_ms = null, practice_armed_at = null
+     where name = canon;
     return json_build_object('ok', false, 'error', 'bad_time');
   end if;
 
   elapsed_ms := extract(epoch from (now() - w.practice_armed_at)) * 1000;
   if elapsed_ms < p_stop_ms - 1200 or elapsed_ms > p_stop_ms + 20000 then
+    update public.td_player set practice_target_ms = null, practice_armed_at = null
+     where name = canon;
     return json_build_object('ok', false, 'error', 'impossible');
   end if;
 
@@ -954,9 +993,10 @@ revoke all on function public.td_room_json(text, text)           from public, an
 revoke all on function public.td_refund_room(text, text)         from public, anon, authenticated;
 revoke all on function public.td_quit_open_rooms(text)           from public, anon, authenticated;
 revoke all on function public.td_lock_rooms(text, text)          from public, anon, authenticated;
--- td_sweep was an unauthenticated full scan of td_room that anyone could
--- fire in a loop. Rooms are now swept from td_tick's own path instead.
-revoke all on function public.td_sweep()                         from public, anon, authenticated;
+-- Internal only. It is reached through td_stop and td_tick, which both check a
+-- password; exposed directly it handed any anonymous caller every seat's time
+-- in any finished room they could name.
+revoke all on function public.td_settle(text)                    from public, anon, authenticated;
 
 grant execute on function public.td_entry_for(text)                           to anon, authenticated;
 grant execute on function public.td_me(text, text)                            to anon, authenticated;
@@ -967,10 +1007,11 @@ grant execute on function public.td_join(text, text, text)                    to
 grant execute on function public.td_leave(text, text, text)                   to anon, authenticated;
 grant execute on function public.td_start(text, text, text)                   to anon, authenticated;
 grant execute on function public.td_stop(text, text, text, integer, integer)  to anon, authenticated;
-grant execute on function public.td_settle(text)                              to anon, authenticated;
 grant execute on function public.td_rematch(text, text, text)                 to anon, authenticated;
 grant execute on function public.td_practice_arm(text, text, integer)         to anon, authenticated;
 grant execute on function public.td_practice(text, text, integer)             to anon, authenticated;
 grant execute on function public.td_history_for(text, text, integer)          to anon, authenticated;
+-- Now password-gated, so it is no longer a free anonymous table scan.
+grant execute on function public.td_sweep(text, text)                        to anon, authenticated;
 
 select 'Time Duel: database ready' as result;

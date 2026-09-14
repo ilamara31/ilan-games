@@ -32,6 +32,9 @@
     sentStop: false,
     practice: { targetMs: 2000, blind: false, round: null, active: false },
     inPractice: false,
+    resultKey: null,      // "CODE#round" of the result already on screen
+    onStopCb: null,       // what to do with this round's measured time
+    hintTimer: null,
     busy: false
   };
 
@@ -191,8 +194,9 @@
       d.innerHTML =
         '<div class="ct">' + a.icon + " " + a.name +
         '<span class="badge">' + (poor ? "need " + a.entry : "win " + pot) + "</span></div>" +
-        '<div class="cd">Entry <b>' + a.entry + " 🪙</b> · prize pool <b>" + pot +
-        " 🪙</b>" + (S.capacity > 2 ? " with " + S.capacity + " players" : "") + "</div>";
+        '<div class="cd">Entry <b>' + a.entry + " 🪙</b> · pot <b>" +
+        (S.capacity > 2 ? "up to " + pot : pot) + " 🪙</b>" +
+        (S.capacity > 2 ? " — the entry fees of whoever actually plays" : "") + "</div>";
       d.addEventListener("click", function () {
         if (poor) { TDSound.error(); toast("You need " + a.entry + " coins for " + a.name); return; }
         TDSound.click();
@@ -213,8 +217,9 @@
     var a = arenaById(S.arena);
     $("roomTitle").textContent = a.icon + " " + a.name + " · " +
       (S.mode === "blind" ? "Blind" : "Classic");
-    $("roomSub").textContent = "Entry " + a.entry + " 🪙 · " + S.capacity +
-      " players · pot " + (a.entry * S.capacity) + " 🪙. Your entry is taken when you sit down, and refunded if the room breaks up.";
+    $("roomSub").textContent = "Entry " + a.entry + " 🪙 · up to " + S.capacity +
+      " players · pot " + (S.capacity > 2 ? "up to " : "") + (a.entry * S.capacity) +
+      " 🪙, the entry fees of whoever plays. Your entry is taken when you sit down, and refunded if the room breaks up.";
     $("joinCode").value = "";
     show("room");
   }
@@ -268,7 +273,44 @@
     this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
   });
 
+  var ROOM_KEY = "timeDuel_room_v1";
+
+  function rememberRoom(code) {
+    try {
+      if (code) sessionStorage.setItem(ROOM_KEY, code);
+      else sessionStorage.removeItem(ROOM_KEY);
+    } catch (e) {}
+  }
+
+  function rememberedRoom() {
+    try { return sessionStorage.getItem(ROOM_KEY); } catch (e) { return null; }
+  }
+
+  /* Reconnect to whatever room this tab was in before it reloaded. Without
+   * this, refreshing during a round left the player outside a room they had
+   * already paid for, with no way back and no explanation — the stake just
+   * sat escrowed until the 30-minute sweep. */
+  async function resumeRoom() {
+    var code = rememberedRoom();
+    if (!code || S.code || S.inPractice) return;
+    var r = await TDDB.state(code);
+    // Re-check AFTER the await: this lookup takes seconds on a bad link, and
+    // the player may have created or joined a room in the meantime. Stealing
+    // the UI back would leave their fresh stake in a room they cannot reach.
+    if (S.code) return;
+    if (!r || !r.ok || !r.seated ||
+        r.status === "aborted" || r.status === "done") { rememberRoom(null); return; }
+    S.code = code;
+    rememberRoom(code);
+    S.room = r;
+    S.armedKey = null;
+    TDNet.open(code, onRoom);
+    onRoom(r, true);
+    toast("Back in room " + code);
+  }
+
   function enterRoom(r) {
+    rememberRoom(r.code);
     S.code = r.code;
     S.armedKey = null;
     S.room = r;
@@ -281,6 +323,7 @@
     var code = S.code;
     TDSound.click();
     TDNet.close();
+    rememberRoom(null);
     S.code = null; S.room = null; S.armedKey = null;
     if (S.round) { S.round.cancel(); S.round = null; }
     show("menu");
@@ -312,7 +355,7 @@
     if (!r.ok) {
       if (r.error === "no_room") {
         toast("That room has closed.");
-        TDNet.close(); S.code = null; show("menu"); refreshCoins();
+        TDNet.close(); rememberRoom(null); S.code = null; show("menu"); refreshCoins();
       } else if (r.error === "no_db") {
         showNoDb();
       } else if (r.failures && r.failures >= 3) {
@@ -323,12 +366,29 @@
     banner("");
     S.room = r;
 
-    if (r.status === "lobby")        { renderLobby(r); if (S.screen !== "lobby") show("lobby"); }
-    else if (r.status === "playing") { enterRound(r); }
+    if (r.status === "lobby") {
+      var first = (S.screen !== "lobby");
+      if (changed || first) renderLobby(r);
+      if (first) show("lobby");
+    }
+    else if (r.status === "playing") {
+      if (r.seated === false) {
+        // Not in this round — the host restarted without us. Never arm a
+        // round we cannot see the target for.
+        S.armedKey = null;
+        if (S.round) { S.round.cancel(); S.round = null; }
+        renderLobby(r);
+        if (S.screen !== "lobby") show("lobby");
+        $("lobbyHint").textContent = "A round is in progress without you — wait for it to finish.";
+      } else {
+        enterRound(r);
+        if (S.screen === "round" && S.myStop != null) updateWaiting(r);
+      }
+    }
     else if (r.status === "done")    { enterResult(r); }
     else if (r.status === "aborted") {
       toast("The host closed the room — your entry was refunded.");
-      TDNet.close(); S.code = null; show("menu"); refreshCoins();
+      TDNet.close(); rememberRoom(null); S.code = null; show("menu"); refreshCoins();
     }
   }
 
@@ -413,11 +473,25 @@
     S.myStop = null;
     S.sentStop = false;
     S.inPractice = false;
+    // Whatever was running belongs to a round that is over. Leaving it armed
+    // kept its rAF loop alive, let its onExpire clobber this screen, and left
+    // #tapzone measuring taps against the old round's start.
+    if (S.round) { S.round.cancel(); S.round = null; }
+    S.onStopCb = null;
 
     var target = r.target_ms;
     var blind = (r.mode === "blind");
     var startMs = Date.parse(r.started_at);
     var until = startMs - TDDB.serverNow();
+
+    // Belt and braces: never hand NaN to the clock. Every comparison against
+    // NaN is false, which turns the round screen into a dead end.
+    if (target == null || !isFinite(until)) {
+      S.armedKey = null;
+      renderLobby(r);
+      if (S.screen !== "lobby") show("lobby");
+      return;
+    }
 
     // Arrived so late the round is effectively over: don't pretend to play it.
     if (until < -(target + 3000)) {
@@ -445,6 +519,7 @@
     $("roundBail").style.display = "none";
     show("round");                       // content first, THEN the fade-in
 
+    if (S.round) { S.round.cancel(); S.round = null; }
     var round = new TDClock.Round({
       targetMs: opts.targetMs,
       blind: opts.blind,
@@ -493,14 +568,30 @@
     $("roundBail").style.display = "none";
     if (S.round) { S.round.cancel(); S.round = null; }
     if (S.inPractice) { show("practice"); return; }
-    if (S.code && S.room && S.room.status === "done") { enterResult(S.room); return; }
+    if (!S.code || !S.room) { show("menu"); return; }
+    if (S.room.status === "done") { enterResult(S.room); return; }
+    // The round is still running. Show the room as it actually is — and NOT a
+    // stale lobby offering "Leave room", which would walk out on a round that
+    // can still be won (and whose stake td_leave will not refund).
+    renderLobby(S.room);
     show("lobby");
+    $("lobbyHint").textContent = "Your round is still being settled — hold on.";
+    TDNet.refreshNow();
   });
 
   function handleTap(e) {
     if (S.screen !== "round" || !S.round) return;
+    // Only a primary press counts: a right-click or a second finger must not
+    // spend the one answer this player gets.
+    if (e && e.type === "pointerdown" && (e.button > 0 || e.isPrimary === false)) return;
     if (S.round.counting()) {
       $("roundHint").textContent = "Not yet — wait for START";
+      // ...and put the normal prompt back, or the scolding outlives the
+      // countdown and is still on screen during the round itself.
+      clearTimeout(S.hintTimer);
+      S.hintTimer = setTimeout(function () {
+        if (S.round && S.round.counting()) $("roundHint").textContent = "Get ready…";
+      }, 700);
       return;
     }
     var ms = S.round.stop(e);
@@ -519,6 +610,11 @@
     if (e.code !== "Space" && e.code !== "Enter") return;
     if (e.repeat) return;                       // a held key must not auto-fire
     if (S.screen !== "round") return;
+    // Let a focused control have the key. Swallowing it here made the escape
+    // button reachable by Tab but impossible to press.
+    var t = e.target;
+    if (t && (t.tagName === "BUTTON" || t.tagName === "INPUT" ||
+              t.getAttribute && t.getAttribute("role") === "button")) return;
     e.preventDefault();
     handleTap(e);
   });
@@ -547,7 +643,19 @@
     if (S.myStop == null) return;
     var seats = r.seats || [];
     var done = seats.filter(function (s) { return s.done; }).length;
-    $("roundHint").textContent = "Waiting for the others… " + done + "/" + seats.length + " in";
+    var msg = "Waiting for the others… " + done + "/" + seats.length + " in";
+
+    // A player who never answers forfeits 15s after the target elapses. That
+    // silence read as a freeze, so count it down out loud instead.
+    if (r.started_at && r.target_ms != null) {
+      var left = (Date.parse(r.started_at) + r.target_ms + 15000) - TDDB.serverNow();
+      if (left > 0 && left < 15000) {
+        msg = "Still waiting on " + (seats.length - done) + " player" +
+              (seats.length - done === 1 ? "" : "s") + " — " +
+              Math.ceil(left / 1000) + "s until they forfeit";
+      }
+    }
+    $("roundHint").textContent = msg;
   }
 
   /* =============================================================== result */
@@ -602,7 +710,7 @@
 
     $("rTarget").textContent = TDClock.secs(r.target_ms, 3);
     $("rYours").textContent  = me && me.stop_ms != null ? TDClock.secs(me.stop_ms, 3) : "—";
-    $("rDiff").textContent   = me && me.diff_ms != null ? TDClock.diffLabel(me.diff_ms) : "—";
+    $("rDiff").textContent   = me ? TDClock.diffLabel(me.diff_ms) : "—";
 
     var board = $("resultBoard");
     board.innerHTML = "";
@@ -646,9 +754,8 @@
   });
 
   $("resultMenuBtn").addEventListener("click", function () {
-    TDSound.click();
-    if (S.inPractice) { show("menu"); refreshCoins(); return; }
-    leaveRoom();
+    if (S.inPractice) { TDSound.click(); show("menu"); refreshCoins(); return; }
+    leaveRoom();                      // plays its own click
   });
 
   /* ============================================================= practice */
@@ -748,6 +855,8 @@
     $("rYours").textContent = TDClock.secs(ms, 3);
     $("rDiff").textContent = TDClock.diffLabel(d);
     $("resultBoard").innerHTML = "";
+    $("resultWait").style.display = "none";
+    $("resultMenuBtn").textContent = "Back to menu";
     $("againBtn").style.display = "block";
     $("againBtn").textContent = "↻ Practise again";
     show("result");
@@ -876,6 +985,30 @@
 
   $("backBtn").addEventListener("click", function () { TDSound.click(); back(); });
 
+  /* The arcade's shared announcement bar (announce.js) is bottom-fixed at
+   * z-index 99999. Every other game puts its home button top-left, so nothing
+   * collided before; this game was asked for bottom corners, and the bar sat
+   * squarely on top of BOTH Home and Back, making them untappable until it was
+   * dismissed. The bar carries no id or class, so it is found by its role and
+   * its fixed positioning, and the buttons step up out of its way. */
+  function dodgeAnnouncement() {
+    var lift = 0;
+    els('div[role="status"]').forEach(function (n) {
+      try {
+        if (getComputedStyle(n).position !== "fixed") return;
+        var h = n.getBoundingClientRect().height;
+        if (h > 0) lift = Math.max(lift, h + 16);
+      } catch (e) {}
+    });
+    document.documentElement.style.setProperty("--lift", lift + "px");
+  }
+
+  try {
+    new MutationObserver(dodgeAnnouncement).observe(document.body, { childList: true });
+    window.addEventListener("resize", dodgeAnnouncement);
+    setTimeout(dodgeAnnouncement, 1500);   // announce.js renders after we boot
+  } catch (e) {}
+
   /* A closed tab must not strand an entry fee in a lobby. fetch(keepalive)
    * survives the page going away, and td_leave only ever refunds a seat that
    * is still in the lobby — it can never abandon a round in progress. */
@@ -915,7 +1048,11 @@
     if (window.IGAuth && IGAuth.onReady) {
       IGAuth.onReady(function () {
         authReady = true;
-        if (player()) refreshCoins().then(function () { renderArenas(); });
+        if (player()) {
+          refreshCoins().then(function () { renderArenas(); });
+          TDDB.sweep();
+          resumeRoom();
+        }
         else banner("Sign in with the 👤 button to play Time Duel.");
       });
     } else {

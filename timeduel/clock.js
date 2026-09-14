@@ -146,10 +146,12 @@ window.TDClock = (function () {
   // unreadable blur, and the round is still scored to the millisecond.
   function live(ms) { return (Math.max(0, ms) / 1000).toFixed(2); }
 
+  // A difference, always signed so it cannot be mistaken for a time. Every
+  // screen renders it through here, so they cannot drift apart.
   function diffLabel(ms) {
     if (ms == null) return "—";
     if (ms === 0) return "DOT!";
-    return (ms / 1000).toFixed(3);
+    return "\u00b1" + (ms / 1000).toFixed(3);
   }
 
   return { Round: Round, eventTime: eventTime, secs: secs, live: live,
