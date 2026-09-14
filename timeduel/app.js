@@ -56,8 +56,8 @@
     b.classList.add("on");
   }
 
-  var BACKABLE = { multi: "menu", join: "multi", mode: "multi", size: "mode",
-                   arena: null, practice: "menu", profile: "menu" };
+  var BACKABLE = { multi: "menu", join: "multi", mode: "multi",
+                   practice: "menu", profile: "menu" };
 
   function show(name) {
     S.screen = name;
@@ -81,14 +81,13 @@
     // spent. It used to refresh at only a few moments, so it could sit stale
     // for a whole session and make the coin rules look broken when they were
     // not. Throttled, so flicking between screens does not spam the API.
-    if (name === "menu" || name === "multi" || name === "arena" ||
+    if (name === "menu" || name === "multi" ||
         name === "join" || name === "lobby") coinsSoon();
     TDSound.duck(name === "round");
   }
 
   function back() {
     if (S.screen === "lobby") { leaveRoom(); return; }
-    if (S.screen === "arena") { show(S.tournament ? "size" : "mode"); return; }
     show(BACKABLE[S.screen] || "menu");
   }
 
@@ -104,9 +103,7 @@
   function coinsSoon() {
     if (Date.now() - coinsAt < 2500) return;
     coinsAt = Date.now();
-    refreshCoins().then(function () {
-      if (S.screen === "arena") renderArenas();
-    });
+    refreshCoins();
   }
 
   async function refreshCoins() {
@@ -159,82 +156,21 @@
 
   els("[data-mode]").forEach(function (c) {
     c.addEventListener("click", function () {
+      if (S.busy) return;
       TDSound.click();
       var m = c.getAttribute("data-mode");
       if (m === "tournament") {
-        S.tournament = true; S.capacity = 4; S.mode = "classic";
-        renderSizes(); show("size");
+        // Seats for eight; the host starts whenever at least two are in, so
+        // there is nothing to choose up front.
+        S.tournament = true; S.capacity = 8; S.mode = "classic";
       } else {
         S.tournament = false; S.capacity = 2; S.mode = m;
-        renderArenas(); show("arena");
       }
+      S.arena = "bronze";
+      createRoom();
     });
   });
 
-  function renderSizes() {
-    var g = $("sizeGrid");
-    g.innerHTML = "";
-    for (var n = 2; n <= 8; n++) {
-      (function (n) {
-        var b = document.createElement("button");
-        b.textContent = n;
-        b.className = (n === S.capacity ? "sel" : "");
-        b.addEventListener("click", function () {
-          TDSound.click(); S.capacity = n; renderSizes();
-        });
-        g.appendChild(b);
-      })(n);
-    }
-    els("[data-tmode]").forEach(function (c) {
-      c.classList.toggle("sel", c.getAttribute("data-tmode") === S.mode);
-    });
-  }
-
-  els("[data-tmode]").forEach(function (c) {
-    c.addEventListener("click", function () {
-      TDSound.click(); S.mode = c.getAttribute("data-tmode"); renderSizes();
-    });
-  });
-
-  $("sizeNext").addEventListener("click", function () {
-    TDSound.click(); renderArenas(); show("arena");
-  });
-
-  function renderArenas() {
-    var list = $("arenaList");
-    list.innerHTML = "";
-    $("arenaSub").textContent =
-      (S.tournament
-        ? S.capacity + " players · " + (S.mode === "blind" ? "Blind" : "Classic")
-        : (S.mode === "blind" ? "Blind duel" : "Classic duel") + " · 2 players") +
-      "  ·  you have " + (S.coins == null ? "…" : S.coins) + " 🪙";
-
-    ARENAS.forEach(function (a) {
-      var pot = a.entry * S.capacity;
-      var poor = (S.coins != null && S.coins < a.entry);
-      var d = document.createElement("div");
-      d.className = "card" + (poor ? " locked" : "");
-      d.innerHTML =
-        '<div class="ct">' + a.icon + " " + a.name +
-        '<span class="badge">' + (poor ? "need " + a.entry : "win " + pot) + "</span></div>" +
-        '<div class="cd">Entry <b>' + a.entry + " 🪙</b> · pot <b>" +
-        (S.capacity > 2 ? "up to " + pot : pot) + " 🪙</b>" +
-        (S.capacity > 2 ? " — the entry fees of whoever actually plays" : "") + "</div>";
-      d.addEventListener("click", function () {
-        if (poor) {
-          TDSound.error();
-          toast("You have " + (S.coins == null ? "too few" : S.coins) +
-                " coins — " + a.name + " costs " + a.entry + " to enter.");
-          return;
-        }
-        TDSound.click();
-        S.arena = a.id;
-        createRoom();
-      });
-      makeFocusable(d);
-      list.appendChild(d);
-    });
-  }
 
   function arenaById(id) {
     for (var i = 0; i < ARENAS.length; i++) if (ARENAS[i].id === id) return ARENAS[i];
@@ -1142,7 +1078,6 @@
   /* ================================================================= boot */
 
   function boot() {
-    renderSizes();
     renderPractice();
     wireKeyboard();
     TDSound.startMusic();
@@ -1156,7 +1091,7 @@
       IGAuth.onReady(function () {
         authReady = true;
         if (player()) {
-          refreshCoins().then(function () { renderArenas(); });
+          refreshCoins();
           TDDB.sweep();
           resumeRoom();
         }
@@ -1175,7 +1110,7 @@
 
     if (window.IGAuth && IGAuth.onChange) {
       IGAuth.onChange(function (p) {
-        if (p) { banner(""); refreshCoins().then(function () { renderArenas(); }); }
+        if (p) { banner(""); refreshCoins(); }
         else { $("coinVal").textContent = "—"; S.coins = null; }
       });
     }

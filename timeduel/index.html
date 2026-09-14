@@ -277,7 +277,7 @@
       <h1>TIME DUEL</h1>
       <div class="tag">Stop the clock. Closest wins.</div>
       <div style="height:30px"></div>
-      <button class="btn" data-go="mode">▶ Multiplayer</button>
+      <button class="btn" data-go="multi">▶ Multiplayer</button>
       <button class="btn violet" data-go="practice">▶ Practice Mode</button>
       <button class="btn ghost" data-go="profile">▶ Profile</button>
     </div>
@@ -308,8 +308,9 @@
   <!-- ============ CHOOSE MODE ============ -->
   <section class="screen" id="sc-mode">
     <div class="wrap">
-      <h2>Choose Mode</h2>
-      <div class="sub">Every round picks a fresh target between 0.3 s and 8.0 s.</div>
+      <h2>Create Room</h2>
+      <div class="sub">Pick a mode and your room opens straight away.<br>
+        Entry is 10 🪙 a player, and the winner takes the pot.</div>
       <div class="card" data-mode="classic">
         <div class="ct">🎯 Classic</div>
         <div class="cd">Timer remains visible. Stop as close as possible to the target time.</div>
@@ -320,35 +321,8 @@
       </div>
       <div class="card" data-mode="tournament">
         <div class="ct">🏆 Tournament</div>
-        <div class="cd">2–8 players compete together. Closest player wins the prize pool.</div>
+        <div class="cd">Up to 8 players. Start when everyone's in — closest wins the whole pot.</div>
       </div>
-    </div>
-  </section>
-
-  <!-- ============ TOURNAMENT SIZE ============ -->
-  <section class="screen" id="sc-size">
-    <div class="wrap">
-      <h2>How many players?</h2>
-      <div class="sub">Everyone pays the entry fee. The whole pot goes to the closest player.</div>
-      <div class="sizes" id="sizeGrid"></div>
-      <h2 style="font-size:19px;margin-top:22px">Timer style</h2>
-      <div class="sub" style="margin-bottom:12px">Tournaments can be played either way.</div>
-      <div class="card sel" data-tmode="classic">
-        <div class="ct">🎯 Classic <span class="badge">visible</span></div>
-      </div>
-      <div class="card" data-tmode="blind">
-        <div class="ct">🙈 Blind <span class="badge">hidden</span></div>
-      </div>
-      <button class="btn" id="sizeNext">Choose arena →</button>
-    </div>
-  </section>
-
-  <!-- ============ ARENA ============ -->
-  <section class="screen" id="sc-arena">
-    <div class="wrap">
-      <h2>Arena</h2>
-      <div class="sub" id="arenaSub">Pick your stake.</div>
-      <div id="arenaList"></div>
     </div>
   </section>
 
