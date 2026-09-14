@@ -137,6 +137,56 @@ enum Supabase {
             .filter { seen.insert($0).inserted }
     }
 
+    /// This player's best score on the shared board, or nil if they have none.
+    ///
+    /// Signing in has to start from the server's number, not the device's.
+    /// Without this, a player signing in on a phone that has never seen their
+    /// account starts from a local best of 0, so their very next run is
+    /// announced as a personal best even though the board says 122.
+    static func bestScore(for name: String) async -> Int? {
+        var components = URLComponents(url: url.appendingPathComponent("rest/v1/leaderboard"),
+                                       resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            .init(name: "select", value: "score"),
+            .init(name: "name", value: "eq.\(name)"),
+            .init(name: "game", value: "eq.\(gameID)"),
+            .init(name: "order", value: "score.desc"),
+            .init(name: "limit", value: "1"),
+        ]
+        var request = URLRequest(url: components.url!)
+        request.timeoutInterval = 15
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+
+        struct Row: Decodable { let score: Int }
+        guard let (data, _) = try? await send(request, attempts: 2),
+              let rows = try? JSONDecoder().decode([Row].self, from: data) else { return nil }
+        return rows.first?.score
+    }
+
+    /// Whether any account already exists whose name folds to this one.
+    ///
+    /// Uses the `account_name_taken` RPC when it is installed, because only the
+    /// server can see accounts that hold no score yet. Falls back to scanning
+    /// the leaderboard, which catches the common case but not every case.
+    /// Returns the existing spelling, or nil if the name is free.
+    static func existingNameFolding(to name: String) async -> String? {
+        // Preferred: ask the server, which can see every account.
+        if let request = try? request(path: "rest/v1/rpc/account_name_taken",
+                                      method: "POST", body: ["p_name": name]),
+           let (data, response) = try? await send(request, attempts: 2),
+           let http = response as? HTTPURLResponse, http.statusCode == 200 {
+            let answer = (String(data: data, encoding: .utf8) ?? "")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"\n "))
+            if answer == "null" || answer.isEmpty { return nil }
+            return answer
+        }
+
+        // Fallback: the leaderboard only shows players who already have a score.
+        let folded = await namesFolding(to: name)
+        return folded.first { $0.lowercased() == name.lowercased() && $0 != name }
+    }
+
     // MARK: - Scores
 
     @discardableResult

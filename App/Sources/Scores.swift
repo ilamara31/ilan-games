@@ -21,13 +21,19 @@ enum Scores {
         set { UserDefaults.standard.set(newValue, forKey: bestKey) }
     }
 
-    /// Called once when an account signs in for the first time on this device.
-    /// The pre-account guest score is offered to that account, but only if the
-    /// account has no score of its own yet — never overwriting a real history.
-    static func adoptGuestScoreIfUnset() {
-        let guestBest = UserDefaults.standard.integer(forKey: "stackTower.best.__guest__")
-        guard guestBest > 0, best == 0 else { return }
-        best = guestBest
+    /// Brings the signed-in account's best up to whatever the shared board says.
+    ///
+    /// The server is the authority, not this device. A player signing in on a
+    /// phone that has never seen their account has a local best of 0, and
+    /// without this their next run is announced as a personal best while the
+    /// leaderboard already shows 122.
+    ///
+    /// There is deliberately NO carry-over from guest play. The guest slot holds
+    /// whatever anybody scored while signed out on this device, so adopting it
+    /// handed each new account the previous player's score.
+    static func syncFromServer(_ serverBest: Int?) {
+        guard let serverBest, serverBest > best else { return }
+        best = serverBest
     }
 
     /// One-time move of the old single-key score into the guest slot, so an

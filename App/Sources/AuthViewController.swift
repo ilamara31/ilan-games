@@ -170,30 +170,27 @@ final class AuthViewController: UIViewController {
     /// True when the player chose to go back and change the name.
     @MainActor
     private func shouldStopForCaseVariant(name: String) async -> Bool {
-        let folded = await Supabase.namesFolding(to: name)
-
         // An exact match means this is an existing account and the player is
-        // simply signing in — warning them would be noise, and would fire every
-        // single time for anyone whose name has a case twin.
-        guard !folded.contains(name) else { return false }
-        guard let existing = folded.first else { return false }
+        // simply signing in — no warning, or anyone whose name has a case twin
+        // would be nagged on every sign-in.
+        guard let existing = await Supabase.existingNameFolding(to: name),
+              existing != name else { return false }
 
         return await withCheckedContinuation { continuation in
             let alert = UIAlertController(
                 title: "“\(existing)” already exists",
                 message: "Usernames are case-sensitive, so “\(name)” would be a "
-                       + "separate account with its own password and its own score.\n\n"
-                       + "If “\(existing)” is you, use that spelling to keep your scores together.",
+                       + "separate account with its own password and its own score — "
+                       + "and your two scores would never add up.\n\n"
+                       + "Use “\(existing)” if that is you, or pick a different name.",
                 preferredStyle: .alert)
 
             alert.addAction(UIAlertAction(title: "Use “\(existing)”", style: .default) { [weak self] _ in
                 self?.nameField.text = existing
                 continuation.resume(returning: true)
             })
-            alert.addAction(UIAlertAction(title: "Create “\(name)” anyway", style: .destructive) { _ in
-                continuation.resume(returning: false)
-            })
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+            alert.addAction(UIAlertAction(title: "Choose another name", style: .cancel) { [weak self] _ in
+                self?.nameField.becomeFirstResponder()
                 continuation.resume(returning: true)
             })
             present(alert, animated: true)
@@ -229,11 +226,20 @@ final class AuthViewController: UIViewController {
             switch result {
             case .created, .signedIn:
                 Account.signIn(name: name, password: password)
-                // Push the local best up to the shared board straight away.
-                let best = Scores.best
-                if best > 0 { await Supabase.postScore(name: name, password: password, score: best) }
-                Scores.adoptGuestScoreIfUnset()
-                onAccountChanged?("Signed in as \(name).")
+
+                // Take the server's number first — it is the authority, and this
+                // device may never have seen this account before.
+                let serverBest = await Supabase.bestScore(for: name)
+                Scores.syncFromServer(serverBest)
+
+                // Only then push anything of our own, and only if it beats it.
+                let localBest = Scores.best
+                if localBest > 0, localBest > (serverBest ?? 0) {
+                    await Supabase.postScore(name: name, password: password, score: localBest)
+                }
+
+                let summary = Scores.best > 0 ? " Best: \(Scores.best)." : ""
+                onAccountChanged?("Signed in as \(name).\(summary)")
                 dismiss(animated: true)
             case .wrongPassword:
                 statusLabel.text = "Wrong password for “\(name)”. Passwords can't be recovered."
