@@ -167,6 +167,39 @@ final class AuthViewController: UIViewController {
         ])
     }
 
+    /// True when the player chose to go back and change the name.
+    @MainActor
+    private func shouldStopForCaseVariant(name: String) async -> Bool {
+        let folded = await Supabase.namesFolding(to: name)
+
+        // An exact match means this is an existing account and the player is
+        // simply signing in — warning them would be noise, and would fire every
+        // single time for anyone whose name has a case twin.
+        guard !folded.contains(name) else { return false }
+        guard let existing = folded.first else { return false }
+
+        return await withCheckedContinuation { continuation in
+            let alert = UIAlertController(
+                title: "“\(existing)” already exists",
+                message: "Usernames are case-sensitive, so “\(name)” would be a "
+                       + "separate account with its own password and its own score.\n\n"
+                       + "If “\(existing)” is you, use that spelling to keep your scores together.",
+                preferredStyle: .alert)
+
+            alert.addAction(UIAlertAction(title: "Use “\(existing)”", style: .default) { [weak self] _ in
+                self?.nameField.text = existing
+                continuation.resume(returning: true)
+            })
+            alert.addAction(UIAlertAction(title: "Create “\(name)” anyway", style: .destructive) { _ in
+                continuation.resume(returning: false)
+            })
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+                continuation.resume(returning: true)
+            })
+            present(alert, animated: true)
+        }
+    }
+
     private func submit() {
         let name = nameField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         let password = passwordField.text ?? ""
@@ -181,6 +214,14 @@ final class AuthViewController: UIViewController {
         submitButton.isEnabled = false
 
         Task { @MainActor in
+            // Warn before quietly creating a second account that differs only by
+            // capitalisation — the commonest way people end up with two separate
+            // scores and wonder why their best vanished.
+            if await shouldStopForCaseVariant(name: name) {
+                spinner.stopAnimating()
+                submitButton.isEnabled = true
+                return
+            }
             let result = await Supabase.authenticate(name: name, password: password)
             spinner.stopAnimating()
             submitButton.isEnabled = true

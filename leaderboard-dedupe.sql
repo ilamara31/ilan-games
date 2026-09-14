@@ -63,3 +63,44 @@ select lower(name) as folded,
  where game = 'stack'
  group by lower(name)
 having count(distinct name) > 1;
+
+-- ------------------------------------------------- 5. CASE VARIANTS, EQUAL SCORES
+-- Accounts differing only by capitalisation are genuinely separate accounts with
+-- separate passwords, so merging them is normally unsafe. The exception is when
+-- every variant holds the SAME score: nothing can be lost by collapsing them,
+-- because whichever row survives carries the identical number.
+--
+-- Today that is only 'Mags'/'mags' (both 117). 'mitran'/'Mitran' (203 vs 70) and
+-- 'cr7'/'CR7' (68 vs 59) differ and are deliberately untouched — those could be
+-- two different people, and deleting the lower one would destroy a real score.
+--
+-- Keeps the physically oldest row of each equal-score group.
+
+-- Preview
+select lower(s.name) as folded, s.name as would_delete, t.name as would_keep, s.score
+  from public.leaderboard s
+  join public.leaderboard t
+    on lower(s.name) = lower(t.name)
+   and s.game = t.game
+   and s.name <> t.name
+   and s.score = t.score
+   and s.ctid > t.ctid
+ where s.game = 'stack';
+
+-- Delete
+delete from public.leaderboard s
+ using public.leaderboard t
+ where lower(s.name) = lower(t.name)
+   and s.game = t.game
+   and s.name <> t.name
+   and s.score = t.score          -- only when nothing can be lost
+   and s.ctid > t.ctid
+   and s.game = 'stack';
+
+-- Verify: no folded name should appear more than once on the stack board,
+-- EXCEPT mitran/Mitran and cr7/CR7, which are intentionally left.
+select lower(name) as folded, array_agg(name), array_agg(score)
+  from public.leaderboard
+ where game = 'stack'
+ group by lower(name)
+having count(*) > 1;

@@ -101,6 +101,42 @@ enum Supabase {
         }
     }
 
+    /// Existing usernames that differ from `name` only by capitalisation.
+    ///
+    /// Accounts are case-sensitive server-side, so "Mags" and "mags" are two
+    /// different people with two different passwords and two different scores —
+    /// which is almost never what someone typing their name again intends. This
+    /// lets the sign-in screen warn before creating the second one.
+    ///
+    /// Only players who already hold a score are visible to the public key, so
+    /// this catches the common case rather than every case. It is a warning, not
+    /// a guarantee.
+    /// Returns every existing name that folds to the same string, INCLUDING an
+    /// exact match. The caller needs the exact match to tell "signing in to my
+    /// own account" apart from "about to create a near-duplicate".
+    static func namesFolding(to name: String) async -> [String] {
+        var components = URLComponents(url: url.appendingPathComponent("rest/v1/leaderboard"),
+                                       resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            .init(name: "select", value: "name"),
+            .init(name: "name", value: "ilike.\(name)"),
+            .init(name: "limit", value: "50"),
+        ]
+        var request = URLRequest(url: components.url!)
+        request.timeoutInterval = 12
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+
+        struct Row: Decodable { let name: String }
+        guard let (data, _) = try? await send(request, attempts: 2),
+              let rows = try? JSONDecoder().decode([Row].self, from: data) else { return [] }
+
+        var seen = Set<String>()
+        return rows.map(\.name)
+            .filter { $0.lowercased() == name.lowercased() }
+            .filter { seen.insert($0).inserted }
+    }
+
     // MARK: - Scores
 
     @discardableResult
