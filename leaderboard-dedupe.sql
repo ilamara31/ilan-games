@@ -1,52 +1,65 @@
--- Merges the duplicate leaderboard rows.
+-- Merges duplicate leaderboard rows — STACK TOWER ONLY.
 --
--- Cause: public.leaderboard holds a separate row per (name, game, is_guest), so every
--- player who played as a guest AND signed in has two rows for the same game and
--- appears twice on the board. 62 such pairs exist today.
+-- Cause: public.leaderboard holds a separate row per (name, game, is_guest), so
+-- every player who played as a guest AND signed in has two rows for the same
+-- game and appears twice on the board.
 --
--- This keeps the HIGHER score of each pair and deletes the other. It matches on
--- the EXACT name, so it only ever merges rows that already belong to the same
--- account — it will not touch 'Ilan' vs 'ilan', which are genuinely separate
--- accounts (auth is case-sensitive). Those are listed by the query at the bottom
--- for you to decide on.
+-- Scoped to game = 'stack' deliberately. The same pattern affects every other
+-- game (62 duplicate pairs across all of them), but fixing one board first means
+-- a mistake costs one game's history rather than all of them. Once this is
+-- confirmed good, the same statements with the game filter removed will do the
+-- rest.
 --
--- Note: `leaderboard` is a real table here, not a view over a `scores` table —
--- there is no public.scores on this project.
+-- Note: `leaderboard` is a real table here, not a view — there is no
+-- public.scores on this project.
 --
--- Run the SELECT first to see what would go; the DELETE second.
+-- Run these one at a time, in order.
 
--- 1. Preview: what will be removed.
-select s.name, s.game, s.score as losing_score, s.is_guest as losing_is_guest,
-       t.score as kept_score, t.is_guest as kept_is_guest
+-- ---------------------------------------------------------------- 1. PREVIEW
+-- What would be deleted, and what would be kept in its place.
+select s.name,
+       s.score    as losing_score,  s.is_guest as losing_is_guest,
+       t.score    as kept_score,    t.is_guest as kept_is_guest
   from public.leaderboard s
   join public.leaderboard t
     on s.name = t.name
    and s.game = t.game
    and s.ctid <> t.ctid
- where s.score < t.score
-    or (s.score = t.score and s.ctid > t.ctid)
- order by s.name, s.game;
+ where s.game = 'stack'
+   and (s.score < t.score
+        or (s.score = t.score and s.ctid > t.ctid))
+ order by s.name;
 
--- 2. The delete itself. ctid is the physical row id — used as the tie-break so
---    that two rows with an identical score still leave exactly one behind.
+-- ---------------------------------------------------------------- 2. DELETE
+-- Keeps the higher score of each pair. Matches on the EXACT name, so it only
+-- ever merges rows already belonging to the same account — 'Ilan' and 'ilan'
+-- are separate accounts and are left alone. ctid is the physical row id, used
+-- as the tie-break so two identical scores still leave exactly one row.
 delete from public.leaderboard s
  using public.leaderboard t
  where s.name = t.name
    and s.game = t.game
    and s.ctid <> t.ctid
+   and s.game = 'stack'
    and (s.score < t.score
         or (s.score = t.score and s.ctid > t.ctid));
 
--- 3. Verify: this must return no rows afterwards.
-select name, game, count(*)
+-- ---------------------------------------------------------------- 3. VERIFY
+-- Must return no rows.
+select name, count(*) as rows_remaining
   from public.leaderboard
- group by name, game
+ where game = 'stack'
+ group by name
 having count(*) > 1;
 
--- 4. Separate question — accounts that differ only by capitalisation.
---    These are DIFFERENT accounts with different passwords, so merging them
---    would merge two people. Nothing here does that; review and decide.
-select lower(name) as folded, array_agg(distinct name) as variants
-  from public.players
+-- ---------------------------------------------------------------- 4. REVIEW
+-- Accounts on the stack board that differ only by capitalisation. These are
+-- DIFFERENT accounts with different passwords — possibly different people — so
+-- nothing above touches them. Listed for a human decision.
+select lower(name) as folded,
+       array_agg(name order by score desc) as variants,
+       array_agg(score order by score desc) as scores
+  from public.leaderboard
+ where game = 'stack'
  group by lower(name)
 having count(distinct name) > 1;
