@@ -1,6 +1,6 @@
 -- Merges the duplicate leaderboard rows.
 --
--- Cause: public.scores holds a separate row per (name, game, is_guest), so every
+-- Cause: public.leaderboard holds a separate row per (name, game, is_guest), so every
 -- player who played as a guest AND signed in has two rows for the same game and
 -- appears twice on the board. 62 such pairs exist today.
 --
@@ -10,13 +10,16 @@
 -- accounts (auth is case-sensitive). Those are listed by the query at the bottom
 -- for you to decide on.
 --
+-- Note: `leaderboard` is a real table here, not a view over a `scores` table —
+-- there is no public.scores on this project.
+--
 -- Run the SELECT first to see what would go; the DELETE second.
 
 -- 1. Preview: what will be removed.
 select s.name, s.game, s.score as losing_score, s.is_guest as losing_is_guest,
        t.score as kept_score, t.is_guest as kept_is_guest
-  from public.scores s
-  join public.scores t
+  from public.leaderboard s
+  join public.leaderboard t
     on s.name = t.name
    and s.game = t.game
    and s.ctid <> t.ctid
@@ -26,8 +29,8 @@ select s.name, s.game, s.score as losing_score, s.is_guest as losing_is_guest,
 
 -- 2. The delete itself. ctid is the physical row id — used as the tie-break so
 --    that two rows with an identical score still leave exactly one behind.
-delete from public.scores s
- using public.scores t
+delete from public.leaderboard s
+ using public.leaderboard t
  where s.name = t.name
    and s.game = t.game
    and s.ctid <> t.ctid
@@ -36,7 +39,7 @@ delete from public.scores s
 
 -- 3. Verify: this must return no rows afterwards.
 select name, game, count(*)
-  from public.scores
+  from public.leaderboard
  group by name, game
 having count(*) > 1;
 

@@ -36,9 +36,10 @@ begin
   end if;
 
   -- Remove the player's scores wherever they live. to_regclass returns null for
-  -- a name that does not exist, so each block is skipped rather than erroring —
-  -- this keeps the function working whether the board is a table or a view over
-  -- one, without me having to guess your layout.
+  -- a name that does not exist, so each block is skipped rather than erroring.
+  -- On this project there is no public.scores and `leaderboard` is a real table,
+  -- so the second block is the one that does the work. The first is kept in case
+  -- the schema is ever split.
   if to_regclass('public.scores') is not null then
     execute 'delete from public.scores where name = $1' using n;
   end if;

@@ -33,8 +33,11 @@ Two things worth knowing about how it is written:
   hijacked by a caller who puts their own `players` or `crypt` earlier in the
   path. Your `account_auth` does not pin it — worth fixing there too.
 - It deletes the player's scores using `to_regclass` guards rather than assuming
-  a table name. **Verified against the live project: the base table is
-  `public.scores`, the guard fires, and scores are removed** — no orphans.
+  a table name. **Correction:** there is no `public.scores` on this project —
+  `leaderboard` is itself a table, not a view over one. The second guard is the
+  one that fires. Verified: scores are removed, no orphans. My earlier note
+  claiming the base table was `public.scores` was wrong; the guard happened to
+  cover it.
 
 Verify before shipping:
 
