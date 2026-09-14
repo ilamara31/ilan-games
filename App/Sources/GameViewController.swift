@@ -12,6 +12,9 @@ final class GameViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Before anything reads a best score: move the old single-key value into
+        // the new per-account storage so existing players keep their record.
+        Scores.migrateLegacyIfNeeded()
         view.backgroundColor = Palette.backdrop
 
         skView = SKView(frame: view.bounds)
@@ -68,8 +71,48 @@ final class GameViewController: UIViewController {
 
     private func presentAccount() {
         let auth = AuthViewController()
-        auth.onSignedIn = { [weak self] in self?.menu.refreshAccountButton() }
+        auth.onAccountChanged = { [weak self] message in
+            guard let self else { return }
+            // Refresh first: the button was still showing the previous player's
+            // name after signing out or deleting.
+            self.menu.refreshAccountButton()
+            self.menu.refreshBest()
+            if let message { self.toast(message) }
+        }
         present(darkSheet(auth), animated: true)
+    }
+
+    /// A brief confirmation over the title card. Sign-out and deletion used to
+    /// happen in complete silence, which read as the button not working.
+    private func toast(_ message: String) {
+        let label = PaddedLabel()
+        label.text = message
+        label.font = .systemFont(ofSize: 15, weight: .semibold)
+        label.textColor = .white
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.backgroundColor = UIColor(red: 0.09, green: 0.11, blue: 0.22, alpha: 0.97)
+        label.layer.cornerRadius = 14
+        label.layer.masksToBounds = true
+        label.layer.borderWidth = 1
+        label.layer.borderColor = Palette.gold.withAlphaComponent(0.6).cgColor
+        label.alpha = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -28),
+            label.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+        ])
+
+        UIView.animate(withDuration: 0.25) { label.alpha = 1 }
+        UIView.animate(withDuration: 0.35, delay: 3.2, options: []) {
+            label.alpha = 0
+        } completion: { _ in
+            label.removeFromSuperview()
+        }
     }
 
     /// The system share sheet — WhatsApp, Messages, anything installed.
@@ -122,9 +165,9 @@ final class GameViewController: UIViewController {
 }
 
 extension GameViewController: GameSceneDelegate {
-    func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int) {
+    func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int, isNewBest: Bool) {
         lastScore = score
-        menu.showGameOver(score: score, best: best)
+        menu.showGameOver(score: score, best: best, isNewBest: isNewBest)
         // Only the personal best goes up, matching the website's behaviour.
         Task { await Account.submit(score: best) }
     }

@@ -169,6 +169,18 @@ final class MenuOverlayView: UIView {
         }, for: .touchUpInside)
     }
 
+    /// The best line belongs to whoever is signed in now, so it has to be redrawn
+    /// when the account changes — not just when a run ends.
+    func refreshBest() {
+        guard !isHidden, titleLabel.text == "STACK TOWER" else { return }
+        let best = Scores.best
+        scoreLabel.attributedText = best > 0 ? NSAttributedString(
+            string: "Best: \(best)",
+            attributes: [.font: UIFont.systemFont(ofSize: 16)]
+        ) : nil
+        shareButton.isHidden = best == 0
+    }
+
     /// Reflects who is signed in, so the button reads as an account button once you are.
     func refreshAccountButton() {
         let title = Account.name.map { String($0.prefix(12)) } ?? "Sign in"
@@ -203,9 +215,10 @@ final class MenuOverlayView: UIView {
         isHidden = false
     }
 
-    func showGameOver(score: Int, best: Int) {
-        titleLabel.text = "TOPPLED!"
-        bodyLabel.text = "You missed the stack."
+    func showGameOver(score: Int, best: Int, isNewBest: Bool) {
+        let message = GameOverMessage.make(score: score, best: best, isNewBest: isNewBest)
+        titleLabel.text = message.headline
+        bodyLabel.text = message.line
         setStartTitle("STACK AGAIN")
 
         let text = NSMutableAttributedString(

@@ -1,7 +1,7 @@
 import SpriteKit
 
 protocol GameSceneDelegate: AnyObject {
-    func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int)
+    func gameSceneDidEndRun(_ scene: GameScene, score: Int, best: Int, isNewBest: Bool)
     func gameSceneDidFinishTutorial(_ scene: GameScene)
 }
 
@@ -348,7 +348,8 @@ final class GameScene: SKScene {
         mode = .idle
         shake = 0.5
         haptics.toppled()
-        if score > best {
+        let isNewBest = score > best
+        if isNewBest {
             best = score
             Scores.best = score
         }
@@ -356,7 +357,7 @@ final class GameScene: SKScene {
         run(.sequence([.wait(forDuration: 0.65), .run { [weak self] in
             guard let self else { return }
             self.endRun()
-            self.gameDelegate?.gameSceneDidEndRun(self, score: finalScore, best: self.best)
+            self.gameDelegate?.gameSceneDidEndRun(self, score: finalScore, best: self.best, isNewBest: isNewBest)
         }]))
     }
 

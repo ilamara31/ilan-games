@@ -36,6 +36,32 @@ enum Supabase {
         }
     }
 
+    /// iOS very often fails the first request of a session with
+    /// `networkConnectionLost` (-1005) — a stale connection in the URL cache,
+    /// nothing to do with the user actually being offline. Reporting that as
+    /// "you're offline" to someone who has just created an account is simply
+    /// wrong. The website's own callRpc retries three times for the same
+    /// reason; this is that logic, ported.
+    private static let retriableCodes: Set<URLError.Code> = [
+        .networkConnectionLost, .timedOut, .cannotConnectToHost,
+        .dnsLookupFailed, .cannotFindHost, .notConnectedToInternet,
+    ]
+
+    private static func send(_ request: URLRequest, attempts: Int = 3) async throws -> (Data, URLResponse) {
+        var lastError: Error = URLError(.unknown)
+        for attempt in 0..<attempts {
+            do {
+                return try await URLSession.shared.data(for: request)
+            } catch {
+                lastError = error
+                guard let code = (error as? URLError)?.code, retriableCodes.contains(code) else { throw error }
+                // 350ms, 700ms — matching the website's backoff.
+                try? await Task.sleep(nanoseconds: UInt64(350_000_000 * (attempt + 1)))
+            }
+        }
+        throw lastError
+    }
+
     private static func request(path: String, method: String, body: [String: Any?]?) throws -> URLRequest {
         var request = URLRequest(url: url.appendingPathComponent(path))
         request.httpMethod = method
@@ -56,7 +82,7 @@ enum Supabase {
             let request = try request(path: "rest/v1/rpc/account_auth", method: "POST", body: [
                 "p_name": name, "p_password": password, "p_recovery": nil,
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await send(request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 return .failed("The server rejected that request.")
             }
@@ -85,7 +111,7 @@ enum Supabase {
                 "p_name": name, "p_password": password,
                 "p_game": gameID, "p_score": score, "p_guest": false,
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await send(request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return false }
             return (String(data: data, encoding: .utf8) ?? "").contains("true")
         } catch {
@@ -101,7 +127,7 @@ enum Supabase {
             let request = try request(path: "rest/v1/rpc/account_delete", method: "POST", body: [
                 "p_name": name, "p_password": password,
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await send(request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return false }
             let answer = (String(data: data, encoding: .utf8) ?? "")
                 .trimmingCharacters(in: CharacterSet(charactersIn: "\"\n "))
@@ -124,16 +150,33 @@ enum Supabase {
         request.timeoutInterval = 20
         request.setValue(key, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONDecoder().decode([Entry].self, from: data)
+        let (data, _) = try await send(request)
+        let rows = try JSONDecoder().decode([Entry].self, from: data)
+
+        // The scores table is keyed on (name, game, is_guest), so a player who
+        // played as a guest and then signed in has two rows and appears twice.
+        // Keep only their best. Names are case-sensitive server-side, so fold
+        // case here too, otherwise "Ilan" and "ilan" still show as two people.
+        var bestByPlayer: [String: Entry] = [:]
+        for row in rows {
+            let key = row.name.lowercased()
+            if let existing = bestByPlayer[key], existing.score >= row.score { continue }
+            bestByPlayer[key] = row
+        }
+        return bestByPlayer.values.sorted {
+            $0.score != $1.score ? $0.score > $1.score
+                                 : $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 
     private static func friendly(_ error: Error) -> String {
         let code = (error as? URLError)?.code
-        if code == .notConnectedToInternet || code == .networkConnectionLost {
-            return "You're offline — scores will sync next time you play online."
+        // Only claim "offline" when iOS is certain of it — and only after the
+        // retries above have all failed.
+        if code == .notConnectedToInternet {
+            return "You appear to be offline. The game still works without an account."
         }
-        if code == .timedOut { return "The server took too long to answer. Try again." }
-        return "Couldn't reach the server."
+        if code == .timedOut { return "The server took too long to answer. Please try again." }
+        return "Couldn't reach the server. Please try again in a moment."
     }
 }

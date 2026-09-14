@@ -4,7 +4,9 @@ import UIKit
 /// account when the name is free, so one form covers both signing in and joining.
 final class AuthViewController: UIViewController {
 
-    var onSignedIn: (() -> Void)?
+    /// Fired for any account change — sign in, sign out or deletion — so the
+    /// title screen never keeps showing the previous player's name.
+    var onAccountChanged: ((String?) -> Void)?
 
     private let nameField = UITextField()
     private let passwordField = UITextField()
@@ -53,7 +55,9 @@ final class AuthViewController: UIViewController {
         config.contentInsets = .init(top: 12, leading: 28, bottom: 12, trailing: 28)
         signOut.configuration = config
         signOut.addAction(UIAction { [weak self] _ in
+            let who = Account.name
             Account.signOut()
+            self?.onAccountChanged?("Signed out\(who.map { " of \($0)" } ?? "").")
             self?.dismiss(animated: true)
         }, for: .touchUpInside)
 
@@ -86,6 +90,7 @@ final class AuthViewController: UIViewController {
             let deleted = await Supabase.deleteAccount(name: name, password: password)
             if deleted {
                 Account.signOut()
+                onAccountChanged?("Account “\(name)” deleted. Its scores have been removed from the leaderboard.")
                 dismiss(animated: true)
             } else {
                 let alert = UIAlertController(
@@ -186,7 +191,8 @@ final class AuthViewController: UIViewController {
                 // Push the local best up to the shared board straight away.
                 let best = Scores.best
                 if best > 0 { await Supabase.postScore(name: name, password: password, score: best) }
-                onSignedIn?()
+                Scores.adoptGuestScoreIfUnset()
+                onAccountChanged?("Signed in as \(name).")
                 dismiss(animated: true)
             case .wrongPassword:
                 statusLabel.text = "Wrong password for “\(name)”. Passwords can't be recovered."
