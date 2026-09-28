@@ -26,11 +26,30 @@
           '<stop offset="0" stop-color="#fff" stop-opacity=".22"/>' +
           '<stop offset=".5" stop-color="#fff" stop-opacity="0"/>' +
         '</linearGradient>' +
+        // Rendered key art reads the way it does mostly because of what sits ON
+        // TOP of the subject: a bloom rising off the floor in the scene's own
+        // colour, a cool rim along the top edge as if a light sits behind it,
+        // and a vignette pulling the eye to the middle.
+        '<radialGradient id="b' + id + '" cx="50%" cy="104%" r="76%">' +
+          '<stop offset="0" stop-color="' + glow + '" stop-opacity=".5"/>' +
+          '<stop offset="1" stop-color="' + glow + '" stop-opacity="0"/>' +
+        '</radialGradient>' +
+        '<linearGradient id="r' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#cfe6ff" stop-opacity=".3"/>' +
+          '<stop offset=".34" stop-color="#cfe6ff" stop-opacity="0"/>' +
+        '</linearGradient>' +
+        '<radialGradient id="v' + id + '" cx="50%" cy="48%" r="78%">' +
+          '<stop offset=".52" stop-color="#000" stop-opacity="0"/>' +
+          '<stop offset="1" stop-color="#000" stop-opacity=".5"/>' +
+        '</radialGradient>' +
       '</defs>' +
       '<rect width="400" height="300" fill="url(#g' + id + ')"/>' +
       '<rect width="400" height="300" fill="url(#h' + id + ')"/>' +
       body +
+      '<rect width="400" height="300" fill="url(#b' + id + ')" style="mix-blend-mode:screen"/>' +
+      '<rect width="400" height="300" fill="url(#r' + id + ')" style="mix-blend-mode:screen"/>' +
       '<rect width="400" height="300" fill="url(#s' + id + ')" style="mix-blend-mode:screen"/>' +
+      '<rect width="400" height="300" fill="url(#v' + id + ')"/>' +
     '</svg>';
   }
 

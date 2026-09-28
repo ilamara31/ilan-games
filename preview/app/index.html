@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ilan Games — Home</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* ===================================================================
+   SIX LOOKS, ONE LAYOUT.
+   Everything below is driven by the tokens in each [data-look] block,
+   so switching look changes nothing structural — only the paint.
+   =================================================================== */
+:root{
+  --bg:#070c1c; --bg2:#0b1226; --panel:#111a35; --panel2:#16213f;
+  --line:#22304f; --text:#eaf0ff; --mute:#93a3c8;
+  --acc:#2f8fff; --acc2:#7c5cff; --gold:#ffc63d; --hot:#ff4d8d;
+  --radius:16px; --radius-lg:22px;
+  --shadow:0 18px 44px rgba(0,0,0,.5);
+  --side:250px; --sheen:.16;
+  --display:'Outfit','Trebuchet MS',sans-serif;
+  --body:'Plus Jakarta Sans','Helvetica Neue',sans-serif;
+}
+/* 1 — Premium Cinematic (dark) */
+[data-look="cinematic"]{
+  --bg:#060b1a; --bg2:#0a1124; --panel:#101a36; --panel2:#152142;
+  --line:#22314f; --text:#eef3ff; --mute:#94a4c9;
+  --acc:#2f8fff; --acc2:#7c5cff; --gold:#ffc63d; --sheen:.16}
+/* 2 — Clean & Modern (light) */
+[data-look="clean"]{
+  --bg:#eef3fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f5f8fe;
+  --line:#dde5f3; --text:#101a2e; --mute:#6b7a96;
+  --acc:#1f7aec; --acc2:#4f9bff; --gold:#f5a623; --hot:#e8447d;
+  --shadow:0 12px 30px rgba(24,49,94,.1); --sheen:.05}
+/* 3 — 3D & Colorful */
+[data-look="colorful"]{
+  --bg:#130a2e; --bg2:#1b0f3d; --panel:#231450; --panel2:#2c1a62;
+  --line:#3b2480; --text:#f4efff; --mute:#a695d6;
+  --acc:#ff9f1c; --acc2:#c65cff; --gold:#ffd84d; --hot:#ff4d8d; --sheen:.2}
+/* 4 — Sleek Console */
+[data-look="console"]{
+  --bg:#04070f; --bg2:#070c18; --panel:#0b1322; --panel2:#0f1a2e;
+  --line:#1a2942; --text:#e6eeff; --mute:#7f90b3;
+  --acc:#00b2ff; --acc2:#0076ff; --gold:#ffc63d;
+  --radius:12px; --radius-lg:14px; --sheen:.12}
+/* 5 — Soft & Friendly */
+[data-look="soft"]{
+  --bg:#f7f5f0; --bg2:#ffffff; --panel:#ffffff; --panel2:#fbf9f5;
+  --line:#e9e4da; --text:#2a2622; --mute:#857d72;
+  --acc:#3d8b6f; --acc2:#6ab894; --gold:#e0a53c; --hot:#d9705f;
+  --radius:20px; --radius-lg:26px;
+  --shadow:0 12px 28px rgba(80,68,50,.09); --sheen:.04}
+/* 6 — Futuristic & Bold */
+[data-look="bold"]{
+  --bg:#000308; --bg2:#03080f; --panel:#070f1c; --panel2:#0a1726;
+  --line:#123049; --text:#e8fbff; --mute:#7aa3bd;
+  --acc:#00e5ff; --acc2:#ff2bd1; --gold:#ffe14f;
+  --radius:6px; --radius-lg:8px; --sheen:.24}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--body);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+svg.art{width:100%;height:100%;display:block}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:3px;border-radius:8px}
+.h{font-family:var(--display)}
+
+/* ---------------- look switcher (the only thing not in your mockups) -- */
+.looks{position:fixed;z-index:200;left:50%;transform:translateX(-50%);
+  bottom:16px;display:flex;gap:5px;padding:6px;border-radius:999px;
+  background:rgba(8,12,24,.86);backdrop-filter:blur(16px);
+  border:1px solid rgba(160,190,255,.22);box-shadow:0 12px 34px rgba(0,0,0,.5);
+  max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+.looks::-webkit-scrollbar{display:none}
+.looks button{font-size:12px;font-weight:700;color:#b9c8e8;padding:8px 13px;
+  border-radius:999px;white-space:nowrap;transition:.15s}
+.looks button:hover{color:#fff}
+.looks button[aria-pressed="true"]{background:#fff;color:#0a1020}
+
+/* ---------------- top bar ---------------- */
+.top{position:sticky;top:0;z-index:90;display:flex;align-items:center;gap:16px;
+  padding:12px clamp(14px,2.4vw,26px);background:var(--bg2);
+  border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.logo .pad{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));flex:none;
+  box-shadow:0 6px 18px color-mix(in srgb,var(--acc) 45%,transparent)}
+.logo .pad svg{width:24px;height:24px}
+.logo .name{font-family:var(--display);font-weight:800;font-size:19px;
+  letter-spacing:.01em;line-height:1.1;display:flex;align-items:center;gap:6px}
+.logo .name b{color:var(--acc)}
+.logo .tag{font-size:10.5px;color:var(--mute);letter-spacing:.09em;font-weight:600}
+.search{flex:1;max-width:400px;margin-left:clamp(6px,2vw,24px);position:relative}
+.search input{width:100%;background:var(--panel);border:1px solid var(--line);
+  color:var(--text);border-radius:999px;padding:11px 16px 11px 42px;font-size:14px;
+  font-family:inherit;outline:none;transition:.16s}
+.search input::placeholder{color:var(--mute)}
+.search input:focus{border-color:var(--acc)}
+.search svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;stroke:var(--mute);fill:none;stroke-width:2}
+.tools{margin-left:auto;display:flex;align-items:center;gap:10px}
+.bell{width:40px;height:40px;border-radius:12px;background:var(--panel);
+  border:1px solid var(--line);display:grid;place-items:center;position:relative}
+.bell svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:1.9}
+.bell i{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;
+  background:var(--hot);border:2px solid var(--panel)}
+.me{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;
+  border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.me .av{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;
+  border:2px solid var(--gold)}
+.me span{font-size:14px;font-weight:700}
+.me .crown{color:var(--gold);font-size:11px}
+
+/* ---------------- shell ---------------- */
+.shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);
+  gap:clamp(14px,2vw,22px);padding:clamp(14px,2vw,22px) clamp(14px,2.4vw,26px) 96px;
+  align-items:start}
+
+/* ---------------- sidebar ---------------- */
+.side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
+.nav{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:10px;display:flex;flex-direction:column;gap:3px}
+.nav a{display:flex;align-items:center;gap:13px;padding:13px 15px;
+  border-radius:var(--radius);font-size:14.5px;font-weight:600;color:var(--mute);
+  text-decoration:none;transition:.16s}
+.nav a svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;flex:none}
+.nav a:hover{color:var(--text);background:var(--panel2)}
+.nav a.on{color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 40%,transparent)}
+[data-look="soft"] .nav a.on,[data-look="clean"] .nav a.on{color:#fff}
+
+/* player card */
+.player{background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius-lg);padding:16px}
+.player .who{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+.player .av{width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none;
+  border:2px solid var(--gold)}
+.player .nm{font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2}
+.player .lv{font-size:12px;color:var(--mute);font-weight:600}
+.bar{height:9px;border-radius:999px;background:var(--panel2);overflow:hidden;
+  border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:87.6%;border-radius:999px;
+  background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.xp{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;
+  color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------------- hero ---------------- */
+.hero{position:relative;border-radius:var(--radius-lg);overflow:hidden;
+  border:1px solid var(--line);box-shadow:var(--shadow);
+  min-height:clamp(220px,31vw,330px);display:flex;align-items:center;
+  margin-bottom:clamp(20px,2.6vw,30px)}
+.hero .bg{position:absolute;inset:0}
+.hero .bg .lay{position:absolute;inset:-6%;
+  transition:transform .55s cubic-bezier(.2,.8,.3,1)}
+.hero .scrim{position:absolute;inset:0;
+  background:linear-gradient(95deg,var(--panel) 2%,color-mix(in srgb,var(--panel) 74%,transparent) 38%,transparent 72%)}
+.hero .in{position:relative;z-index:2;padding:clamp(20px,3vw,40px);max-width:60%}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;color:#3a2600;background:var(--gold);
+  padding:6px 13px;border-radius:999px;margin-bottom:13px}
+.hero h1{font-family:var(--display);font-weight:900;
+  font-size:clamp(26px,4.6vw,50px);line-height:1;letter-spacing:-.02em;
+  text-transform:uppercase;margin-bottom:9px;text-wrap:balance}
+.hero p{font-size:clamp(13px,1.5vw,16px);color:var(--mute);font-weight:600;
+  margin-bottom:clamp(14px,2vw,20px)}
+.play{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);
+  font-weight:800;font-size:clamp(14px,1.6vw,17px);color:#fff;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  padding:12px 26px;border-radius:999px;
+  box-shadow:0 10px 26px color-mix(in srgb,var(--acc) 45%,transparent);
+  transition:transform .15s,box-shadow .15s}
+.play:hover{transform:translateY(-2px)}
+.play svg{width:15px;height:15px;fill:#fff}
+.dots{position:absolute;right:clamp(14px,2vw,22px);bottom:clamp(14px,2vw,20px);
+  z-index:3;display:flex;gap:6px}
+.dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.34);
+  cursor:pointer;transition:.2s}
+.dots i.on{background:#fff;width:22px;border-radius:999px}
+
+/* ---------------- sections ---------------- */
+.sec{margin-bottom:clamp(20px,2.6vw,30px)}
+.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.sec-h h2{font-family:var(--display);font-weight:800;font-size:clamp(17px,2vw,22px);
+  display:flex;align-items:center;gap:9px}
+.sec-h .all{margin-left:auto;font-size:13px;font-weight:700;color:var(--acc);
+  display:flex;align-items:center;gap:6px}
+.grid{display:grid;gap:clamp(11px,1.4vw,16px);
+  grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
+
+/* ---------------- game card ---------------- */
+.g{position:relative;border-radius:var(--radius);overflow:hidden;
+  border:1px solid var(--line);background:var(--panel);text-align:left;
+  transition:transform .26s cubic-bezier(.2,.8,.3,1),box-shadow .26s,border-color .26s;
+  display:block;width:100%}
+.g:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:var(--acc)}
+.g .shot{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg2)}
+.g .shot .lay{position:absolute;inset:-7%;
+  transition:transform .4s cubic-bezier(.2,.8,.3,1)}
+.g:hover .shot .lay{transform:scale(1.11)}
+.g .shot::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(0deg,var(--panel) 3%,color-mix(in srgb,var(--panel) 45%,transparent) 36%,transparent 62%)}
+.g .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:11px 12px 12px}
+.g .cap h3{font-family:var(--display);font-weight:700;font-size:14.5px;line-height:1.2;
+  margin-bottom:6px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.g .cap .kind{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;padding:4px 9px;border-radius:999px;
+  background:color-mix(in srgb,var(--acc) 26%,transparent);color:var(--text);
+  border:1px solid color-mix(in srgb,var(--acc) 42%,transparent)}
+.g .go{position:absolute;right:10px;bottom:11px;z-index:3;width:26px;height:26px;
+  border-radius:50%;background:var(--acc);display:grid;place-items:center;
+  opacity:0;transform:scale(.6);transition:.24s}
+.g:hover .go{opacity:1;transform:scale(1)}
+.g .go svg{width:11px;height:11px;fill:#fff}
+.g .flag{position:absolute;top:9px;left:9px;z-index:3;font-size:9.5px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:999px;
+  background:var(--hot);color:#fff}
+.g .flag.new{background:var(--gold);color:#3a2600}
+
+/* ---------------- bottom banner ---------------- */
+.cta{position:relative;overflow:hidden;border-radius:var(--radius-lg);
+  border:1px solid var(--line);padding:clamp(16px,2.4vw,26px) clamp(18px,2.6vw,30px);
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  background:linear-gradient(115deg,var(--acc),var(--acc2) 58%,var(--hot))}
+.cta::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(70% 160% at 12% 0%,rgba(255,255,255,.28),transparent 60%)}
+.cta .words{position:relative;z-index:2;display:flex;align-items:center;gap:14px;
+  flex-wrap:wrap;font-family:var(--display);font-weight:900;color:#fff;
+  font-size:clamp(15px,2.2vw,23px);letter-spacing:.04em;text-transform:uppercase}
+.cta .words span{display:flex;align-items:center;gap:9px}
+.cta .join{position:relative;z-index:2;margin-left:auto;background:#fff;color:#12203c;
+  font-family:var(--display);font-weight:800;font-size:14.5px;padding:12px 24px;
+  border-radius:999px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+
+/* ---------------- responsive ---------------- */
+@media (max-width:1000px){
+  :root{--side:0px}
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;order:2;flex-direction:row;flex-wrap:wrap}
+  .nav{flex:1 1 100%;flex-direction:row;overflow-x:auto;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{white-space:nowrap;padding:11px 14px}
+  .player{flex:1 1 100%}
+  .hero .in{max-width:100%}
+  .hero .scrim{background:linear-gradient(0deg,var(--panel) 6%,color-mix(in srgb,var(--panel) 62%,transparent) 54%,transparent 88%)}
+  .hero{align-items:flex-end;min-height:270px}
+}
+@media (max-width:640px){
+  .logo .tag,.me span,.me .crown{display:none}
+  .search{max-width:none}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(144px,1fr))}
+  .cta .join{margin-left:0;width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head>
+<body data-look="cinematic">
+
+<div class="top">
+  <div class="logo">
+    <span class="pad"><svg viewBox="0 0 24 24" fill="#fff"><path d="M17 6H7a5 5 0 0 0-5 5v4a3 3 0 0 0 5.2 2l1.3-1.3h7l1.3 1.3A3 3 0 0 0 22 15v-4a5 5 0 0 0-5-5Zm-8 7H7.5v1.5h-1V13H5v-1h1.5v-1.5h1V12H9v1Zm5.8 1.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm2.4-2.4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg></span>
+    <div>
+      <div class="name h">ILAN <b>GAMES</b> <span class="crown" style="color:var(--gold)">♛</span></div>
+      <div class="tag">Play • Compete • Be Legendary</div>
+    </div>
+  </div>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search games…" autocomplete="off">
+  </div>
+
+  <div class="tools">
+    <button class="bell" aria-label="Notifications">
+      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <i></i>
+    </button>
+    <div class="me"><span class="av" id="av1"></span><span>Ilan</span><span class="crown">♛</span></div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <nav class="nav">
+      <a href="#" class="on"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Home</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5v3a2.5 2.5 0 0 0 4.3 1.8L8 15h8l1.7 1.8A2.5 2.5 0 0 0 22 15v-3a5 5 0 0 0-5-5Z"/><path d="M7 11v2M6 12h2"/></svg>Games</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg>Friends</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Leaderboard</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Missions</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Store</a>
+    </nav>
+
+    <div class="player">
+      <div class="who">
+        <span class="av" id="av2"></span>
+        <div><div class="nm h">Ilan</div><div class="lv">Level 12</div></div>
+      </div>
+      <div class="bar"><i></i></div>
+      <div class="xp"><span>4,380 XP</span><span>5,000</span></div>
+    </div>
+  </aside>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="bg" id="heroArt"></div>
+      <div class="scrim"></div>
+      <div class="in">
+        <span class="badge">♛ Game of the Week</span>
+        <h1 id="hName">—</h1>
+        <p id="hKick"></p>
+        <button class="play" id="hPlay"><svg viewBox="0 0 24 24"><path d="M6 3l15 9-15 9z"/></svg>Play Now</button>
+      </div>
+      <div class="dots" id="dots"></div>
+    </section>
+
+    <div id="rows"></div>
+
+    <section class="cta">
+      <div class="words">
+        <span>♛ Play</span><span>•</span><span>★ Earn</span><span>•</span><span>⚡ Level Up</span>
+      </div>
+      <button class="join">Join the Fun ›</button>
+    </section>
+  </main>
+</div>
+
+<div class="looks" id="looks"></div>
+
+<script src="../games.js"></script>
+<script src="../art.js"></script>
+<script>
+(function(){
+  "use strict";
+  document.body.insertAdjacentHTML('afterbegin', ArcadeArt.defs);
+  var G = window.GAMES, byId = {};
+  G.forEach(function(g){ byId[g.id] = g; });
+
+  /* ---- an avatar, drawn rather than fetched ---- */
+  var AV = '<svg viewBox="0 0 48 48" style="width:100%;height:100%;display:block">' +
+    '<rect width="48" height="48" fill="#2b3a63"/>' +
+    '<circle cx="24" cy="19" r="9" fill="#f0c9a4"/>' +
+    '<path d="M24 8a9 9 0 0 1 9 8c-3 1-6-1-9-1s-6 2-9 1a9 9 0 0 1 9-8z" fill="#31241a"/>' +
+    '<path d="M8 48c1-10 8-15 16-15s15 5 16 15z" fill="#1f7aec"/></svg>';
+  document.getElementById('av1').innerHTML = AV;
+  document.getElementById('av2').innerHTML = AV;
+
+  /* ---- rows, exactly as the mockups group them ---- */
+  var ROWS = [
+    { h:'Popular Games', ico:'🔥',
+      ids:['f1','cricket','scoop','pptour','timeduel','obby'] },
+    { h:'Top Picks for You', ico:'⭐',
+      ids:['meme','drawrush','codewords','airhockey','carrom','anime-tycoon'] },
+    { h:'Quick Play', ico:'⚡',
+      ids:['speedclicker','stack','catch','try','fruit-arena','archer'] },
+    { h:'More Games', ico:'🎮',
+      ids:['football','tennis','karate','paper','puzzles','codebreaker','catch2',
+           'handcricket','thisorthat'] }
+  ];
+
+  function card(g){
+    var flag = g.fresh ? '<span class="flag new">New</span>'
+             : (g.t.indexOf('Live')>=0 ? '<span class="flag">Live</span>' : '');
+    return '<button class="g" data-id="'+g.id+'">'+
+      '<div class="shot"><div class="lay">'+ArcadeArt.art(g.id)+'</div></div>'+
+      flag +
+      '<div class="cap"><h3>'+g.n+'</h3><span class="kind">'+g.t[0]+'</span></div>'+
+      '<span class="go"><svg viewBox="0 0 24 24"><path d="M6 3l15 9-15 9z"/></svg></span>'+
+    '</button>';
+  }
+
+  function draw(filter){
+    var q = (filter||'').trim().toLowerCase();
+    var out = '';
+    ROWS.forEach(function(r){
+      var items = r.ids.map(function(i){ return byId[i]; }).filter(Boolean)
+        .filter(function(g){
+          return !q || g.n.toLowerCase().indexOf(q)>=0 ||
+                 g.t.join(' ').toLowerCase().indexOf(q)>=0;
+        });
+      if (!items.length) return;
+      out += '<section class="sec"><div class="sec-h"><h2 class="h">'+r.ico+' '+r.h+'</h2>'+
+             '<span class="all">View All →</span></div>'+
+             '<div class="grid">'+items.map(card).join('')+'</div></section>';
+    });
+    if (!out) out = '<section class="sec"><p style="color:var(--mute)">No game matches “'+
+      (filter||'') + '”.</p></section>';
+    document.getElementById('rows').innerHTML = out;
+    document.querySelectorAll('.g').forEach(function(c){
+      c.addEventListener('click', function(){ feature(c.getAttribute('data-id'), true); });
+    });
+  }
+
+  /* ---- hero ---- */
+  var SPOT = ['f1','cricket','timeduel','obby','drawrush'], hi = 0, timer;
+
+  function feature(id, scroll){
+    var g = byId[id] || byId[SPOT[hi]];
+    document.getElementById('heroArt').innerHTML =
+      '<div class="lay">'+ArcadeArt.art(g.id)+'</div>';
+    document.getElementById('hName').textContent = g.n;
+    document.getElementById('hKick').textContent = g.k;
+    var s = SPOT.indexOf(g.id);
+    document.querySelectorAll('.dots i').forEach(function(d,n){
+      d.classList.toggle('on', n === (s<0 ? -1 : s));
+    });
+    if (scroll) window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  document.getElementById('dots').innerHTML = SPOT.map(function(){ return '<i></i>'; }).join('');
+  document.querySelectorAll('.dots i').forEach(function(d,n){
+    d.addEventListener('click', function(){ hi=n; feature(SPOT[hi]); restart(); });
+  });
+  function next(){ hi = (hi+1)%SPOT.length; feature(SPOT[hi]); }
+  function restart(){ clearInterval(timer); timer = setInterval(next, 6500); }
+
+  document.getElementById('hPlay').addEventListener('click', function(){
+    var b = this, was = b.innerHTML;
+    b.textContent = 'Opens ' + document.getElementById('hName').textContent;
+    setTimeout(function(){ b.innerHTML = was; }, 1500);
+  });
+
+  // The banner art drifts under the cursor.
+  document.getElementById('hero').addEventListener('pointermove', function(e){
+    var b = this.getBoundingClientRect();
+    var x = (e.clientX-b.left)/b.width-.5, y = (e.clientY-b.top)/b.height-.5;
+    var l = document.querySelector('#heroArt .lay');
+    if (l) l.style.transform = 'translate3d('+(-x*24)+'px,'+(-y*16)+'px,0) scale(1.08)';
+  }, { passive:true });
+
+  /* ---- look switcher ---- */
+  var LOOKS = [
+    ['cinematic','1 · Cinematic'], ['clean','2 · Clean'], ['colorful','3 · Colorful'],
+    ['console','4 · Console'], ['soft','5 · Soft'], ['bold','6 · Bold']
+  ];
+  document.getElementById('looks').innerHTML = LOOKS.map(function(l,i){
+    return '<button data-l="'+l[0]+'" aria-pressed="'+(i===0)+'">'+l[1]+'</button>';
+  }).join('');
+  document.querySelectorAll('.looks button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.looks button').forEach(function(o){
+        o.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      document.body.setAttribute('data-look', b.getAttribute('data-l'));
+      try { localStorage.setItem('ig_look', b.getAttribute('data-l')); } catch(e){}
+    });
+  });
+  try {
+    var saved = localStorage.getItem('ig_look');
+    if (saved) {
+      var t = document.querySelector('.looks button[data-l="'+saved+'"]');
+      if (t) t.click();
+    }
+  } catch(e){}
+
+  document.getElementById('q').addEventListener('input', function(){ draw(this.value); });
+
+  feature(SPOT[0]); draw(''); restart();
+})();
+</script>
+</body></html>
