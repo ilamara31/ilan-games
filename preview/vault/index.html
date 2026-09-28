@@ -1,0 +1,301 @@
+<title>Neon Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ink:#04060e; --deep:#080d1c; --panel:#0e1426; --line:#1e2942;
+  --text:#e9eefb; --mute:#8b9ac0; --cyan:#3ddcff; --gold:#ffc94d; --rose:#ff4d8d;
+  --display:'Saira Condensed','Arial Narrow',sans-serif;
+  --body:'Barlow','Helvetica Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:var(--body);
+  overflow-x:hidden;-webkit-font-smoothing:antialiased}
+svg.art{width:100%;height:100%;display:block}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2.5px solid var(--cyan);outline-offset:3px;border-radius:6px}
+
+/* ---------------- top bar ---------------- */
+.bar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:22px;
+  padding:14px clamp(16px,4vw,44px);
+  background:linear-gradient(180deg,rgba(4,6,14,.96),rgba(4,6,14,.72) 70%,transparent);
+  backdrop-filter:blur(14px)}
+.brand{font-family:var(--display);font-weight:900;font-size:21px;letter-spacing:.14em;
+  text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.brand b{color:var(--cyan)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 14px var(--cyan)}
+.navs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.navs::-webkit-scrollbar{display:none}
+.navs button{font-family:var(--body);font-size:13px;font-weight:600;letter-spacing:.04em;
+  color:var(--mute);background:none;border:0;padding:9px 15px;border-radius:999px;
+  cursor:pointer;white-space:nowrap;transition:color .15s,background .15s}
+.navs button:hover{color:var(--text)}
+.navs button[aria-pressed="true"]{color:var(--ink);background:var(--text)}
+
+/* ---------------- hero ---------------- */
+.hero{position:relative;min-height:min(74vh,600px);display:grid;
+  grid-template-columns:minmax(0,1fr);align-items:end;overflow:hidden;
+  border-bottom:1px solid var(--line)}
+.hero-art{position:absolute;inset:0;z-index:0}
+.hero-art .layer{position:absolute;inset:-6%;transition:transform .5s cubic-bezier(.2,.8,.3,1)}
+.hero-art::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,var(--ink) 4%,rgba(4,6,14,.72) 42%,rgba(4,6,14,.1) 74%),
+             linear-gradient(0deg,var(--ink) 2%,transparent 46%)}
+.hero-in{position:relative;z-index:2;padding:clamp(26px,5vw,60px);
+  padding-top:clamp(70px,12vw,120px);max-width:640px}
+.eyebrow{font-family:var(--display);font-size:12.5px;font-weight:800;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:12px;display:flex;
+  align-items:center;gap:11px}
+.eyebrow::before{content:'';width:34px;height:2px;background:var(--cyan)}
+.hero h1{font-family:var(--display);font-weight:900;font-size:clamp(46px,9.5vw,104px);
+  line-height:.9;letter-spacing:-.015em;text-transform:uppercase;text-wrap:balance;
+  margin-bottom:14px}
+.hero .kick{font-size:clamp(17px,2.4vw,23px);font-weight:500;color:var(--text);
+  opacity:.94;margin-bottom:10px;text-wrap:balance}
+.hero .blurb{font-size:15.5px;line-height:1.6;color:var(--mute);max-width:46ch;
+  margin-bottom:24px}
+.hero-cta{display:flex;gap:11px;flex-wrap:wrap;align-items:center}
+.play{font-family:var(--display);font-size:19px;font-weight:900;letter-spacing:.1em;
+  text-transform:uppercase;color:#04121a;background:var(--cyan);border:0;
+  padding:15px 34px;border-radius:5px;cursor:pointer;display:inline-flex;gap:10px;
+  align-items:center;box-shadow:0 8px 34px rgba(61,220,255,.32);
+  transition:transform .14s,box-shadow .14s}
+.play:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(61,220,255,.45)}
+.play:active{transform:translateY(0)}
+.ghost{font-family:var(--display);font-size:15px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text);background:rgba(233,238,251,.07);
+  border:1px solid var(--line);padding:14px 22px;border-radius:5px;cursor:pointer}
+.ghost:hover{background:rgba(233,238,251,.13)}
+.meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.chip{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--mute);border:1px solid var(--line);padding:6px 12px;border-radius:3px}
+.chip.on{color:var(--gold);border-color:rgba(255,201,77,.4);background:rgba(255,201,77,.08)}
+
+/* hero pager */
+.pager{position:absolute;right:clamp(16px,4vw,44px);bottom:clamp(22px,4vw,40px);
+  z-index:3;display:flex;gap:7px}
+.pager i{width:26px;height:3px;background:rgba(233,238,251,.22);cursor:pointer;
+  display:block;border-radius:2px;transition:background .2s,width .2s}
+.pager i.on{background:var(--cyan);width:44px}
+
+/* ---------------- rails ---------------- */
+main{padding:clamp(28px,5vw,52px) 0 90px}
+.rail{margin-bottom:clamp(30px,4.5vw,50px)}
+.rail-h{display:flex;align-items:baseline;gap:14px;
+  padding:0 clamp(16px,4vw,44px);margin-bottom:15px}
+.rail-h h2{font-family:var(--display);font-size:clamp(21px,3vw,30px);font-weight:900;
+  letter-spacing:.03em;text-transform:uppercase}
+.rail-h span{font-size:12.5px;font-weight:600;color:var(--mute);letter-spacing:.06em}
+.track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;
+  padding:6px clamp(16px,4vw,44px) 20px;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+
+/* ---------------- card ---------------- */
+.card{flex:0 0 clamp(228px,25vw,304px);scroll-snap-align:start;cursor:pointer;
+  background:none;border:0;padding:0;text-align:left;font-family:inherit;
+  perspective:1100px}
+.card-in{position:relative;border-radius:13px;overflow:hidden;border:1px solid var(--line);
+  background:var(--panel);transform-style:preserve-3d;
+  transition:transform .32s cubic-bezier(.2,.8,.3,1),box-shadow .32s,border-color .32s}
+.card:hover .card-in,.card:focus-visible .card-in{
+  box-shadow:0 26px 60px rgba(0,0,0,.66);border-color:rgba(61,220,255,.45)}
+.shot{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--deep)}
+.shot .layer{position:absolute;inset:-7%;transition:transform .34s cubic-bezier(.2,.8,.3,1)}
+.shot::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(0deg,var(--panel) 1%,rgba(14,20,38,.4) 34%,transparent 62%)}
+.foot{position:relative;padding:13px 15px 15px}
+.foot h3{font-family:var(--display);font-size:22px;font-weight:800;letter-spacing:.02em;
+  text-transform:uppercase;line-height:1.05;margin-bottom:4px}
+.foot p{font-size:13px;color:var(--mute);line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tagrow{display:flex;gap:6px;position:absolute;top:11px;left:11px;z-index:2}
+.tag{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  padding:4px 8px;border-radius:3px;background:rgba(4,6,14,.72);color:var(--text);
+  backdrop-filter:blur(6px)}
+.tag.live{background:rgba(255,77,141,.9);color:#fff}
+.tag.new{background:var(--gold);color:#3a2600}
+
+/* the glance — what the card shows when you hold on it */
+.glance{position:absolute;inset:auto 0 0 0;padding:15px;background:
+  linear-gradient(0deg,var(--panel) 40%,rgba(14,20,38,.92));
+  transform:translateY(101%);transition:transform .3s cubic-bezier(.2,.8,.3,1);z-index:3}
+.card:hover .glance,.card:focus-visible .glance{transform:translateY(0)}
+.glance p{font-size:13px;line-height:1.5;color:var(--text);opacity:.88;margin-bottom:11px}
+.glance .go{font-family:var(--display);font-size:14px;font-weight:900;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:8px}
+@media (hover:none){.glance{display:none}}
+
+footer{padding:34px clamp(16px,4vw,44px) 60px;border-top:1px solid var(--line);
+  color:var(--mute);font-size:13.5px;display:flex;justify-content:space-between;
+  gap:16px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="bar">
+  <div class="brand"><span class="dot"></span>ILAN<b>GAMES</b></div>
+  <nav class="navs" id="navs"></nav>
+</div>
+
+<header class="hero" id="hero">
+  <div class="hero-art" id="heroArt"></div>
+  <div class="hero-in">
+    <div class="eyebrow" id="hEyebrow">Featured</div>
+    <h1 id="hName">—</h1>
+    <p class="kick" id="hKick"></p>
+    <p class="blurb" id="hBlurb"></p>
+    <div class="hero-cta">
+      <button class="play" id="hPlay">▶ Play now</button>
+      <button class="ghost" id="hNext">Next ›</button>
+    </div>
+    <div class="meta" id="hMeta"></div>
+  </div>
+  <div class="pager" id="pager"></div>
+</header>
+
+<main id="rails"></main>
+
+<footer>
+  <span>27 games. Built by Ilan.</span>
+  <span>Design study — Neon Vault</span>
+</footer>
+
+<script src="../games.js"></script>
+<script src="../art.js"></script>
+<script>
+(function(){
+  "use strict";
+  document.body.insertAdjacentHTML('afterbegin', ArcadeArt.defs);
+  var G = window.GAMES, byId = {};
+  G.forEach(function(g){ byId[g.id] = g; });
+
+  /* ---------- rails: the shelves a console dashboard would keep ---------- */
+  var RAILS = [
+    { h:'Play together', s:'Live rooms with friends', f:function(g){ return g.t.indexOf('Live')>=0; } },
+    { h:'Full 3D',       s:'Built in three dimensions', f:function(g){ return g.t.indexOf('3D')>=0; } },
+    { h:'On the pitch',  s:'Sport, and the nerve it takes', f:function(g){ return g.t.indexOf('Sports')>=0; } },
+    { h:'One more go',   s:'Short runs, long streaks', f:function(g){ return g.t.indexOf('Arcade')>=0; } },
+    { h:'Think it through', s:'Puzzles, words and codes',
+      f:function(g){ return g.t.some(function(t){ return ['Puzzle','Word','Board','Creative'].indexOf(t)>=0; }); } }
+  ];
+
+  function layered(id){
+    // One art scene split into three planes so the cursor can push them apart.
+    return '<div class="layer" data-p="8">'+ArcadeArt.art(id)+'</div>';
+  }
+
+  function card(g){
+    var tags = '';
+    if (g.fresh) tags += '<span class="tag new">New</span>';
+    if (g.t.indexOf('Live')>=0) tags += '<span class="tag live">Live</span>';
+    tags += '<span class="tag">'+g.p+'</span>';
+    return '<button class="card" data-id="'+g.id+'">'+
+      '<div class="card-in">'+
+        '<div class="shot">'+layered(g.id)+'</div>'+
+        '<div class="tagrow">'+tags+'</div>'+
+        '<div class="foot">'+
+          '<h3>'+g.n+'</h3><p>'+g.k+'</p>'+
+        '</div>'+
+        '<div class="glance"><p>'+g.d+'</p><div class="go">Play ›</div></div>'+
+      '</div></button>';
+  }
+
+  function buildRails(list){
+    var out = '';
+    RAILS.forEach(function(r){
+      var items = list.filter(r.f);
+      if (!items.length) return;
+      out += '<section class="rail"><div class="rail-h"><h2>'+r.h+'</h2><span>'+r.s+'</span></div>'+
+             '<div class="track">'+items.map(card).join('')+'</div></section>';
+    });
+    var rest = list.filter(function(g){ return !RAILS.some(function(r){ return r.f(g); }); });
+    if (rest.length) out += '<section class="rail"><div class="rail-h"><h2>Everything else</h2>'+
+      '<span>The rest of the shelf</span></div><div class="track">'+rest.map(card).join('')+'</div></section>';
+    document.getElementById('rails').innerHTML = out;
+    wireCards();
+  }
+
+  /* ---------- the tilt: cards lean toward the cursor, art lags behind ---- */
+  function wireCards(){
+    document.querySelectorAll('.card').forEach(function(c){
+      var inner = c.querySelector('.card-in'), layer = c.querySelector('.layer');
+      c.addEventListener('pointermove', function(e){
+        var b = c.getBoundingClientRect();
+        var x = (e.clientX - b.left)/b.width - .5, y = (e.clientY - b.top)/b.height - .5;
+        inner.style.transform = 'rotateY('+(x*11)+'deg) rotateX('+(-y*11)+'deg) translateZ(16px) scale(1.02)';
+        if (layer) layer.style.transform = 'translate3d('+(-x*20)+'px,'+(-y*16)+'px,0) scale(1.09)';
+      });
+      c.addEventListener('pointerleave', function(){
+        inner.style.transform = '';
+        if (layer) layer.style.transform = '';
+      });
+      c.addEventListener('click', function(){ open(c.getAttribute('data-id')); });
+    });
+  }
+
+  function open(id){
+    // A design study: nothing to navigate to, so say so rather than dead-click.
+    var g = byId[id];
+    var b = document.getElementById('hPlay');
+    b.textContent = '▶ ' + g.n + ' would open here';
+    setTimeout(function(){ b.textContent = '▶ Play now'; }, 1800);
+    setHero(G.indexOf(g));
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  /* ---------- hero ---------- */
+  var SPOT = ['timeduel','f1','obby','drawrush','anime-tycoon'];
+  var hi = 0, timer = null;
+
+  function setHero(i){
+    var g = (typeof i === 'number' && G[i]) ? G[i] : byId[SPOT[hi]];
+    document.getElementById('heroArt').innerHTML = '<div class="layer" data-p="14">'+ArcadeArt.art(g.id)+'</div>';
+    document.getElementById('hName').textContent = g.n;
+    document.getElementById('hKick').textContent = g.k;
+    document.getElementById('hBlurb').textContent = g.d;
+    document.getElementById('hEyebrow').textContent = g.fresh ? 'New this week' : 'Featured';
+    document.getElementById('hMeta').innerHTML =
+      '<span class="chip on">'+g.p+' players</span>' +
+      g.t.map(function(t){ return '<span class="chip">'+t+'</span>'; }).join('');
+    document.documentElement.style.setProperty('--cyan', ArcadeArt.accent(g.id));
+    document.querySelectorAll('.pager i').forEach(function(d,n){ d.classList.toggle('on', n===hi); });
+  }
+
+  function cycle(){ hi = (hi+1) % SPOT.length; setHero(); }
+
+  document.getElementById('pager').innerHTML = SPOT.map(function(){ return '<i></i>'; }).join('');
+  document.querySelectorAll('.pager i').forEach(function(d,n){
+    d.addEventListener('click', function(){ hi=n; setHero(); restart(); });
+  });
+  document.getElementById('hNext').addEventListener('click', function(){ cycle(); restart(); });
+  document.getElementById('hPlay').addEventListener('click', function(){ open(SPOT[hi]); });
+
+  function restart(){ clearInterval(timer); timer = setInterval(cycle, 7000); }
+
+  // Hero parallax follows the pointer across the whole banner.
+  document.getElementById('hero').addEventListener('pointermove', function(e){
+    var b = this.getBoundingClientRect();
+    var x = (e.clientX-b.left)/b.width - .5, y = (e.clientY-b.top)/b.height - .5;
+    var l = document.querySelector('#heroArt .layer');
+    if (l) l.style.transform = 'translate3d('+(-x*30)+'px,'+(-y*22)+'px,0) scale(1.07)';
+  });
+
+  /* ---------- filters ---------- */
+  var CATS = ['All','Live','3D','Sports','Arcade','Puzzle','Skill'];
+  document.getElementById('navs').innerHTML = CATS.map(function(c,i){
+    return '<button aria-pressed="'+(i===0)+'">'+c+'</button>';
+  }).join('');
+  document.querySelectorAll('.navs button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.navs button').forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      var c = b.textContent;
+      buildRails(c==='All' ? G : G.filter(function(g){ return g.t.indexOf(c)>=0; }));
+    });
+  });
+
+  setHero(); buildRails(G); restart();
+})();
+</script>

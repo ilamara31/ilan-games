@@ -1,0 +1,197 @@
+<title>The Arcade Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,700&family=Jost:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  --ink:#0b0b0d; --ink2:#131316; --bone:#f0ece2; --mute:#8c887e;
+  --brass:#c9a253; --brass-lo:#6d5828; --rule:#26262b;
+  --display:'Bodoni Moda',Georgia,serif;
+  --body:'Jost','Helvetica Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--ink);color:var(--bone);font-family:var(--body);
+  font-weight:300;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+svg.art{width:100%;height:100%;display:block}
+:focus-visible{outline:2px solid var(--brass);outline-offset:4px}
+
+/* ---- the wall: art lives behind everything, and changes as you read ---- */
+.wall{position:fixed;inset:0;z-index:0;background:var(--ink)}
+.wall .plate{position:absolute;inset:0;opacity:0;
+  transition:opacity .72s cubic-bezier(.4,0,.2,1),transform 1.4s cubic-bezier(.2,.8,.3,1);
+  transform:scale(1.06)}
+.wall .plate.on{opacity:1;transform:scale(1.13)}
+.wall::after{content:'';position:absolute;inset:0;z-index:2;
+  background:
+    radial-gradient(120% 90% at 22% 40%, rgba(11,11,13,.62), rgba(11,11,13,.94) 72%),
+    linear-gradient(90deg, var(--ink) 8%, rgba(11,11,13,.5) 52%, rgba(11,11,13,.88))}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E")}
+
+.shell{position:relative;z-index:3;max-width:1180px;margin:0 auto;
+  padding:0 clamp(18px,5vw,56px) 96px}
+
+/* ---- masthead ---- */
+.mast{display:flex;align-items:baseline;justify-content:space-between;gap:20px;
+  padding:clamp(24px,4vw,40px) 0;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.mark{font-family:var(--display);font-size:clamp(19px,2.4vw,25px);font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase}
+.mark em{font-style:italic;color:var(--brass)}
+.mast nav{display:flex;gap:clamp(14px,2.4vw,30px);font-size:12.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--mute)}
+.mast nav button{font-family:inherit;font-size:inherit;letter-spacing:inherit;
+  text-transform:inherit;background:none;border:0;color:inherit;cursor:pointer;
+  padding:0 0 3px;border-bottom:1px solid transparent;transition:.2s}
+.mast nav button:hover{color:var(--bone)}
+.mast nav button[aria-pressed="true"]{color:var(--brass);border-bottom-color:var(--brass)}
+
+/* ---- overture ---- */
+.over{padding:clamp(52px,10vw,120px) 0 clamp(36px,6vw,64px);max-width:20ch}
+.over .no{font-size:11.5px;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--brass);margin-bottom:clamp(18px,3vw,26px)}
+.over h1{font-family:var(--display);font-weight:400;
+  font-size:clamp(50px,11.5vw,138px);line-height:.84;letter-spacing:-.02em;
+  text-wrap:balance}
+.over h1 em{font-style:italic;color:var(--brass)}
+.over p{margin-top:clamp(20px,3vw,30px);max-width:40ch;font-size:clamp(14.5px,1.7vw,17px);
+  line-height:1.72;color:#bdb8ac}
+
+/* ---- the index ---- */
+.idx-h{display:flex;justify-content:space-between;align-items:baseline;
+  border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:6px}
+.idx-h span{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--mute)}
+.list{list-style:none}
+.row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  gap:clamp(14px,3vw,34px);width:100%;padding:clamp(15px,2.2vw,23px) 0;
+  border-bottom:1px solid var(--rule);background:none;border-left:0;border-right:0;
+  border-top:0;cursor:pointer;font-family:inherit;color:inherit;text-align:left;
+  transition:padding-left .42s cubic-bezier(.2,.8,.3,1)}
+.row:hover,.row:focus-visible{padding-left:clamp(10px,2vw,26px)}
+.num{font-size:11.5px;letter-spacing:.14em;color:var(--mute);
+  font-variant-numeric:tabular-nums;transition:color .3s}
+.row:hover .num{color:var(--brass)}
+.name{font-family:var(--display);font-weight:400;font-size:clamp(25px,5vw,52px);
+  line-height:1.02;letter-spacing:-.012em;transition:color .3s,font-style .3s}
+.row:hover .name,.row:focus-visible .name{color:var(--brass);font-style:italic}
+.say{display:block;font-family:var(--body);font-weight:300;
+  font-size:clamp(13px,1.5vw,15.5px);color:var(--mute);margin-top:7px;
+  max-width:54ch;line-height:1.55;transition:color .3s}
+.row:hover .say{color:#cfcabd}
+.side{display:flex;align-items:center;gap:clamp(10px,2vw,22px);white-space:nowrap}
+.kind{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+.thumb{width:clamp(62px,9vw,104px);aspect-ratio:4/3;border-radius:2px;overflow:hidden;
+  filter:grayscale(1) contrast(.8) brightness(.62);opacity:.55;
+  transition:filter .42s,opacity .42s,transform .42s cubic-bezier(.2,.8,.3,1);
+  border:1px solid var(--rule)}
+.row:hover .thumb,.row:focus-visible .thumb{filter:none;opacity:1;transform:scale(1.06)}
+.arrow{font-size:19px;color:var(--rule);transition:color .3s,transform .3s}
+.row:hover .arrow{color:var(--brass);transform:translateX(5px)}
+
+.tail{margin-top:clamp(44px,7vw,84px);padding-top:26px;border-top:1px solid var(--rule);
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
+
+@media (max-width:660px){
+  .row{grid-template-columns:auto 1fr;gap:14px}
+  .side{grid-column:1/-1;justify-content:flex-start;padding-left:34px}
+  .arrow{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wall" id="wall"></div>
+<div class="grain"></div>
+
+<div class="shell">
+  <div class="mast">
+    <div class="mark">Ilan <em>Games</em></div>
+    <nav id="nav"></nav>
+  </div>
+
+  <section class="over">
+    <div class="no">Twenty-seven titles</div>
+    <h1>An arcade, <em>indexed</em></h1>
+    <p>Everything built so far, set down in one list. Run your eye along a line and
+      the room behind it changes.</p>
+  </section>
+
+  <div class="idx-h"><span>The catalogue</span><span id="count">27 entries</span></div>
+  <ul class="list" id="list"></ul>
+
+  <div class="tail">
+    <span>Design study — The Index</span>
+    <span>Built by Ilan</span>
+  </div>
+</div>
+
+<script src="../games.js"></script>
+<script src="../art.js"></script>
+<script>
+(function(){
+  "use strict";
+  document.body.insertAdjacentHTML('afterbegin', ArcadeArt.defs);
+  var G = window.GAMES, wall = document.getElementById('wall');
+
+  /* Two plates crossfading, so the wall never blinks to black between games. */
+  var plates = [document.createElement('div'), document.createElement('div')];
+  plates.forEach(function(p){ p.className = 'plate'; wall.appendChild(p); });
+  var front = 0, current = null;
+
+  function showWall(id){
+    if (id === current) return;
+    current = id;
+    var next = 1 - front;
+    plates[next].innerHTML = ArcadeArt.art(id);
+    plates[next].classList.add('on');
+    plates[front].classList.remove('on');
+    front = next;
+  }
+
+  function pad(n){ return (n<10?'0':'') + n; }
+
+  function render(list){
+    document.getElementById('list').innerHTML = list.map(function(g,i){
+      return '<li><button class="row" data-id="'+g.id+'">'+
+        '<span class="num">'+pad(i+1)+'</span>'+
+        '<span><span class="name">'+g.n+'</span>'+
+          '<span class="say">'+g.d+'</span></span>'+
+        '<span class="side">'+
+          '<span class="kind">'+g.t[0]+' · '+g.p+'</span>'+
+          '<span class="thumb">'+ArcadeArt.art(g.id)+'</span>'+
+          '<span class="arrow">&#8594;</span>'+
+        '</span></button></li>';
+    }).join('');
+    document.getElementById('count').textContent = list.length + ' entries';
+
+    document.querySelectorAll('.row').forEach(function(r){
+      var id = r.getAttribute('data-id');
+      r.addEventListener('pointerenter', function(){ showWall(id); });
+      r.addEventListener('focus', function(){ showWall(id); });
+      r.addEventListener('click', function(){
+        var a = r.querySelector('.arrow');
+        if (a) { a.textContent = '→'; }
+        var n = r.querySelector('.name'), was = n.textContent;
+        n.textContent = was + ' — opens here';
+        setTimeout(function(){ n.textContent = was; }, 1300);
+      });
+    });
+    showWall(list[0].id);
+  }
+
+  var CATS = ['All','Live','3D','Sports','Arcade','Puzzle'];
+  document.getElementById('nav').innerHTML = CATS.map(function(c,i){
+    return '<button aria-pressed="'+(i===0)+'">'+c+'</button>';
+  }).join('');
+  document.querySelectorAll('#nav button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#nav button').forEach(function(o){
+        o.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      var c = b.textContent;
+      render(c==='All' ? G : G.filter(function(g){ return g.t.indexOf(c)>=0; }));
+    });
+  });
+
+  render(G);
+})();
+</script>

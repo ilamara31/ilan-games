@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home page — three directions</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;600&display=swap">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0b0b0f;color:#eee9de;font-family:'Jost','Helvetica Neue',sans-serif;
+    font-weight:300;padding:clamp(24px,6vw,70px) clamp(18px,5vw,48px) 70px;line-height:1.6}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{font-size:clamp(30px,6vw,46px);font-weight:600;letter-spacing:-.02em;margin-bottom:10px}
+  .lede{color:#9b958a;max-width:56ch;margin-bottom:clamp(30px,5vw,46px)}
+  a.opt{display:block;border:1px solid #26262c;border-radius:14px;padding:22px 24px;
+    margin-bottom:14px;text-decoration:none;color:inherit;transition:.18s;background:#121218}
+  a.opt:hover{border-color:#c9a253;background:#17171f;transform:translateY(-2px)}
+  a.opt h2{font-size:23px;font-weight:600;margin-bottom:5px;letter-spacing:-.01em}
+  a.opt p{color:#9b958a;font-size:14.5px}
+  a.opt .go{color:#c9a253;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    margin-top:12px;display:block}
+  .note{margin-top:34px;padding-top:22px;border-top:1px solid #26262c;color:#78736a;
+    font-size:13.5px;max-width:60ch}
+</style></head><body>
+<div class="wrap">
+  <h1>Three ways the home page could look</h1>
+  <p class="lede">Same 27 games, same art, three different rooms to put them in.
+    Open each on a laptop if you can — they all respond to where the cursor is.</p>
+
+  <a class="opt" href="vault/">
+    <h2>1 · Neon Vault</h2>
+    <p>A console dashboard. Big cinematic banner that cycles through featured games,
+      then shelves you scroll sideways. Cards lean toward your cursor and the art
+      inside them shifts behind the frame.</p>
+    <span class="go">Open →</span>
+  </a>
+
+  <a class="opt" href="floor/">
+    <h2>2 · Arcade Floor</h2>
+    <p>The games stand as objects on a lit floor that runs back to a horizon.
+      The whole room leans as you move, each one casts a shadow, and holding on one
+      lifts it off the ground.</p>
+    <span class="go">Open →</span>
+  </a>
+
+  <a class="opt" href="luxe/">
+    <h2>3 · The Index</h2>
+    <p>Almost no boxes at all. A printed-looking list of every game; run your eye
+      down it and the artwork behind the whole page changes to match the line
+      you're on.</p>
+    <span class="go">Open →</span>
+  </a>
+
+  <p class="note">Nothing here touches the real home page — it all lives in
+    <code>/preview/</code> and nobody can reach it from the arcade. The artwork is
+    drawn in code rather than painted, so it stays sharp at any size and weighs
+    almost nothing.</p>
+</div>
+</body></html>
