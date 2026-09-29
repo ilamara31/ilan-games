@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v120';
+const CACHE = 'ilan-arcade-v121';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,10 @@ const ASSETS = [
   './friends.js',
   './rec.js',
   './supabase-config.js',
+  './preview/games.js',
+  './preview/art.js',
+  './preview/art-rich.js',
+  './preview/data.js',
   './auth.js',
   './icon-192.png?v=2',
   './icon-512.png?v=2',

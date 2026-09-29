@@ -526,7 +526,10 @@
   function art(id) {
     var s = SCENES[id];
     if (!s) s = SCENES.timeduel;
-    return shell(id.replace(/[^a-z]/g, ''), s[0], s[1], s[2], s[3]);
+    // Keep digits: stripping them made "catch2" collide with "catch", and the
+    // two tiles then shared one set of gradient ids — whichever painted first
+    // gave the other its sky.
+    return shell(id.replace(/[^a-z0-9]/g, ''), s[0], s[1], s[2], s[3]);
   }
 
   function accent(id) { return (SCENES[id] || SCENES.timeduel)[2]; }
