@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ilan Games</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#000308">
+<meta name="theme-color" content="#0a0e1a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,444 +16,369 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ilan Games">
 <meta property="og:title" content="Ilan Games">
-<meta property="og:description" content="27 games. Race, duel, draw, guess and climb the leaderboard.">
+<meta property="og:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta property="og:url" content="https://ilamara31.github.io/ilan-games/">
 <meta property="og:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ilan Games logo">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Ilan Games">
+<meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://ilamara31.github.io/ilan-games/#website",
+      "url": "https://ilamara31.github.io/ilan-games/",
+      "name": "Ilan Games",
+      "description": "Free mini games by Ilan — cricket, racing, football, obby, puzzles and more.",
+      "publisher": { "@id": "https://ilamara31.github.io/ilan-games/#org" }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://ilamara31.github.io/ilan-games/#org",
+      "name": "Ilan Games",
+      "url": "https://ilamara31.github.io/ilan-games/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://ilamara31.github.io/ilan-games/icon-512.png?v=2",
+        "width": 512,
+        "height": 512
+      }
+    }
+  ]
+}
+</script>
 <style>
-/* ===================================================================
-   ILAN GAMES V2 — one look, locked: near-black ground, electric cyan doing
-   the work, magenta reserved for anything live, corners kept tight.
-   =================================================================== */
-:root{
-  /* Futuristic & Bold: near-black ground, electric cyan doing the work,
-     magenta only where something is live, and corners kept tight. */
-  --bg:#000308; --bg2:#03080f; --panel:#070f1c; --panel2:#0a1726;
-  --line:#123049; --text:#e8fbff; --mute:#7aa3bd;
-  --acc:#00e5ff; --acc2:#0091ff; --gold:#ffe14f; --hot:#ff2bd1;
-  --radius:6px; --radius-lg:8px;
-  --shadow:0 18px 44px rgba(0,0,0,.66);
-  --side:250px;
-  --display:'Outfit','Trebuchet MS',sans-serif;
-  --body:'Plus Jakarta Sans','Helvetica Neue',sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:var(--body);
-  -webkit-font-smoothing:antialiased;overflow-x:hidden}
-svg.art{width:100%;height:100%;display:block}
-button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
-:focus-visible{outline:2.5px solid var(--acc);outline-offset:3px;border-radius:8px}
-.h{font-family:var(--display)}
-
-/* ---------------- top bar ---------------- */
-.top{position:sticky;top:0;z-index:90;display:flex;align-items:center;gap:16px;
-  padding:12px clamp(14px,2.4vw,26px);background:var(--bg2);
-  border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:11px;flex:0 0 auto}
-.logo .pad{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));flex:none;
-  box-shadow:0 6px 18px color-mix(in srgb,var(--acc) 45%,transparent)}
-.logo .pad svg{width:24px;height:24px}
-.logo .name{font-family:var(--display);font-weight:800;font-size:19px;
-  letter-spacing:.01em;line-height:1.1;display:flex;align-items:center;gap:6px}
-.logo .name b{color:var(--acc)}
-.logo .tag{font-size:10.5px;color:var(--mute);letter-spacing:.09em;font-weight:600}
-/* the release stamp — small on purpose, so it reads as a mark, not a shout */
-.ver{font-family:var(--display);font-size:10.5px;font-weight:900;letter-spacing:.1em;
-  color:#00131a;background:linear-gradient(135deg,var(--acc),var(--acc2));
-  padding:3px 8px;border-radius:4px;
-  box-shadow:0 0 16px color-mix(in srgb,var(--acc) 55%,transparent)}
-.search{flex:1;max-width:400px;margin-left:clamp(6px,2vw,24px);position:relative}
-.search input{width:100%;background:var(--panel);border:1px solid var(--line);
-  color:var(--text);border-radius:999px;padding:11px 16px 11px 42px;font-size:14px;
-  font-family:inherit;outline:none;transition:.16s}
-.search input::placeholder{color:var(--mute)}
-.search input:focus{border-color:var(--acc)}
-.search svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);
-  width:16px;height:16px;stroke:var(--mute);fill:none;stroke-width:2}
-.tools{margin-left:auto;display:flex;align-items:center;gap:10px}
-.bell{width:40px;height:40px;border-radius:12px;background:var(--panel);
-  border:1px solid var(--line);display:grid;place-items:center;position:relative}
-.bell svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:1.9}
-.bell i{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;
-  background:var(--hot);border:2px solid var(--panel)}
-.me{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;
-  border-radius:999px;background:var(--panel);border:1px solid var(--line)}
-.me .av{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;
-  border:2px solid var(--gold)}
-.me span{font-size:14px;font-weight:700}
-.me .crown{color:var(--gold);font-size:11px}
-
-/* ---------------- shell ---------------- */
-.shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);
-  gap:clamp(14px,2vw,22px);padding:clamp(14px,2vw,22px) clamp(14px,2.4vw,26px) 96px;
-  align-items:start}
-
-/* ---------------- sidebar ---------------- */
-.side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
-.nav{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:10px;display:flex;flex-direction:column;gap:3px}
-
-/* player card */
-.player{background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--radius-lg);padding:16px}
-.player .who{display:flex;align-items:center;gap:11px;margin-bottom:13px}
-.player .av{width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none;
-  border:2px solid var(--gold)}
-.player .nm{font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2}
-.player .lv{font-size:12px;color:var(--mute);font-weight:600}
-.bar{height:9px;border-radius:999px;background:var(--panel2);overflow:hidden;
-  border:1px solid var(--line)}
-.bar i{display:block;height:100%;border-radius:999px;transition:width .5s ease;
-  background:linear-gradient(90deg,var(--acc),var(--acc2))}
-.xp{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;
-  color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums}
-
-/* ---------------- hero ---------------- */
-.hero{position:relative;border-radius:var(--radius-lg);overflow:hidden;
-  border:1px solid var(--line);box-shadow:var(--shadow);
-  min-height:clamp(220px,31vw,330px);display:flex;align-items:center;
-  margin-bottom:clamp(20px,2.6vw,30px)}
-.hero .bg{position:absolute;inset:0}
-.hero .bg .lay{position:absolute;inset:-6%;
-  transition:transform .55s cubic-bezier(.2,.8,.3,1)}
-.hero .scrim{position:absolute;inset:0;
-  background:linear-gradient(95deg,var(--panel) 2%,color-mix(in srgb,var(--panel) 74%,transparent) 38%,transparent 72%)}
-.hero .in{position:relative;z-index:2;padding:clamp(20px,3vw,40px);max-width:60%}
-.badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;
-  letter-spacing:.08em;text-transform:uppercase;color:#3a2600;background:var(--gold);
-  padding:6px 13px;border-radius:999px;margin-bottom:13px}
-.hero h1{font-family:var(--display);font-weight:900;
-  font-size:clamp(26px,4.6vw,50px);line-height:1;letter-spacing:-.02em;
-  text-transform:uppercase;margin-bottom:9px;text-wrap:balance}
-.hero p{font-size:clamp(13px,1.5vw,16px);color:var(--mute);font-weight:600;
-  margin-bottom:clamp(14px,2vw,20px)}
-.play{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);
-  font-weight:800;font-size:clamp(14px,1.6vw,17px);color:#fff;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));
-  padding:12px 26px;border-radius:999px;
-  box-shadow:0 10px 26px color-mix(in srgb,var(--acc) 45%,transparent);
-  transition:transform .15s,box-shadow .15s}
-.play:hover{transform:translateY(-2px)}
-.play svg{width:15px;height:15px;fill:#fff}
-.dots{position:absolute;right:clamp(14px,2vw,22px);bottom:clamp(14px,2vw,20px);
-  z-index:3;display:flex;gap:6px}
-.dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.34);
-  cursor:pointer;transition:.2s}
-.dots i.on{background:#fff;width:22px;border-radius:999px}
-
-/* ---------------- sections ---------------- */
-.sec{margin-bottom:clamp(20px,2.6vw,30px)}
-.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:13px}
-.sec-h h2{font-family:var(--display);font-weight:800;font-size:clamp(17px,2vw,22px);
-  display:flex;align-items:center;gap:9px}
-.sec-h .all{margin-left:auto;font-size:13px;font-weight:700;color:var(--acc);
-  display:flex;align-items:center;gap:6px}
-.grid{display:grid;gap:clamp(11px,1.4vw,16px);
-  grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
-
-/* ---------------- game card ---------------- */
-.g{position:relative;border-radius:var(--radius);overflow:hidden;text-decoration:none;
-  color:inherit;border:1px solid var(--line);background:var(--panel);text-align:left;
-  transition:transform .26s cubic-bezier(.2,.8,.3,1),box-shadow .26s,border-color .26s;
-  display:block;width:100%}
-.g:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:var(--acc)}
-.g .shot{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--bg2)}
-.g .shot .lay{position:absolute;inset:-7%;
-  transition:transform .4s cubic-bezier(.2,.8,.3,1)}
-.g:hover .shot .lay{transform:scale(1.11)}
-.g .shot::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(0deg,var(--panel) 3%,color-mix(in srgb,var(--panel) 45%,transparent) 36%,transparent 62%)}
-.g .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:11px 12px 12px}
-.g .cap h3{font-family:var(--display);font-weight:700;font-size:14.5px;line-height:1.2;
-  margin-bottom:6px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
-.g .cap .kind{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.07em;
-  text-transform:uppercase;padding:4px 9px;border-radius:999px;
-  background:color-mix(in srgb,var(--acc) 26%,transparent);color:var(--text);
-  border:1px solid color-mix(in srgb,var(--acc) 42%,transparent)}
-.g .go{position:absolute;right:10px;bottom:11px;z-index:3;width:26px;height:26px;
-  border-radius:50%;background:var(--acc);display:grid;place-items:center;
-  opacity:0;transform:scale(.6);transition:.24s}
-.g:hover .go{opacity:1;transform:scale(1)}
-.g .go svg{width:11px;height:11px;fill:#fff}
-.g .flag{position:absolute;top:9px;left:9px;z-index:3;font-size:9.5px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:999px;
-  background:var(--hot);color:#fff}
-.g .flag.new{background:var(--gold);color:#3a2600}
-
-/* ---------------- user of the week ---------------- */
-.uotw{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(12px,1.6vw,18px);
-  margin-bottom:clamp(20px,2.6vw,30px)}
-.crownbox{position:relative;overflow:hidden;border-radius:var(--radius-lg);
-  border:1px solid color-mix(in srgb,var(--gold) 42%,var(--line));padding:clamp(16px,2vw,22px);
-  background:linear-gradient(120deg,color-mix(in srgb,var(--gold) 16%,var(--panel)),var(--panel) 62%)}
-.crownbox::after{content:'♛';position:absolute;right:-8px;bottom:-30px;font-size:130px;
-  color:var(--gold);opacity:.1;line-height:1}
-.crownbox .lbl{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:7px}
-.champ{display:flex;align-items:center;gap:14px;position:relative;z-index:2}
-.champ .av{width:62px;height:62px;border-radius:50%;overflow:hidden;flex:none;
-  border:3px solid var(--gold);box-shadow:0 6px 20px color-mix(in srgb,var(--gold) 40%,transparent)}
-.champ .who{min-width:0}
-.champ .nm{font-family:var(--display);font-weight:800;font-size:clamp(20px,2.6vw,27px);
-  line-height:1.1;overflow:hidden;text-overflow:ellipsis}
-.champ .sub2{font-size:13px;color:var(--mute);font-weight:600;margin-top:3px}
-.champ .big{margin-left:auto;text-align:right;flex:none}
-.champ .big b{display:block;font-family:var(--display);font-size:clamp(24px,3.4vw,36px);
-  font-weight:900;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
-.champ .big span{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);
-  font-weight:800}
-.runners{border-radius:var(--radius-lg);border:1px solid var(--line);background:var(--panel);
-  padding:clamp(14px,1.8vw,18px)}
-.runners .lbl{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--mute);margin-bottom:10px}
-.rrow{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px}
-.rrow .pos{width:20px;font-weight:800;color:var(--mute);font-variant-numeric:tabular-nums}
-.rrow .rn{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rrow .rp{margin-left:auto;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums}
-
-/* ---------------- views ---------------- */
-.vh{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
-.vh h2{font-weight:800;font-size:clamp(20px,2.6vw,28px)}
-.vh span{font-size:13px;color:var(--mute);font-weight:600}
-
-/* friends: faces first, big */
-.people-grid{display:grid;gap:clamp(12px,1.6vw,18px);
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
-.reqs{background:color-mix(in srgb,var(--hot) 12%,var(--panel));
-  border:1px solid color-mix(in srgb,var(--hot) 42%,var(--line));
-  border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:18px}
-.rq-h{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--hot);margin-bottom:12px}
-.rq{display:flex;align-items:center;gap:11px;padding:8px 0;flex-wrap:wrap}
-.rq .av{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;
-  border:2px solid var(--line)}
-.rq .rn{font-weight:700;font-size:15px;flex:1;min-width:90px;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-.rq .ok,.rq .no{font-size:13px;font-weight:800;padding:9px 16px;border-radius:999px}
-.rq .ok{color:#00131a;background:linear-gradient(135deg,var(--acc),var(--acc2))}
-.rq .no{color:var(--mute);background:var(--panel2);border:1px solid var(--line)}
-.pbtns{display:flex;gap:6px;justify-content:center;margin-top:11px}
-.msg-b,.add-b,.pend-b{font-size:12.5px;font-weight:800;padding:9px 14px;
-  border-radius:999px;white-space:nowrap}
-.msg-b{color:#00131a;background:linear-gradient(135deg,var(--acc),var(--acc2))}
-.add-b{background:var(--panel2);color:var(--acc);border:1px solid var(--acc)}
-.pend-b{color:var(--mute);background:var(--panel2);border:1px solid var(--line)}
-.rem-b{width:36px;border-radius:999px;color:var(--mute);background:var(--panel2);
-  border:1px solid var(--line);font-size:12px;font-weight:800}
-.rem-b:hover{color:var(--hot);border-color:var(--hot)}
-.fmsg{font-size:13px;font-weight:700;color:var(--hot);margin-top:8px;text-align:center}
-.person{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:18px 14px;text-align:center;transition:.2s;width:100%}
-.person:hover{transform:translateY(-5px);border-color:var(--acc);box-shadow:var(--shadow)}
-.person .av{width:clamp(78px,11vw,102px);aspect-ratio:1;border-radius:50%;overflow:hidden;
-  margin:0 auto 12px;border:3px solid var(--line);background:var(--panel2)}
-.person:hover .av{border-color:var(--acc)}
-.person .nm{font-family:var(--display);font-weight:700;font-size:clamp(15px,1.8vw,18px);
-  line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.person .st{font-size:11.5px;color:var(--mute);font-weight:600;margin-top:4px}
-.person .st b{color:var(--acc)}
-
-.groups{display:grid;gap:clamp(11px,1.5vw,15px);
-  grid-template-columns:repeat(auto-fill,minmax(232px,1fr))}
-.grp{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--radius);padding:14px;text-align:left;transition:.2s;width:100%}
-.grp:hover{transform:translateY(-4px);border-color:var(--acc);box-shadow:var(--shadow)}
-.grp .av{width:50px;height:50px;border-radius:15px;overflow:hidden;flex:none;display:grid;
-  place-items:center;font-size:23px;background:var(--panel2);border:1px solid var(--line)}
-.grp .nm{font-family:var(--display);font-weight:700;font-size:15.5px;line-height:1.2;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grp .mt{font-size:12px;color:var(--mute);font-weight:600;margin-top:3px}
-
-/* leaderboard */
-.bpick{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;margin-bottom:6px;
-  scrollbar-width:none}
-.bpick::-webkit-scrollbar{display:none}
-.bpick button{font-size:13px;font-weight:700;color:var(--mute);background:var(--panel);
-  border:1px solid var(--line);padding:9px 15px;border-radius:999px;white-space:nowrap;
-  transition:.16s}
-.bpick button:hover{color:var(--text)}
-.bpick button[aria-pressed="true"]{color:#fff;border-color:transparent;
-  background:linear-gradient(135deg,var(--acc),var(--acc2))}
-.btable{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
-  overflow:hidden}
-.brow{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;
-  padding:13px 16px;border-bottom:1px solid var(--line)}
-.brow:last-child{border-bottom:0}
-.brow.top{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 14%,transparent),transparent 62%)}
-.brow .rk{font-family:var(--display);font-weight:900;font-size:17px;color:var(--mute);
-  font-variant-numeric:tabular-nums}
-.brow.top .rk{color:var(--gold);font-size:21px}
-.brow .pn{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  display:flex;align-items:center;gap:9px}
-.brow .pn .gm{font-size:11px;font-weight:700;color:var(--mute);padding:3px 8px;border-radius:999px;
-  background:var(--panel2);border:1px solid var(--line);white-space:nowrap;flex:none}
-@media (max-width:620px){.brow .pn .gm{display:none}}
-.brow .sc{font-family:var(--display);font-weight:800;font-size:16px;color:var(--acc);
-  font-variant-numeric:tabular-nums}
-.empty{padding:34px 18px;text-align:center;color:var(--mute);font-size:14px}
-
-.navb{display:flex;align-items:center;gap:13px;padding:13px 15px;width:100%;text-align:left;
-  border-radius:var(--radius);font-size:14.5px;font-weight:600;color:var(--mute);transition:.16s}
-.navb svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;flex:none}
-.navb:hover{color:var(--text);background:var(--panel2)}
-.navb.on{color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));
-  box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 40%,transparent)}
-
-@media (max-width:760px){
-  .uotw{grid-template-columns:minmax(0,1fr)}
-}
-
-/* ---------------- bottom banner ---------------- */
-.cta{position:relative;overflow:hidden;border-radius:var(--radius-lg);
-  border:1px solid var(--line);padding:clamp(16px,2.4vw,26px) clamp(18px,2.6vw,30px);
-  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  background:linear-gradient(115deg,var(--acc),var(--acc2) 58%,var(--hot))}
-.cta::after{content:'';position:absolute;inset:0;
-  background:radial-gradient(70% 160% at 12% 0%,rgba(255,255,255,.28),transparent 60%)}
-.cta .words{position:relative;z-index:2;display:flex;align-items:center;gap:14px;
-  flex-wrap:wrap;font-family:var(--display);font-weight:900;color:#fff;
-  font-size:clamp(15px,2.2vw,23px);letter-spacing:.04em;text-transform:uppercase}
-.cta .words span{display:flex;align-items:center;gap:9px}
-.ctabtns{position:relative;z-index:2;margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
-.cta .join{background:#fff;color:#12203c;
-  font-family:var(--display);font-weight:800;font-size:14.5px;padding:12px 22px;
-  border-radius:999px;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.cta .join.ghost2{background:rgba(255,255,255,.17);color:#fff;
-  border:1px solid rgba(255,255,255,.45)}
-#fbModal{position:fixed;inset:0;z-index:170;background:rgba(0,3,8,.8);
-  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px}
-#fbModal .modalbox{background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--radius-lg);padding:22px;max-width:440px;width:100%;
-  max-height:88vh;overflow-y:auto}
-#fbModal h3{font-family:var(--display);font-size:20px;margin-bottom:10px}
-#fbModal textarea,#fbModal select{width:100%;background:var(--panel2);
-  border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
-  padding:11px 13px;font-family:inherit;font-size:14px;margin-top:9px}
-#fbStars span{cursor:pointer;font-size:27px;line-height:1}
-#fbSend,#fbCancel{font-weight:800;padding:11px 20px;border-radius:999px;font-size:14px;
-  margin-top:13px;margin-right:8px}
-#fbSend{color:#00131a;background:linear-gradient(135deg,var(--acc),var(--acc2))}
-#fbCancel{color:var(--mute);background:var(--panel2);border:1px solid var(--line)}
-#fbAdminLink{display:none;color:var(--acc);font-size:13px}
-
-/* ---------------- responsive ---------------- */
-@media (max-width:1000px){
-  :root{--side:0px}
-  .shell{grid-template-columns:minmax(0,1fr)}
-  .side{position:static;order:0;flex-direction:row;flex-wrap:wrap}
-  .nav{flex:1 1 100%;flex-direction:row;overflow-x:auto;scrollbar-width:none}
-  .nav::-webkit-scrollbar{display:none}
-  .nav .navb{white-space:nowrap;padding:11px 14px;width:auto;flex:1 1 auto;
-    justify-content:center}
-  .player{flex:1 1 100%}
-  .hero .in{max-width:100%}
-  .hero .scrim{background:linear-gradient(0deg,var(--panel) 6%,color-mix(in srgb,var(--panel) 62%,transparent) 54%,transparent 88%)}
-  .hero{align-items:flex-end;min-height:270px}
-}
-@media (max-width:640px){
-  .logo .tag,.me span,.me .crown{display:none}
-  .search{max-width:none}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(144px,1fr))}
-  .ctabtns{margin-left:0;width:100%}
-  .cta .join{flex:1 1 auto;justify-content:center}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style></head>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { min-height:100%; font-family:'Trebuchet MS','Segoe UI',sans-serif; color:#fff;
+    background:radial-gradient(circle at 50% 20%, #1b3a6b, #0a0e1a 75%); }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; padding:16px 14px 28px; text-align:center; }
+  h1 { font-size:clamp(30px,7vw,56px); letter-spacing:2px; margin-bottom:4px;
+    background:linear-gradient(90deg,#ffd54a,#ff7b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:#9fb3d8; margin-bottom:16px; font-size:clamp(13px,3.2vw,17px); }
+  /* compact "Poki-style" tile grid — many games visible, little scrolling */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:14px; max-width:900px; width:100%; }
+  a.card { display:flex; flex-direction:column; align-items:center; justify-content:center; text-decoration:none; color:#fff;
+    padding:18px 10px; border-radius:18px; min-height:132px;
+    border:2px solid rgba(255,255,255,.12); transition:transform .12s, border-color .12s, box-shadow .12s; }
+  a.card:hover { transform:translateY(-4px) scale(1.03); border-color:#fff; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  a.card:active { transform:scale(.96); }
+  .emoji { font-size:54px; display:block; margin-bottom:8px; line-height:1; }
+  .card h2 { font-size:15px; margin-bottom:0; line-height:1.2; }
+  .card p { display:none; }   /* hide long descriptions in the compact grid */
+  .pcflag { display:inline-block; margin-top:5px; font-size:10px; font-weight:bold; color:#ffe0b0;
+    background:rgba(0,0,0,.3); border:1px solid rgba(255,200,120,.4); border-radius:10px; padding:2px 8px; }
+  .cricket { background:linear-gradient(135deg,#005db4,#003b73); }
+  .catch   { background:linear-gradient(135deg,#ff8c3d,#d4561c); }
+  .catch2  { background:linear-gradient(135deg,#ffd23d,#e0552b); }
+  .hcl     { background:linear-gradient(135deg,#12c2a0,#0a5e8a); }
+  .f1      { background:linear-gradient(135deg,#e10600,#7a0400); }
+  .carrom  { background:linear-gradient(135deg,#c98f4a,#5d3a1e); }
+  .airhockey { background:linear-gradient(135deg,#1f7be0,#0a2f6b); }
+  .football{ background:linear-gradient(135deg,#1ea85a,#0a5a2e); }
+  .obby    { background:linear-gradient(135deg,#8a4bff,#3a1d8a); }
+  .puzzles { background:linear-gradient(135deg,#a855f7,#6d28d9); }
+  .tryg    { background:linear-gradient(135deg,#ff4d8d,#b8005a); }
+  .anime   { background:linear-gradient(135deg,#ff7ad9,#3b1d6e); }
+  .tennis  { background:linear-gradient(135deg,#9bff8e,#1e7a3a); }
+  .pptour  { background:linear-gradient(135deg,#3a6cf0,#0c1430); }
+  .karate  { background:linear-gradient(135deg,#ff8b3d,#7a1f12); }
+  .thisorthat { background:linear-gradient(135deg,#ff7ad9,#7a2dff); }
+  .fruit   { background:linear-gradient(135deg,#ff5f6d,#7a1f2b); }
+  .paper   { background:linear-gradient(135deg,#2bbd5a,#0e3a22); }
+  .stack   { background:linear-gradient(135deg,#ffb13d,#b8005a); }
+  .archer  { background:linear-gradient(135deg,#ffd54a,#7a3b10); }
+  .codebreaker { background:linear-gradient(135deg,#123a6b,#05081c); }
+  .codewords { background:linear-gradient(135deg,#2a3352,#0a0e1a); }
+  .drawrush { background:linear-gradient(135deg,#7c3aed,#ec4899); }
+  .scoop { background:linear-gradient(135deg,#ff8a34,#7a2f08); }
+  .meme  { background:linear-gradient(135deg,#ff5b8d,#ff9b3d); }
+  /* ===== Game of the Day / Week + Passport ===== */
+  #feats { width:100%; max-width:900px; display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  #passport { width:100%; max-width:900px; margin-bottom:18px; }
+  .feature { flex:1; min-width:260px; color:#fff; text-align:left;
+    background:linear-gradient(135deg,#1d6fd0,#0b2f6b); border:2px solid rgba(255,255,255,.18);
+    border-radius:18px; padding:14px 18px; box-shadow:0 8px 22px rgba(0,0,0,.4); }
+  .feature.week { background:linear-gradient(135deg,#a25bff,#3a1d7a); }
+  .flabel { font-size:12px; font-weight:900; letter-spacing:1px; color:#ffe14a; margin-bottom:8px; }
+  .frow { display:flex; align-items:center; gap:14px; }
+  .femoji { font-size:46px; line-height:1; }
+  .fname { font-size:20px; font-weight:900; }
+  .fgoal { font-size:13.5px; color:#eaf2ff; margin-top:10px; line-height:1.4; }
+  .fgoal b { color:#ffe14a; }
+  .factions { display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .fplay { text-decoration:none; font-weight:900; font-size:15px; color:#04220f; padding:9px 20px; border-radius:22px;
+    background:linear-gradient(135deg,#7dff9b,#22c55e); box-shadow:0 4px 0 #1a8f47; }
+  .fplay:active { transform:translateY(2px); box-shadow:0 2px 0 #1a8f47; }
+  .fclaim { border:none; cursor:pointer; font-weight:900; font-size:14px; color:#241600; padding:9px 18px; border-radius:22px;
+    background:linear-gradient(135deg,#ffd54a,#ff9b3d); box-shadow:0 4px 0 #b5700f; }
+  .fclaim:active { transform:translateY(2px); box-shadow:0 2px 0 #b5700f; }
+  .fdone { font-size:14px; font-weight:800; color:#9bffba; }
+  .flock { font-size:12.5px; color:#cfe0ff; opacity:.85; }
+  #passport .pptop { font-size:14px; color:#dbe6fb; margin-bottom:6px; text-align:left; }
+  .passbar { height:10px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden; }
+  .passbar > span { display:block; height:100%; background:linear-gradient(90deg,#7dff9b,#22c55e); transition:width .6s; }
+  .champ { font-size:16px; font-weight:900; color:#04220f; text-align:center;
+    background:linear-gradient(135deg,#ffd54a,#ff9b3d); border-radius:14px; padding:12px; box-shadow:0 6px 18px rgba(255,170,60,.45); }
+  .stamp { position:absolute; bottom:6px; right:6px; width:23px; height:23px; border-radius:50%;
+    background:#22c55e; color:#fff; font-size:13px; font-weight:900; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.45); z-index:3; }
+  /* new / recently-updated badges */
+  a.card { position:relative; overflow:visible; }
+  /* all card badges live in a top-left flex stack so several can show without overlapping */
+  a.card .badges { position:absolute; top:-9px; left:-7px; display:flex; flex-wrap:wrap; gap:4px; z-index:3; max-width:calc(100% - 4px); }
+  .badge { font-size:11px; font-weight:bold; padding:4px 10px; border-radius:13px;
+    box-shadow:0 3px 10px rgba(0,0,0,.45); letter-spacing:.5px; }
+  .badge.new { background:linear-gradient(135deg,#ff4d6d,#ff9b3d); color:#3a0010; animation:badgepulse 1.6s infinite; }
+  .badge.upd { background:linear-gradient(135deg,#7ee0ff,#3aa0e8); color:#04203a; }
+  @keyframes badgepulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
+  #newBanner { margin-top:26px; display:none; }
+  #newBanner a { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:#06280f; font-weight:bold; font-size:16px;
+    background:linear-gradient(135deg,#ffe14a,#ff9b3d); padding:13px 24px; border-radius:30px; box-shadow:0 8px 22px rgba(255,170,60,.4); animation:bannerpulse 2s infinite; }
+  #newBanner a:active { transform:scale(.97); }
+  @keyframes bannerpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.035) } }
+  /* recommended-device chip — hidden in the compact grid to keep tiles small */
+  .rec { display:none; margin-top:12px; font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px;
+    background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.18); color:#eaf2ff; }
+  .rec.warn { background:rgba(255,170,40,.16); border-color:rgba(255,180,60,.6); color:#ffd9a0; }
+  /* play count + trending fire */
+  .plays { margin-top:8px; font-size:11px; font-weight:800; color:#ffe0b0; background:rgba(0,0,0,.32);
+    border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:3px 9px; letter-spacing:.3px; }
+  .badge.fire { background:linear-gradient(135deg,#ff5a2b,#ffb02e); color:#3a1400; animation:badgepulse 1.4s infinite; }
+  .badge.fix { background:linear-gradient(135deg,#57e39b,#20b263); color:#04331a; }
+  footer { margin-top:42px; color:#5e6f93; font-size:13px; }
+  /* account bar + modal */
+  #acctBar { display:flex; align-items:center; gap:10px; background:rgba(8,14,28,.55);
+    padding:8px 16px; border-radius:30px; margin-bottom:26px; font-size:15px; }
+  #acctBar b { color:#ffd54a; }
+  .mini { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; border:none; padding:7px 16px;
+    font-size:13px; font-weight:bold; border-radius:20px; cursor:pointer; }
+  .modal { position:fixed; inset:0; background:rgba(4,8,18,.86); display:flex; align-items:center;
+    justify-content:center; z-index:50; padding:20px; }
+  .modalbox { background:#0f1d36; border:1px solid #2a3c63; border-radius:18px; padding:24px;
+    max-width:420px; width:100%; text-align:center; }
+  .modalbox h2 { font-size:24px; margin-bottom:14px; color:#fff; }
+  .modalbox input { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:12px 14px;
+    border-radius:10px; font-size:18px; text-align:center; width:100%; margin-bottom:12px; }
+  .btn2 { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; border:none; padding:12px 26px;
+    font-size:16px; font-weight:bold; border-radius:26px; cursor:pointer; margin:5px; }
+  .btn2.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
+  .acctrow { display:flex; align-items:center; gap:8px; background:#16243f; padding:10px 14px;
+    border-radius:10px; margin:6px 0; }
+  .acctrow .nm { flex:1; text-align:left; color:#fff; }
+  .acctrow .nm small { color:#7e90b5; }
+  /* 💬 feedback */
+  #feedbackBtn { background:linear-gradient(135deg,#c77dff,#7b2ff7); color:#fff; border:none; padding:14px 34px;
+    font-size:18px; font-weight:bold; border-radius:30px; cursor:pointer; margin-top:36px;
+    box-shadow:0 6px 18px rgba(150,80,255,.4); }
+  #fbAdminLink { display:none; margin-top:12px; color:#9fb3d8; font-size:13px; text-decoration:underline; cursor:pointer; }
+  .fbstars { position:relative; display:inline-block; font-size:44px; line-height:1; letter-spacing:4px;
+    color:#33436a; cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .fbstars .fill { position:absolute; left:0; top:0; white-space:nowrap; overflow:hidden; width:0;
+    color:#ffd54a; text-shadow:0 0 12px rgba(255,213,74,.45); pointer-events:none; }
+  #fbVal { color:#ffd54a; font-weight:bold; font-size:15px; margin:6px 0 12px; min-height:18px; }
+  #fbModal textarea { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:12px 14px;
+    border-radius:10px; font-size:15px; width:100%; min-height:90px; resize:vertical; margin-bottom:12px; font-family:inherit; }
+  #fbModal select { background:#0c1426; border:1px solid #2a3c63; color:#fff; padding:10px 12px;
+    border-radius:10px; font-size:14px; width:100%; margin-bottom:12px; }
+  #fbNote { font-size:13px; margin-top:8px; min-height:16px; }
+  #fbLeft { font-size:12px; color:#9fb3d8; min-height:15px; }
+  #fbLeft b { color:#ffd54a; }
+  #fbMine { max-height:190px; overflow-y:auto; margin-top:12px; text-align:left; }
+  .fbm { background:#16243f; border:1px solid #2a3c63; border-radius:10px; padding:8px 12px; margin:6px 0;
+    font-size:13px; color:#cdd9f0; word-break:break-word; }
+  .fbm .st { color:#ffd54a; font-weight:bold; }
+  .fbm .rp { margin-top:4px; color:#7dc4ff; white-space:pre-wrap; }
+  .fbm .rx2 { margin-left:6px; background:#0c1426; border:1px solid #2a3c63; border-radius:10px; padding:1px 7px; font-size:12px; }
+</style>
+</head>
 <body data-arcade-home>
-
-<div class="top">
-  <div class="logo">
-    <span class="pad"><svg viewBox="0 0 24 24" fill="#fff"><path d="M17 6H7a5 5 0 0 0-5 5v4a3 3 0 0 0 5.2 2l1.3-1.3h7l1.3 1.3A3 3 0 0 0 22 15v-4a5 5 0 0 0-5-5Zm-8 7H7.5v1.5h-1V13H5v-1h1.5v-1.5h1V12H9v1Zm5.8 1.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm2.4-2.4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg></span>
-    <div>
-      <div class="name h">ILAN <b>GAMES</b> <span class="ver">V2</span></div>
-      <div class="tag">Play • Compete • Be Legendary</div>
+  <h1>ILAN GAMES</h1>
+  <div class="sub">Games made by Ilan 🎮 — pick one and play!</div>
+  <div id="acctBar"></div>
+  <button id="overallLbBtn" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#241600;border:none;
+    padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(255,170,60,.4)">🏆 Leaderboard</button>
+  <button id="friendsBtn" style="background:linear-gradient(135deg,#7dc4ff,#3a6cf0);color:#06122a;border:none;
+    padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(60,120,255,.4)">👥 Friends<span id="friendsBadge" style="display:none;background:#ff4d6d;color:#fff;border-radius:10px;padding:1px 7px;margin-left:6px;font-size:12px">0</span></button>
+  <button id="starLbBtn" style="background:linear-gradient(135deg,#ffe14a,#c98a00);color:#241600;border:none;
+    padding:12px 26px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(255,215,70,.4)">⭐ Star Leaderboard</button>
+  <button id="installBtn" style="display:none;background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;
+    border:none;padding:14px 30px;font-size:18px;font-weight:bold;border-radius:30px;cursor:pointer;margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(40,220,120,.4)">📲 Install App</button>
+  <div id="iosHint" style="display:none;background:rgba(8,14,28,.6);color:#cdd9f0;padding:12px 18px;border-radius:14px;
+    margin-bottom:22px;max-width:420px;font-size:14px;line-height:1.5">
+    📲 <b>Install on iPhone:</b> tap the <b>Share</b> button below, then <b>Add to Home Screen</b>.
+    It becomes a real app and remembers you forever.</div>
+  <div id="feats"></div>
+  <div id="uotw"></div>
+  <div id="passport"></div>
+  <div id="search">
+    <input id="searchBox" type="search" placeholder="🔍 Search games…" autocomplete="off" spellcheck="false" />
+    <div id="cats">
+      <button class="cat on" data-cat="all">All</button>
+      <button class="cat" data-cat="multiplayer">🎮 Multiplayer</button>
+      <button class="cat" data-cat="3d">🧊 3D</button>
+      <button class="cat" data-cat="sports">⚽ Sports</button>
+      <button class="cat" data-cat="arcade">🕹️ Arcade</button>
+      <button class="cat" data-cat="puzzle">🧩 Puzzle</button>
+      <button class="cat" data-cat="mobile">📱 Mobile</button>
+      <button class="cat" data-cat="pc">💻 PC</button>
     </div>
   </div>
-
-  <div class="search">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="Search games…" autocomplete="off">
+  <div id="noResults">No games match — try another search.</div>
+  <div class="cards">
+    <a class="card timeduel" href="timeduel/">
+      <span class="emoji">⏱️</span>
+      <h2>Time Duel</h2>
+      <p>Stop the clock dead on the target. Duel a friend, play blind, or run an 8-player tournament for the pot.</p>
+    </a>
+    <a class="card meme" href="meme/">
+      <span class="emoji">😂</span>
+      <h2>Meme Studio</h2>
+      <p>Create a meme scene — background, caption, effect &amp; sound — that others replay. Likes, gallery, profiles.</p>
+    </a>
+    <a class="card scoop" href="scoop/">
+      <span class="emoji">🏀</span>
+      <h2>Basket Scoop</h2>
+      <p>Flick the ball off the floor and sink it. Swishes, long range, golden balls and fire streaks — Classic, Time Attack & one-miss High Score.</p>
+    </a>
+    <a class="card drawrush" href="drawrush/">
+      <span class="emoji">🎨</span>
+      <h2>Draw Rush</h2>
+      <p>Draw &amp; guess with a friend online or vs AI — Secret Theme, Draw &amp; Bluff, Disaster Drawing, AI Judge, plus a Community Gallery.</p>
+    </a>
+    <a class="card codewords" href="codewords/">
+      <span class="emoji">🕵️</span>
+      <h2>Codewords</h2>
+      <p>Two spy teams race to find their secret agents from one-word clues — solo, pass-and-play, or online rooms with friends.</p>
+    </a>
+    <a class="card airhockey" href="airhockey/">
+      <span class="emoji">🏒</span>
+      <h2>Air Hockey Arena</h2>
+      <p>Fast, physics-driven air hockey — first to 7 wins. Career mode, paddle skins, arenas & leaderboard.</p>
+    </a>
+    <a class="card codebreaker" href="codebreaker/">
+      <span class="emoji">🕵️</span>
+      <h2>Codebreaker: Secret Agent</h2>
+      <p>Crack the secret code before time runs out — investigate the room, find clues, break in.</p>
+    </a>
+    <a class="card thisorthat" href="thisorthat/">
+      <span class="emoji">🆚</span>
+      <h2>This or That</h2>
+      <p>Tap the one you like more — Messi or Ronaldo? — then see what % of real players agree!</p>
+    </a>
+    <a class="card cricket" href="cricket/">
+      <span class="emoji">🏏</span>
+      <h2>Super Over Cricket</h2>
+      <p>Time your shots, chase the target, and win the IPL-style cup.</p>
+    </a>
+    <a class="card hcl" href="handcricket/">
+      <span class="emoji">✋</span>
+      <h2>Hand Cricket League</h2>
+      <p>Numbers 1–10! Normal &amp; wild Crazy mode, smart AI, online rooms with a friend, leagues &amp; cups.</p>
+    </a>
+    <a class="card catch" href="catch/">
+      <span class="emoji">🧺</span>
+      <h2>Basket Catch</h2>
+      <p>Move the basket and catch everything before it falls!</p>
+    </a>
+    <a class="card catch2" href="catch2/">
+      <span class="emoji">🍔</span>
+      <h2>Basket Catch 2</h2>
+      <p>Catch the fruit, dodge the junk food — then feast on Cheat Day!</p>
+    </a>
+    <a class="card carrom" href="carrom/">
+      <span class="emoji">🪙</span>
+      <h2>Carrom Clash</h2>
+      <p>Flick the striker, pocket the coins, grab the queen — vs the computer or your <b>friends live</b>!</p>
+    </a>
+    <a class="card f1" href="f1/">
+      <span class="emoji">🏎️</span>
+      <h2>Grand Prix 3D</h2>
+      <p>Race the world in 3D — and now race your <b>friends live</b> in online rooms!</p>
+    </a>
+    <a class="card football" href="football/">
+      <span class="emoji">⚽</span>
+      <h2>Penalty Kings</h2>
+      <p>Penalty shootout — now pick <b>2D or 3D</b>, then win the knockout cup, match by match!</p>
+    </a>
+    <a class="card pptour" href="pptour/">
+      <span class="emoji">🏓</span>
+      <h2>Ping Pong Tour</h2>
+      <p>First-person table tennis — climb the tournament, earn coins, unlock rackets!</p>
+    </a>
+    <a class="card fruit" href="fruit-arena/">
+      <span class="emoji">🍉</span>
+      <h2>Fruit Arena</h2>
+      <p>Slice fruit, dodge bombs, chain power-ups &amp; spam the giant fruit — with a coach tutorial!</p>
+    </a>
+    <a class="card paper" href="paper/">
+      <span class="emoji">🟩</span>
+      <h2>Paper Territory</h2>
+      <span class="pcflag">💻 Best on PC</span>
+      <p>Claim land with your trail, dodge rivals — own the most territory. Global leaderboard!</p>
+    </a>
+    <a class="card obby" href="obby/">
+      <span class="emoji">🌈</span>
+      <h2>Rainbow Obby</h2>
+      <p>3D obstacle course — 50 stages, coins, a shop of skins, trails &amp; auras!</p>
+    </a>
+    <a class="card puzzles" href="puzzles/">
+      <span class="emoji">🧩</span>
+      <h2>Puzzle Pad</h2>
+      <p>8 brain games — Wordle, Connections, 2048, Sudoku, Simon &amp; more!</p>
+    </a>
+    <a class="card tryg" href="try/">
+      <span class="emoji">🟡</span>
+      <h2>One More Try</h2>
+      <p>One-tap runner where the rules keep flipping — spikes, gravity, gaps &amp; more!</p>
+    </a>
+    <a class="card anime" href="anime-tycoon/">
+      <span class="emoji">🐉</span>
+      <h2>Anime Tycoon</h2>
+      <p>3D tycoon — build your base, unlock Gojo/Luffy/Naruto powers &amp; battle rivals!</p>
+    </a>
+    <a class="card tennis" href="tennis/">
+      <span class="emoji">🎾</span>
+      <h2>Tennis Tour</h2>
+      <p>Arcade tennis — time your smash, climb from school to the World Championship!</p>
+    </a>
+    <a class="card karate" href="karate/">
+      <span class="emoji">🥋</span>
+      <h2>Karate Champions</h2>
+      <p>Arcade fighting — punch, kick, uppercut &amp; combo your way to the World Karate Cup!</p>
+    </a>
+    <a class="card stack" href="stack/">
+      <span class="emoji">🏗️</span>
+      <h2>Stack Tower</h2>
+      <p>Tap to drop blocks and stack as high as you can — perfect stacks build a combo! Leaderboard.</p>
+    </a>
+    <a class="card archer" href="archer/">
+      <span class="emoji">🏹</span>
+      <h2>Archer Duel</h2>
+      <p>Aim, power up, and arc your arrows to KO tougher and tougher rivals. Leaderboard.</p>
+    </a>
+    <a class="card speedclicker" href="speedclicker/">
+      <span class="emoji">⚡</span>
+      <h2>Speed Clicker</h2>
+      <p>15 seconds. One glowing orb. Tap as fast as you can and earn your title. Leaderboard.</p>
+    </a>
   </div>
+  <div id="newBanner"></div>
+  <button id="feedbackBtn">💬 Feedback</button>
+  <div><a id="fbAdminLink" href="feedback.html">📋 View all feedback (admin)</a></div>
+  <footer>Made with ❤️ by Ilan • More games coming soon</footer>
 
-  <div class="tools">
-    <button class="bell" id="bellBtn" aria-label="Friends and messages">
-      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      <i id="bellDot" hidden></i>
-    </button>
-    <button class="me" id="acctBtn"><span class="av" id="av1"></span><span id="meName">Sign in</span></button>
-  </div>
-</div>
 
-<div class="shell">
-  <aside class="side">
-    <nav class="nav">
-      <button class="navb on" data-view="home"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Home</button>
-      <button class="navb" data-view="friends"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg>Friends</button>
-      <button class="navb" data-view="board"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Leaderboard</button>
-    </nav>
-
-    <div class="player">
-      <div class="who">
-        <span class="av" id="av2"></span>
-        <div><div class="nm h" id="meName2">Not signed in</div>
-             <div class="lv" id="meLv">Sign in to track your week</div></div>
-      </div>
-      <div class="bar"><i id="xpBar" style="width:0"></i></div>
-      <div class="xp"><span id="xpNow">0 plays</span><span id="xpGoal">this week</span></div>
-    </div>
-  </aside>
-
-  <main>
-    <div id="v-home">
-      <section class="hero" id="hero">
-        <div class="bg" id="heroArt"></div>
-        <div class="scrim"></div>
-        <div class="in">
-          <span class="badge">♛ Game of the Week</span>
-          <h1 id="hName">—</h1>
-          <p id="hKick"></p>
-          <button class="play" id="hPlay"><svg viewBox="0 0 24 24"><path d="M6 3l15 9-15 9z"/></svg>Play Now</button>
-        </div>
-        <div class="dots" id="dots"></div>
-      </section>
-
-      <section class="uotw" id="uotw"></section>
-      <div id="rows"></div>
-
-      <section class="cta">
-        <div class="words"><span>♛ Play</span><span>•</span><span>★ Earn</span><span>•</span><span>⚡ Level Up</span></div>
-        <div class="ctabtns">
-          <button class="join" id="starBtn">⭐ Star Leaderboard</button>
-          <button class="join ghost2" id="installBtn" hidden>⬇ Install app</button>
-          <button class="join ghost2" id="feedbackBtn">💬 Feedback</button>
-        </div>
-      </section>
-    </div>
-
-    <div id="v-friends" hidden>
-      <div class="vh"><h2 class="h">Friends</h2><span id="fCount"></span></div>
-      <div class="people" id="people"></div>
-      <div class="vh" style="margin-top:26px"><h2 class="h">Groups</h2><span id="gCount"></span></div>
-      <div class="groups" id="groupList"></div>
-    </div>
-
-    <div id="v-board" hidden>
-      <div class="vh"><h2 class="h">Leaderboard</h2><span id="bNote"></span></div>
-      <div class="bpick" id="bPick"></div>
-      <div class="btable" id="bTable"></div>
-    </div>
-  </main>
-</div>
-
-<div id="fbModal" class="modal" style="display:none"><div class="modalbox">
+  <div id="fbModal" class="modal" style="display:none"><div class="modalbox">
     <h2>💬 Feedback</h2>
     <div style="color:#9fb3d8;font-size:14px;margin-bottom:10px">Tap the stars — half stars count too!</div>
     <div class="fbstars" id="fbStars">★★★★★<span class="fill" id="fbFill">★★★★★</span></div>
@@ -467,593 +393,496 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
     <div id="fbLeft"></div>
     <div id="fbMine"></div>
   </div></div>
-<div style="text-align:center;padding:0 0 30px"><a id="fbAdminLink" href="feedback.html">📋 View all feedback (admin)</a></div>
-<script src="preview/games.js"></script>
-<script src="preview/art.js"></script>
-<script src="preview/art-rich.js"></script>
-<script src="preview/data.js"></script>
-<script>
-(function(){
-  "use strict";
-  // If the art or catalogue file fails to load, show the arcade rather than a
-  // blank page — a script error used to take the whole home page with it.
-  if (!window.GAMES || !window.ArcadeArt) {
-    document.getElementById('rows').innerHTML =
-      '<section class="sec"><p style="color:var(--mute);padding:28px 0">' +
-      'Something didn\u2019t load. <a href="." style="color:var(--acc)">Reload the page</a>.' +
-      '</p></section>';
-    return;
-  }
-  document.body.insertAdjacentHTML('afterbegin', ArcadeArt.defs);
-  var G = window.GAMES, byId = {};
-  G.forEach(function(g){ byId[g.id] = g; });
 
-  /* ---- who is playing -------------------------------------------------
-   * The header used to read "Ilan · Level 12 · 4,380 XP" to every visitor,
-   * which is somebody else's name on a shared arcade. It now follows the
-   * real account, and the bar shows this week's actual plays from ig_weekly.
-   */
-  function paintMe(){
-    var p2 = window.IGAuth && IGAuth.getUser ? IGAuth.getUser() : null;
-    var nm = p2 ? p2.name : null;
-    document.getElementById('meName').textContent = nm || 'Sign in';
-    document.getElementById('meName2').textContent = nm || 'Not signed in';
-    document.getElementById('av1').innerHTML = nm ? face(nm) : AV_ANON;
-    document.getElementById('av2').innerHTML = nm ? face(nm) : AV_ANON;
-    if (!nm){
-      document.getElementById('meLv').textContent = 'Sign in to track your week';
-      document.getElementById('xpNow').textContent = '0 plays';
-      document.getElementById('xpBar').style.width = '0';
-      return;
+  <script>
+  /* ===== Game Passport + Game of the Day / Week with goals (drives playing ALL games) ===== */
+  (function(){
+    const cards=[].slice.call(document.querySelectorAll('a.card'));
+    const games=cards.map(function(c){ return {
+      el:c, slug:(c.getAttribute('href')||'').replace(/\/+$/,''),
+      name:(c.querySelector('h2')||{}).textContent||'',
+      emoji:(c.querySelector('.emoji')||{}).textContent||'🎮' }; }).filter(function(g){ return g.slug; });
+    const N=games.length; if(!N) return;
+
+    /* ---- per-game PROGRESS METRICS (monotonic: bests / career counters) ----
+       Every goal below is VERIFIED against these — entering a game and walking
+       out no longer earns a star. Games missing here fall back to an honest
+       "play a round today" goal (carrom etc. — add a metric when they save one). */
+    // ONLY the active account — never "the first account on this device", which
+    // showed a signed-out visitor another player's cricket runs / stars progress.
+    function acctActive(){ try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); return (s&&Array.isArray(s.accounts)&&s.accounts.find(a=>a.id===s.activeId))||null; }catch(e){ return null; } }
+    function acctSlugKey(){ try{ const p=JSON.parse(localStorage.getItem('ig_player')); if(p&&p.name) return p.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); }catch(e){}
+      try{ const s=JSON.parse(localStorage.getItem('soc_store_v1')); if(s&&Array.isArray(s.accounts)){ const a=s.accounts.find(x=>x.id===s.activeId); if(a&&a.name) return a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40); } }catch(e){} return 'guest'; }
+    function lsGet(key,path){ try{ let o=JSON.parse(localStorage.getItem(key)); for(let i=0;i<path.length;i++){ if(!o) return 0; o=o[path[i]]; } return Math.max(0,+o||0); }catch(e){ return 0; } }
+    // stack/archer/tennis save under per-account keys (base__name) — read those, fall back to the base key
+    function lsGetA(base,path){ const v=lsGet(base+'__'+acctSlugKey(),path); return v||lsGet(base,path); }
+    const METRIC={
+      cricket: function(){ const a=acctActive(); return ((a&&a.ipl&&+a.ipl.runs)||0)+((a&&a.odi&&+a.odi.runs)||0); },
+      catch: function(){ const a=acctActive(); return Math.max((a&&a.basket&&+a.basket.best)||0, lsGet('basketCatchV2_guest',['best'])); },
+      catch2: function(){ const a=acctActive(); return Math.max((a&&a.basket2&&+a.basket2.best)||0, lsGet('basketCatch2_guest',['best'])); },
+      f1: function(){ const a=acctActive(); return (a&&a.f1&&+a.f1.points)||0; },
+      football: function(){ const a=acctActive(); return (a&&a.pk&&+a.pk.won)||0; },
+      puzzles: function(){ const a=acctActive(); const p=(a&&a.puz)||{}; return (p.wordleStreak||0)+(p.connWins||0)+(p.searchWins||0)+(p.scrambleBest||0)+(p.best2048||0)+(p.simonBest||0)+(p.emojiBest||0)+(p.sudokuWins||0); },
+      'fruit-arena': function(){ return lsGet('fruitArena_v1',['best']); },
+      tennis: function(){ return lsGetA('tennisTour_v1',['trophies']); },
+      pptour: function(){ return lsGet('ppTour_v2',['wins']); },
+      karate: function(){ return lsGet('karateChamp_v1',['wins']); },
+      obby: function(){ return lsGet('ilanObbySave_v1',['bestStage']); },
+      try: function(){ return lsGet('omt_save_v1',['best']); },
+      paper: function(){ return lsGet('paperTerritory_v1',['best']); },
+      stack: function(){ return lsGetA('stackTower_v1',['best']); },
+      speedclicker: function(){ return lsGetA('speedClicker_v1',['best']); },
+      archer: function(){ return lsGetA('archerDuel_v1',['best']); },
+      'anime-tycoon': function(){ return lsGet('animeTycoon_v1',['lifetime']); },
+      scoop: function(){ return Math.max(lsGet('basketScoop_v1',['best','classic']), lsGet('basketScoop_v1',['best','time']), lsGet('basketScoop_v1',['best','hs'])); },
+      airhockey: function(){ return lsGet('airHockeyArena_v1',['wins']); },
+      codebreaker: function(){ return lsGet('cb_secret_agent_v1',['stats','solves']); },
+      codewords: function(){ return lsGet('cw_save_v1',['stats','won']); },
+      handcricket: function(){ return lsGet('hcl_save_v1',['stats','wins']); },
+      thisorthat: function(){ return lsGet('thisOrThat_v2',['rounds']); },
+      drawrush: function(){ return lsGet('draw_rush_v1',['stats','drawings']); },
+      meme: function(){ return lsGet('ms_pub_count_v1',['n']); }
+    };
+    function metric(slug){ return METRIC[slug] ? METRIC[slug]() : -1; }   // -1 = no metric known
+
+    // ---- DAILY goals: do the thing TODAY — metric must move past its day-start snapshot.
+    //      d = how much it must move (default 1). "new best" games: any increase IS a new best.
+    const DAY_GOALS={
+      cricket:{txt:'score runs in a match'}, catch:{txt:'set a new best score'}, catch2:{txt:'set a new best score'},
+      f1:{txt:'earn championship points'}, football:{txt:'win a shootout match'}, pptour:{txt:'win a match'},
+      'fruit-arena':{txt:'set a new best score'}, paper:{txt:'set a new best territory %'}, obby:{txt:'reach a new best stage'},
+      puzzles:{txt:'finish a puzzle'}, try:{txt:'reach a new best level'}, 'anime-tycoon':{txt:'grow your lifetime ¥ earnings'},
+      tennis:{txt:'win a trophy'}, karate:{txt:'win a fight'}, stack:{txt:'build a new best tower'},
+      archer:{txt:'reach a new best level'}, scoop:{txt:'set a new best score'}, airhockey:{txt:'win a match'},
+      codebreaker:{txt:'solve a code'}, codewords:{txt:'win a board'}, handcricket:{txt:'win a match'},
+      thisorthat:{txt:'answer 5 rounds',d:5}, drawrush:{txt:'finish a drawing'}, meme:{txt:'publish a meme'}
+    };
+
+    // ---- WEEKLY goals: HARD grind targets, verified against your saved best / career stat ----
+    const WEEK_EXCLUDE={ 'puzzles':1, 'anime-tycoon':1 };   // no Puzzle Pad / Anime Tycoon as Game of the Week
+    /* Two kinds of weekly goal, both measured against a WEEK-START snapshot so a
+       veteran's lifetime stats can never auto-complete the goal (no free stars):
+       - cumulative (default): earn `t` MORE than you had when the week started
+       - k:'best'           : reach `t` with a best you set THIS week; if your best
+                              already beats `t`, the goal becomes "beat your own best" */
+    const WEEK_GOALS={
+      cricket:{t:1000,txt:g=>'score '+g+' runs this week'},
+      catch:{t:300,k:'best',txt:g=>'reach a best score of '+g},
+      catch2:{t:250,k:'best',txt:g=>'reach a best score of '+g},
+      f1:{t:90,txt:g=>'earn '+g+' championship points this week'},
+      football:{t:10,txt:g=>'win '+g+' shootout matches this week'},
+      'fruit-arena':{t:200,k:'best',txt:g=>'score '+g+' in a single run'},
+      pptour:{t:12,txt:g=>'win '+g+' matches this week'},
+      paper:{t:45,k:'best',txt:g=>'claim '+g+'% of the map'},
+      obby:{t:30,k:'best',txt:g=>'reach stage '+g},
+      try:{t:15,k:'best',txt:g=>'reach level '+g},
+      tennis:{t:6,txt:g=>'win '+g+' trophies this week'},
+      karate:{t:15,txt:g=>'win '+g+' fights this week'},
+      stack:{t:55,k:'best',txt:g=>'stack '+g+' blocks high'},
+      archer:{t:8,k:'best',txt:g=>'reach level '+g},
+      scoop:{t:40,k:'best',txt:g=>'reach a best score of '+g},
+      airhockey:{t:12,txt:g=>'win '+g+' matches this week'},
+      codebreaker:{t:15,txt:g=>'solve '+g+' codes this week'},
+      codewords:{t:10,txt:g=>'win '+g+' boards this week'},
+      handcricket:{t:10,txt:g=>'win '+g+' matches this week'},
+      thisorthat:{t:7,k:'best',txt:g=>'hit a '+g+'-answer agreement streak',m:function(){ return lsGet('thisOrThat_v2',['bestStreak']); }},
+      drawrush:{t:15,txt:g=>'finish '+g+' drawings this week'},
+      meme:{t:10,txt:g=>'publish '+g+' memes this week'}
+    };
+    function weekMetric(slug){ const wg=WEEK_GOALS[slug]; return wg&&wg.m ? wg.m() : metric(slug); }
+
+    function rd(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+    function wr(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+    const today=Math.floor(Date.now()/86400000), week=Math.floor(today/7);
+    // record a play (for the passport AND for goal verification — "played today")
+    function markPlay(slug){ const a=rd('ig_played',[]); if(a.indexOf(slug)<0){ a.push(slug); wr('ig_played',a); }
+      const lp=rd('ig_lastplay',{}); lp[slug]=today; wr('ig_lastplay',lp); }
+    cards.forEach(function(c){ c.addEventListener('click',function(){ markPlay((c.getAttribute('href')||'').replace(/\/+$/,'')); }); });
+
+    function stars(){ return rd('ig_stars',0)|0; }
+
+    // ---- passport ----
+    function renderPassport(){
+      const played=rd('ig_played',[]), pset={}; played.forEach(function(s){ pset[s]=1; });
+      const cnt=games.filter(function(g){ return pset[g.slug]; }).length;
+      const done=cnt>=N, pct=Math.round(cnt/N*100), pp=document.getElementById('passport');
+      if(done) wr('ig_champion',1);
+      games.forEach(function(g){ if(pset[g.slug] && !g.el.querySelector('.stamp')){ const s=document.createElement('span'); s.className='stamp'; s.textContent='✓'; g.el.appendChild(s); } });
+      if(pp) pp.innerHTML = (done
+        ? '<div class="champ">🏆 CHAMPION! You\'ve played all '+N+' games — legend! 👑</div>'
+        : '<div class="pptop">🎟️ Your Game Passport — <b>'+cnt+'/'+N+'</b> played'+(cnt?' • '+(N-cnt)+' more to collect!':' • try them all!')+'</div>'
+          + '<div class="passbar"><span style="width:'+pct+'%"></span></div>')
+        + '<div class="pptop" style="margin-top:8px">⭐ Stars earned: <b>'+stars()+'</b></div>';
     }
-    IGData.weekly().then(function(w){
-      var me3 = null, rank = 0;
-      (w.rows||[]).forEach(function(r,i){
-        if (String(r.user_name||'').toLowerCase() === nm.toLowerCase() && !me3){
-          me3 = r; rank = i + 1;
-        }
-      });
-      var mine = me3 ? me3.plays : 0;
-      var lead = (w.rows && w.rows[0]) ? w.rows[0].plays : 0;
-      document.getElementById('meLv').textContent =
-        rank ? 'Rank ' + rank + ' this week' : 'No plays yet this week';
-      document.getElementById('xpNow').textContent =
-        mine + ' play' + (mine === 1 ? '' : 's');
-      document.getElementById('xpGoal').textContent =
-        lead ? lead + ' to lead' : 'this week';
-      document.getElementById('xpBar').style.width =
-        (lead ? Math.min(100, Math.round(mine / lead * 100)) : 0) + '%';
-    });
-  }
 
-  var AV_ANON = '<svg viewBox="0 0 64 64" style="width:100%;height:100%;display:block">'+
-    '<rect width="64" height="64" fill="#0f2434"/>'+
-    '<circle cx="32" cy="25" r="11" fill="#2c4a63"/>'+
-    '<path d="M10 64c2-14 11-21 22-21s20 7 22 21z" fill="#2c4a63"/></svg>';
+    // ---- featured cards with goals ----
+    const gotd=games[((today%N)+N)%N];
+    const wpArr=(function(){ const p=games.filter(function(g){ return !WEEK_EXCLUDE[g.slug]; }); return p.length?p:games; })();
+    const WP=wpArr.length;
+    let gotw=wpArr[(((week*3+5)%WP)+WP)%WP];
+    if(gotw.slug===gotd.slug) gotw=wpArr[(wpArr.indexOf(gotw)+1)%WP];   // keep day & week different
 
-  document.getElementById('acctBtn').addEventListener('click', function(){
-    if (!window.IGAuth) return;
-    if (IGAuth.getUser()) IGAuth.openAccount(); else IGAuth.openAuth();
-  });
-  document.getElementById('bellBtn').addEventListener('click', function(){
-    if (window.IGFriends && IGFriends.openBell) IGFriends.openBell();
-    else show('friends');
-  });
+    // day-start snapshot of the daily game's metric — "beat it" is the REAL goal.
+    // Captured the first time the hub renders each day, so the star needs fresh progress.
+    function dayBase(){ let b=rd('ig_day_base',null);
+      if(!b || b.day!==today || b.slug!==gotd.slug){ b={day:today,slug:gotd.slug,val:Math.max(0,metric(gotd.slug))}; wr('ig_day_base',b); }
+      return b; }
+    // week-start snapshot of the weekly game's metric — captured the first time the
+    // hub renders each week, so lifetime stats can never auto-complete the goal
+    function weekBase(){ let b=rd('ig_week_base',null);
+      if(!b || b.week!==week || b.slug!==gotw.slug){ b={week:week,slug:gotw.slug,val:Math.max(0,weekMetric(gotw.slug))}; wr('ig_week_base',b); }
+      return b; }
+    function weekDone(){
+      const wg=WEEK_GOALS[gotw.slug]; if(!wg) return false;
+      const cur=weekMetric(gotw.slug), base=weekBase().val;
+      if(wg.k==='best') return cur>=wg.t && cur>base;   // fresh personal best this week, at/above target
+      return cur-base>=wg.t;                            // earned the target since the week began
+    }
+    function dayDone(g){ const m=metric(g.slug);
+      if(m<0){ const lp=rd('ig_lastplay',{}); return lp[g.slug]===today; }          // no metric → played today
+      const dg=DAY_GOALS[g.slug]||{}; return m - dayBase().val >= (dg.d||1); }
 
-  // Keep the unread dot honest instead of painting it on permanently.
-  function paintBell(){
-    var n = 0;
-    try { n = (window.IGFriends && IGFriends.bellCount) ? IGFriends.bellCount() : 0; } catch(e){}
-    document.getElementById('bellDot').hidden = !n;
-  }
-  setInterval(paintBell, 4000);
-
-  if (window.IGAuth && IGAuth.onChange) IGAuth.onChange(paintMe);
-
-  /* ---- an avatar, drawn rather than fetched ---- */
-  var AV = '<svg viewBox="0 0 48 48" style="width:100%;height:100%;display:block">' +
-    '<rect width="48" height="48" fill="#2b3a63"/>' +
-    '<circle cx="24" cy="19" r="9" fill="#f0c9a4"/>' +
-    '<path d="M24 8a9 9 0 0 1 9 8c-3 1-6-1-9-1s-6 2-9 1a9 9 0 0 1 9-8z" fill="#31241a"/>' +
-    '<path d="M8 48c1-10 8-15 16-15s15 5 16 15z" fill="#1f7aec"/></svg>';
-  // paintMe fills these once auth.js reports; AV is the fallback face.
-  document.getElementById('av1').innerHTML = AV;
-  document.getElementById('av2').innerHTML = AV;
-  setTimeout(paintMe, 50);
-
-  /* ---- rows, ordered by what people actually play ------------------------
-   * PLAYS comes from the game_plays table, which analytics.js ticks after
-   * 25 seconds of real, visible play. So "Popular" is literally the most
-   * played, and "More games" is the tail — not a hand-picked list.
-   */
-  var PLAYS = {}, TOP = [];
-
-  function ranked() {
-    return G.slice().sort(function (a2, b2) {
-      return (PLAYS[b2.id] || 0) - (PLAYS[a2.id] || 0);
-    });
-  }
-
-  /* What this player reaches for. analytics.js leaves the folders they have
-   * opened in ig_played, so their taste is already on the device: score every
-   * game by how much its tags overlap what they play, and never recommend
-   * something they already play constantly. */
-  function forYou(pool) {
-    var mine = [];
-    try { mine = JSON.parse(localStorage.getItem('ig_played') || '[]'); } catch (e) {}
-    var taste = {};
-    mine.forEach(function (id) {
-      var g = byId[id];
-      if (g) g.t.forEach(function (t) { taste[t] = (taste[t] || 0) + 1; });
-    });
-
-    var haveTaste = Object.keys(taste).length > 0;
-    return pool.slice().sort(function (x, y) {
-      function score(g) {
-        // With no history to go on, fall back to the crowd.
-        if (!haveTaste) return (PLAYS[g.id] || 0) / 50;
-        var s2 = 0;
-        g.t.forEach(function (t) { s2 += (taste[t] || 0); });
-        if (mine.indexOf(g.id) >= 0) s2 -= 3;      // they already know this one
-        return s2 + (PLAYS[g.id] || 0) / 400;      // popularity as a tiebreak
+    function cardHTML(kind,g){
+      const isWeek=kind==='week';
+      if(isWeek && WEEK_GOALS[g.slug]){
+        const wg=WEEK_GOALS[g.slug], cur=weekMetric(g.slug), base=weekBase().val, isBest=wg.k==='best';
+        const met=weekDone();
+        const claimed = rd('ig_claim_week',-1)===week;
+        // a champ whose best already beats the target must set a NEW best this week
+        const goalTxt = (isBest && base>=wg.t) ? 'set a NEW personal best (beat '+base+')' : wg.txt(wg.t);
+        let action;
+        if(claimed) action='<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>';
+        else if(met) action='<button class="fclaim" data-claim="week">Claim ⭐⭐⭐</button>';
+        else if(isBest && base>=wg.t) action='<span class="flock">Your best is <b>'+base+'</b> — beat it this week for ⭐⭐⭐</span>';
+        else if(isBest) action='<span class="flock">Best so far: <b>'+Math.min(Math.max(cur,0),wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
+        else action='<span class="flock">This week: <b>'+Math.min(Math.max(0,cur-base),wg.t)+' / '+wg.t+'</b> — grind it for ⭐⭐⭐</span>';
+        return '<div class="feature week">'
+          +'<div class="flabel">⭐ GAME OF THE WEEK</div>'
+          +'<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+          +'<div class="fgoal">🎯 Weekly goal: <b>'+goalTxt+'</b> — earn 3 stars!</div>'
+          +'<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
       }
-      return score(y) - score(x);
-    });
-  }
+      if(isWeek){   // weekly fallback for a game with no metric yet: play it this week (honest text)
+        const lp=rd('ig_lastplay',{}), playedT = lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week;
+        const claimed = rd('ig_claim_week',-1)===week;
+        const action = claimed ? '<span class="fdone">✅ Goal done — ⭐⭐⭐ earned!</span>'
+          : (playedT ? '<button class="fclaim" data-claim="week">Claim ⭐⭐⭐</button>'
+                     : '<span class="flock">▶ Play it this week to earn your ⭐⭐⭐</span>');
+        return '<div class="feature week">'
+          + '<div class="flabel">⭐ GAME OF THE WEEK</div>'
+          + '<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+          + '<div class="fgoal">🎯 Goal: <b>play a round this week</b> — earn 3 stars!</div>'
+          + '<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
+      }
+      // ---- daily card: goal text = what's actually verified ----
+      const claimed = rd('ig_claim_day',-1)===today;
+      const m=metric(g.slug), hasMetric=m>=0, dg=DAY_GOALS[g.slug]||{txt:'play a round'}, need=dg.d||1;
+      const got=hasMetric?Math.max(0,m-dayBase().val):0;
+      let action;
+      if(claimed) action='<span class="fdone">✅ Goal done — ⭐ earned!</span>';
+      else if(dayDone(g)) action='<button class="fclaim" data-claim="day">Claim ⭐</button>';
+      else if(hasMetric && need>1) action='<span class="flock">Progress today: <b>'+got+' / '+need+'</b> — finish it for your ⭐</span>';
+      else action='<span class="flock">▶ '+(hasMetric?dg.txt.charAt(0).toUpperCase()+dg.txt.slice(1)+' today':'Play it today')+' to earn your ⭐</span>';
+      return '<div class="feature">'
+        + '<div class="flabel">🎯 GAME OF THE DAY</div>'
+        + '<div class="frow"><span class="femoji">'+g.emoji+'</span><div><div class="fname">'+g.name+'</div></div></div>'
+        + '<div class="fgoal">🎯 Goal: <b>'+(hasMetric?dg.txt:'play a round')+'</b> — earn a star!</div>'
+        + '<div class="factions"><a class="fplay" href="'+g.slug+'/" data-play="'+g.slug+'">Play ▶</a>'+action+'</div></div>';
+    }
+    function renderFeats(){
+      const f=document.getElementById('feats'); if(!f) return;
+      f.innerHTML = cardHTML('day',gotd) + cardHTML('week',gotw);
+      f.querySelectorAll('[data-play]').forEach(function(a){ a.addEventListener('click',function(){ markPlay(a.getAttribute('data-play')); }); });
+      f.querySelectorAll('[data-claim]').forEach(function(b){ b.addEventListener('click',function(){
+        const kind=b.getAttribute('data-claim'), isWeek=kind==='week', g=isWeek?gotw:gotd;
+        let ok;
+        if(isWeek && WEEK_GOALS[g.slug]) ok = weekDone();   // weekly = verified fresh-progress grind
+        else if(isWeek){ const lp=rd('ig_lastplay',{}); ok = lp[g.slug]!=null && Math.floor(lp[g.slug]/7)===week; }
+        else ok = dayDone(g);                                                               // daily = verified goal, not "visited"
+        if(!ok){ renderFeats(); return; }   // stale button (e.g. day rolled over) — re-render, no free star
+        wr('ig_stars', stars() + (isWeek?3:1));
+        wr(isWeek?'ig_claim_week':'ig_claim_day', isWeek?week:today);
+        postStars();
+        renderFeats(); renderPassport();
+      }); });
+    }
+    // ⭐ Star Leaderboard — total stars go on the global board under the "stars" game
+    function postStars(){ try{ if(window.IGAuth && stars()>0) IGAuth.submitScore('stars', stars()); }catch(e){} }
+    (function starsBoot(){ if(window.IGAuth && IGAuth.isReady && IGAuth.isReady()) postStars(); else setTimeout(starsBoot, 700); })();
+    renderFeats(); renderPassport();
+    // coming BACK from a game often restores the hub from the bfcache (no reload) —
+    // re-render so freshly earned progress unlocks the Claim button immediately
+    window.addEventListener('pageshow', function(e){ if(e.persisted){ renderFeats(); renderPassport(); } });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ renderFeats(); renderPassport(); } });
+  })();
+  </script>
 
-  function card(g){
-    var flag = g.fresh ? '<span class="flag new">New</span>'
-             : (g.t.indexOf('Live')>=0 ? '<span class="flag">Live</span>' : '');
-    var n = PLAYS[g.id] || 0;
-    return '<a class="g card" href="'+g.id+'/" data-id="'+g.id+'">'+
-      '<div class="shot"><div class="lay">'+ArcadeArt.art(g.id)+'</div></div>'+
-      flag +
-      '<div class="cap"><h3>'+g.n+'</h3><span class="kind">'+
-        (n ? n.toLocaleString() + ' plays' : g.t[0]) + '</span></div>'+
-      '<span class="go"><svg viewBox="0 0 24 24"><path d="M6 3l15 9-15 9z"/></svg></span>'+
-    '</a>';
-  }
-
-  function draw(filter){
-    var q = (filter||'').trim().toLowerCase();
-    var all = ranked();
-    if (q) {
-      var hits = all.filter(function(g){
-        return g.n.toLowerCase().indexOf(q)>=0 || g.t.join(' ').toLowerCase().indexOf(q)>=0;
-      });
-      document.getElementById('rows').innerHTML = hits.length
-        ? '<section class="sec"><div class="sec-h"><h2 class="h">🔍 Results</h2>'+
-          '<span class="all">'+hits.length+' games</span></div>'+
-          '<div class="grid">'+hits.map(card).join('')+'</div></section>'
-        : '<section class="sec"><p style="color:var(--mute)">No game matches “'+esc(filter)+'”.</p></section>';
-      wireCards(); return;
+  <script>
+    if('serviceWorker' in navigator){
+      // register only — no auto location.reload() on update (that caused a full double-load every visit)
+      window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
     }
 
-    var popular = all.slice(0, 6);
-    var rest    = all.slice(6);
-    var picks   = forYou(rest).slice(0, 6);
-    var chosen  = {};
-    popular.concat(picks).forEach(function(g){ chosen[g.id] = 1; });
-
-    var quick = all.filter(function(g){
-      return !chosen[g.id] && g.p === '1' &&
-             g.t.some(function(t){ return t==='Arcade' || t==='Skill'; });
-    }).slice(0, 6);
-    quick.forEach(function(g){ chosen[g.id] = 1; });
-
-    // Everything left, quietest first — the tail of the catalogue.
-    var more = all.filter(function(g){ return !chosen[g.id]; }).reverse();
-
-    var out = '';
-    function sec(ico, h, note, items){
-      if (!items.length) return;
-      out += '<section class="sec"><div class="sec-h"><h2 class="h">'+ico+' '+h+'</h2>'+
-             '<span class="all">'+note+'</span></div>'+
-             '<div class="grid">'+items.map(card).join('')+'</div></section>';
-    }
-    sec('🔥','Popular Games','Most played right now', popular);
-    sec('⭐','Top Picks for You','Based on what you play', picks);
-    sec('⚡','Quick Play','One run, one minute', quick);
-    sec('🎮','More Games','Fewer plays — go find one', more);
-
-    document.getElementById('rows').innerHTML = out;
-    wireCards();
-  }
-
-  // Tiles are real links now, so they need no click handler — a tap opens the
-  // game, and middle-click or long-press behave the way a link should.
-  function wireCards(){}
-
-  /* ---- hero ---- */
-  var SPOT = ['f1','cricket','timeduel','obby','drawrush'], hi = 0, timer;
-
-  function feature(id, scroll){
-    var g = byId[id] || byId[SPOT[hi]];
-    document.getElementById('heroArt').innerHTML =
-      '<div class="lay">'+ArcadeArt.art(g.id)+'</div>';
-    document.getElementById('hName').textContent = g.n;
-    document.getElementById('hKick').textContent = g.k;
-    var s = SPOT.indexOf(g.id);
-    document.querySelectorAll('.dots i').forEach(function(d,n){
-      d.classList.toggle('on', n === (s<0 ? -1 : s));
-    });
-    if (scroll) window.scrollTo({ top:0, behavior:'smooth' });
-  }
-
-  document.getElementById('dots').innerHTML = SPOT.map(function(){ return '<i></i>'; }).join('');
-  document.querySelectorAll('.dots i').forEach(function(d,n){
-    d.addEventListener('click', function(){ hi=n; feature(SPOT[hi]); restart(); });
-  });
-  function next(){ hi = (hi+1)%SPOT.length; feature(SPOT[hi]); }
-  function restart(){ clearInterval(timer); timer = setInterval(next, 6500); }
-
-  document.getElementById('hPlay').addEventListener('click', function(){
-    var g = byId[SPOT[hi]];
-    if (g) location.href = g.id + '/';
-  });
-
-  // The banner art drifts under the cursor.
-  document.getElementById('hero').addEventListener('pointermove', function(e){
-    var b = this.getBoundingClientRect();
-    var x = (e.clientX-b.left)/b.width-.5, y = (e.clientY-b.top)/b.height-.5;
-    var l = document.querySelector('#heroArt .lay');
-    if (l) l.style.transform = 'translate3d('+(-x*24)+'px,'+(-y*16)+'px,0) scale(1.08)';
-  }, { passive:true });
-
-  document.getElementById('q').addEventListener('input', function(){ draw(this.value); });
-
-  /* ======================= views ======================= */
-  var VIEWS = ['home','friends','board'];
-  function show(v){
-    VIEWS.forEach(function(n){ document.getElementById('v-'+n).hidden = (n !== v); });
-    document.querySelectorAll('.navb').forEach(function(b){
-      b.classList.toggle('on', b.getAttribute('data-view') === v);
-    });
-    if (v === 'friends') loadFriends();
-    if (v === 'board') loadBoard();
-    try { history.replaceState(null, '', v === 'home' ? '.' : '#' + v); } catch(e){}
-    window.scrollTo({ top:0, behavior:'smooth' });
-  }
-  document.querySelectorAll('.navb').forEach(function(b){
-    b.addEventListener('click', function(){ show(b.getAttribute('data-view')); });
-  });
-
-  /* ======================= user of the week =======================
-   * Real rows from ig_weekly for the current week. The week turns over on
-   * Friday night and is decided server-side. */
-  function initials(n){
-    return (n||'?').trim().split(/\s+/).slice(0,2)
-      .map(function(w){ return w[0]; }).join('').toUpperCase();
-  }
-  var HUES = ['#2f8fff','#ff5f7e','#48c8ff','#a78bfa','#3dd68c','#ffb03a','#ff7ad1','#00c2a8'];
-  function hue(n){
-    var h = 0; for (var i=0;i<(n||'').length;i++) h = (h*31 + n.charCodeAt(i)) >>> 0;
-    return HUES[h % HUES.length];
-  }
-  function face(name, url, emoji){
-    // Avatars are player-supplied. Only https, and always escaped.
-    if (url && /^https:\/\//i.test(url))
-      return '<img src="'+esc(url)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy">';
-    if (emoji) return '<span style="font-size:1.6em">'+esc(emoji)+'</span>';
-    var c = hue(name);
-    return '<svg viewBox="0 0 64 64" style="width:100%;height:100%;display:block">'+
-      '<rect width="64" height="64" fill="'+c+'"/>'+
-      '<text x="32" y="41" text-anchor="middle" font-family="Outfit,sans-serif" '+
-        'font-size="26" font-weight="800" fill="#fff" opacity=".95">'+esc(initials(name))+'</text></svg>';
-  }
-
-  IGData.weekly().then(function(w){
-    var box = document.getElementById('uotw');
-    if (!w.rows.length){
-      box.innerHTML = '<div class="crownbox"><div class="lbl">♛ User of the Week</div>'+
-        '<div class="champ"><div class="who"><div class="nm">Nobody yet</div>'+
-        '<div class="sub2">This week just started — play a game and it could be you.</div>'+
-        '</div></div></div>';
-      return;
-    }
-    var top = w.rows[0];
-    box.innerHTML =
-      '<div class="crownbox"><div class="lbl">♛ User of the Week</div>'+
-        '<div class="champ">'+
-          '<span class="av">'+face(top.user_name)+'</span>'+
-          '<div class="who"><div class="nm">'+top.user_name+'</div>'+
-            '<div class="sub2">Most games played since Friday</div></div>'+
-          '<div class="big"><b>'+top.plays+'</b><span>plays</span></div>'+
-        '</div></div>'+
-      '<div class="runners"><div class="lbl">This week’s chasers</div>'+
-        w.rows.slice(1,6).map(function(r,i){
-          return '<div class="rrow"><span class="pos">'+(i+2)+'</span>'+
-                 '<span class="rn">'+esc(r.user_name)+'</span>'+
-                 '<span class="rp">'+r.plays+'</span></div>';
-        }).join('') +
-        (w.rows.length<2 ? '<div class="rrow"><span class="rn" style="color:var(--mute)">'+
-          'No one else on the board yet.</span></div>' : '') +
-      '</div>';
-  });
-
-  /* ======================= friends =======================
-   * Every action here hands off to friends.js, which already owns requests,
-   * chat, groups, presence and moderation and has been in the arcade for
-   * months. Re-implementing any of it would mean a second, buggier copy of
-   * rules that already work — so this view is a face for that system, not a
-   * replacement for it.
-   */
-  function FR(){ return window.IGFriends; }
-  function meKey(){
-    var p = window.IGAuth && IGAuth.getUser ? IGAuth.getUser() : null;
-    return p ? nameKey(p.name) : null;
-  }
-  function nameKey(s2){
-    return String(s2||'').toLowerCase().replace(/[^a-z0-9]+/g,'_')
-      .replace(/^_|_$/g,'').slice(0,40);
-  }
-
-  var friendsDrawn = false;
-  function loadFriends(){
-    var host = document.getElementById('people');
-    if (!meKey()){
-      document.getElementById('fCount').textContent = '';
-      host.innerHTML = '<div class="empty">Sign in with the 👤 button to see your friends.</div>';
-      document.getElementById('groupList').innerHTML = '';
-      document.getElementById('gCount').textContent = '';
-      return;
-    }
-    if (!FR() || !FR().ready()){
-      if (friendWaits++ > 25){            // ~10 seconds, then say so
-        host.innerHTML = '<div class="empty">Couldn’t reach the friends service.<br>'+
-          'Check your connection and reload.</div>';
+    /* ===== account bar =====
+       Accounts are username + password only (auth.js / Supabase). The old
+       name-only local account picker is gone: it let anyone switch to another
+       player on this device without a password, which is exactly how one
+       player's progress ended up under another player's name. */
+    const bar=document.getElementById('acctBar');
+    function escName(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+    function renderBar(){
+      if(!bar) return;
+      const u = window.IGAuth && IGAuth.getUser();
+      if(u){
+        bar.innerHTML = `☁️ <b>${escName(IGAuth.displayName())}</b> <span style="color:#7CFFB2;font-size:12px">online</span>`
+          + ` <button class="mini" id="profileBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">👤 My Profile</button>`;
+        bar.style.cursor='pointer';                       // tapping your name opens the profile too
+        bar.onclick=()=>IGAuth.openAccount();
         return;
       }
-      host.innerHTML = '<div class="empty">Loading…</div>';
-      setTimeout(loadFriends, 400);
-      return;
+      bar.style.cursor=''; bar.onclick=null;
+      bar.innerHTML = `👤 <b>Not signed in</b>`
+        + ` <button class="mini" id="loginBtn" style="background:linear-gradient(135deg,#3a8fd9,#28408f);color:#fff">Log in</button>`
+        + ` <button class="mini" id="joinBtn">➕ Create account</button>`;
+      document.getElementById('loginBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth('in'); };
+      document.getElementById('joinBtn').onclick=()=>{ if(window.IGAuth) IGAuth.openAuth('new'); };
     }
-    if (!friendsDrawn){
-      friendsDrawn = true;
-      try { FR().onUpdate(function(){ renderFriends(); }); } catch(e){}
-    }
-    renderFriends();
-  }
+    // keep the bar in sync when the sign-in state resolves/changes.
+    // auth.js is deferred, so poll until IGAuth exists before wiring.
+    (function wireAuth(){ if(window.IGAuth){ IGAuth.onChange(renderBar); renderBar(); } else setTimeout(wireAuth,60); })();
+    renderBar();
 
-  function renderFriends(){
-    var mine = FR().list() || [], me2 = meKey();
-    Promise.all([IGData.requestsFor(me2), IGData.profiles(), IGData.allFriendPairs(),
-                 IGData.groups(), IGData.groupMembers()])
-    .then(function(r){
-      var reqs = r[0], profs = r[1]||[], pairs = r[2]||[], grps = r[3]||[], mem = r[4]||[];
-      var pby = {}; profs.forEach(function(x){ pby[x.user_key] = x; });
-      var sentTo = {}; (reqs.sent||[]).forEach(function(x){ sentTo[x.to_key] = 1; });
-      var friendKey = {}; mine.forEach(function(f){ friendKey[f.key || nameKey(f.name)] = 1; });
-
-      var out = '';
-
-      /* requests waiting on you, first — they need an answer */
-      if ((reqs.inbox||[]).length){
-        out += '<div class="reqs"><div class="rq-h">👋 '+reqs.inbox.length+
-               ' friend request'+(reqs.inbox.length===1?'':'s')+'</div>' +
-          reqs.inbox.map(function(q){
-            var pr = pby[q.from_key] || {};
-            return '<div class="rq">'+
-              '<span class="av">'+face(q.from_name, pr.avatar_url, pr.avatar_emoji)+'</span>'+
-              '<span class="rn">'+esc(q.from_name)+'</span>'+
-              '<button class="ok" data-acc="'+esc(q.from_name)+'" data-k="'+esc(q.from_key)+'">Accept</button>'+
-              '<button class="no" data-den="'+esc(q.from_name)+'" data-k="'+esc(q.from_key)+'">Decline</button>'+
-            '</div>';
-          }).join('') + '</div>';
-      }
-
-      /* your friends */
-      out += '<div class="people-grid">' + (mine.length ? mine.map(function(f){
-        var k = f.key || nameKey(f.name), pr = pby[k] || {};
-        return '<div class="person">'+
-          '<span class="av">'+face(f.name, pr.avatar_url, pr.avatar_emoji)+'</span>'+
-          '<div class="nm">'+esc(f.name)+'</div>'+
-          '<div class="pbtns">'+
-            '<button class="msg-b" data-chat="'+esc(k)+'" data-n="'+esc(f.name)+'">Message</button>'+
-            '<button class="rem-b" data-rem="'+esc(f.name)+'" data-k="'+esc(k)+'" title="Remove friend">✕</button>'+
-          '</div></div>';
-      }).join('') : '<div class="empty">No friends yet — add someone below.</div>') + '</div>';
-
-      /* everyone else on the arcade, so there is somewhere to send a request */
-      var seen = {};
-      pairs.forEach(function(x){
-        if (!seen[x.akey]) seen[x.akey] = x.aname || x.akey;
-        if (!seen[x.bkey]) seen[x.bkey] = x.bname || x.bkey;
-      });
-      profs.forEach(function(x){ if (!seen[x.user_key]) seen[x.user_key] = x.name || x.user_key; });
-      var others = Object.keys(seen).filter(function(k){
-        return k !== me2 && !friendKey[k];
-      }).slice(0, 24);
-
-      if (others.length){
-        out += '<div class="vh" style="margin-top:26px"><h2 class="h">Add friends</h2>'+
-               '<span>'+others.length+' players on the arcade</span></div>'+
-               '<div class="people-grid">' + others.map(function(k){
-          var pr = pby[k] || {}, nm = pr.name || seen[k];
-          var pend = sentTo[k];
-          return '<div class="person">'+
-            '<span class="av">'+face(nm, pr.avatar_url, pr.avatar_emoji)+'</span>'+
-            '<div class="nm">'+esc(nm)+'</div>'+
-            '<div class="pbtns">'+
-              (pend ? '<button class="pend-b" disabled>Requested</button>'
-                    : '<button class="add-b" data-add="'+esc(nm)+'">+ Add friend</button>')+
-            '</div></div>';
-        }).join('') + '</div>';
-      }
-
-      document.getElementById('fCount').textContent =
-        mine.length + ' friend' + (mine.length===1?'':'s');
-      document.getElementById('people').innerHTML = out;
-
-      /* groups */
-      var count = {};
-      mem.forEach(function(m){ count[m.group_id] = (count[m.group_id]||0)+1; });
-      document.getElementById('gCount').textContent = grps.length + ' chats';
-      document.getElementById('groupList').innerHTML = grps.map(function(g){
-        return '<button class="grp" data-g="'+g.id+'">'+
-          '<span class="av">'+(g.avatar_url
-            ? '<img src="'+g.avatar_url+'" alt="" style="width:100%;height:100%;object-fit:cover">'
-            : (g.avatar_emoji || '👥'))+'</span>'+
-          '<div style="min-width:0"><div class="nm">'+esc(g.name||'Group')+'</div>'+
-          '<div class="mt">'+(count[g.id]||0)+' members</div></div></button>';
-      }).join('') || '<div class="empty">No groups yet.</div>';
-
-      wireFriendButtons();
-    });
-  }
-
-  function esc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
-
-  function wireFriendButtons(){
-    function on(sel, fn){
-      document.querySelectorAll(sel).forEach(function(b){
-        b.addEventListener('click', function(e){ e.preventDefault(); fn(b); });
-      });
-    }
-    // friends.js owns the chat window, typing, sending and history.
-    on('[data-chat]', function(b){ FR().openChat(b.getAttribute('data-chat'), b.getAttribute('data-n')); });
-    on('[data-g]',    function(b){ FR().openGroupChat(+b.getAttribute('data-g')); });
-    on('[data-acc]',  function(b){ FR().accept(b.getAttribute('data-acc'), b.getAttribute('data-k')); });
-    on('[data-den]',  function(b){ FR().deny(b.getAttribute('data-den'), b.getAttribute('data-k')); });
-    on('[data-rem]',  function(b){
-      if (confirm('Remove ' + b.getAttribute('data-rem') + ' from your friends?'))
-        FR().unfriend(b.getAttribute('data-rem'), b.getAttribute('data-k'));
-    });
-    on('[data-add]',  function(b){
-      b.disabled = true; b.textContent = 'Sending…';
-      Promise.resolve(FR().sendRequest(b.getAttribute('data-add'))).then(function(r){
-        // sendRequest resolves {ok:false,msg} for six different failures and
-        // never throws — so without this the button lied and said "Requested"
-        // when nothing had been sent.
-        if (r && r.ok === false) {
-          b.disabled = false; b.textContent = '+ Add friend';
-          var box = b.parentNode.parentNode;
-          var m = box.querySelector('.fmsg');
-          if (!m) { m = document.createElement('div'); m.className = 'fmsg'; box.appendChild(m); }
-          m.textContent = r.msg || 'Could not send that request.';
-          return;
+    /* overall leaderboard (button + #leaderboard hash from the announcement banner) */
+    function openOverall(){ if(window.IGAuth && IGAuth.showOverall) IGAuth.showOverall(); else setTimeout(openOverall,80); }
+    document.getElementById('overallLbBtn').onclick=openOverall;
+    /* star leaderboard (most ⭐ from Game of the Day / Week goals) */
+    function openStars(){ if(window.IGAuth && IGAuth.showLeaderboard) IGAuth.showLeaderboard('stars','Star Leaderboard'); else setTimeout(openStars,80); }
+    document.getElementById('starLbBtn').onclick=openStars;
+    /* User of the Week (most time actually played this week; excludes the creator) */
+    (function uotw(){
+      function escu(s){ return String(s).replace(/[<>&]/g,''); }
+      function rainbow(s){ var c=['#ffe14a','#7dff9b'], o='', i=0, a=String(s);   // alternating yellow / green letters
+        for(var k=0;k<a.length;k++){ var ch=a[k]; if(ch===' '){ o+=' '; continue; } o+='<span style="color:'+c[i%2]+'">'+ch+'</span>'; i++; } return o; }
+      function show(info){ const e=document.getElementById('uotw'); if(!e||!info) return;
+        const isFri = new Date().getDay()===5;   // Friday = announcement day → celebrate the winner only
+        let h='<div style="max-width:900px;margin:0 auto 14px;background:linear-gradient(135deg,#2a1d4a,#14102e);border:1px solid rgba(180,140,255,.3);border-radius:16px;padding:14px 16px;text-align:'+(isFri?'center':'left')+'">';
+        h+='<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#c9a6ff">🏅 USER OF THE WEEK</div>';
+        if(isFri){
+          const champ = info.prev || info.leader;
+          if(champ){
+            h+='<div style="font-size:clamp(30px,8.5vw,52px);font-weight:900;line-height:1.06;margin-top:8px;text-shadow:0 3px 14px rgba(0,0,0,.5)">👑 '+rainbow(escu(champ))+'</div>';
+            h+='<div style="font-size:14px;font-weight:800;color:#ffe14a;margin-top:8px">🎉 Champion of the week! 🎉</div>';
+          } else h+='<div style="font-size:17px;color:#d7c9ff;margin-top:8px">No winner yet — play the most to be first!</div>';
+        } else {
+          const when = info.daysLeft===1 ? 'crowned <b>tomorrow (Friday)!</b>' : 'crowned <b>this Friday</b> — '+info.daysLeft+' days left';
+          if(info.leader) h+='<div style="font-size:21px;font-weight:900;color:#fff;margin-top:4px">🔥 Leading now: '+rainbow(escu(info.leader))+' <span style="font-size:12px;font-weight:700;color:#c9a6ff">('+info.leaderPlays+' plays)</span></div>';
+          else h+='<div style="font-size:18px;font-weight:900;color:#fff;margin-top:4px">🔥 Play the most games to lead!</div>';
+          h+='<div style="font-size:13px;color:#d7c9ff;margin-top:5px">Winner '+when+' — the more you actually play, the more plays you earn</div>';
+          if(info.prev) h+='<div style="font-size:12px;color:#9a8cc0;margin-top:9px">👑 Last week’s winner: <b style="color:#b0a0d0">'+escu(info.prev)+'</b></div>';
         }
-        b.textContent = 'Requested'; b.className = 'pend-b';
-      }).catch(function(){
-        b.disabled = false; b.textContent = '+ Add friend';
-      });
+        h+='</div>';
+        e.innerHTML=h;
+      }
+      function go(){ if(window.IGFriends && IGFriends.weeklyInfo){ IGFriends.weeklyInfo().then(show); } else setTimeout(go,500); }
+      go();
+    })();
+    /* friends panel + incoming-request badge */
+    (function friendsBtn(){ const b=document.getElementById('friendsBtn'); if(!b) return;
+      b.onclick=function(){ if(window.IGFriends) IGFriends.openPanel(); else alert('Friends are loading… try again in a second.'); };
+      function badge(){ try{ const n=window.IGFriends?IGFriends.reqInCount():0; const e=document.getElementById('friendsBadge'); if(e){ e.textContent=n; e.style.display=n>0?'inline-block':'none'; } }catch(e){} }
+      function wire(){ if(window.IGFriends){ IGFriends.onUpdate(badge); badge(); } else setTimeout(wire,400); } wire();
+    })();
+    function maybeHashLB(){ if(location.hash==='#leaderboard') openOverall(); }
+    window.addEventListener('hashchange', maybeHashLB);
+    maybeHashLB();
+
+    /* prominent install flow */
+    const installBtn=document.getElementById('installBtn');
+    const iosHint=document.getElementById('iosHint');
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt', e=>{        // Android / desktop Chrome & Edge
+      e.preventDefault(); deferredPrompt=e; if(!standalone) installBtn.style.display='inline-block';
     });
-  }
-
-  /* ======================= leaderboard ======================= */
-  var boardDone = false, SCORES = [];
-
-  /* The arcade already decides what belongs on a leaderboard, in auth.js:
-   * retired games, the "stars" pseudo-board and auto-generated Guest-1234
-   * identities are all kept off it. This board has to honour the same rules,
-   * or players who are hidden everywhere else reappear here. */
-  var HIDDEN_GAMES = { cricket2bowl:1, cricket2bat:1, rescue:1,
-                       'cricket2-bat':1, 'cricket2-bowl':1 };
-  function isAutoGuest(n){ return /^guest[-_ ]?\d{3,}$/i.test(String(n||'').trim()); }
-  function scoreable(r){
-    return r && !HIDDEN_GAMES[r.game] && r.game !== 'stars' && !isAutoGuest(r.name);
-  }
-
-  function loadBoard(){
-    if (boardDone) return; boardDone = true;
-    IGData.board(900).then(function(rows){
-      SCORES = (rows || []).filter(scoreable);
-      var games = {};
-      SCORES.forEach(function(r){ games[r.game] = (games[r.game]||0)+1; });
-      var list = Object.keys(games).filter(function(g){ return byId[g]; })
-        .sort(function(a2,b2){ return games[b2]-games[a2]; });
-
-      document.getElementById('bNote').textContent =
-        SCORES.length.toLocaleString() + ' scores across ' + list.length + ' games';
-      document.getElementById('bPick').innerHTML =
-        '<button aria-pressed="true" data-g="*">🏆 Best overall</button>' +
-        list.map(function(g){
-          return '<button data-g="'+g+'">'+esc(byId[g].n)+'</button>';
-        }).join('');
-      document.querySelectorAll('#bPick button').forEach(function(b){
-        b.addEventListener('click', function(){
-          document.querySelectorAll('#bPick button').forEach(function(o){
-            o.setAttribute('aria-pressed','false'); });
-          b.setAttribute('aria-pressed','true');
-          renderBoard(b.getAttribute('data-g'));
-        });
-      });
-      renderBoard('*');
+    installBtn.addEventListener('click', async ()=>{
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt(); await deferredPrompt.userChoice;
+      deferredPrompt=null; installBtn.style.display='none';
     });
-  }
+    window.addEventListener('appinstalled', ()=>{ installBtn.style.display='none'; iosHint.style.display='none'; });
+    /* iOS Safari has no install prompt — show the Add-to-Home-Screen hint instead */
+    const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isiOS && !standalone) iosHint.style.display='block';
 
-  /* One player, one best score, per game. Names are matched case-insensitively
-   * so "Ilan" and "ilan" are one person, and the best-spelled version wins. */
-  function bestPerPlayer(rows){
-    var best = {};
-    rows.forEach(function(r){
-      var k = String(r.name||'').trim().toLowerCase();
-      if (!best[k] || r.score > best[k].score) best[k] = r;
-    });
-    return Object.keys(best).map(function(k){ return best[k]; })
-      .sort(function(a2,b2){ return b2.score - a2.score; });
-  }
-
-  function renderBoard(game){
-    var rows;
-    if (game === '*') {
-      /* Raw scores can't be added together — Anime Tycoon runs past a million
-       * and Stack Tower is in the dozens, so the biggest-numbered game would
-       * decide the whole board. Instead each game is scored on its own: the
-       * top ten get 10 points down to 1, and those points are added up.
-       * Placing well across many games beats dominating one.
-       *
-       * Deduping FIRST matters: without it a player holding the top three
-       * scores in one game collected 10+9+8 from it, which inflated the
-       * leader by 77 points and pushed an honest player two places down. */
-      var byGame = {};
-      SCORES.forEach(function(r){ (byGame[r.game] = byGame[r.game] || []).push(r); });
-      var pts = {}, label = {};
-      Object.keys(byGame).forEach(function(g){
-        bestPerPlayer(byGame[g]).slice(0,10).forEach(function(r,i){
-          var k = String(r.name||'').trim().toLowerCase();
-          pts[k] = (pts[k]||0) + (10 - i);
-          label[k] = label[k] || r.name;
-        });
+    /* ===== "NEW" / "RECENTLY UPDATED" badges (16h window) — no notifications =====
+       To flag a game, add its card href below with an `added` (newly added) or
+       `updated` (changed an existing game) timestamp. Badge auto-disappears after 16h. */
+    const GAMES = {
+      'carrom/':       { added:   '2026-07-31T09:00:00', updated: '2026-08-10T12:00:00', tag:'🌐 MULTIPLAYER' },   // queen cover rule + live opponent aiming online
+      'cricket/':      { updated: '2026-08-14T21:50:00', tag:'🎯 CHALLENGE HUB' },   // set a target, publish it, chase other players' targets
+      'meme/':         { added:   '2026-07-19T18:45:00' },   // Meme Studio: create+replay meme scenes, gallery, likes
+      'scoop/':        { added:   '2026-07-16T17:30:00' },   // swipe basketball: 2.5D court, combos, shop
+      'speedclicker/': { added:   '2026-09-13T12:00:00' },   // 15-second tap race with global leaderboard
+      'timeduel/':     { added:   '2026-09-14T19:00:00', tag:'🌐 MULTIPLAYER' },   // stop-the-timer duels, blind mode, 2-8 player tournaments, coin stakes
+      'drawrush/':     { added:   '2026-07-19T18:00:00' },   // multiplayer + AI drawing game with community gallery
+      'codewords/':    { added:   '2026-07-15T18:30:00' },   // spy word game: solo, party, online multiplayer
+      'try/':          { updated: '2026-07-18T15:45:00' },   // solvability fix: every level 1–1000+ now beatable (no impossible dead-zones)
+      'airhockey/':    { added:   '2026-07-13T20:00:00' },   // newest -> also the bottom banner
+      'handcricket/':  { added:   '2026-07-08T20:00:00', updated: '2026-08-29T20:30:53', tag:'💰 COIN MATCH' },   // Coin matches: stake 100–5000 coins vs a friend online — both put in half, winner takes the pot
+      'catch2/':       { added:   '2026-07-07T21:00:00' },
+      'thisorthat/':   { added:   '2026-06-30T20:06:00' },
+      'stack/':        { added:   '2026-06-29T12:10:00' },
+      'archer/':       { added:   '2026-06-29T12:00:00' },
+      'paper/':        { updated: '2026-07-09T20:00:00' },   // online multiplayer: rooms, up to 4 players + bots
+      'karate/':       { added:   '2026-06-28T12:00:00' },
+      'pptour/':       { updated: '2026-07-14T12:00:00' },   // timed SMASH + combo/fire streak (single-player), tougher AI
+      'tennis/':       { updated: '2026-09-08T21:13:35', tag:'🌐 MULTIPLAYER' },   // online rooms over Supabase Realtime — play a friend on another device
+      'anime-tycoon/': { updated: '2026-06-27T19:00:00' },
+      'catch/':        { updated: '2026-06-27T12:00:00' },
+      'football/':     { updated: '2026-06-27T20:00:00' },   // 3D mode + 2D/3D chooser + tougher keeper
+      'fruit-arena/':  { updated: '2026-07-08T18:45:00' },   // fruit storm: no life loss on miss + no bombs
+      'f1/':           { updated: '2026-08-29T21:38:20', tag:'🏆 MASTER MODE' },   // Master Mode: wallet-gated 10K-100K circuits with broken bridges to jump and hairpins
+      // Going forward: each new game gets `added`, each updated game gets `updated`. Auto-clears after 16h.
+      // NEVER hardcode <span class="badge">…</span> on a card — those never expire. Timestamps here only.
+    };
+    /* every card badge goes into a single top-left .badges flex box so they stack side-by-side */
+    window.getBadges = function(card){ var bb=card.querySelector('.badges'); if(!bb){ bb=document.createElement('span'); bb.className='badges'; card.insertBefore(bb, card.firstChild); } return bb; };
+    (function(){
+      const WINDOW=16*60*60*1000, now=Date.now();   // badge shows for 16h from its timestamp
+      const fresh = ts => ts && (now - new Date(ts).getTime()) < WINDOW;
+      let newest=null, newestT=-1;
+      document.querySelectorAll('a.card').forEach(card=>{
+        const g = GAMES[card.getAttribute('href')]; if(!g) return;
+        if(fresh(g.added)){
+          const b=document.createElement('span'); b.className='badge new'; b.textContent='NEW'; window.getBadges(card).appendChild(b);
+          const t=new Date(g.added).getTime(); if(t>newestT){ newestT=t; newest=card; }
+        } else if(fresh(g.updated)){
+          const b=document.createElement('span'); b.className='badge upd'; b.textContent='UPDATED'; window.getBadges(card).appendChild(b);
+        }
+        // optional extra tag (e.g. 🌐 MULTIPLAYER) rides the same 16h window
+        if(g.tag && (fresh(g.added)||fresh(g.updated))){
+          const b=document.createElement('span'); b.className='badge new'; b.textContent=g.tag; window.getBadges(card).appendChild(b);
+        }
       });
-      rows = Object.keys(pts).map(function(k){
-        return { name: label[k], score: pts[k], game:'points' };
-      }).sort(function(a2,b2){ return b2.score - a2.score; }).slice(0,20);
-    } else {
-      rows = bestPerPlayer(SCORES.filter(function(r){ return r.game === game; })).slice(0,20);
+      const banner=document.getElementById('newBanner');
+      if(newest){ const name=newest.querySelector('h2').textContent;
+        banner.innerHTML='<a href="'+newest.getAttribute('href')+'">🎮 Try the new game — '+name+'! ▶</a>';
+        banner.style.display='block';
+      }
+    })();
+
+    /* ===== "Recommended device" chips (manual list) + auto device-detection nudge ===== */
+    const REC = {
+      'drawrush/':'both', 'scoop/':'both', 'codewords/':'both', 'cricket/':'both', 'catch/':'mobile', 'catch2/':'mobile', 'handcricket/':'both', 'airhockey/':'both', 'f1/':'both', 'football/':'both', 'pptour/':'both',
+      'fruit-arena/':'both', 'paper/':'pc', 'obby/':'both', 'puzzles/':'both',
+      'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
+      'stack/':'both', 'archer/':'both', 'thisorthat/':'both', 'speedclicker/':'both',
+      'timeduel/':'both',
+    };
+    (function(){
+      const LABEL = {
+        both:     { t:'👍 Best on any device',         ideal:['desktop','tablet','mobile'] },
+        mobile:   { t:'📱 Best on phone',              ideal:['mobile','tablet'] },
+        pc:       { t:'💻 Best on PC / laptop',        ideal:['desktop'] },
+        pctablet: { t:'💻📱 Best on PC / tablet',       ideal:['desktop','tablet'] },
+      };
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const shortSide = Math.min(screen.width||innerWidth, screen.height||innerHeight);
+      const device = !coarse ? 'desktop' : (shortSide >= 600 ? 'tablet' : 'mobile');
+      document.querySelectorAll('a.card').forEach(card=>{
+        const cat = REC[card.getAttribute('href')]; if(!cat) return; const L = LABEL[cat];
+        const chip = document.createElement('div'); chip.className='rec';
+        const ideal = L.ideal.includes(device);
+        if(ideal){ chip.textContent = L.t; }
+        else { chip.classList.add('warn');
+          const tip = (cat==='pc'||cat==='pctablet') ? ' — easier with a keyboard' : (cat==='mobile' ? ' — easier on a touchscreen' : '');
+          chip.textContent = L.t + tip; }
+        card.appendChild(chip);
+      });
+    })();
+  </script>
+<script>
+  /* ===== 🔥 Trending + play counts =====
+     Shows how many plays each game has, and puts a 🔥 TRENDING badge on the
+     most-played one. Uses the live play counter (game_plays) if it's set up;
+     otherwise falls back to real distinct players from the leaderboard, so it
+     shows real numbers immediately either way. */
+  (function () {
+    var API = 'https://xanrofecdpoljnerpsow.supabase.co/rest/v1';
+    var KEY = 'sb_publishable_jff4Q2OLVzIf0Cr1FILZyQ_vgy8xRrT';
+    var H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+    function slugOf(card) { return (card.getAttribute('href') || '').replace(/\/+$/, '').split('/').pop(); }
+    function decorate(counts) {
+      var cards = [].slice.call(document.querySelectorAll('a.card'));
+      var max = 0, maxCard = null;
+      cards.forEach(function (c) { var n = counts[slugOf(c)] || 0; if (n > max) { max = n; maxCard = c; } });
+      cards.forEach(function (c) {
+        if (c.querySelector('.plays')) return;
+        var n = counts[slugOf(c)] || 0;
+        var el = document.createElement('div'); el.className = 'plays';
+        el.textContent = '▶ ' + n.toLocaleString() + ' play' + (n === 1 ? '' : 's');
+        c.appendChild(el);
+      });
+      if (maxCard && max > 0 && !maxCard.querySelector('.badge.fire')) {
+        var f = document.createElement('span'); f.className = 'badge fire'; f.textContent = '🔥 TRENDING';
+        window.getBadges(maxCard).appendChild(f);
+      }
     }
-
-    document.getElementById('bTable').innerHTML = rows.length ? rows.map(function(r,i){
-      var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-      return '<div class="brow'+(i<3?' top':'')+'">'+
-        '<span class="rk">'+medal+'</span>'+
-        '<span class="pn">'+face2(r.name)+esc(r.name)+
-          (game==='*' ? '<span class="gm">across all games</span>' : '')+'</span>'+
-        '<span class="sc">'+r.score.toLocaleString()+
-          (game==='*' ? ' pts' : '')+'</span></div>';
-    }).join('') : '<div class="empty">No scores here yet.</div>';
-  }
-  function face2(n){
-    return '<span style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex:none;'+
-      'display:inline-block;vertical-align:middle">'+face(n)+'</span>';
-  }
-
-  /* ---- real play counts drive the whole home page ---- */
-  IGData.plays().then(function(map){
-    PLAYS = map;
-    draw(document.getElementById('q').value || '');
-  });
-
-  feature(SPOT[0]); draw(''); restart();
+    function fromLeaderboard() {
+      fetch(API + '/leaderboard?select=name,game&limit=5000', { headers: H })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) {
+          var m = {};
+          (rows || []).forEach(function (r) { if (/^guest[-_ ]?\d{3,}$/i.test(String(r.name || '').trim())) return;
+            (m[r.game] = m[r.game] || {})[String(r.name || '').toLowerCase()] = 1; });
+          var c = {}; Object.keys(m).forEach(function (g) { c[g] = Object.keys(m[g]).length; });
+          decorate(c);
+        }).catch(function () {});
+    }
+    fetch(API + '/game_plays?select=game,plays', { headers: H })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (rows && rows.length) { var c = {}; rows.forEach(function (r) { c[r.game] = r.plays; }); decorate(c); }
+        else fromLeaderboard();
+      }).catch(fromLeaderboard);
+  })();
+  </script>
+<style>
+  #search{width:100%;max-width:900px;margin:0 auto 14px;padding:0 2px}
+  #searchBox{width:100%;padding:13px 18px;border-radius:26px;border:2px solid rgba(150,200,255,.25);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:600;outline:none;-webkit-appearance:none}
+  #searchBox:focus{border-color:#5ef0ff;background:rgba(255,255,255,.1)}
+  #searchBox::placeholder{color:#8fa0c8}
+  #cats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .cat{background:rgba(255,255,255,.06);border:1px solid rgba(150,200,255,.22);color:#cfe0ff;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;transition:.12s}
+  .cat.on{background:linear-gradient(135deg,#5ef0ff,#3aa0e8);color:#04203a;border-color:transparent}
+  #noResults{display:none;color:#9fb3d8;margin:22px auto;font-weight:700}
+</style>
+<script>
+/* Home-page search + category filters (Poki-style) */
+(function(){
+  const CATS={ 'drawrush/':['multiplayer','arcade'], 'meme/':['multiplayer','arcade'], 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
+    'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['multiplayer','3d','sports'], 'airhockey/':['arcade','sports'],
+    'cricket/':['sports'], 'football/':['sports'], 'tennis/':['multiplayer','sports'], 'karate/':['sports'], 'archer/':['sports'],
+    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'], 'speedclicker/':['arcade'], 'timeduel/':['multiplayer','arcade'],
+    'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
+  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both','speedclicker/':'both','timeduel/':'both' };
+  function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
+  const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
+  let activeCat='all', q='';
+  function apply(){ let shown=0; cards.forEach(function(c){ const href=c.getAttribute('href'); const h=c.querySelector('h2');
+      const name=(h?h.textContent:'').toLowerCase(); const tg=tags(href);
+      const okCat = activeCat==='all' || tg.indexOf(activeCat)>=0;
+      const okQ = !q || name.indexOf(q)>=0 || tg.some(function(t){return t.indexOf(q)>=0;});
+      const show = okCat && okQ; c.style.display = show?'':'none'; if(show)shown++; });
+    const nr=document.getElementById('noResults'); if(nr) nr.style.display = shown?'none':'block'; }
+  const box=document.getElementById('searchBox'); if(box) box.addEventListener('input',function(e){ q=(e.target.value||'').trim().toLowerCase(); apply(); });
+  const catbar=document.getElementById('cats'); if(catbar) catbar.addEventListener('click',function(e){ const b=e.target.closest('.cat'); if(!b)return; activeCat=b.getAttribute('data-cat');
+    Array.prototype.forEach.call(document.querySelectorAll('.cat'),function(x){ x.classList.toggle('on', x===b); }); apply(); });
+  window.__search={ apply:apply, setQuery:function(v){ q=(v||'').toLowerCase(); apply(); }, setCat:function(c){ activeCat=c; apply(); }, count:function(){ return cards.filter(function(c){return c.style.display!=='none';}).length; } };
 })();
 </script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
-    });
-  }
-</script>
+<script src="supabase-config.js"></script>
 <script>
 /* ===== 💬 Feedback — stars (half-star steps) + message → Supabase ig_feedback ===== */
 (function(){
@@ -1140,33 +969,9 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
   window.addEventListener('load',function(){ try{ if(window.IGAuth&&IGAuth.onChange) IGAuth.onChange(updAdmin); }catch(e){} });
 })();
 </script>
-<script>
-/* Install prompt and the star board, carried across from the old home page. */
-(function(){
-  var deferred = null, btn = document.getElementById('installBtn');
-  var standalone = matchMedia('(display-mode: standalone)').matches ||
-                   navigator.standalone === true;
-  window.addEventListener('beforeinstallprompt', function(e){
-    e.preventDefault(); deferred = e;
-    if (!standalone) btn.hidden = false;
-  });
-  btn.addEventListener('click', function(){
-    if (!deferred) return;
-    deferred.prompt();
-    Promise.resolve(deferred.userChoice).then(function(){
-      deferred = null; btn.hidden = true;
-    });
-  });
-  document.getElementById('starBtn').addEventListener('click', function(){
-    if (window.IGAuth && IGAuth.showLeaderboard)
-      IGAuth.showLeaderboard('stars', 'Star Leaderboard');
-  });
-})();
-</script>
-<script src="supabase-config.js"></script>
 <script src="auth.js" defer></script>
 <script src="analytics.js" defer></script>
 <script src="announce.js" defer></script>
 <script src="friends.js" defer></script>
-<script src="rec.js" defer></script>
-</body></html>
+</body>
+</html>
