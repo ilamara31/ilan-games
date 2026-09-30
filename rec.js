@@ -8,7 +8,7 @@
     cricket: 'both', 'catch': 'mobile', f1: 'pc', football: 'both', pptour: 'both',
     'fruit-arena': 'both', paper: 'pc', obby: 'both', puzzles: 'both',
     'try': 'pc', 'anime-tycoon': 'both', tennis: 'both', karate: 'both', stack: 'both', archer: 'both',
-    thisorthat: 'both', carrom: 'both'
+    thisorthat: 'both', carrom: 'both', rps: 'both'
     // speedclicker is deliberately absent: the chip sits top-centre for 7s,
     // right over the live score of a game that only lasts 15s. The home page
     // still recommends it for any device via its own DEV map.

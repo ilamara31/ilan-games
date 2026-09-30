@@ -235,6 +235,11 @@
   </div>
   <div id="noResults">No games match — try another search.</div>
   <div class="cards">
+    <a class="card rps" href="rps/">
+      <span class="emoji">✂️</span>
+      <h2>Rock Paper Scissors</h2>
+      <p>Beat the computer, pass the phone to a friend, or play anyone online with a room code. Trophies leaderboard.</p>
+    </a>
     <a class="card timeduel" href="timeduel/">
       <span class="emoji">⏱️</span>
       <h2>Time Duel</h2>
@@ -432,6 +437,7 @@
       paper: function(){ return lsGet('paperTerritory_v1',['best']); },
       stack: function(){ return lsGetA('stackTower_v1',['best']); },
       speedclicker: function(){ return lsGetA('speedClicker_v1',['best']); },
+      rps: function(){ return lsGet('rpsArena_v1',['trophies']); },
       archer: function(){ return lsGetA('archerDuel_v1',['best']); },
       'anime-tycoon': function(){ return lsGet('animeTycoon_v1',['lifetime']); },
       scoop: function(){ return Math.max(lsGet('basketScoop_v1',['best','classic']), lsGet('basketScoop_v1',['best','time']), lsGet('basketScoop_v1',['best','hs'])); },
@@ -724,6 +730,7 @@
       'meme/':         { added:   '2026-07-19T18:45:00' },   // Meme Studio: create+replay meme scenes, gallery, likes
       'scoop/':        { added:   '2026-07-16T17:30:00' },   // swipe basketball: 2.5D court, combos, shop
       'speedclicker/': { added:   '2026-09-13T12:00:00' },   // 15-second tap race with global leaderboard
+      'rps/':          { added:   '2026-09-30T12:00:00', tag:'🌐 MULTIPLAYER' },   // vs computer, same-device, online rooms
       'timeduel/':     { added:   '2026-09-14T19:00:00', tag:'🌐 MULTIPLAYER' },   // stop-the-timer duels, blind mode, 2-8 player tournaments, coin stakes
       'drawrush/':     { added:   '2026-07-19T18:00:00' },   // multiplayer + AI drawing game with community gallery
       'codewords/':    { added:   '2026-07-15T18:30:00' },   // spy word game: solo, party, online multiplayer
@@ -778,7 +785,7 @@
       'fruit-arena/':'both', 'paper/':'pc', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both', 'speedclicker/':'both',
-      'timeduel/':'both',
+      'timeduel/':'both', 'rps/':'both',
     };
     (function(){
       const LABEL = {
@@ -864,9 +871,9 @@
   const CATS={ 'drawrush/':['multiplayer','arcade'], 'meme/':['multiplayer','arcade'], 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
     'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['multiplayer','3d','sports'], 'airhockey/':['arcade','sports'],
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['multiplayer','sports'], 'karate/':['sports'], 'archer/':['sports'],
-    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'], 'speedclicker/':['arcade'], 'timeduel/':['multiplayer','arcade'],
+    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'], 'speedclicker/':['arcade'], 'timeduel/':['multiplayer','arcade'], 'rps/':['multiplayer','arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both','speedclicker/':'both','timeduel/':'both' };
+  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both','speedclicker/':'both','timeduel/':'both','rps/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';

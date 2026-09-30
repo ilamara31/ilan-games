@@ -29,24 +29,24 @@
     try: "One More Try", "anime-tycoon": "Anime Tycoon", tennis: "Tennis Tour", pptour: "Ping Pong Tour", karate: "Karate",
     "fruit-arena": "Fruit Arena", airhockey: "Air Hockey Arena", codebreaker: "Codebreaker", thisorthat: "This or That",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", carrom: "Carrom Clash",
-    speedclicker: "Speed Clicker" };
+    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors" };
   // maps used to show a player's scores on their profile (mirrors auth.js)
   const GAME_TITLES = { catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
     try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
     tennis: "Tennis Tour", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush",
-    speedclicker: "Speed Clicker", stars: "Stars" };
+    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", stars: "Stars" };
   const GAME_METRIC = { catch: "Best score", cricket: "Career runs", f1: "Points", football: "Matches won",
     try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
     tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
     scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
-    speedclicker: "Best taps in 15s", stars: "Stars earned" };
+    speedclicker: "Best taps in 15s", rps: "Trophies", stars: "Stars earned" };
   const GAME_EMOJI = { catch: "🧺", cricket: "🏏", f1: "🏎️", football: "⚽", try: "🎯", puzzles: "🧩", obby: "🌈",
     "anime-tycoon": "💴", tennis: "🎾", karate: "🥋", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
     stack: "🧱", archer: "🏹", airhockey: "🏒", scoop: "🏀", meme: "😂", drawrush: "🎨",
-    speedclicker: "⚡", stars: "⭐" };
+    speedclicker: "⚡", rps: "✂️", stars: "⭐" };
   const HIDDEN_GAMES = { cricket2bowl: 1, cricket2bat: 1 };
 
   function gameSlug() {

@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v122';
+const CACHE = 'ilan-arcade-v123';
 const ASSETS = [
   './',
   './index.html',
@@ -44,6 +44,8 @@ const ASSETS = [
   './stack/index.html',
   './speedclicker/',
   './speedclicker/index.html',
+  './rps/',
+  './rps/index.html',
   './timeduel/',
   './timeduel/index.html',
   './timeduel/db.js',
