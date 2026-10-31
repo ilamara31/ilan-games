@@ -23,6 +23,7 @@ Games made by Ilan!
 - 🟩 **Paper Territory** — `paper/` — claim land with your trail, dodge rivals, own the most territory; global leaderboard.
 - 🏗️ **Stack Tower** — `stack/` — tap to drop & align blocks, build as high as you can with perfect-stack combos; global leaderboard.
 - ⚡ **Speed Clicker** — `speedclicker/` — 15 seconds, one glowing orb: tap as fast as you can. Live score, countdown ring and personal best, a title for your speed (🐢 Turtle → 🚀 Rocket), and a global top-20 leaderboard.
+- 🖊️ **Pen Fight 3D** — `penfight/` — flick your pen to knock theirs off the desk (Three.js, own pen physics). Play funny-named computer rivals across six desks to unlock better pens, or online rooms for 2–4 players with a live room list (Supabase realtime). No direct kills on your first shot of a round.
 - ✂️ **Rock Paper Scissors** — `rps/` — play the computer (Easy/Normal/Hard, Hard learns your habits), two players on one device, or online rooms by 4-letter code (Supabase realtime, moves hidden until both lock in, survives reloads and dropped connections). Match history and a trophies leaderboard.
 - 🏹 **Archer Duel** — `archer/` — aim, power & arc your arrows to KO tougher rivals each round; global leaderboard.
 
