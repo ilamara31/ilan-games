@@ -33,15 +33,6 @@ body{position:fixed;inset:0;font-family:var(--f-ui);user-select:none;-webkit-use
 button{font-family:var(--f-ui);cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-/* ---------- splash ---------- */
-#splash{position:fixed;inset:0;z-index:50;background:#07080b;display:flex;align-items:center;justify-content:center;transition:opacity .7s}
-#splash.out{opacity:0;pointer-events:none}
-.sp-in{text-align:center;animation:spIn 1.4s ease both}
-.sp-brand{font-family:var(--f-serif);font-weight:600;font-size:clamp(40px,9vw,76px);letter-spacing:.02em;
-  background:linear-gradient(180deg,#f6e2a6 0%,#d9b45e 45%,#9a7426 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sp-pre{font-family:var(--f-serif);font-style:italic;font-weight:500;color:#bfa36a;font-size:clamp(18px,3.4vw,26px);letter-spacing:.3em;margin-top:4px}
-.sp-line{width:120px;height:1px;margin:18px auto 0;background:linear-gradient(90deg,transparent,#d9b45e,transparent)}
-@keyframes spIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 
 /* ---------- notebook panels ---------- */
 .screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;
@@ -156,17 +147,17 @@ input{font-family:var(--f-ui);user-select:text;-webkit-user-select:text}
 .result-head.lose{color:#9b2c22}
 .unlock{border:2px dashed var(--gold);background:#fff8e6}
 .unlock .lbl{color:#9a7426}
-@media (prefers-reduced-motion:reduce){ .sp-in{animation:none} #banner{transition:none} }
+@media (prefers-reduced-motion:reduce){ #banner{transition:none} }
 </style>
 
 <canvas id="c" aria-label="Pen fight table"></canvas>
 
-<div id="splash"><div class="sp-in"><div class="sp-brand">ilan Games</div><div class="sp-pre">presents</div><div class="sp-line"></div></div></div>
 
 <!-- MENU -->
 <div id="menu" class="screen" hidden>
   <div class="page">
     <button class="icon-btn" id="sndBtn" aria-label="Sound on or off">♪</button>
+    <a class="icon-btn" id="homeBtn" href="../" aria-label="All games" style="right:auto;left:10px;top:10px;display:flex;align-items:center;justify-content:center;text-decoration:none">🏠</a>
     <div>
       <h1 class="title">Pen Fight<small>3D</small></h1>
       <div class="tag">the back-bench classic, now in 3D</div>
@@ -194,12 +185,24 @@ input{font-family:var(--f-ui);user-select:text;-webkit-user-select:text}
         <div class="progress"><i id="mNextBar" style="width:0"></i></div>
       </div>
     </div>
-    <ol class="how">
-      <li>Press on your pen and pull back, like a slingshot.</li>
-      <li>Pull a little for a soft tap, pull far for a hard hit.</li>
-      <li>Knock their pen off the desk. Keep yours on. First to 2 rounds wins.</li>
-      <li>No direct kills: on your first shot of a round, knocking a pen off doesn't count.</li>
-    </ol>
+    <button class="btn ghost" id="howBtn">How to play</button>
+  </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div id="howto" class="screen" hidden>
+  <div class="page">
+    <button class="icon-btn" id="howClose" aria-label="Back">✕</button>
+    <div class="title" style="font-size:44px">How to play</div>
+    <div class="card">
+      <ol class="how">
+        <li>Press on your pen and pull back, like a slingshot.</li>
+        <li>Pull a little for a soft tap, pull far for a hard hit.</li>
+        <li>Knock their pen off the desk. Keep yours on. First to 2 rounds wins.</li>
+        <li>No direct kills: on your first shot of a round, knocking a pen off doesn't count.</li>
+      </ol>
+    </div>
+    <button class="btn" id="howOk">Got it</button>
   </div>
 </div>
 
@@ -359,7 +362,9 @@ function collide(A, B, ev) {
   const iA = 1 / A.m, iB = 1 / B.m;
   const corr = Math.max(pen - 0.005, 0) / (iA + iB) * 0.8;   // push apart
   A.x += nx * corr * iA; A.y += ny * corr * iA; B.x -= nx * corr * iB; B.y -= ny * corr * iB;
-  if (corr > 0) A.rest = B.rest = false;   // a pushed pen must re-check the desk edge
+  // A resting pen nudged apart only needs waking if the nudge took it past the desk edge
+  // (waking it for every tiny nudge kept touching pens 'moving' forever and froze the game).
+  for (const q of [A, B]) if (q.rest && (Math.abs(q.x) > HW || Math.abs(q.y) > HH)) q.rest = false;
   const rax = cx - A.x, ray = cy - A.y, rbx = cx - B.x, rby = cy - B.y;
   const rvx = (A.vx - A.w * ray) - (B.vx - B.w * rby);
   const rvy = (A.vy + A.w * rax) - (B.vy + B.w * rbx);
@@ -714,50 +719,183 @@ function buildArena(ar) {
   scene.add(arenaGroup);
 }
 
+// Printed writing on a barrel: a canvas wrapped round a cylinder. The text runs along the pen
+// (tail to tip) on its top side, drawn at true scale so letters are not squashed.
+function barrelTex(bg, len, r, items) {
+  const W = 256, H = 1024, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  if (bg) { x.fillStyle = bg; x.fillRect(0, 0, W, H); }
+  const sAlong = H / len, sAround = W / (2 * Math.PI * r);
+  for (const it of items) {
+    x.save();
+    x.translate(W * 0.75, H * (1 - it.at));   // u = 0.75 faces up; canvas top is the tip end
+    x.rotate(-Math.PI / 2); x.scale(sAlong / 100, sAround / 100);
+    x.font = `${it.style || ''} ${it.weight || 700} ${Math.round(it.size * 100)}px ${it.font || 'Arial, Helvetica, sans-serif'}`;
+    x.fillStyle = it.color; x.textAlign = it.align || 'left'; x.textBaseline = 'middle';
+    if (it.spacing) { let px = 0; for (const ch of it.t) { x.fillText(ch, px, (it.dy || 0) * 100); px += x.measureText(ch).width + it.spacing * 100; } }
+    else x.fillText(it.t, 0, (it.dy || 0) * 100);
+    x.restore();
+  }
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+}
+
 function buildPenMesh(p) {
-  const g = new THREE.Group(), L = p.len, r = p.r, lk = p.look;
-  const M = (color, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.4, metalness: 0.05, envMapIntensity: (o.metalness || 0) > 0.3 ? 1 : 0.5 }, o));
-  const cyl = (r1, r2, len, cx, mat, seg = 24) => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, len, seg), mat);
-    m.rotation.z = -Math.PI / 2; m.position.x = cx; m.castShadow = true; m.receiveShadow = true; g.add(m); return m;   // r1 = back end, r2 = front end
+  const g = new THREE.Group(), L = p.len, r = p.r, id = p.id;
+  const M = (color, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.4, metalness: 0, envMapIntensity: (o.metalness || 0) > 0.3 ? 1 : 0.6 }, o));
+  const add = (geo, mat, px = 0, py = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, 0); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
+  // straight or tapered tube along the pen: rb = back radius, rf = front radius
+  const cyl = (rb, rf, a, b, mat, seg = 32) => { const geo = new THREE.CylinderGeometry(rf, rb, b - a, seg); geo.rotateZ(-Math.PI / 2); return add(geo, mat, (a + b) / 2); };
+  // smooth turned part from a profile of [x, radius] points, back to front
+  const turn = (pts, mat, seg = 32) => {
+    const geo = new THREE.LatheGeometry(pts.map(([px, pr]) => new THREE.Vector2(Math.max(pr, 0.0001), px)), seg); geo.rotateZ(-Math.PI / 2);
+    return add(geo, mat);
   };
-  const box = (lx, ly, lz, px, py, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(lx, ly, lz), mat); m.position.set(px, py, 0); m.castShadow = true; g.add(m); return m; };
-  const chrome = M('#e6eaee', { metalness: 1, roughness: 0.18 });
+  const rings = (a, b, n, rr, mat) => { for (let i = 0; i < n; i++) { const t = a + (b - a) * (i + 0.5) / n; cyl(rr, rr, t - 0.05, t + 0.05, mat, 24); } };
+  // flat clip lying on top of the pen: from xa (where it joins) to xb (its free end)
+  const plainClip = (xa, xb, top, w, mat, ball) => {
+    const len = Math.abs(xb - xa), dir = Math.sign(xb - xa);
+    add(new THREE.BoxGeometry(len, 0.1, w), mat, (xa + xb) / 2, top + 0.17);
+    add(new THREE.BoxGeometry(0.35, 0.22, w), mat, xa + dir * 0.17, top + 0.07);
+    if (ball) add(new THREE.SphereGeometry(w * 0.42, 16, 10), mat, xb - dir * 0.05, top + 0.1);
+  };
+  // Parker's arrow clip: feathered end at the top of the pen, arrow head pointing to the nib
+  const arrowClip = (xa, xb, top, mat) => {
+    const len = Math.abs(xb - xa), s = new THREE.Shape(), hw = 0.11, aw = 0.27, ah = 0.75;
+    s.moveTo(0, -0.2); s.lineTo(0.35, -hw); s.lineTo(len - ah, -hw); s.lineTo(len - ah, -aw); s.lineTo(len, 0);
+    s.lineTo(len - ah, aw); s.lineTo(len - ah, hw); s.lineTo(0.35, hw); s.lineTo(0, 0.2); s.lineTo(0.12, 0); s.lineTo(0, -0.2);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.09, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 2 });
+    geo.rotateX(Math.PI / 2); if (xb < xa) geo.rotateY(Math.PI);
+    add(geo, mat, xa, top + 0.2);
+    // feather grooves and the stem that holds the clip to the pen
+    for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(0.04, 0.03, 0.3), M('#9aa0a8', { metalness: 1, roughness: 0.4 }), xa + Math.sign(xb - xa) * (0.45 + i * 0.22), top + 0.215);
+    add(new THREE.BoxGeometry(0.45, 0.22, 0.22), mat, xa + Math.sign(xb - xa) * 0.25, top + 0.08);
+  };
+  const chrome = M('#e9edf1', { metalness: 1, roughness: 0.12 });
+  const steel = M('#c9ced4', { metalness: 1, roughness: 0.32 });
+  const gold = M('#e3bd5c', { metalness: 1, roughness: 0.18 });
   const x0 = -L / 2, x1 = L / 2;
-  if (lk.kind === 'stick' || lk.kind === 'gel') {
-    const capLen = L * 0.3, bodyEnd = x1 - capLen * 0.85;
-    const bodyMat = lk.clear ? M(lk.body, { transparent: true, opacity: lk.clear, roughness: 0.15, depthWrite: false })
-                             : M(lk.body, { roughness: lk.rough || 0.35, metalness: lk.kind === 'gel' ? 0.35 : 0.05 });
-    const b = cyl(r, r, bodyEnd - x0 - 0.5, (x0 + 0.5 + bodyEnd) / 2, bodyMat, lk.sides || 24);
-    if (lk.sides === 6) b.rotation.x = Math.PI / 6;
-    if (lk.clear && lk.ink) {
-      cyl(r * 0.32, r * 0.32, bodyEnd - x0 - 1.5, (x0 + 1 + bodyEnd) / 2 - 0.3, M(lk.ink, { roughness: 0.3 }), 12);
-      cyl(r * 0.2, r * 0.05, 1.0, bodyEnd + 0.2, M('#b8bcc2', { metalness: 0.9, roughness: 0.3 }), 12);
-    }
-    if (lk.window) cyl(r * 1.005, r * 1.005, L * 0.3, x0 + L * 0.42, M(lk.window, { roughness: 0.15, transparent: true, opacity: 0.85 }), 24);
-    if (lk.grip) cyl(r * 1.1, r * 1.08, L * 0.2, bodyEnd - L * 0.12, M(lk.grip, { roughness: 0.95 }), 24);
-    cyl(r * 0.9, r * 0.96, 0.7, x0 + 0.35, M(lk.plug, { roughness: 0.4 }), 20);
-    const capMat = M(lk.cap, { roughness: lk.kind === 'gel' ? 0.3 : 0.35 });
-    cyl(r * 1.13, r * 1.13, capLen - 0.5, x1 - capLen / 2 - 0.25, capMat, 24);
-    cyl(r * 1.13, r * 0.7, 0.5, x1 - 0.25, capMat, 24);
-    const clipMat = lk.kind === 'gel' ? chrome : M(lk.clip, { roughness: 0.35 });
-    box(capLen * 0.75, 0.14, 0.34, x1 - capLen * 0.5, r * 1.13 + 0.2, clipMat);
-    box(0.4, 0.3, 0.34, x1 - 0.5, r * 1.13 + 0.08, clipMat);
+  const tipCone = (a, rb, mat) => { turn([[a, rb], [x1 - 0.25, r * 0.22], [x1 - 0.05, r * 0.1], [x1, 0]], mat, 20); };
+
+  if (id === 'reynolds') {
+    // Reynolds 045 Fine Carbure: white barrel with blue print, blue cap with clip, blue end plug
+    const blue = M('#1d44c4', { roughness: 0.3 }), capLen = 4.3;
+    const tex = barrelTex('#f4f6f8', L - 0.7, r, [
+      { t: 'Reynolds', at: 0.18, size: 0.42, color: '#1d44c4', style: 'italic', weight: 900, font: 'Georgia, "Times New Roman", serif' },
+      { t: '045', at: 0.47, size: 0.38, color: '#1d44c4', weight: 900 },
+      { t: 'FINE CARBURE', at: 0.56, size: 0.22, color: '#1d44c4', weight: 700 }]);
+    cyl(r, r, x0 + 0.7, x1, M('#ffffff', { map: tex, roughness: 0.35 }), 32);
+    turn([[x0, 0], [x0 + 0.02, r * 0.75], [x0 + 0.12, r * 0.92], [x0 + 0.72, r * 0.92], [x0 + 0.72, r * 0.6]], blue);   // end plug
+    turn([[x1 - capLen, r * 1.1], [x1 - capLen + 0.08, r * 1.16], [x1 - 0.7, r * 1.16], [x1 - 0.25, r * 1.0], [x1 - 0.04, r * 0.55], [x1, 0]], blue);
+    rings(x1 - capLen + 0.25, x1 - capLen + 0.65, 2, r * 1.18, blue);
+    plainClip(x1 - 0.6, x1 - capLen + 0.5, r * 1.16, 0.32, blue, true);
+  } else if (id === 'gripper') {
+    // Cello Gripper: clear barrel with the blue refill inside, ribbed blue rubber grip, blue cap
+    const blue = M('#2459d6', { roughness: 0.35 }), capLen = 4.2;
+    const tex = barrelTex(null, L - 1.2, r, [{ t: 'cello', at: 0.12, size: 0.4, color: '#2459d6', weight: 900, style: 'italic' }, { t: 'GRIPPER', at: 0.27, size: 0.26, color: '#2459d6', weight: 800, spacing: 0.04 }]);
+    cyl(r * 0.3, r * 0.3, x0 + 1.0, x1 - 1.2, M('#2459d6', { roughness: 0.3 }), 12);           // refill tube
+    cyl(r, r, x0 + 0.6, x1 - 0.6, M('#eef4fb', { transparent: true, opacity: 0.38, roughness: 0.08, depthWrite: false }), 32);
+    cyl(r * 1.003, r * 1.003, x0 + 0.6, x1 - 0.6, M('#ffffff', { map: tex, transparent: true, roughness: 0.1, depthWrite: false }), 32);
+    cyl(r * 1.08, r * 1.08, x1 - capLen - 3.0, x1 - capLen + 0.2, M('#2a62d8', { roughness: 0.95 }), 32);   // rubber grip
+    rings(x1 - capLen - 2.9, x1 - capLen + 0.1, 9, r * 1.13, M('#2a62d8', { roughness: 0.95 }));
+    turn([[x0, 0], [x0 + 0.05, r * 0.8], [x0 + 0.65, r * 0.95], [x0 + 0.65, r * 0.6]], blue);
+    turn([[x1 - capLen, r * 1.18], [x1 - 0.6, r * 1.18], [x1 - 0.15, r * 0.9], [x1, 0]], blue);
+    plainClip(x1 - 0.5, x1 - capLen + 0.4, r * 1.18, 0.3, blue, false);
+  } else if (id === 'pentonic') {
+    // Linc Pentonic: slim matte black barrel with white logo, glossy black cap and clip
+    const black = M('#131417', { roughness: 0.8 }), gloss = M('#16171b', { roughness: 0.22 }), capLen = 4.4;
+    const tex = barrelTex('#131417', L - 0.6, r, [
+      { t: 'pentonic', at: 0.14, size: 0.46, color: '#f4f4f4', weight: 900, font: '"Trebuchet MS", Arial, sans-serif' },
+      { t: 'BALL PEN  0.7', at: 0.47, size: 0.2, color: '#c9c9c9', weight: 700, spacing: 0.02 },
+      { t: 'LINC', at: 0.64, size: 0.22, color: '#2f6bff', weight: 900 }]);
+    cyl(r, r, x0 + 0.6, x1 - 0.5, M('#ffffff', { map: tex, roughness: 0.8 }), 32);
+    turn([[x0, 0], [x0 + 0.04, r * 0.7], [x0 + 0.6, r * 0.97], [x0 + 0.6, r * 0.6]], black);
+    turn([[x1 - capLen, r * 1.12], [x1 - 0.5, r * 1.12], [x1 - 0.12, r * 0.8], [x1, 0]], gloss);
+    cyl(r * 1.13, r * 1.13, x1 - 0.85, x1 - 0.7, M('#2f6bff', { roughness: 0.3 }), 32);       // ink colour band
+    plainClip(x1 - 0.55, x1 - capLen + 0.35, r * 1.12, 0.28, gloss, true);
+  } else if (id === 'v5' || id === 'v7') {
+    // Pilot V5 / V7: silver barrel, long see-through window showing the liquid ink, colour cap, chrome clip
+    const ink = id === 'v5' ? '#1739b8' : '#0d0e10', capCol = id === 'v5' ? '#1b3fae' : '#141519';
+    const capLen = 4.6, wa = x0 + 1.7, wb = x1 - capLen - 0.9;
+    const tex = barrelTex('#b8bec7', wa - x0, r, [{ t: 'PILOT', at: 0.18, size: 0.24, color: '#24272d', weight: 900 }]);
+    cyl(r, r, x0 + 0.6, wa, M('#ffffff', { map: tex, metalness: 0.45, roughness: 0.3 }), 32);
+    cyl(r, r, wb, x1 - capLen + 0.2, M('#b8bec7', { metalness: 0.45, roughness: 0.3 }), 32);
+    cyl(r * 0.84, r * 0.84, wa, wa + (wb - wa) * 0.72, M(ink, { roughness: 0.2 }), 24);          // ink (full part)
+    cyl(r * 0.84, r * 0.84, wa + (wb - wa) * 0.72, wb, M('#dfe6ef', { roughness: 0.2, transparent: true, opacity: 0.5 }), 24);
+    const win = barrelTex(null, wb - wa, r, [
+      { t: id === 'v5' ? 'V5' : 'V7', at: 0.08, size: 0.5, color: '#ffffff', weight: 900, style: 'italic' },
+      { t: 'Hi-Tecpoint', at: 0.32, size: 0.26, color: '#ffffff', weight: 700, style: 'italic' },
+      { t: id === 'v5' ? 'EXTRA FINE 0.5' : 'FINE 0.7', at: 0.66, size: 0.17, color: '#ffffff', weight: 700 }]);
+    cyl(r, r, wa, wb, M('#ffffff', { map: win, transparent: true, opacity: 1, roughness: 0.05, depthWrite: false }), 32);
+    cyl(r * 1.002, r * 1.002, wa, wb, M('#eef3fa', { transparent: true, opacity: 0.22, roughness: 0.05, depthWrite: false }), 32);
+    turn([[x0, 0], [x0 + 0.03, r * 0.7], [x0 + 0.62, r * 0.98], [x0 + 0.62, r * 0.6]], M(capCol, { roughness: 0.3 }));
+    rings(wb + 0.1, x1 - capLen + 0.1, 5, r * 1.04, M('#9aa2ad', { metalness: 0.5, roughness: 0.35 }));
+    turn([[x1 - capLen, r * 1.14], [x1 - 0.9, r * 1.14], [x1 - 0.3, r * 1.0], [x1 - 0.05, r * 0.6], [x1, 0]], M(capCol, { roughness: 0.25 }));
+    cyl(r * 1.16, r * 1.16, x1 - capLen, x1 - capLen + 0.18, chrome, 32);
+    plainClip(x1 - 0.8, x1 - capLen + 0.45, r * 1.14, 0.3, chrome, false);
+    add(new THREE.BoxGeometry(0.25, 0.2, 0.32), chrome, x1 - capLen + 0.5, r * 1.14 + 0.1);
+  } else if (id === 'vector') {
+    // Parker Vector: brushed stainless steel barrel and cap, arrow clip
+    const capLen = 5.6;
+    cyl(r, r * 0.96, x0 + 0.5, x1 - capLen, steel, 40);
+    turn([[x0, 0], [x0 + 0.03, r * 0.55], [x0 + 0.5, r * 0.92], [x0 + 0.5, r * 0.6]], M('#1c1d21', { roughness: 0.3 }));
+    turn([[x1 - capLen, r * 1.1], [x1 - 0.35, r * 1.1], [x1 - 0.1, r * 0.95], [x1, r * 0.8], [x1, 0]], steel, 40);
+    cyl(r * 1.12, r * 1.12, x1 - capLen, x1 - capLen + 0.22, chrome, 40);
+    cyl(r * 0.82, r * 0.82, x1, x1 + 0.02, M('#1c1d21', { roughness: 0.3 }), 24);
+    arrowClip(x1 - 0.35, x1 - capLen + 0.4, r * 1.1, chrome);
+  } else if (id === 'jotter') {
+    // Parker Jotter: stainless upper barrel with the arrow clip, coloured lower barrel, click button, steel cone tip
+    const blue = M('#1f55b5', { roughness: 0.22 }), top = x0 + 5.3, cone = x1 - 1.6;
+    turn([[x0 - 0.05, 0], [x0 - 0.04, r * 0.5], [x0 + 0.05, r * 0.62], [x0 + 0.55, r * 0.62], [x0 + 0.55, r * 0.8]], steel);   // click button
+    for (let i = 0; i < 4; i++) cyl(r * 0.64, r * 0.64, x0 + 0.1 + i * 0.12, x0 + 0.14 + i * 0.12, M('#8d939b', { metalness: 1, roughness: 0.4 }), 24);
+    turn([[x0 + 0.55, r * 0.8], [x0 + 0.85, r], [top, r], [top, r * 0.95]], steel, 40);
+    cyl(r * 0.98, r * 0.98, top, cone, blue, 40);
+    const tex = barrelTex(null, cone - top, r * 1.002, [{ t: 'PARKER', at: 0.1, size: 0.2, color: '#d8e2f2', weight: 800, spacing: 0.06, font: 'Georgia, serif' }]);
+    cyl(r * 0.985, r * 0.985, top, cone, M('#ffffff', { map: tex, transparent: true, roughness: 0.22, depthWrite: false }), 40);
+    turn([[cone, r * 0.98], [cone + 0.05, r * 1.0], [cone + 0.2, r * 0.95], [x1 - 0.35, r * 0.4], [x1 - 0.2, r * 0.25]], chrome, 32);
+    turn([[x1 - 0.2, r * 0.12], [x1 - 0.05, r * 0.08], [x1, 0]], chrome, 12);
+    arrowClip(x0 + 0.75, top - 0.3, r, chrome);
   } else {
-    const bodyMat = M(lk.body, { metalness: lk.metal, roughness: lk.rough });
-    const trimMat = lk.trim === '#e0b84f' ? M('#e0b84f', { metalness: 1, roughness: 0.2 }) : chrome;
-    const nose = L * 0.2, back = L * 0.2;
-    cyl(r, r, L - nose - back, x0 + back + (L - nose - back) / 2, bodyMat, 32);
-    cyl(r, r * 0.35, nose - 0.4, x1 - nose / 2 - 0.2, trimMat, 32);
-    cyl(r * 0.2, r * 0.05, 0.4, x1 - 0.2, chrome, 12);
-    cyl(r * 0.96, r, back - 0.6, x0 + 0.6 + (back - 0.6) / 2, trimMat, 32);
-    cyl(r * 0.55, r * 0.6, 0.6, x0 + 0.3, trimMat, 20);
-    cyl(r * 1.02, r * 1.02, 0.25, x1 - nose, trimMat, 32);
-    box(back * 1.9, 0.14, 0.32, x0 + back * 1.1, r + 0.2, trimMat);
-    const tipC = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 3), trimMat); tipC.rotation.z = -Math.PI / 2; tipC.position.set(x0 + back * 2.05 + 0.25, r + 0.2, 0); g.add(tipC);
+    // Parker Sonnet: black lacquer with gold trim, gold cap band and arrow clip
+    const lac = M('#0c0c10', { roughness: 0.08, metalness: 0.1, envMapIntensity: 1 }), capLen = 6.0;
+    turn([[x0 - 0.05, 0], [x0, r * 0.45], [x0 + 0.35, r * 0.6]], gold);
+    turn([[x0 + 0.3, r * 0.62], [x0 + 1.0, r * 0.9], [x1 - capLen, r * 0.98]], lac, 40);
+    cyl(r * 1.0, r * 1.0, x1 - capLen - 0.12, x1 - capLen, gold, 40);
+    turn([[x1 - capLen, r * 1.1], [x1 - 1.0, r * 1.1], [x1 - 0.3, r * 0.95], [x1 - 0.15, r * 0.7]], lac, 40);
+    turn([[x1 - 0.15, r * 0.7], [x1 - 0.05, r * 0.6], [x1, 0]], gold, 24);
+    cyl(r * 1.13, r * 1.13, x1 - capLen + 0.05, x1 - capLen + 0.65, gold, 40);           // cap band
+    arrowClip(x1 - 0.5, x1 - capLen + 1.0, r * 1.1, gold);
   }
   return g;
 }
+
+// Pictures of the pens for the menus, made from the same 3D models as the game.
+let thumb = null; const thumbCache = {};
+function penThumb(p) {
+  if (thumbCache[p.id]) return thumbCache[p.id];
+  try {
+    if (!thumb) {
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      r.setSize(720, 120, false); r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.85;
+      const sc = new THREE.Scene();
+      const ec = document.createElement('canvas'); ec.width = 512; ec.height = 256; const x = ec.getContext('2d');
+      const gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.5, '#9aa3ad'); gr.addColorStop(1, '#2a2d33');
+      x.fillStyle = gr; x.fillRect(0, 0, 512, 256); x.fillStyle = '#ffffff'; x.fillRect(60, 40, 120, 50); x.fillRect(320, 30, 140, 40);
+      const et = new THREE.CanvasTexture(ec); et.mapping = THREE.EquirectangularReflectionMapping;
+      const pm = new THREE.PMREMGenerator(r); sc.environment = pm.fromEquirectangular(et).texture; et.dispose(); pm.dispose();
+      sc.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.7));
+      const d = new THREE.DirectionalLight(0xffffff, 1.0); d.position.set(-3, 10, 6); sc.add(d);
+      const cam = new THREE.OrthographicCamera(-8, 8, 8 * 120 / 720, -8 * 120 / 720, 0.1, 100);
+      cam.position.set(0, 8, 9); cam.lookAt(0, 0, 0);
+      thumb = { r, sc, cam };
+    }
+    const m = buildPenMesh(p); m.rotation.x = 0.55; m.position.y = -0.1; thumb.sc.add(m);
+    thumb.r.render(thumb.sc, thumb.cam);
+    thumbCache[p.id] = thumb.r.domElement.toDataURL('image/png');
+    thumb.sc.remove(m); disposeTree(m);
+    return thumbCache[p.id];
+  } catch (e) { return null; }
+}
+function penPic(p) { const u = penThumb(p); return u ? `<img class="penimg" src="${u}" alt="">` : penSVG(p); }
 
 // A soft glow that sits under a pen to show whose turn it is.
 function glowTexture() {
@@ -843,7 +981,7 @@ let mode = 'ai', myIdx = 0, camAz = 0;   // mode: 'ai' (vs computer) or 'online'
 // No direct kills: on each player's first shot of a round, knock-offs are undone.
 let firstDone = [], firstSnap = null;
 let match = null, turn = 0, shots = 0;
-let settleT = 0, events = [], acc = 0;
+let settleT = 0, settleAll = 0, events = [], acc = 0;
 let drag = null, aiShot = null, aiAimT = 0;
 
 const ONLINE_HALF = 24;   // online desks are square so every seat and screen shape sees the same desk
@@ -862,7 +1000,7 @@ function buildPens(list) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: glowTex, color: COLORS[i % COLORS.length], transparent: true, opacity: 0, depthWrite: false }));
     m.scale.set(b.L + 5, 1, 4.2); m.renderOrder = 2; scene.add(m); return m;
   });
-  bodies.forEach(b => { b.restY = b.pen.look.sides === 6 ? b.r * 0.87 : b.r; b.fall = null; });
+  bodies.forEach(b => { b.restY = b.r; b.fall = null; });
 }
 function placePens(penA, penB) {
   const yy = HW < HH ? HH * 0.36 : HH * 0.42;
@@ -1030,7 +1168,7 @@ function endMatch(winner) {
   const u = $('#rUnlock'); u.innerHTML = '';
   if (newPens.length) {
     const p = newPens[newPens.length - 1];
-    u.innerHTML = `<div class="card unlock"><div class="lbl">New pen unlocked</div><div class="big">${p.name}</div><div class="muted">${p.sub} · smoother, heavier, steadier</div>${penSVG(p)}<div><button class="btn small" id="rUse">Use ${p.name}</button></div></div>`;
+    u.innerHTML = `<div class="card unlock"><div class="lbl">New pen unlocked</div><div class="big">${p.name}</div><div class="muted">${p.sub} · smoother, heavier, steadier</div>${penPic(p)}<div><button class="btn small" id="rUse">Use ${p.name}</button></div></div>`;
     $('#rUse').onclick = () => { save.sel = p.id; persist(); $('#rUse').textContent = 'Selected'; $('#rUse').disabled = true; };
   }
   fillProgress('#rNextLbl', '#rNextBar', '#rNextTxt');
@@ -1143,7 +1281,7 @@ canvas.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag
 function fire(who, gx, gy, ang, power) {
   firstSnap = firstDone[who] ? null : cloneBodies(bodies); firstDone[who] = true;
   flick(bodies[who], gx, gy, ang, power);
-  clack(0.25 + power * 0.4, 2400); phase = 'moving'; settleT = 0; acc = 0; hint(''); updateHud();
+  clack(0.25 + power * 0.4, 2400); phase = 'moving'; settleT = 0; settleAll = 0; acc = 0; hint(''); updateHud();
 }
 
 /* =====================================================================
@@ -1184,6 +1322,8 @@ function frame(now) {
       if (ev.type === 'fall') startFall(ev.b);
     }
     events.length = 0;
+    settleAll += dt;
+    if (settleAll > 12) bodies.forEach(b => { if (!b.fell) { b.vx = b.vy = b.w = 0; b.rest = true; } });   // safety net: never wait forever
     if (bodies.every(b => b.rest || b.fell)) { settleT += dt; if (settleT > 0.55) { phase = 'between'; if (mode === 'online') Online.settled(); else resolveTurn(); } }
   }
   if (phase === 'ai' && aiShot && aiAimT > 0) {
@@ -1722,7 +1862,7 @@ const Online = (() => {
    MENUS
    ===================================================================== */
 function showScreen(sel) {
-  ['#menu', '#pens', '#result', '#mp', '#room'].forEach(s => $(s).hidden = s !== sel);
+  ['#menu', '#pens', '#result', '#mp', '#room', '#howto'].forEach(s => $(s).hidden = s !== sel);
 }
 function goMenu() {
   gen++; mode = 'ai'; myIdx = 0; camAz = 0; phase = 'menu'; camMode = 'menu'; $('#hud').hidden = true; aim.visible = false; drag = null;
@@ -1738,7 +1878,7 @@ function renderMenu() {
   $('#mNextArena').textContent = nextMatch.arena.name;
   $('#mNextOpp').textContent = `vs ${nextMatch.opp.name} · ${nextMatch.opp.pen.name}`;
   $('#mNextTaunt').textContent = nextMatch.opp.taunt;
-  $('#mPenName').textContent = p.name; $('#mPenSub').textContent = p.sub; $('#mPenImg').innerHTML = penSVG(p);
+  $('#mPenName').textContent = p.name; $('#mPenSub').textContent = p.sub; $('#mPenImg').innerHTML = penPic(p);
   $('#mW').textContent = save.wins; $('#mL').textContent = save.losses;
   fillProgress('#mNextPenLbl', '#mNextBar');
   sndIcon();
@@ -1748,7 +1888,7 @@ function renderPens() {
     const u = unlocked(p), sel = save.sel === p.id;
     const stats = penStats(p).map(([k, v]) => `<span>${k}</span><div class="bar"><i style="width:${Math.round(clamp(v, 0.05, 1) * 100)}%"></i></div>`).join('');
     const act = !u ? `<span class="lockmsg">🔒 ${p.wins} wins</span>` : sel ? `<button class="btn small" disabled>In hand</button>` : `<button class="btn ghost small" data-use="${p.id}">Use</button>`;
-    return `<div class="pencard${sel ? ' sel' : ''}${u ? '' : ' locked'}"><div><div class="nm">${p.name}</div><div class="sub">${p.sub}</div></div>${act}${penSVG(p)}<div class="stats">${stats}</div></div>`;
+    return `<div class="pencard${sel ? ' sel' : ''}${u ? '' : ' locked'}"><div><div class="nm">${p.name}</div><div class="sub">${p.sub}</div></div>${act}${penPic(p)}<div class="stats">${stats}</div></div>`;
   }).join('');
   $('#penList').querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
     save.sel = b.dataset.use; persist(); renderPens();
@@ -1756,6 +1896,8 @@ function renderPens() {
   });
 }
 $('#playBtn').onclick = () => { ac(); startMatch(); };
+$('#howBtn').onclick = () => showScreen('#howto');
+$('#howClose').onclick = $('#howOk').onclick = () => showScreen('#menu');
 $('#penBtn').onclick = () => { renderPens(); showScreen('#pens'); };
 $('#pensClose').onclick = () => { renderMenu(); showScreen('#menu'); };
 $('#rNext').onclick = () => { if (mode === 'online') Online.again(); else startMatch(); };
@@ -1779,9 +1921,7 @@ $('#hQuit').onclick = () => {
 
 /* ---------- boot ---------- */
 const fontsReady = (document.fonts ? Promise.race([document.fonts.load("700 40px Kalam"), new Promise(r => setTimeout(r, 1500))]) : Promise.resolve()).catch(() => {});
-const splashMin = new Promise(r => setTimeout(r, 2300));
 fontsReady.then(() => { goMenu(); requestAnimationFrame(frame); });
-Promise.all([fontsReady, splashMin]).then(() => { $('#splash').classList.add('out'); });
 showScreen(null);
 })();
 </script>
