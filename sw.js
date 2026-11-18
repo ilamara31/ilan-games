@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v127';
+const CACHE = 'ilan-arcade-v128';
 const ASSETS = [
   './',
   './index.html',
@@ -50,6 +50,8 @@ const ASSETS = [
   './penfight/index.html',
   './sumo/',
   './sumo/index.html',
+  './mafia/',
+  './mafia/index.html',
   './funchess/',
   './funchess/index.html',
   './funchess/four-ui.js',
