@@ -20,7 +20,7 @@
     tennis: "Tennis", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush",
-    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", stars: "⭐ Stars"
+    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", chess: "Fun Chess", stars: "⭐ Stars"
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
   const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
@@ -35,6 +35,7 @@
     scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
     speedclicker: "Best taps in 15s", rps: "Trophies (3 per online win, 1 per computer win)",
     sumo: "Points (3 per online win, 1 per level beaten)",
+    chess: "Best rating (Elo)",
     stars: "Stars earned (Game of the Day & Week goals)"
   };
   // player = {name, pw, guest:false, loginAt, since}
@@ -78,7 +79,7 @@
     "cricTourLive_v1", "cw_save_v1", "draw_rush_v1", "dr_gallery_key", "fruitArena_v1",
     "hcl_save_v1", "ilanObbySave_v1", "karateChamp_v1", "ms_pub_count_v1", "omt_save_v1",
     "paperTerritory_v1", "penaltyKings_v1", "ppTour_v2", "soc_profile_v2", "speedClicker_v1",
-    "stackTower_v1", "tennisTour_v1", "thisOrThat_v2", "rpsArena_v1", "speedSumo_v1",
+    "stackTower_v1", "tennisTour_v1", "thisOrThat_v2", "rpsArena_v1", "funChess_v1", "speedSumo_v1",
     // hub: stars, passport, Game of the Day/Week goal tracking
     "iglb_local",                       // this account's offline copy of the board
     "ig_stars", "ig_played", "ig_lastplay", "ig_champion",
