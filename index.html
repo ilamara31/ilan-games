@@ -235,6 +235,11 @@
   </div>
   <div id="noResults">No games match — try another search.</div>
   <div class="cards">
+    <a class="card sumo" href="sumo/">
+      <span class="emoji">🥋</span>
+      <h2>Speed Sumo</h2>
+      <p>Tap faster than your rival and shove them out of the ring! 15 funny wrestlers and 3 bosses, practice mode, 2 players on one device, or battle online. Play in 2D, 2.5D or 3D.</p>
+    </a>
     <a class="card penfight" href="penfight/">
       <span class="emoji">🖊️</span>
       <h2>Pen Fight 3D</h2>
@@ -735,6 +740,7 @@
       'meme/':         { added:   '2026-07-19T18:45:00' },   // Meme Studio: create+replay meme scenes, gallery, likes
       'scoop/':        { added:   '2026-07-16T17:30:00' },   // swipe basketball: 2.5D court, combos, shop
       'speedclicker/': { added:   '2026-09-13T12:00:00' },   // 15-second tap race with global leaderboard
+      'sumo/':         { added:   '2026-11-18T18:00:00', tag:'🌐 MULTIPLAYER' },   // Speed Sumo: tap battle, 15 levels + bosses, practice, same-device, online rooms
       'penfight/':     { added:   '2026-10-31T18:00:00', tag:'🌐 MULTIPLAYER' },   // 3D pen fight: vs computer with pen unlocks, 2-4 player online rooms
       'rps/':          { added:   '2026-09-30T12:00:00', tag:'🌐 MULTIPLAYER' },   // vs computer, same-device, online rooms
       'timeduel/':     { added:   '2026-09-14T19:00:00', tag:'🌐 MULTIPLAYER' },   // stop-the-timer duels, blind mode, 2-8 player tournaments, coin stakes
@@ -791,7 +797,7 @@
       'fruit-arena/':'both', 'paper/':'pc', 'obby/':'both', 'puzzles/':'both',
       'try/':'pc', 'anime-tycoon/':'both', 'tennis/':'both', 'karate/':'both',
       'stack/':'both', 'archer/':'both', 'thisorthat/':'both', 'speedclicker/':'both',
-      'timeduel/':'both', 'rps/':'both', 'penfight/':'both',
+      'timeduel/':'both', 'rps/':'both', 'penfight/':'both', 'sumo/':'both',
     };
     (function(){
       const LABEL = {
@@ -877,9 +883,9 @@
   const CATS={ 'drawrush/':['multiplayer','arcade'], 'meme/':['multiplayer','arcade'], 'scoop/':['arcade','sports'], 'codewords/':['multiplayer','puzzle'], 'handcricket/':['multiplayer','sports'], 'paper/':['multiplayer','arcade'],
     'obby/':['3d','arcade'], 'pptour/':['multiplayer','3d','sports'], 'f1/':['multiplayer','3d','sports'], 'airhockey/':['arcade','sports'],
     'cricket/':['sports'], 'football/':['sports'], 'tennis/':['multiplayer','sports'], 'karate/':['sports'], 'archer/':['sports'],
-    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'], 'speedclicker/':['arcade'], 'timeduel/':['multiplayer','arcade'], 'rps/':['multiplayer','arcade'], 'penfight/':['multiplayer','arcade'],
+    'carrom/':['multiplayer','arcade'], 'catch/':['arcade'], 'catch2/':['arcade'], 'fruit-arena/':['arcade'], 'stack/':['arcade'], 'try/':['arcade'], 'anime-tycoon/':['arcade'], 'speedclicker/':['arcade'], 'timeduel/':['multiplayer','arcade'], 'rps/':['multiplayer','arcade'], 'penfight/':['multiplayer','arcade'], 'sumo/':['multiplayer','arcade'],
     'puzzles/':['puzzle'], 'codebreaker/':['puzzle'], 'thisorthat/':['puzzle'] };
-  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both','speedclicker/':'both','timeduel/':'both','rps/':'both','penfight/':'both' };
+  const DEV={ 'carrom/':'both', 'drawrush/':'both','meme/':'both','scoop/':'both','codewords/':'both','catch/':'mobile','catch2/':'mobile','handcricket/':'both','cricket/':'both','football/':'both','pptour/':'both','fruit-arena/':'both','obby/':'both','puzzles/':'both','anime-tycoon/':'both','tennis/':'both','karate/':'both','stack/':'both','archer/':'both','thisorthat/':'both','codebreaker/':'both','paper/':'pc','f1/':'both','try/':'pc','airhockey/':'both','speedclicker/':'both','timeduel/':'both','rps/':'both','penfight/':'both','sumo/':'both' };
   function tags(href){ const t=(CATS[href]||[]).slice(); const d=DEV[href]; if(d==='mobile'||d==='both')t.push('mobile'); if(d==='pc'||d==='both')t.push('pc'); return t; }
   const cards=Array.prototype.slice.call(document.querySelectorAll('a.card'));
   let activeCat='all', q='';
