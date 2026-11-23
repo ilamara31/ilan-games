@@ -1,8 +1,8 @@
-/* ilan games V2 teaser banner — shows on the home page until 26 Nov 2026 12:00 AM (viewer's local time), then removes itself.
+/* ilan games V2 teaser banner — shows on the home page until 28 Nov 2026 12:00 AM (viewer's local time), then removes itself.
    Self-contained: delete this folder + the one <script> line in index.html to remove it for good. */
 (function () {
-  var RELEASE = new Date(2026, 10, 25, 0, 0, 0);   // 25 Nov 2026, 00:00 local
-  var EXPIRE  = new Date(2026, 10, 26, 0, 0, 0);   // 26 Nov 2026, 00:00 local -> banner gone
+  var RELEASE = new Date(2026, 10, 27, 0, 0, 0);   // 27 Nov 2026, 00:00 local
+  var EXPIRE  = new Date(2026, 10, 28, 0, 0, 0);   // 28 Nov 2026, 00:00 local -> banner gone
   if (Date.now() >= EXPIRE) return;
 
   var css = `
@@ -13,7 +13,7 @@
   @keyframes v2spin{to{--v2a:360deg}}
   .v2t:hover{transform:translateY(-3px) scale(1.01)} .v2t:active{transform:scale(.98)}
   .v2t-in{border-radius:28px;overflow:hidden;background:#0b0b12;color:#fff}
-  .v2t-pic{position:relative;aspect-ratio:16/9;background:#fff url(teaser/poster.jpg) center/cover}
+  .v2t-pic{position:relative;aspect-ratio:16/9;background:#fff url(teaser/poster.jpg?v=2) center/cover}
   .v2t-pic:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(11,11,18,.9))}
   .v2t-play{position:absolute;right:16px;top:14px;width:58px;height:58px;border-radius:50%;z-index:2;display:grid;place-items:center;
     background:rgba(20,20,30,.55);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.35);box-shadow:0 10px 30px rgba(0,0,0,.35)}
@@ -48,10 +48,10 @@
       '<div class="v2t-in"><div class="v2t-pic"><span class="v2t-tag">NEW · TEASER</span>' +
       '<span class="v2t-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg></span></div>' +
       '<div class="v2t-body"><div class="v2t-h">Version 2 is <span>coming.</span></div>' +
-      '<div class="v2t-s">A brand-new design for every game. Modern, royal, simple.<br><b>Releasing November 25, without fail.</b></div>' +
+      '<div class="v2t-s">A brand-new design for every game. Modern, royal, simple.<br><b>Releasing November 27, without fail.</b></div>' +
       '<div class="v2t-row"><div class="v2t-cd" id="v2tcd"></div>' +
       '<button class="v2t-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>Watch teaser</button></div></div></div>';
-    var h1 = document.querySelector('body > h1'), sub = document.querySelector('body > .sub');
+    var h1 = document.querySelector('.pv-hero h1, body > h1'), sub = document.querySelector('.pv-hero .sub, body > .sub');
     var anchor = sub || h1;
     if (anchor) anchor.insertAdjacentElement('afterend', card); else document.body.prepend(card);
     card.addEventListener('click', openVideo);
@@ -69,7 +69,7 @@
   }
   function openVideo() {
     var m = document.createElement('div'); m.className = 'v2m';
-    m.innerHTML = '<video src="teaser/v2-teaser.mp4" poster="teaser/poster.jpg" playsinline controls autoplay preload="auto"></video><button class="v2m-x" aria-label="Close">×</button>';
+    m.innerHTML = '<video src="teaser/v2-teaser.mp4?v=2" poster="teaser/poster.jpg?v=2" playsinline controls autoplay preload="auto"></video><button class="v2m-x" aria-label="Close">×</button>';
     document.body.appendChild(m); requestAnimationFrame(function () { m.classList.add('on'); });
     var v = m.querySelector('video'); var p = v.play(); if (p && p.catch) p.catch(function () {});
     function close() { v.pause(); m.classList.remove('on'); setTimeout(function () { m.remove(); }, 350); document.removeEventListener('keydown', esc); }
