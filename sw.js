@@ -143,6 +143,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   // never touch cross-origin requests (Supabase API, CDN SDK, etc.) — let the browser handle them
   if (new URL(req.url).origin !== self.location.origin) return;
+  // V2 teaser (video needs range requests): always straight from the network
+  if (new URL(req.url).pathname.includes('/teaser/')) return;
   const accept = req.headers.get('accept') || '';
   const path = new URL(req.url).pathname;
   // messages.json must always be fresh (announcements). Network-first, no caching.
