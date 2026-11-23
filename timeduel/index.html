@@ -2,9 +2,9 @@
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Time Duel</title>
-<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#f2f2f7" />
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#0b1020" />
 <meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" /><meta name="apple-mobile-web-app-title" content="Time Duel" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Time Duel" />
 <link rel="apple-touch-icon" href="../icon-180.png?v=2" /><link rel="icon" href="../icon-192.png?v=2" />
 <meta name="description" content="Time Duel — stop the timer as close to the target as you can. Duel a friend, play blind, or run an 8-player tournament for the pot.">
 <meta property="og:type" content="website">
@@ -20,7 +20,6 @@
 <meta name="twitter:title" content="Time Duel — Ilan Games">
 <meta name="twitter:description" content="Stop the timer as close to the target as you can.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
   :root{
@@ -259,233 +258,86 @@
   .presets button{background:var(--card);border:1px solid var(--line);color:var(--ink);
     border-radius:999px;padding:9px 15px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
   .presets button.sel{border-color:var(--gold);color:var(--gold);background:rgba(255,212,94,.12)}
-
-  /* ===== ilan Games shared theme (light, Apple style). The round itself keeps its night look. ===== */
-  html[data-theme], :root{ --accent:#ff512f; --accent2:#c2186b; --icon1:#ff512f; --icon2:#c2186b; }
-  html[data-theme]{ --card:var(--ig-glass); --line:var(--ig-line); --ink:var(--ig-text); --dim:var(--ig-text2);
-    --gold:#c77700; --cyan:#e0364f; --green:#1f9d55; --red:#e5484d; --violet:#6b4bd8; color-scheme:light; }
-  html[data-theme]{background:var(--ig-bg)}
-  html[data-theme] body{background:transparent}
-  html[data-theme] body{font-family:var(--ig-font);letter-spacing:-.01em}
-  html[data-theme] .screen{justify-content:flex-start}
-  .wrap.ig-col{max-width:460px;gap:14px;padding:calc(env(safe-area-inset-top,0px) + 70px) 0 40px;margin:0 auto}
-  .wrap > *{margin-bottom:0}
-  /* top bar: ‹ Games (or ‹ Back) on the left, coins + settings on the right */
-  html[data-theme] .topbar{padding:calc(env(safe-area-inset-top,0px) + 12px) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));gap:10px}
-  html[data-theme] #homeBtn{position:static;width:auto;height:44px;border-radius:999px;grid-auto-flow:column;align-items:center;gap:2px;padding:0 14px 0 8px;
-    background:var(--ig-glass);border:1px solid var(--ig-line);color:var(--ig-text);font:600 16px/1 var(--ig-font);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  html[data-theme] .backBtn{position:static;display:none;height:44px;padding:0 14px 0 8px;border-radius:999px;background:var(--ig-glass);border:1px solid var(--ig-line);
-    color:var(--ig-text);font:600 16px/1 var(--ig-font);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  html[data-theme] .backBtn.on{display:inline-flex}
-  .topbar:has(#backBtn.on) #homeBtn{display:none!important}
-  html[data-theme] .topbar{max-width:492px;margin:0 auto}
-  #homeBtn svg,.backBtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  html[data-theme] .coins{height:44px;padding:0 14px 0 11px;gap:6px;border-radius:999px;background:var(--ig-glass);border:1px solid var(--ig-line);color:var(--ig-text);
-    font:700 16px/1 var(--ig-font);font-variant-numeric:tabular-nums;-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  .coins .coin{width:20px;height:20px;fill:#ffcc33;stroke:#c98a00;stroke-width:1.8}
-  html[data-theme] #banner{background:rgba(255,149,0,.16);color:#8a4b00;font-weight:600;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-    padding:calc(env(safe-area-inset-top,0px) + 66px) 20px 10px;border-bottom:1px solid rgba(255,149,0,.25)}
-  /* page headings */
-  .pg-head{text-align:center}
-  html[data-theme] h2{font-weight:800;font-size:clamp(26px,7vw,32px);letter-spacing:-.035em;margin-bottom:4px;color:var(--ig-text)}
-  html[data-theme] .sub{font-size:15px;color:var(--ig-text2);margin:6px 0 0;font-weight:500;line-height:1.45}
-  html[data-theme] .sub:empty{display:none}
-  html[data-theme] .tag{letter-spacing:.02em;text-transform:none;font-weight:500;font-size:15px;margin-top:4px;color:var(--ig-text2)}
-  .howlist .ig-row{cursor:default}
-  /* buttons → capsules */
-  html[data-theme] .btn{border-radius:999px;min-height:54px;padding:0 22px;font:700 17px/1 var(--ig-font);letter-spacing:-.01em;margin-bottom:0;
-    background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 12px 26px -10px color-mix(in srgb,var(--accent2) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.3)}
-  html[data-theme] .btn:active{transform:scale(.97)}
-  html[data-theme] .btn.ghost{background:var(--ig-glass2);color:var(--ig-text);border:1px solid var(--ig-line);box-shadow:none;font-size:16px}
-  html[data-theme] .btn[disabled]{opacity:.45}
-  /* cards (mode chooser, practice blind toggle) */
-  .modecards{display:flex;flex-direction:column;gap:12px}
-  html[data-theme] .card{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;padding:16px;margin:0;
-    -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  html[data-theme] .card .ct{font-size:17px;font-weight:700;letter-spacing:-.02em;gap:12px}
-  html[data-theme] .card .cd{font-size:14px;color:var(--ig-text2);margin:8px 0 0 48px}
-  html[data-theme] .card.sel{border-color:color-mix(in srgb,var(--accent) 60%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--ig-glass));box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent),var(--ig-shadow)}
-  html[data-theme] .card .badge{color:var(--ig-text2);background:rgba(118,118,128,.14);font-weight:700}
-  html[data-theme] .card.sel .badge{color:#fff;background:linear-gradient(160deg,var(--accent),var(--accent2))}
-  @media (hover:hover){ html[data-theme] .card:hover{border-color:color-mix(in srgb,var(--accent) 40%,transparent)} html[data-theme] .btn:hover{filter:none} }
-  html[data-theme] .card:focus-visible,html[data-theme] .switch:focus-visible,html[data-theme] button:focus-visible,html[data-theme] input:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent)}
-  /* code + inputs */
-  html[data-theme] .codebox{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;padding:16px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);margin:0}
-  html[data-theme] .codebox .lbl{font-size:12px;letter-spacing:.06em;font-weight:700;color:var(--ig-text2)}
-  html[data-theme] .codebox .val{background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
-  html[data-theme] input[type=text]{background:var(--ig-field);border:1px solid var(--ig-line);border-radius:18px;color:var(--ig-text);font-family:var(--ig-font);font-weight:700;margin:0;height:64px}
-  html[data-theme] input[type=text]::placeholder{color:var(--ig-text3)}
-  html[data-theme] input[type=text]:focus{border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
-  html[data-theme] input[type=range]{accent-color:var(--accent)}
-  .pracbox{display:flex;flex-direction:column;gap:10px;padding:16px}
-  html[data-theme] .pracbox .codebox{background:none;border:0;box-shadow:none;padding:0}
-  #pracVal{letter-spacing:.02em}
-  html[data-theme] .presets{margin:0}
-  html[data-theme] .presets button{background:rgba(118,118,128,.12);border:0;color:var(--ig-text);font:600 14px var(--ig-font)}
-  html[data-theme] .presets button.sel{background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff}
-  .rewards{display:flex;flex-direction:column;padding:14px 16px 6px;text-align:left}
-  .rewards .ig-eyebrow{margin-bottom:6px}
-  .rewards .rw{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:15px;font-weight:500}
-  .rewards .rw + .rw{border-top:1px solid var(--ig-line)}
-  .rewards .rw b{font-weight:700;font-variant-numeric:tabular-nums}
-  .rewards .rw b::after{content:" coins";font-weight:500;color:var(--ig-text2)}
-  /* lists / lobby / profile */
-  .seats{display:flex;flex-direction:column}
-  html[data-theme] .row{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:16px;margin-bottom:8px;box-shadow:var(--ig-shadow)}
-  html[data-theme] .row .nm{font-weight:600}
-  html[data-theme] .row .rt{font-weight:600;color:var(--ig-text2)}
-  html[data-theme] .row.me{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
-  html[data-theme] .dotpill{color:#fff;background:#34c759}
-  .seat-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;color:#fff;background:linear-gradient(160deg,var(--accent),var(--accent2))}
-  .seat-ic.empty{background:rgba(118,118,128,.14);color:var(--ig-text3)}
-  .seat-ic svg,.crown svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  html[data-theme] .stats{margin:0}
-  html[data-theme] .stat{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:20px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);text-align:left}
-  html[data-theme] .stat .k{font-size:12px;letter-spacing:.02em;text-transform:none;font-weight:600;color:var(--ig-text2)}
-  html[data-theme] .stat .v{font-weight:800;letter-spacing:-.03em}
-  html[data-theme] .spin{border-color:rgba(0,0,0,.1);border-top-color:var(--accent)}
-  /* result */
-  .res-top{display:flex;flex-direction:column;align-items:center}
-  html[data-theme] .crown{width:84px;height:84px;border-radius:24px;display:grid;place-items:center;color:#fff;margin-bottom:12px;
-    background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),linear-gradient(160deg,#ffcf4a,#ff9500);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 16px 30px -12px rgba(255,149,0,.7)}
-  html[data-theme] .crown svg{width:44px;height:44px}
-  html[data-theme] .crown[data-k="target"]{background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),linear-gradient(160deg,#5ee28a,#11998e);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 16px 30px -12px rgba(17,153,142,.7)}
-  html[data-theme] .crown[data-k="fire"]{background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),linear-gradient(160deg,var(--accent),var(--accent2))}
-  html[data-theme] .crown[data-k="thumb"]{background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),linear-gradient(160deg,#5ac8fa,#0a60ff);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 16px 30px -12px rgba(10,96,255,.6)}
-  html[data-theme] .crown[data-k="clock"],html[data-theme] .crown[data-k="wait"]{background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),linear-gradient(160deg,#a1a1aa,#636366);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 16px 30px -12px rgba(0,0,0,.35)}
-  html[data-theme] .crown:empty{display:none}
-  html[data-theme] .winner{font-weight:900;letter-spacing:-.045em;text-shadow:none;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:3px}
-  html[data-theme] .winner.dot{background:linear-gradient(160deg,#34c759,#11998e);-webkit-background-clip:text;background-clip:text}
-  html[data-theme] .winner.void{background:none;color:var(--ig-text2);-webkit-text-fill-color:currentColor}
-  html[data-theme] .winner-sub{color:var(--ig-text);font-weight:700;font-size:17px;margin-bottom:4px}
-  html[data-theme] .winner-sub.neg{color:var(--red)}
-  html[data-theme] .trow{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:18px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  html[data-theme] .trow .tn{font-weight:700;letter-spacing:-.02em}
-  html[data-theme] .trow .tt{font-weight:800;color:var(--ig-text)}
-  html[data-theme] .trow .td{font-weight:600;color:var(--ig-text2)}
-  html[data-theme] .trow.win{border-color:rgba(255,170,0,.55);background:linear-gradient(160deg,rgba(255,204,0,.16),var(--ig-glass) 70%)}
-  html[data-theme] .trow.win .tt{color:#c77700}
-  html[data-theme] .trow.me{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
-  html[data-theme] .reward{color:var(--green)}
-  /* settings sheet + toast */
-  html[data-theme] .ov{background:var(--ig-scrim);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-  html[data-theme] .ov .sheet{max-width:380px;background:var(--ig-sheet);border:1px solid var(--ig-line);border-radius:28px;padding:22px}
-  html[data-theme] input[type=text]:focus-visible{outline:none}
-  html[data-theme] .ov .sheet h2{text-align:left;font-size:24px;margin-bottom:6px}
-  html[data-theme] .toggle{border-bottom:1px solid var(--ig-line)}
-  html[data-theme] .toggle .tl{font-weight:600}
-  html[data-theme] .switch{background:rgba(120,120,128,.16);border:0;width:51px;height:31px}
-  html[data-theme] .switch::after{width:27px;height:27px;top:2px;left:2px;box-shadow:0 3px 8px rgba(0,0,0,.15),0 0 0 .5px rgba(0,0,0,.04)}
-  html[data-theme] .switch.on{background:#34c759}
-  html[data-theme] .switch.on::after{transform:translateX(20px)}
-  html[data-theme] #toast{background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--ig-line);border-radius:999px;box-shadow:var(--ig-shadow2);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);bottom:calc(28px + var(--lift,0px))}
-  /* THE ROUND: keeps its original night look */
-  #sc-round{--card:rgba(255,255,255,.055);--line:rgba(150,180,255,.18);--ink:#eaf0ff;--dim:#93a4c8;--gold:#ffd45e;--cyan:#4fd6ff;--violet:#a78bfa;
-    color:var(--ink);background:radial-gradient(1100px 620px at 78% -12%, rgba(79,214,255,.17), transparent 62%),radial-gradient(900px 560px at 12% 108%, rgba(167,139,250,.17), transparent 60%),linear-gradient(175deg,#0b1020 0%,#131a33 100%)}
-  #sc-round .btn.ghost{background:rgba(255,255,255,.08);color:#eaf0ff;border:1px solid rgba(150,180,255,.25)}
-  @media (max-width:360px){ .ig-mode small{display:none} }
 </style></head>
 <body>
 
 <div id="banner"></div>
 
 <div class="topbar">
-  <button class="ig-navback" id="homeBtn" aria-label="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></button>
-  <button class="ig-navback backBtn" id="backBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
+  <div class="coins" id="coinPill">🪙 <span id="coinVal">—</span></div>
   <div class="spacer"></div>
-  <div class="coins" id="coinPill" title="Coins"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/></svg><span id="coinVal">—</span></div>
-  <button class="ig-iconbtn" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
 </div>
 
 <div id="app">
 
   <!-- ============ MAIN MENU ============ -->
   <section class="screen on" id="sc-menu">
-    <div class="wrap ig-col">
-      <div class="ig-hero">
-        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="43" y="4" width="14" height="10" rx="3" fill="#ffcc00"/><rect class="o" x="47" y="12" width="6" height="6" fill="#9aa3b5"/>
-<path class="o" d="M72 18 l8 -6 5 6 -8 6Z" fill="#9aa3b5"/>
-<path class="o" d="M50 18 A38 38 0 0 0 50 94Z" fill="#b3122f"/><path class="o" d="M50 18 A38 38 0 0 1 50 94Z" fill="#1d46a8"/>
-<circle class="o" cx="50" cy="56" r="30" fill="#fff"/>
-<path d="M50 56 L64 29.5 A30 30 0 0 1 75 39Z" fill="#34d399" opacity=".9"/>
-<g stroke="#22120a" stroke-width="2.5" stroke-linecap="round"><path d="M50 30v5M50 77v5M24 56h5M71 56h5M32 38l3 3M65 71l3 3M68 38l-3 3M35 71l-3 3"/></g>
-<path d="M50 56 L69 35" stroke="#22120a" stroke-width="5" stroke-linecap="round"/><path d="M50 56 L69 35" stroke="#b3122f" stroke-width="2.5" stroke-linecap="round"/>
-<circle class="o" cx="50" cy="56" r="4.5" fill="#ffcc00"/>
-<path class="o" d="M12 30 l6 -12 2 9 8 -2 -8 14 -1 -8Z" fill="#ffcc00"/><path class="o" d="M86 80 l6 -12 2 9 6 -1 -8 13 -1 -8Z" fill="#ffcc00"/></svg></div>
-        <h1 class="ig-title">Time Duel</h1>
-        <div class="ig-tagline">Stop the clock. Closest wins.</div>
-      </div>
-      <div class="ig-playrow">
-        <button class="ig-cta" data-go="multi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Duel online · winner takes the pot</small></span></button>
-      </div>
-      <div class="ig-modes">
-        <button class="ig-mode" data-go="practice"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b07cf0,#6b4bd8)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg></span><b>Practice</b><small>No entry fee</small></button>
-        <button class="ig-mode" data-go="profile"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/></svg></span><b>Profile</b><small>Stats and history</small></button>
-      </div>
-      <div class="ig-list howlist">
-        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a5c,#ff512f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 3h4M12 3v2.5"/></svg></span><span class="ig-grow">Classic<small>The timer stays on screen.</small></span></div>
-        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b07cf0,#6b4bd8)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg></span><span class="ig-grow">Blind<small>The timer vanishes. Go on feel.</small></span></div>
-        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Tournament<small>Up to 8 players for one pot.</small></span></div>
-      </div>
+    <div class="wrap">
+      <h1>TIME DUEL</h1>
+      <div class="tag">Stop the clock. Closest wins.</div>
+      <div style="height:30px"></div>
+      <button class="btn" data-go="multi">▶ Multiplayer</button>
+      <button class="btn violet" data-go="practice">▶ Practice Mode</button>
+      <button class="btn ghost" data-go="profile">▶ Profile</button>
     </div>
   </section>
 
   <!-- ============ MULTIPLAYER: two doors ============ -->
   <section class="screen" id="sc-multi">
-    <div class="wrap ig-col">
-      <div class="pg-head"><h2>Multiplayer</h2><div class="sub">Start a room and invite someone, or type a friend's code.</div></div>
-      <div class="ig-modes">
-        <button class="ig-mode" id="goCreate"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a5c,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><b>Create Room</b><small>Pick a mode</small></button>
-        <button class="ig-mode" id="goJoin"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3M14 9l2 2"/></svg></span><b>Join Room</b><small>Type a code</small></button>
-      </div>
+    <div class="wrap">
+      <h2>Multiplayer</h2>
+      <div class="sub">Start a room and invite someone, or type a friend's code.</div>
+      <button class="btn gold" id="goCreate">➕ Create Room</button>
+      <button class="btn" id="goJoin">🔑 Join Room</button>
     </div>
   </section>
 
   <!-- ============ JOIN: a code, and nothing else ============ -->
   <section class="screen" id="sc-join">
-    <div class="wrap ig-col">
-      <div class="pg-head"><h2>Enter Code</h2><div class="sub">Ask your friend for their 4-letter room code.</div></div>
+    <div class="wrap">
+      <h2>Enter code</h2>
+      <div class="sub">Ask your friend for their 4-letter room code.</div>
       <input type="text" id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off"
              autocapitalize="characters" spellcheck="false" inputmode="text"
              enterkeyhint="go" />
-      <button class="btn" id="joinBtn">Join</button>
+      <button class="btn gold" id="joinBtn">Join</button>
     </div>
   </section>
 
   <!-- ============ CHOOSE MODE ============ -->
   <section class="screen" id="sc-mode">
-    <div class="wrap ig-col">
-      <div class="pg-head"><h2>Create Room</h2><div class="sub">Pick a mode and your room opens straight away.
-        Entry is 10 coins a player, and the winner takes the pot.</div></div>
-      <div class="modecards">
-        <div class="card" data-mode="classic">
-          <div class="ct"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a5c,#ff512f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 3h4M12 3v2.5"/></svg></span>Classic</div>
-          <div class="cd">Timer remains visible. Stop as close as possible to the target time.</div>
-        </div>
-        <div class="card" data-mode="blind">
-          <div class="ct"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b07cf0,#6b4bd8)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg></span>Blind</div>
-          <div class="cd">Timer disappears after starting. Estimate the target time without seeing the timer.</div>
-        </div>
-        <div class="card" data-mode="tournament">
-          <div class="ct"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span>Tournament</div>
-          <div class="cd">Up to 8 players. Start when everyone's in — closest wins the whole pot.</div>
-        </div>
+    <div class="wrap">
+      <h2>Create Room</h2>
+      <div class="sub">Pick a mode and your room opens straight away.<br>
+        Entry is 10 🪙 a player, and the winner takes the pot.</div>
+      <div class="card" data-mode="classic">
+        <div class="ct">🎯 Classic</div>
+        <div class="cd">Timer remains visible. Stop as close as possible to the target time.</div>
+      </div>
+      <div class="card" data-mode="blind">
+        <div class="ct">🙈 Blind</div>
+        <div class="cd">Timer disappears after starting. Estimate the target time without seeing the timer.</div>
+      </div>
+      <div class="card" data-mode="tournament">
+        <div class="ct">🏆 Tournament</div>
+        <div class="cd">Up to 8 players. Start when everyone's in — closest wins the whole pot.</div>
       </div>
     </div>
   </section>
 
   <!-- ============ LOBBY ============ -->
   <section class="screen" id="sc-lobby">
-    <div class="wrap ig-col">
+    <div class="wrap">
       <div class="codebox">
         <div class="lbl">Room code</div>
         <div class="val mono" id="lobbyCode">····</div>
       </div>
       <div class="sub" id="lobbyMeta"></div>
-      <div id="lobbySeats" class="seats"></div>
+      <div id="lobbySeats"></div>
       <div class="sub" id="lobbyHint"></div>
-      <button class="btn" id="rejoinBtn" style="display:none">Take your seat</button>
-      <button class="btn" id="startBtn">Start Round</button>
+      <button class="btn gold" id="rejoinBtn" style="display:none">🎟 Take your seat</button>
+      <button class="btn gold" id="startBtn">▶ Start Round</button>
       <button class="btn ghost" id="leaveBtn">Leave room</button>
     </div>
   </section>
@@ -509,52 +361,47 @@
 
   <!-- ============ RESULT ============ -->
   <section class="screen" id="sc-result">
-    <div class="wrap ig-col">
-      <div class="res-top">
-        <div class="crown" id="resultCrown"></div>
-        <div class="winner" id="winnerName">—</div>
-        <div class="winner-sub" id="winnerSub"></div>
-      </div>
+    <div class="wrap">
+      <div class="crown" id="resultCrown">🏆</div>
+      <div class="winner" id="winnerName">—</div>
+      <div class="winner-sub" id="winnerSub"></div>
       <div id="timesBoard"></div>
-      <div class="sub" id="resultNote"></div>
-      <button class="btn" id="againBtn">Rematch</button>
+      <div class="sub" id="resultNote" style="margin-top:14px"></div>
+      <button class="btn gold" id="againBtn">↻ Rematch</button>
       <button class="btn ghost" id="resultMenuBtn">Leave room</button>
     </div>
   </section>
 
   <!-- ============ PRACTICE ============ -->
   <section class="screen" id="sc-practice">
-    <div class="wrap ig-col">
-      <div class="pg-head"><h2>Practice</h2><div class="sub">Choose your own target, then stop the timer on it. No entry fee — and accuracy still pays.</div></div>
-      <div class="ig-card pracbox">
-        <div class="codebox">
-          <div class="lbl">Target time</div>
-          <div class="val mono" id="pracVal">2.00</div>
-        </div>
-        <input type="range" id="pracSlider" min="300" max="8000" step="10" value="2000" />
-        <div class="presets" id="pracPresets"></div>
+    <div class="wrap">
+      <h2>Practice</h2>
+      <div class="sub">Choose your own target, then stop the timer on it. No entry fee — and accuracy still pays.</div>
+      <div class="codebox" style="border-style:solid">
+        <div class="lbl">Target time</div>
+        <div class="val mono" id="pracVal">2.00</div>
       </div>
+      <input type="range" id="pracSlider" min="300" max="8000" step="10" value="2000" />
+      <div class="presets" id="pracPresets"></div>
       <div class="card" id="pracBlindCard" data-on="0">
-        <div class="ct"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b07cf0,#6b4bd8)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg></span>Blind <span class="badge" id="pracBlindBadge">off</span></div>
+        <div class="ct">🙈 Blind <span class="badge" id="pracBlindBadge">off</span></div>
         <div class="cd">Hide the timer and go on feel alone.</div>
       </div>
-      <button class="btn" id="pracStart">Start</button>
-      <div class="ig-card rewards">
-        <div class="ig-eyebrow">Coins for accuracy</div>
-        <div class="rw"><span>DOT (exact)</span><b>50</b></div>
-        <div class="rw"><span>Within 0.01 s</span><b>20</b></div>
-        <div class="rw"><span>Within 0.05 s</span><b>10</b></div>
-        <div class="rw"><span>Within 0.10 s</span><b>5</b></div>
-        <div class="rw"><span>Within 0.20 s</span><b>2</b></div>
+      <button class="btn violet" id="pracStart">▶ Start</button>
+      <div class="sub" style="margin-top:16px;font-size:13px">
+        <span class="pill">DOT = 50 🪙</span><span class="pill">0.01 s = 20</span>
+        <span class="pill">0.05 s = 10</span><span class="pill">0.10 s = 5</span>
+        <span class="pill">0.20 s = 2</span>
       </div>
     </div>
   </section>
 
   <!-- ============ PROFILE ============ -->
   <section class="screen" id="sc-profile">
-    <div class="wrap ig-col">
-      <div class="pg-head"><h2 id="profName">—</h2>
-      <div class="tag" id="profJoined">—</div></div>
+    <div class="wrap">
+      <h2 id="profName">—</h2>
+      <div class="tag" id="profJoined">—</div>
+      <div style="height:20px"></div>
       <div class="stats">
         <div class="stat wide"><div class="k">Coins</div><div class="v" id="pCoins">—</div></div>
         <div class="stat"><div class="k">Matches played</div><div class="v" id="pPlayed">—</div></div>
@@ -562,22 +409,24 @@
         <div class="stat"><div class="k">DOT count</div><div class="v" id="pDots">—</div></div>
         <div class="stat"><div class="k">Best accuracy</div><div class="v mono" id="pBest">—</div></div>
       </div>
-      <div class="ig-eyebrow" style="text-align:left;margin-top:4px">Recent rounds</div>
-      <div id="profHistory"></div>
+      <h2 style="font-size:18px;margin-top:18px;text-align:left">Recent rounds</h2>
+      <div id="profHistory" style="margin-top:10px"></div>
     </div>
   </section>
 
 </div>
 
+<button id="homeBtn" aria-label="Home">🏠</button>
+<button class="backBtn" id="backBtn">← Back</button>
 <div id="toast"></div>
 
 <!-- ============ SETTINGS ============ -->
 <div class="ov" id="settingsOv">
-  <div class="sheet ig-sheet">
-    <h2>Settings</h2>
-    <div class="toggle"><div class="tl">Sound</div><div class="switch on" data-set="sound"></div></div>
-    <div class="toggle"><div class="tl">Vibration</div><div class="switch on" data-set="vibe"></div></div>
-    <div class="toggle last"><div class="tl">Music</div><div class="switch" data-set="music"></div></div>
+  <div class="sheet">
+    <h2>⚙ Settings</h2>
+    <div class="toggle"><div class="tl">🔊 Sound</div><div class="switch on" data-set="sound"></div></div>
+    <div class="toggle"><div class="tl">📳 Vibration</div><div class="switch on" data-set="vibe"></div></div>
+    <div class="toggle last"><div class="tl">🎵 Music</div><div class="switch" data-set="music"></div></div>
     <div style="height:16px"></div>
     <button class="btn ghost" id="closeSettings">Done</button>
   </div>

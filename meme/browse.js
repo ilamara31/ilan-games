@@ -44,19 +44,19 @@
   function emptyBox(msg) {
     var d = document.createElement("div");
     d.className = "center";
-    d.innerHTML = '<div class="bigic"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10 9.5v5l4-2.5z"/></svg></div><div>' + esc(msg) + "</div>";
+    d.innerHTML = '<div style="font-size:40px">🎬</div><div>' + esc(msg) + "</div>";
     return d;
   }
 
   function errorBox(msg, onRetry) {
     var d = document.createElement("div");
     d.className = "center";
-    d.innerHTML = '<div class="bigic" style="background:linear-gradient(160deg,#9aa6b8,#5b6678)"><svg viewBox="0 0 24 24"><path d="M4 9a12 12 0 0 1 16 0M7 12.5a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0"/><path d="M12 19.5h.01"/></svg></div><div>' + esc(msg) + "</div>";
+    d.innerHTML = '<div style="font-size:40px">📡</div><div>' + esc(msg) + "</div>";
     if (onRetry) {
       var b = document.createElement("button");
       b.className = "btn ghost";
       b.style.maxWidth = "220px";
-      b.textContent = "Retry";
+      b.textContent = "↻ Retry";
       b.onclick = onRetry;
       d.appendChild(b);
     }
@@ -84,8 +84,8 @@
     var ms = document.createElement("div");
     ms.className = "ms";
     ms.innerHTML =
-      "<span><svg class=\"ic\" viewBox=\"0 0 24 24\"><path d=\"M12 20s-7-4.3-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.7 12 20 12 20z\"/></svg> " + num(meme.likes) + "</span>" +
-      "<span><svg class=\"ic\" viewBox=\"0 0 24 24\"><path d=\"M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg> " + num(meme.views) + "</span>";
+      "<span>❤️ " + num(meme.likes) + "</span>" +
+      "<span>👁 " + num(meme.views) + "</span>";
 
     if (meme.creator_name) {
       var by = document.createElement("span");
@@ -127,7 +127,7 @@
   function backButton(onExit) {
     var b = document.createElement("button");
     b.className = "btn ghost";
-    b.textContent = "Back";
+    b.textContent = "← Back";
     b.onclick = onExit;
     return b;
   }
@@ -136,9 +136,9 @@
      GALLERY
      ============================================================ */
   var SORTS = [
-    { id: "liked", label: "Most Liked" },
-    { id: "viewed", label: "Most Viewed" },
-    { id: "new", label: "Newest" }
+    { id: "liked", label: "❤️ Most Liked" },
+    { id: "viewed", label: "👁 Most Viewed" },
+    { id: "new", label: "🆕 Newest" }
   ];
   var CATS = [
     { id: "all", label: "All" },
@@ -252,7 +252,7 @@
         } else if (state.search || state.category !== "all") {
           results.appendChild(emptyBox("No memes match that. Try another search or category."));
         } else {
-          results.appendChild(emptyBox("No memes yet — be the first!"));
+          results.appendChild(emptyBox("No memes yet — be the first! 🎬"));
         }
         return;
       }
@@ -291,7 +291,7 @@
       var header = document.createElement("div");
       header.className = "card";
       header.innerHTML =
-        '<div style="font-weight:800;font-size:22px;letter-spacing:-.03em">' + esc(p.name || key) + "</div>" +
+        '<div style="font-weight:900;font-size:20px">👤 ' + esc(p.name || key) + "</div>" +
         (joinedLabel(p.joined_at)
           ? '<div class="muted" style="margin-top:4px">' + esc(joinedLabel(p.joined_at)) + "</div>"
           : "");
@@ -377,7 +377,7 @@
         mt.textContent = s.top.title || "Untitled";
         var ms = document.createElement("div");
         ms.className = "ms";
-        ms.innerHTML = "<span><svg class=\"ic\" viewBox=\"0 0 24 24\"><path d=\"M12 20s-7-4.3-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.7 12 20 12 20z\"/></svg> " + num(s.top.likes) + "</span>";
+        ms.innerHTML = "<span>❤️ " + num(s.top.likes) + "</span>";
         meta.appendChild(mt);
         meta.appendChild(ms);
         card.appendChild(thumb);

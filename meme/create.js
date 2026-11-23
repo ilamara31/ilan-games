@@ -118,8 +118,8 @@
     }
     function navRow(nextLabel, nextEnabled, nextClass) {
       return '<div class="row" style="margin-top:4px">' +
-        '<button class="btn ghost" id="wzBack" style="flex:1">Back</button>' +
-        '<button class="btn ' + (nextClass || "grad") + '" id="wzNext" style="flex:2"' + (nextEnabled ? "" : " disabled") + '>' + esc(nextLabel || "Next") + '</button>' +
+        '<button class="btn ghost" id="wzBack" style="flex:1">← Back</button>' +
+        '<button class="btn ' + (nextClass || "grad") + '" id="wzNext" style="flex:2"' + (nextEnabled ? "" : " disabled") + '>' + esc(nextLabel || "Next →") + '</button>' +
         '</div>';
     }
 
@@ -172,14 +172,14 @@
           '<div class="grid3">' + chips + '</div>' +
           '<div class="label" style="margin-top:16px">Or use your own photo</div>' +
           '<div class="row">' +
-            '<button class="btn grad2 sm" id="wzUpload" style="flex:1">Upload Image</button>' +
-            '<button class="btn grad2 sm" id="wzCamera" style="flex:1">Camera Photo</button>' +
+            '<button class="btn grad2 sm" id="wzUpload" style="flex:1">🖼️ Upload Image</button>' +
+            '<button class="btn grad2 sm" id="wzCamera" style="flex:1">📷 Camera Photo</button>' +
           '</div>' +
           previewHtml +
           '<input type="file" id="wzFileUp" accept="image/*" style="display:none">' +
           '<input type="file" id="wzFileCam" accept="image/*" capture="environment" style="display:none">' +
         '</div>' +
-        navRow("Next", canNext)
+        navRow("Next →", canNext)
       );
 
       // template chips
@@ -284,7 +284,7 @@
       }
       body += '<div class="muted" style="margin-top:10px">You can leave the caption empty if you like.</div></div>';
 
-      container.innerHTML = shell(body + navRow("Next", true));
+      container.innerHTML = shell(body + navRow("Next →", true));
 
       container.querySelector("#wzModeTb").onclick = function () { syncCaption(); scene.cap.mode = "tb"; renderCaption(); };
       container.querySelector("#wzModeCenter").onclick = function () { syncCaption(); scene.cap.mode = "center"; renderCaption(); };
@@ -317,7 +317,7 @@
           '<div id="wzFxPrev" style="margin-bottom:14px"></div>' +
           '<div class="grid3">' + chips + '</div>' +
         '</div>' +
-        navRow("Next", true)
+        navRow("Next →", true)
       );
 
       // live static preview of the current scene
@@ -353,10 +353,10 @@
             '<div class="muted" style="margin-top:8px">Recording… auto-stops at 5s.</div>';
         } else if (r.blob) {
           recHtml =
-            '<div class="muted" style="margin-bottom:8px">Voice clip ready.</div>' +
+            '<div class="muted" style="margin-bottom:8px">✅ Voice clip ready.</div>' +
             '<div class="row">' +
               '<button class="btn grad2 sm" id="wzReplay" style="flex:1">▶ Replay</button>' +
-              '<button class="btn ghost sm" id="wzDelRec" style="flex:1">Delete</button>' +
+              '<button class="btn ghost sm" id="wzDelRec" style="flex:1">🗑 Delete</button>' +
               '<button class="btn sm" id="wzReRec" style="flex:1;background:var(--panel2)">⏺ Re-record</button>' +
             '</div>';
         } else {
@@ -379,9 +379,9 @@
         '</div>' +
         '<div class="card">' +
           '<div class="label">No sound</div>' +
-          '<button class="chip' + (noneOn ? " on" : "") + '" id="wzNoSound" style="width:100%">No sound</button>' +
+          '<button class="chip' + (noneOn ? " on" : "") + '" id="wzNoSound" style="width:100%">🔇 No sound</button>' +
         '</div>' +
-        navRow("Next", true)
+        navRow("Next →", true)
       );
 
       Array.prototype.forEach.call(container.querySelectorAll("[data-snd]"), function (b) {
@@ -494,7 +494,7 @@
           goNext();
         }).catch(function (e) {
           toast((e && e.message) || "Couldn't upload your voice clip. Try again.");
-          if (nx) { nx.disabled = false; nx.textContent = "Next"; }
+          if (nx) { nx.disabled = false; nx.textContent = "Next →"; }
         });
         return;
       }
@@ -511,7 +511,7 @@
           '<button class="btn grad sm" id="wzReplayPrev" style="margin-top:12px">▶ Replay</button>' +
         '</div>' +
         '<div class="muted" style="text-align:center">Looks good? Continue to name & save it.</div>' +
-        navRow("Next", true)
+        navRow("Next →", true)
       );
 
       var stage = container.querySelector("#wzStage");
@@ -545,8 +545,8 @@
           '<div class="grid3">' + chips + '</div>' +
         '</div>' +
         '<div class="row" style="margin-top:4px">' +
-          '<button class="btn ghost" id="wzBack" style="flex:1">Back</button>' +
-          '<button class="btn grad" id="wzSave" style="flex:2">Save Meme</button>' +
+          '<button class="btn ghost" id="wzBack" style="flex:1">← Back</button>' +
+          '<button class="btn grad" id="wzSave" style="flex:2">💾 Save Meme</button>' +
         '</div>'
       );
 
@@ -593,13 +593,13 @@
             onSaved(r.id);
           } else {
             state.saving = false;
-            if (btn) { btn.disabled = false; btn.textContent = "Save Meme"; }
+            if (btn) { btn.disabled = false; btn.textContent = "💾 Save Meme"; }
             toast((r && r.msg) || "Couldn't save. Try again.");
           }
         })
         .catch(function (e) {
           state.saving = false;
-          if (btn) { btn.disabled = false; btn.textContent = "Save Meme"; }
+          if (btn) { btn.disabled = false; btn.textContent = "💾 Save Meme"; }
           toast((e && e.message) || "Couldn't save. Try again.");
         });
     }

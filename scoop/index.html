@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Basket Scoop</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#f2f2f7" />
+<meta name="theme-color" content="#0a0e1a" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,94 +26,83 @@
 <meta name="twitter:title" content="Basket Scoop — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
-  :root, html[data-theme]{ --accent:#ffa133; --accent2:#f05f2a; --icon1:#fdc830; --icon2:#f37335; }
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; overflow:hidden; color:var(--ig-text); font-family:var(--ig-font); user-select:none; -webkit-user-select:none; }
-  body{ position:fixed; inset:0; width:100%; touch-action:none; background:transparent; }   /* lock page — no scroll / edge-swipe */
+  html,body{ height:100%; overflow:hidden; background:#070b16; color:#fff;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
+  body{ position:fixed; inset:0; width:100%; touch-action:none; }   /* lock page — no scroll / edge-swipe */
   #app{ position:relative; width:100vw; height:100vh; overflow:hidden; }
   canvas#game{ display:block; position:absolute; inset:0; width:100%; height:100%; touch-action:none; background:#070b16; }
-  /* menu-type screens sit on the light page: hide the arena behind them */
-  #app:has(#scrMenu:not(.hidden)) canvas#game, #app:has(#scrModes:not(.hidden)) canvas#game, #app:has(#scrShop:not(.hidden)) canvas#game,
-  #app:has(#scrStats:not(.hidden)) canvas#game, #app:has(#scrSettings:not(.hidden)) canvas#game, #app:has(#scrTut:not(.hidden)) canvas#game{ visibility:hidden; }
-  .screen.hidden{ display:none !important; }
-  button{ font-family:inherit; }
 
-  /* ===== ilan Games theme — game-local layout (menu + light sheets) ===== */
-  .ag-screen{position:fixed;inset:0;z-index:20;display:block;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);
-    font-family:var(--ig-font);color:var(--ig-text);text-align:left;letter-spacing:-.01em;background:transparent}
-  .ag-screen .ig-col{gap:16px}
-  .ag-spacer{width:44px;height:44px;flex:none}
-  .ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px}
-  .ag-head h2{font:700 17px/1.2 var(--ig-font);letter-spacing:-.02em;color:var(--ig-text);margin:0}
-  .ag-note{font-size:14px;line-height:1.45;color:var(--ig-text2);text-align:center;font-weight:500}
-  .ag-note b{color:var(--ig-text)}
-  .ig-iconbtn{border:1px solid var(--ig-line);padding:0;font-family:var(--ig-font)}
-  .ig-mode,.ig-row,.ig-cta,.ig-sq,.ig-btn{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-  .ig-btn svg,.ig-row > svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .ig-row .ig-val{font-size:15px;font-weight:600;color:var(--ig-text2);margin-left:auto}
-  .ig-modes{grid-template-columns:repeat(var(--n,3),1fr)}
-  .ag-tips{display:flex;flex-direction:column;gap:12px}
-  .ag-tip{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--ig-text2);font-weight:500}
-  .ag-tip b{color:var(--ig-text);font-weight:700}
-  .ag-tip .ig-tile{width:32px;height:32px;border-radius:9px}
-  .ag-tip .ig-tile svg{width:18px;height:18px}
-  /* light sheet pop-ups (pause, game over…) over the game */
-  .ag-scrim{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow-y:auto;
-    background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);font-family:var(--ig-font);color:var(--ig-text)}
-  .ag-sheet{width:min(380px,100%);display:flex;flex-direction:column;align-items:stretch;gap:12px;text-align:center;margin:auto}
-  .ag-sheet .ig-eyebrow{margin-bottom:-4px}
-  .ag-sheet h2{font:800 28px/1.1 var(--ig-font);letter-spacing:-.035em;color:var(--ig-text);margin:0}
-  .ag-big{font:900 64px/1 var(--ig-font);letter-spacing:-.03em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding:2px 0}
-  .ag-badge{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font:700 13px/1 var(--ig-font);color:#fff;background:linear-gradient(160deg,#34c759,#1f9d48)}
-  .ag-btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .ag-btns .ig-btn{width:100%}
-  .ag-btnrow{display:flex;gap:10px}.ag-btnrow .ig-btn{flex:1;padding:0 12px}
-  .ig-sheet .ig-stats{background:rgba(118,118,128,.08);border-radius:18px;padding:12px 4px}
-  @media (max-width:370px){ .ig-mode small{display:none} }
+  /* ---- screens ---- */
+  .screen{ position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; text-align:center; padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    overflow-y:auto; background:radial-gradient(circle at 50% 16%, #1b3566, #070b16 74%); }
+  .screen.hidden{ display:none; }
+  h1{ font-size:clamp(30px,9vw,58px); letter-spacing:1px; margin:4px 0 2px; font-weight:800;
+    background:linear-gradient(90deg,#ff9b3d,#ffd54a 50%,#ff6b3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub{ color:#9fb3d8; font-size:clamp(13px,3vw,16px); margin-bottom:12px; max-width:520px; line-height:1.5; }
+  h2.hd{ font-size:22px; margin:2px 0 10px; color:#ffd54a; }
 
-  .ag-coins{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:999px; font:700 15px/1 var(--ig-font); color:#a35a00;
-    background:rgba(255,161,51,.16); }
-  .ag-coins svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .btn{ background:linear-gradient(135deg,#ff9b3d,#ff6b2c); color:#25120a; border:none; padding:14px 26px; font-size:17px;
+    font-weight:800; border-radius:26px; cursor:pointer; margin:5px; box-shadow:0 6px 16px rgba(255,140,60,.32);
+    text-decoration:none; display:inline-block; min-width:200px; }
+  .btn:active{ transform:translateY(2px); }
+  .btn.sec{ background:linear-gradient(135deg,#2a3c63,#1b2947); color:#dbe7ff; box-shadow:none; min-width:0; }
+  .btn.green{ background:linear-gradient(135deg,#39ff9d,#1ea85a); color:#04220f; }
+  .btn.gold{ background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#241600; }
+  .btn.ghost{ background:transparent; color:#c3d2ff; border:1px solid rgba(150,180,255,.3); box-shadow:none; font-size:15px; padding:12px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
 
-  /* modes list (Choose a mode) */
-  .mode{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; background:none; padding:12px 14px 12px 12px; cursor:pointer; color:var(--ig-text); font-family:var(--ig-font); }
-  .mode + .mode{ border-top:1px solid var(--ig-line); }
-  .mode:active{ background:rgba(0,0,0,.04); }
-  .mode .ig-grow{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  .mode b{ font-size:16px; font-weight:700; letter-spacing:-.015em; }
-  .mode span.d{ font-size:13px; color:var(--ig-text2); font-weight:500; line-height:1.3; }
-  .mode i{ font-style:normal; font-size:12px; font-weight:700; color:var(--accent2); white-space:nowrap; align-self:flex-start; margin-top:3px; }
-  .mode .rank{ font-size:10.5px; font-weight:700; color:#fff; background:linear-gradient(160deg,var(--accent),var(--accent2)); border-radius:999px; padding:2px 7px; margin-left:6px; vertical-align:2px; letter-spacing:0; }
+  .chip{ background:rgba(10,18,34,.7); border:1px solid #2b3f6b; border-radius:20px; padding:7px 14px; font-size:14px; margin:3px; display:inline-block; }
+  .chip b{ color:#ffd54a; }
+  .coins{ display:inline-block; background:rgba(0,0,0,.28); border-radius:12px; padding:8px 16px; font-weight:800; color:#ffe27a; font-size:18px; margin:6px 0 10px; }
+
+  .card{ background:linear-gradient(180deg,#1a2a55,#0c1430); border:1px solid rgba(130,170,255,.2); border-radius:22px;
+    padding:18px 16px; max-width:440px; width:100%; box-shadow:0 26px 60px rgba(0,0,0,.55); margin-bottom:10px; }
+
+  /* mode buttons */
+  .mode{ display:block; width:100%; text-align:left; border:none; border-radius:16px; padding:14px 16px; cursor:pointer; margin-top:9px;
+    background:linear-gradient(180deg,#24407e,#152449); color:#fff; box-shadow:0 5px 0 #101d3b; }
+  .mode:active{ transform:translateY(3px); box-shadow:0 2px 0 #101d3b; }
+  .mode b{ font-size:17px; display:block; }
+  .mode .rank{ font-size:10px; font-weight:800; color:#25120a; background:linear-gradient(135deg,#ffd54a,#ff9b3d);
+    border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  .mode span{ font-size:12.5px; color:#9fb3d8; }
+  .mode i{ float:right; font-style:normal; font-size:12px; color:#ffd54a; font-weight:800; }
 
   /* shop */
-  .tabs{ margin-bottom:12px; }
-  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .item{ background:rgba(255,255,255,.7); border:1.5px solid var(--ig-line); border-radius:18px; padding:12px 10px 10px; text-align:center; cursor:pointer; transition:transform .1s; }
+  .tabs{ display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+  .tab{ background:rgba(255,255,255,.06); border:1px solid rgba(150,180,255,.16); color:#c3d2ff; border-radius:14px;
+    padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .tab.on{ background:linear-gradient(135deg,#ff9b3d,#ff6b2c); color:#25120a; border-color:transparent; }
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-height:52vh; overflow:auto; padding:2px; }
+  .item{ background:rgba(255,255,255,.05); border:2px solid rgba(150,180,255,.12); border-radius:14px; padding:10px; text-align:center;
+    cursor:pointer; transition:transform .06s; }
   .item:active{ transform:scale(.97); }
-  .item.equipped{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
-  .item b{ font-size:14px; display:block; margin-top:6px; font-weight:700; letter-spacing:-.01em; }
-  .item .price{ font-size:12.5px; color:#a35a00; font-weight:700; margin-top:2px; }
-  .item .price.owned{ color:#1f9d48; }
+  .item.equipped{ border-color:#86ffc6; box-shadow:0 0 0 2px rgba(134,255,198,.22) inset; }
+  .item.locked{ opacity:.9; }
+  .item b{ font-size:13px; display:block; margin-top:4px; }
+  .item .price{ font-size:12px; color:#ffe27a; font-weight:800; margin-top:3px; }
+  .item .price.owned{ color:#86ffc6; }
   .item canvas{ display:block; margin:0 auto; }
-  .item canvas[width="104"]{ background:#0f1a33; border-radius:12px; }
 
-  /* how to play */
-  .tut{ display:flex; gap:12px; align-items:center; text-align:left; font-size:14px; line-height:1.4; color:var(--ig-text2); font-weight:500; padding:10px 0; }
-  .tut + .tut{ border-top:1px solid var(--ig-line); }
-  .tut b{ color:var(--ig-text); }
-  .tut .ig-tile{ width:32px; height:32px; border-radius:9px; }
-  .tut .ig-tile svg{ width:18px; height:18px; }
-  #tutDemo{ position:relative; height:132px; margin:0 0 6px; border-radius:16px; overflow:hidden;
-    background:linear-gradient(180deg,#14234a,#24386a); }
-  #tutBall{ position:absolute; left:50%; bottom:12px; width:32px; height:32px; margin-left:-16px; }
-  #tutBall svg, #tutHand svg{ width:100%; height:100%; display:block; }
+  /* tutorial */
+  .tut{ display:flex; gap:10px; align-items:flex-start; text-align:left; font-size:13.5px; line-height:1.45;
+    padding:9px 2px; border-bottom:1px solid rgba(150,180,255,.10); color:#c3d2ff; }
+  .tut:last-of-type{ border-bottom:none; }
+  .tut b{ color:#fff; }
+  .tut .ti{ font-size:19px; flex:0 0 26px; text-align:center; }
+  #tutDemo{ position:relative; height:132px; margin:2px 0 8px; border-radius:14px; overflow:hidden;
+    background:linear-gradient(180deg,#0d1730,#1b2c52); border:1px solid rgba(150,180,255,.14); }
+  #tutBall{ position:absolute; left:50%; bottom:12px; transform:translateX(-50%); font-size:30px; }
+  /* the dashed track the flick follows */
   #tutArrow{ position:absolute; left:50%; bottom:44px; width:3px; height:64px; margin-left:-1.5px;
-    background:repeating-linear-gradient(to top, rgba(255,255,255,.6) 0 6px, transparent 6px 12px); transform-origin:bottom center; transform:rotate(18deg); }
-  #tutHand{ position:absolute; left:50%; bottom:12px; width:30px; height:30px; margin-left:-8px; color:#fff; animation:tutSwipe 2.4s ease-in-out infinite; }
-  #tutHand svg{ fill:rgba(255,255,255,.18); stroke:#fff; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+    background:repeating-linear-gradient(to top, rgba(255,255,255,.55) 0 6px, transparent 6px 12px);
+    transform-origin:bottom center; transform:rotate(18deg); }
+  #tutHand{ position:absolute; left:50%; bottom:16px; font-size:26px; margin-left:-13px;
+    animation:tutSwipe 2.4s ease-in-out infinite; }
   @keyframes tutSwipe{
     0%,12%   { transform:translate(0,0)      scale(1);    opacity:0; }
     18%      { transform:translate(0,0)      scale(1);    opacity:1; }
@@ -122,19 +111,16 @@
   }
 
   /* stats */
-  .stat{ display:flex; justify-content:space-between; align-items:center; padding:12px 2px; font-size:15px; font-weight:500; }
-  .stat + .stat{ border-top:1px solid var(--ig-line); }
-  .stat .v{ color:var(--ig-text); font-weight:700; }
+  .stat{ display:flex; justify-content:space-between; padding:11px 4px; border-bottom:1px solid rgba(150,180,255,.12); font-size:15px; }
+  .stat:last-child{ border-bottom:none; }
+  .stat .v{ color:#ffd54a; font-weight:800; }
 
   /* settings */
-  .sw{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; font-size:16px; font-weight:600; letter-spacing:-.01em; }
-  .sw + .sw{ border-top:1px solid var(--ig-line); }
-  .sw > span{ display:flex; align-items:center; gap:12px; }
-  .sw .ig-tile{ width:30px; height:30px; border-radius:8px; } .sw .ig-tile svg{ width:17px; height:17px; }
-  .toggle{ width:51px; height:31px; flex:none; border-radius:999px; background:rgba(120,120,128,.18); border:none; position:relative; cursor:pointer; transition:background .2s; }
-  .toggle::after{ content:''; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.08); transition:transform .2s var(--ig-ease); }
-  .toggle.on{ background:#34c759; }
-  .toggle.on::after{ transform:translateX(20px); }
+  .sw{ display:flex; justify-content:space-between; align-items:center; padding:12px 4px; border-bottom:1px solid rgba(150,180,255,.12); font-size:15px; }
+  .toggle{ width:52px; height:30px; border-radius:15px; background:#2a3c63; border:none; position:relative; cursor:pointer; transition:background .15s; }
+  .toggle::after{ content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#8fa5cc; transition:transform .15s,background .15s; }
+  .toggle.on{ background:#1ea85a; }
+  .toggle.on::after{ transform:translateX(22px); background:#eafff3; }
 
   /* ---- in-game HUD ---- */
   #hud{ position:absolute; inset:0; z-index:8; pointer-events:none; }
@@ -164,13 +150,9 @@
 
   #flash{ position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0; }
 
-  #pauseBtn{ display:grid; place-items:center; padding:0; color:#fff; }
-  #pauseBtn svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; }
-  #pauseBtn, #toast, #hint, #score, #scoreSub, #hudRight{ font-family:var(--ig-font); }
-  #pauseBtn{ border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
-  #toast{ border-radius:999px; }
-  #overStats{ margin:0; }
-  #hud{ color:#fff; }
+  .badge{ display:inline-block; background:#ff6b2c; color:#fff; font-size:10px; font-weight:800; border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  .lnk{ color:#8fb6ff; font-size:13px; margin-top:10px; text-decoration:none; display:inline-block; }
+
   /* announce.js pins its banner to bottom:12px at z-index:99999 — which lands
      exactly on the ball, and it swallows every swipe. Hide it for the duration
      of a run; the menu and the game-over screen still show it. A CSS rule (not
@@ -184,7 +166,7 @@
 
   <!-- ============ HUD ============ -->
   <div id="hud" class="hidden">
-    <button id="pauseBtn" title="Pause" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5v13M15 5.5v13"/></svg></button>
+    <button id="pauseBtn" title="Pause">⏸</button>
     <div id="scoreBox"><div id="score">0</div><div id="scoreSub">SCORE</div></div>
     <div id="comboBox"></div>
     <div id="hudRight">
@@ -198,145 +180,117 @@
   <div id="flash"></div>
 
   <!-- ============ MENU ============ -->
-  <div class="screen ag-screen" id="scrMenu">
-   <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-      <button class="ig-iconbtn" id="btnSettings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  <div class="screen" id="scrMenu">
+    <h1>BASKET SCOOP</h1>
+    <div class="sub">Flick the ball. Sink the shot. Chain combos and go on a fire streak.</div>
+    <div class="row">
+      <span class="chip">Best <b id="mBest">0</b></span>
+      <span class="chip">🪙 <b id="mCoins">0</b></span>
     </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="56" y="6" width="38" height="28" rx="3" fill="#fff"/><rect x="66" y="14" width="18" height="13" fill="none" stroke="#b3122f" stroke-width="3"/>
-<path d="M62 42 L66 62 L84 62 L88 42" fill="none" stroke="#fff" stroke-width="2"/><path d="M68 42 L71 62 M75 42 L75 62 M82 42 L79 62 M63 50 L87 50 M65 57 L85 57" stroke="#fff" stroke-width="1.6"/>
-<ellipse cx="75" cy="40" rx="15" ry="4.5" fill="none" stroke="#22120a" stroke-width="6"/><ellipse cx="75" cy="40" rx="15" ry="4.5" fill="none" stroke="#ff6b1a" stroke-width="3"/>
-<path d="M4 92 Q8 70 22 68 Q14 76 24 80 Q20 66 34 62 Q30 74 38 78 Q30 92 4 92Z" fill="#ffcc00" stroke="#22120a" stroke-width="2.5" stroke-linejoin="round"/>
-<path d="M12 90 Q16 80 24 78 Q22 86 30 86 Q26 92 12 90Z" fill="#ff6b1a"/>
-<path d="M38 56 Q50 26 64 34" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/>
-<circle class="o" cx="36" cy="66" r="15" fill="#ff7a1a"/>
-<path d="M21 66 H51 M36 51 V81 M25 55 Q34 66 25 77 M47 55 Q38 66 47 77" fill="none" stroke="#22120a" stroke-width="2"/>
-<ellipse cx="30" cy="59" rx="4" ry="3" fill="#fff" opacity=".5"/></svg></div>
-      <div class="ig-title">Basket Scoop</div>
-      <div class="ig-tagline">Flick the ball. Sink the shot. Chain combos.</div>
+    <div style="height:10px"></div>
+    <button class="btn" id="btnPlay">🏀 Play</button>
+    <button class="btn sec" id="btnHow" style="min-width:200px">❓ How to play</button>
+    <button class="btn sec" id="btnShop" style="min-width:200px">🛒 Shop</button>
+    <button class="btn sec" id="btnStats" style="min-width:200px">📊 Statistics</button>
+    <button class="btn sec" id="btnSettings" style="min-width:200px">⚙️ Settings</button>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('scoop','Basket Scoop — 60s')">🏆 Leaderboard</button>
     </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" id="btnPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="playSub">Classic</small></span></button>
-    </div>
-    <div class="ig-modes" style="--n:3">
-      <button class="ig-mode" data-qmode="classic"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span><b>Classic</b><small>3 misses</small></button>
-      <button class="ig-mode" data-qmode="time"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/></svg></span><b>Time Attack</b><small>60s · ranked</small></button>
-      <button class="ig-mode" data-qmode="hs"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.6-5.3 3.6-8.8 2.3 1.6 2.8 3.9 2.6 5.6 1-.6 1.9-2 2-3.8 2.4 1.9 3.8 4.6 3.8 7 0 3.6-2.6 6.2-5.5 6.2z"/></svg></span><b>High Score</b><small>1 miss</small></button>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" id="btnHow"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4"/><path d="M12 17.2h.01"/></svg></span><span class="ig-grow">How to play</span></button>
-      <button class="ig-row" id="btnShop"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8fb1,#ff2d55)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg></span><span class="ig-grow">Shop<small>Balls and trails</small></span></button>
-      <button class="ig-row" id="btnStats"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c58cff,#7b4dff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span><span class="ig-grow">Statistics</span></button>
-      <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('scoop','Basket Scoop — 60s')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd54a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Time Attack, worldwide</small></span></button>
-      <button class="ig-row" id="agLogin" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4.2 4-6.2 7.5-6.2s6.5 2 7.5 6.2"/></svg></span><span class="ig-grow"><span id="agLoginTxt">Log in</span><small id="agLoginSub">Save your scores online</small></span></button>
-    </div>
-    <div class="ig-stats">
-      <div><b id="mBest">0</b><span>Best score</span></div>
-      <div><b id="mCoins">0</b><span>Coins</span></div>
-      <div><b id="mCombo">0</b><span>Best combo</span></div>
-    </div>
-   </div>
+    <a class="lnk" href="../">🏠 All Ilan Games</a>
   </div>
 
   <!-- ============ TUTORIAL ============ -->
-  <div class="screen ag-screen hidden" id="scrTut">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="btnTutBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>How to play</h2><span class="ag-spacer"></span></div>
-    <div class="ig-card">
+  <div class="screen hidden" id="scrTut">
+    <h2 class="hd" style="margin-top:6px">How to play</h2>
+    <div class="card" style="max-width:420px">
       <div id="tutDemo">
-        <div id="tutBall"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="#f37335" stroke="#5a2408" stroke-width="1.6"/><path d="M1.5 16h29M16 1.5v29M5.5 5.8c4 3 5.5 6.3 5.5 10.2s-1.5 7.2-5.5 10.2M26.5 5.8c-4 3-5.5 6.3-5.5 10.2s1.5 7.2 5.5 10.2" fill="none" stroke="#5a2408" stroke-width="1.6"/></svg></div>
+        <div id="tutBall">🏀</div>
         <div id="tutArrow"></div>
-        <div id="tutHand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6 7-2.5 0-4-1.2-5.2-3.2L3.6 14a1.5 1.5 0 0 1 2.5-1.6L8 15"/></svg></div>
+        <div id="tutHand">👆</div>
       </div>
-      <div class="tut"><span class="ig-tile" style="--tile:linear-gradient(160deg,var(--accent),var(--accent2))"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V6M7 10l5-5 5 5"/></svg></span><div><b>Swipe up to shoot.</b> Anywhere on the screen — you don't have to touch the ball.</div></div>
-      <div class="tut"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/></svg></span><div><b>Longer swipe = more power.</b> Short swipe is a soft shot. This is the whole skill.</div></div>
-      <div class="tut"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></span><div><b>Swipe up-left or up-right to aim.</b> Take as long as you like lining it up — only the flick counts.</div></div>
-      <div class="tut"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd54a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><div><b>Swish</b> (no rim) is +2 · <b>long range</b> is +3 · a <b>golden ball</b> is +10.</div></div>
-      <div class="tut"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.6-5.3 3.6-8.8 2.3 1.6 2.8 3.9 2.6 5.6 1-.6 1.9-2 2-3.8 2.4 1.9 3.8 4.6 3.8 7 0 3.6-2.6 6.2-5.5 6.2z"/></svg></span><div><b>Chain them.</b> 3 in a row is x2, 5 is x3, 10 lights a <b>FIRE STREAK</b> at x5.</div></div>
+      <div class="tut"><span class="ti">👆</span><div><b>Swipe up to shoot.</b> Anywhere on the screen — you don't have to touch the ball.</div></div>
+      <div class="tut"><span class="ti">📏</span><div><b>Longer swipe = more power.</b> Short swipe is a soft shot. This is the whole skill.</div></div>
+      <div class="tut"><span class="ti">↔️</span><div><b>Swipe up-left or up-right to aim.</b> Take as long as you like lining it up — only the flick counts.</div></div>
+      <div class="tut"><span class="ti">🏀</span><div><b>Swish</b> (no rim) is +2 · <b>long range</b> is +3 · a <b>golden ball</b> is +10.</div></div>
+      <div class="tut"><span class="ti">🔥</span><div><b>Chain them.</b> 3 in a row is x2, 5 is x3, 10 lights a <b>FIRE STREAK</b> at x5.</div></div>
+      <button class="btn" id="btnTutGo" style="width:100%;margin-top:12px">🏀 Got it — play</button>
+      <button class="btn ghost" id="btnTutBack" style="width:100%;margin-top:8px">← Back</button>
     </div>
-    <button class="ig-btn" id="btnTutGo" style="width:100%">Got it — play</button>
-   </div>
   </div>
 
   <!-- ============ MODES ============ -->
-  <div class="screen ag-screen hidden" id="scrModes">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="btnModesBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose a mode</h2><span class="ag-spacer"></span></div>
-    <div class="ig-list">
-      <button class="mode" data-mode="classic"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span><span class="ig-grow"><b>Classic</b><span class="d">Score as much as you can. Three misses and you're out.</span></span><i id="bClassic">Best 0</i></button>
-      <button class="mode" data-mode="time"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/></svg></span><span class="ig-grow"><b>Time Attack <span class="rank">Ranked</span></b><span class="d">60 seconds. Misses cost you nothing but time. This is the mode on the global leaderboard.</span></span><i id="bTime">Best 0</i></button>
-      <button class="mode" data-mode="hs"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.6-5.3 3.6-8.8 2.3 1.6 2.8 3.9 2.6 5.6 1-.6 1.9-2 2-3.8 2.4 1.9 3.8 4.6 3.8 7 0 3.6-2.6 6.2-5.5 6.2z"/></svg></span><span class="ig-grow"><b>High Score</b><span class="d">One miss ends the run. Nerves of steel.</span></span><i id="bHs">Best 0</i></button>
+  <div class="screen hidden" id="scrModes">
+    <h2 class="hd" style="margin-top:6px">Choose a mode</h2>
+    <div class="card">
+      <button class="mode" data-mode="classic"><i id="bClassic">BEST 0</i><b>🏀 Classic</b><span>Score as much as you can. Three misses and you're out.</span></button>
+      <button class="mode" data-mode="time"><i id="bTime">BEST 0</i><b>⏱️ Time Attack <span class="rank">🏆 RANKED</span></b><span>60 seconds. Misses cost you nothing but time. This is the mode on the global leaderboard.</span></button>
+      <button class="mode" data-mode="hs"><i id="bHs">BEST 0</i><b>🔥 High Score</b><span>One miss ends the run. Nerves of steel.</span></button>
+      <button class="btn ghost" id="btnModesBack" style="width:100%;margin-top:12px">← Back</button>
     </div>
-   </div>
   </div>
 
   <!-- ============ SHOP ============ -->
-  <div class="screen ag-screen hidden" id="scrShop">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="btnShopBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Shop</h2><span class="ag-coins"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M14.6 9.4c-.5-.8-1.5-1.2-2.6-1.2-1.4 0-2.5.8-2.5 1.9 0 2.6 5.1 1.3 5.1 3.9 0 1.1-1.1 1.9-2.6 1.9-1.1 0-2.1-.4-2.6-1.2"/></svg><span id="shopCoins">0</span></span></div>
-    <div class="ig-card">
-      <div class="tabs ig-seg">
+  <div class="screen hidden" id="scrShop">
+    <h2 class="hd" style="margin-top:6px">Shop</h2>
+    <div class="coins">🪙 <span id="shopCoins">0</span></div>
+    <div class="card">
+      <div class="tabs">
         <button class="tab on" data-tab="balls">Balls</button>
         <button class="tab" data-tab="trails">Trails</button>
       </div>
       <div class="grid" id="shopGrid"></div>
+      <div style="font-size:11.5px;color:#7f93bb;margin-top:10px">Cosmetic only — nothing here changes how you play.</div>
+      <button class="btn ghost" id="btnShopBack" style="width:100%;margin-top:8px">← Back</button>
     </div>
-    <div class="ag-note">Cosmetic only — nothing here changes how you play.</div>
-   </div>
   </div>
 
   <!-- ============ STATS ============ -->
-  <div class="screen ag-screen hidden" id="scrStats">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="btnStatsBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Statistics</h2><span class="ag-spacer"></span></div>
-    <div class="ig-card" id="statsCard"></div>
-    <button class="ig-btn secondary" id="btnReset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>Reset stats</button>
-   </div>
+  <div class="screen hidden" id="scrStats">
+    <h2 class="hd" style="margin-top:6px">Statistics</h2>
+    <div class="card" id="statsCard"></div>
+    <div class="row">
+      <button class="btn ghost" id="btnStatsBack">← Back</button>
+      <button class="btn ghost" id="btnReset">Reset stats</button>
+    </div>
   </div>
 
   <!-- ============ SETTINGS ============ -->
-  <div class="screen ag-screen hidden" id="scrSettings">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="btnSetBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Settings</h2><span class="ag-spacer"></span></div>
-    <div class="ig-card">
-      <div class="sw"><span><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></span>Sound effects</span><button class="toggle" id="tgSfx" aria-label="Sound effects"></button></div>
-      <div class="sw"><span><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8fb1,#ff2d55)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></span>Music</span><button class="toggle" id="tgMusic" aria-label="Music"></button></div>
-      <div class="sw"><span><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16H7z"/><path d="M3 9v6M21 9v6"/></svg></span>Screen shake</span><button class="toggle" id="tgShake" aria-label="Screen shake"></button></div>
-      <div class="sw"><span><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6 7-2.5 0-4-1.2-5.2-3.2L3.6 14a1.5 1.5 0 0 1 2.5-1.6L8 15"/></svg></span>Left-handed hint</span><button class="toggle" id="tgLeft" aria-label="Left-handed hint"></button></div>
+  <div class="screen hidden" id="scrSettings">
+    <h2 class="hd" style="margin-top:6px">Settings</h2>
+    <div class="card">
+      <div class="sw"><span>🔊 Sound effects</span><button class="toggle" id="tgSfx"></button></div>
+      <div class="sw"><span>🎵 Music</span><button class="toggle" id="tgMusic"></button></div>
+      <div class="sw"><span>📳 Screen shake</span><button class="toggle" id="tgShake"></button></div>
+      <div class="sw"><span>👈 Left-handed hint</span><button class="toggle" id="tgLeft"></button></div>
+      <button class="btn ghost" id="btnSetBack" style="width:100%;margin-top:12px">← Back</button>
     </div>
-   </div>
   </div>
 
   <!-- ============ PAUSE ============ -->
-  <div class="screen ag-scrim hidden" id="scrPause">
-    <div class="ig-sheet ag-sheet">
-      <h2>Paused</h2>
-      <div class="ag-btns">
-        <button class="ig-btn" id="btnResume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg>Resume</button>
-        <button class="ig-btn secondary" id="btnRestart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v4.5h-4.5"/></svg>Restart</button>
-        <button class="ig-btn secondary" id="btnQuit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Quit to menu</button>
-      </div>
+  <div class="screen hidden" id="scrPause" style="background:rgba(4,8,20,.86)">
+    <div style="height:14vh"></div>
+    <h2 class="hd" style="font-size:28px">Paused</h2>
+    <div class="card" style="max-width:340px">
+      <button class="btn" id="btnResume" style="width:100%">▶ Resume</button>
+      <button class="btn ghost" id="btnRestart" style="width:100%;margin-top:8px">↻ Restart</button>
+      <button class="btn ghost" id="btnQuit" style="width:100%;margin-top:8px">🚪 Quit to menu</button>
     </div>
   </div>
 
   <!-- ============ GAME OVER ============ -->
-  <div class="screen ag-scrim hidden" id="scrOver">
-    <div class="ig-sheet ag-sheet">
-      <div class="ig-eyebrow" id="overTitle">Time!</div>
-      <div class="ag-big" id="overScore">0</div>
-      <div class="ag-note" style="margin-top:-8px">Final score</div>
-      <div id="overNew" class="ag-badge" style="display:none">New best!</div>
-      <div id="overStats" class="ig-stats"></div>
-      <div class="ag-btns">
-        <button class="ig-btn" id="btnAgain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v4.5h-4.5"/></svg>Play again</button>
-        <div class="ag-btnrow">
-          <button class="ig-btn secondary" id="btnOverLb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg>Leaderboard</button>
-          <button class="ig-btn secondary" id="btnOverModes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>Modes</button>
-        </div>
-        <button class="ig-btn secondary" id="btnOverMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Menu</button>
-      </div>
+  <div class="screen hidden" id="scrOver" style="background:rgba(4,8,20,.9)">
+    <div style="height:8vh"></div>
+    <h2 class="hd" id="overTitle" style="font-size:30px">Time!</h2>
+    <div class="card" style="max-width:360px">
+      <div style="font-size:60px;font-weight:800;color:#fff;line-height:1" id="overScore">0</div>
+      <div style="font-size:12px;color:#9fb3d8;letter-spacing:1px;margin-bottom:8px">FINAL SCORE</div>
+      <div id="overNew" class="badge" style="display:none;background:#1ea85a">NEW BEST!</div>
+      <div id="overStats" style="margin:12px 0 4px"></div>
+      <button class="btn" id="btnAgain" style="width:100%">↻ Play again</button>
+      <button class="btn gold" id="btnOverLb" style="width:100%;margin-top:8px">🏆 Leaderboard</button>
+      <button class="btn ghost" id="btnOverModes" style="width:100%;margin-top:8px">🎮 Change mode</button>
+      <button class="btn ghost" id="btnOverMenu" style="width:100%;margin-top:8px">🏠 Menu</button>
     </div>
   </div>
 </div>
@@ -1250,10 +1204,10 @@ function endGame(reason){
   $('overNew').style.display = isBest && G.score>0 ? 'inline-block' : 'none';
   const acc = G.shots ? Math.round(G.made/G.shots*100) : 0;
   $('overStats').innerHTML =
-    '<div><b>'+G.made+'/'+G.shots+'</b><span>Made</span></div>'+
-    '<div><b>'+acc+'%</b><span>Accuracy</span></div>'+
-    '<div><b>'+G.bestComboRun+'</b><span>Combo</span></div>'+
-    '<div><b>+'+G.coinsRun+'</b><span>Coins</span></div>';
+    '<span class="chip">Made <b>'+G.made+'/'+G.shots+'</b></span>'+
+    '<span class="chip">Accuracy <b>'+acc+'%</b></span>'+
+    '<span class="chip">Best combo <b>'+G.bestComboRun+'</b></span>'+
+    '<span class="chip">🪙 <b>+'+G.coinsRun+'</b></span>';
   showScreen('scrOver');
 }
 
@@ -1595,7 +1549,6 @@ function toMenu(){
   $('hud').classList.add('hidden');
   $('mBest').textContent = Math.max(S.best.classic||0, S.best.time||0, S.best.hs||0);
   $('mCoins').textContent = S.coins;
-  agMenuSync();
   showScreen('scrMenu');
   Sound.startMusic('menu');
 }
@@ -1604,14 +1557,14 @@ function syncHint(){
 }
 function openTut(firstRun){
   Sound.startMusic('menu');
-  $('btnTutGo').textContent = firstRun ? 'Got it — play' : 'Play';
+  $('btnTutGo').textContent = firstRun ? '🏀 Got it — play' : '🏀 Play';
   showScreen('scrTut');
 }
 function toModes(){
   Sound.startMusic('menu');            // reachable from game over, where music was stopped
-  $('bClassic').textContent = 'Best '+(S.best.classic||0);
-  $('bTime').textContent    = 'Best '+(S.best.time||0);
-  $('bHs').textContent      = 'Best '+(S.best.hs||0);
+  $('bClassic').textContent = 'BEST '+(S.best.classic||0);
+  $('bTime').textContent    = 'BEST '+(S.best.time||0);
+  $('bHs').textContent      = 'BEST '+(S.best.hs||0);
   showScreen('scrModes');
 }
 
@@ -1660,7 +1613,7 @@ function openShop(){
     if (!own) c.style.filter = 'brightness(.86)';
     const lbl = document.createElement('b'); lbl.textContent = it.name;
     const pr = document.createElement('div'); pr.className = 'price'+(own?' owned':'');
-    pr.textContent = eq ? 'Equipped' : own ? 'Owned' : it.cost+' coins';
+    pr.textContent = eq ? 'EQUIPPED' : own ? 'OWNED' : '🪙 '+it.cost;
     d.appendChild(c); d.appendChild(lbl); d.appendChild(pr);
     d.onclick = () => {
       if (eq) return;
@@ -1707,23 +1660,10 @@ function syncToggles(){
 
 /* ---------------- wiring ---------------- */
 // First time here? Teach before the mode picker — nobody reads a hint mid-flick.
-/* menu: Play replays your last mode; the tiles pick one. First-timers see How to play first. */
-const AG_MODE_NAMES = { classic:'Classic', time:'Time Attack', hs:'High Score' };
-let agPending = null;
-function agLastMode(){ try{ const m = localStorage.getItem('scoop_lastMode'); if (MODES[m]) return m; }catch(e){} return 'classic'; }
-function agSetLast(m){ try{ localStorage.setItem('scoop_lastMode', m); }catch(e){} }
-function agMenuSync(){
-  const m = agLastMode(), b = S.best[m]||0;
-  $('playSub').textContent = AG_MODE_NAMES[m] + (b ? ' · Best '+b : '');
-  $('mCombo').textContent = S.stats.bestCombo||0;
-}
-function agPlay(mode){ Sound.click(); if (!S.seenTut){ agPending = mode; openTut(true); return; } agSetLast(mode); Sound.unlock(); startGame(mode); }
-document.querySelectorAll('[data-qmode]').forEach(m => m.onclick = () => agPlay(m.dataset.qmode));
-document.querySelectorAll('.mode[data-mode]').forEach(m => m.addEventListener('click', () => agSetLast(m.dataset.mode)));
-$('btnPlay').onclick     = () => agPlay(agLastMode());
+$('btnPlay').onclick     = () => { Sound.click(); if (!S.seenTut){ openTut(true); return; } toModes(); };
 $('btnHow').onclick      = () => { Sound.click(); openTut(false); };
-$('btnTutGo').onclick    = () => { Sound.click(); S.seenTut = true; save(); const m = agPending || agLastMode(); agPending = null; agSetLast(m); Sound.unlock(); startGame(m); };
-$('btnTutBack').onclick  = () => { Sound.click(); S.seenTut = true; agPending = null; save(); toMenu(); };
+$('btnTutGo').onclick    = () => { Sound.click(); S.seenTut = true; save(); toModes(); };
+$('btnTutBack').onclick  = () => { Sound.click(); S.seenTut = true; save(); toMenu(); };
 $('btnShop').onclick     = () => { Sound.click(); openShop(); };
 $('btnStats').onclick    = () => { Sound.click(); openStats(); };
 $('btnSettings').onclick = () => { Sound.click(); syncToggles(); showScreen('scrSettings'); };
@@ -1781,8 +1721,7 @@ wakeLoop();
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
-  IGAuth.onChange(function(p){ var b=document.getElementById('agLoginTxt'); if(b)b.textContent=p?IGAuth.displayName():'Log in';
-    var sb=document.getElementById('agLoginSub'); if(sb)sb.textContent=p?'Signed in · tap to switch account':'Save your scores online';
+  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
     try{ var s=JSON.parse(localStorage.getItem(SKEY)); var tb=s&&s.best?(+s.best.time||0):0; if(tb>0) IGAuth.submitScore('scoop',tb); }catch(e){} }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>

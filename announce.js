@@ -8,9 +8,9 @@
        {
          "id": "unique-id",              // required, unique. change it to re-show.
          "title": "🎉 New game!",        // required
-         "body": "Try Speed Sumo.",      // required
+         "body": "Try Anime Tycoon.",    // required
          "target": "all",               // "all" | "obby" | ["obby","cricket"]
-         "cta":   { "label": "Play", "href": "sumo/" }       ,  // optional, href is root-relative
+         "cta":   { "label": "Play", "href": "anime-tycoon/" },  // optional, href is root-relative
          "start": "2026-06-01",          // optional ISO date (inclusive)
          "end":   "2026-12-31",          // optional ISO date (inclusive)
          "level": "info"                // optional: info | success | warning

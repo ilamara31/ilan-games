@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>Penalty Kings — Shootout</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#f2f2f7" />
+<meta name="theme-color" content="#0a0e1a" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,7 +26,6 @@
 <meta name="twitter:title" content="Penalty Kings — Shootout — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#0a0e1a; overflow:hidden; color:#fff;
@@ -55,123 +54,48 @@
   .board { max-width:380px; width:100%; }
   .brow { display:flex; justify-content:space-between; padding:7px 12px; border-radius:8px; margin:3px 0; background:#16243f; font-size:15px; }
   .brow b { color:#ffd54a; }
-  /* ===== ilan Games light theme (menus only — the 2D pitch keeps its own look) ===== */
-  :root, html[data-theme]{ --accent:#22c55e; --accent2:#12917f; --icon1:#43e97b; --icon2:#1aa89a; }
-  html,body { background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; }
-  html { background:var(--ig-bg); }
-  button { font-family:inherit; }
-  #wrap { background:#0a0e1a; }
-  #wrap:has(#scr-start:not(.hidden)), #wrap:has(#scr-bracket:not(.hidden)) { background:transparent; }
-  #wrap:has(#scr-start:not(.hidden)) #homeBtn, #wrap:has(#scr-bracket:not(.hidden)) #homeBtn, #wrap:has(#scr-end:not(.hidden)) #homeBtn { display:none; }
-  #wrap:has(#scr-start:not(.hidden)) canvas, #wrap:has(#scr-bracket:not(.hidden)) canvas { visibility:hidden; }
-  .screen { background:none; color:var(--ig-text); text-align:left; align-items:stretch;
-    padding:max(14px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom)); }
-  .screen .ig-col { gap:16px; }
-  .screen .ig-hero h1, .screen .ig-title { margin:6px 0 0; font:900 clamp(40px,11vw,56px)/1 var(--ig-font); letter-spacing:-.045em; color:transparent;
-    background:linear-gradient(160deg,var(--accent),var(--accent2) 75%); -webkit-background-clip:text; background-clip:text; }
-  .ig-hero .ig-eyebrow { margin-top:6px; }
-  .ig-tagline:empty { display:none; }
-  .ig-tagline b { color:var(--ig-text); }
-  #homeBtn { bottom:max(14px,env(safe-area-inset-bottom)); width:44px; height:44px; border-radius:999px; color:var(--ig-text); font-size:0;
-    background:var(--ig-glass2); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:0 6px 18px rgba(0,0,0,.25); }
-  #homeBtn svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-
-  /* team picker */
-  .ig-card.pick { padding:14px 14px 12px; }
-  .teamgrid { grid-template-columns:repeat(4,1fr); gap:8px; max-width:none; margin:10px 0 0; }
-  .teamcard { padding:10px 4px 9px; border-radius:16px; border:1.5px solid transparent; background:rgba(255,255,255,.7); color:var(--ig-text);
-    font:600 12.5px/1.2 var(--ig-font); letter-spacing:-.01em; text-align:center; box-shadow:0 1px 0 rgba(0,0,0,.04), 0 4px 12px -6px rgba(0,0,0,.18); gap:4px; }
-  .teamcard .jersey { width:34px; height:34px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.18)); }
-  .teamcard.sel { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,#fff); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent); }
-  .vs { min-height:20px; margin-top:10px; text-align:center; font-size:14px; color:var(--ig-text2); }
-  .vs:empty { display:none; }
-  .vs b { color:var(--ig-text); }
-  .ig-cta:disabled { opacity:.55; cursor:default; transform:none; }
-  .ig-row small { white-space:normal; }
-  #startStats:empty { display:none; }
-
-  /* bracket */
-  .board { max-width:none; }
-  .board.ig-list { padding:0; }
-  .brow { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin:0; padding:13px 16px; border-radius:0; background:none; font:600 15px/1.2 var(--ig-font); color:var(--ig-text); }
-  .brow + .brow { border-top:1px solid var(--ig-line); }
-  .brow span:last-child { text-align:right; }
-  .brow .vs { margin:0; min-height:0; font-size:12px; font-weight:600; color:var(--ig-text3); }
-  .brow.you { background:color-mix(in srgb,var(--accent) 12%,transparent); }
-  .brow em { font-style:normal; font-size:11px; font-weight:700; color:#fff; background:var(--accent2); border-radius:999px; padding:2px 7px; margin-left:4px; vertical-align:1px; }
-  .brow b { color:inherit; }
-
-  /* result */
-  #scr-end { justify-content:center; background:rgba(20,20,40,.25); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
-  #scr-end .ig-col { margin:auto; }
-  .endsheet { text-align:center; display:flex; flex-direction:column; gap:12px; }
-  #endTitle { font:900 clamp(34px,9vw,46px)/1.05 var(--ig-font); letter-spacing:-.045em; margin:0; background:none; -webkit-text-fill-color:currentColor; }
-  .endsheet .sub { margin:0 auto; color:var(--ig-text); font-size:16px; line-height:1.5; max-width:none; }
-  .endsheet .sub b { color:var(--ig-text); }
-  .endsheet .row { display:flex; gap:10px; justify-content:center; margin-top:4px; }
-  .endsheet .row .ig-btn { flex:1; max-width:200px; margin:0; }
-  @media (max-width:370px){ .teamgrid { grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
 <body>
 <div id="wrap">
   <canvas id="game"></canvas>
-  <a id="homeBtn" href="./" title="Back to Penalty Kings menu" aria-label="Back to menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+  <a id="homeBtn" href="./" title="Back to Penalty Kings menu">🏠</a>
 
   <!-- TEAM SELECT -->
   <div id="scr-start" class="screen">
-   <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="./" title="Penalty Kings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></a>
+    <h1>⚽ PENALTY KINGS</h1>
+    <div class="sub" id="startWho" style="color:#ffd54a"></div>
+    <div class="sub" style="margin-bottom:4px"><b>Pick your team</b></div>
+    <div class="teamgrid" id="teamGrid"></div>
+    <div class="sub" id="vsLine" style="min-height:20px"></div>
+    <button class="btn" id="playBtn" disabled>SELECT A TEAM</button>
+    <button class="btn alt" id="howBtn" type="button">❓ How to Play</button>
+    <a class="btn alt" href="../">🏠 ALL GAMES</a>
+    <div class="sub" style="margin-top:12px;font-size:12px">
+      <b>Shoot:</b> the crosshair moves — hold to aim &amp; power, release to shoot.<br>
+      <b>Save:</b> you'll see the striker's aim for a moment — tap that spot fast to dive there!
     </div>
-    <div class="ig-hero">
-      <div class="ig-eyebrow">Classic 2D</div>
-      <div class="ig-title">Penalty Kings</div>
-      <div class="ig-tagline" id="startWho"></div>
-    </div>
-    <div class="ig-card pick">
-      <div class="ig-eyebrow">Pick your team</div>
-      <div class="teamgrid" id="teamGrid"></div>
-      <div class="vs" id="vsLine"></div>
-    </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" id="playBtn" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Select a team first</small></span></button>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" id="howBtn" type="button"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 16.8v.2"/></svg></span><span class="ig-grow">How to Play<small>Shoot: hold, then release on target. Save: tap the red X.</small></span></button>
-      <a class="ig-row" href="../"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b38cff,#6a3df0)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></span><span class="ig-grow">All Games<small>Back to ilan Games</small></span></a>
-    </div>
-    <div id="startStats"></div>
-   </div>
+    <div class="sub" id="startStats" style="font-size:12px"></div>
   </div>
+
   <!-- BRACKET -->
   <div id="scr-bracket" class="screen hidden">
-   <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="./" title="Penalty Kings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></a>
-    </div>
-    <div class="ig-hero">
-      <div class="ig-eyebrow">Tournament</div>
-      <h1 id="brTitle" class="ig-title">Quarter-Final</h1>
-      <div class="ig-tagline" id="brSub"></div>
-    </div>
-    <div class="board ig-list" id="brBoard"></div>
-    <div class="ig-playrow"><button class="ig-cta" id="brPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play Your Match</b><small>5 penalties each</small></span></button></div>
-   </div>
+    <h1 id="brTitle">QUARTER-FINAL</h1>
+    <div class="sub" id="brSub"></div>
+    <div class="board" id="brBoard" style="margin-bottom:8px"></div>
+    <button class="btn" id="brPlay">▶ PLAY YOUR MATCH</button>
+    <a class="btn alt" href="../">🏠 ALL GAMES</a>
   </div>
+
   <!-- END -->
-  <div id="scr-end" class="screen hidden">
-   <div class="ig-col">
-    <div class="ig-sheet endsheet">
-      <h1 id="endTitle">Result</h1>
-      <div class="sub" id="endSub"></div>
-      <div class="board" id="endBoard"></div>
-      <div class="row">
-        <button class="ig-btn" id="againBtn">Play Again</button>
-        <a class="ig-btn secondary" href="../">All Games</a>
-      </div>
+  <div id="scr-end" class="screen hidden" style="justify-content:center">
+    <h1 id="endTitle">RESULT</h1>
+    <div class="sub" id="endSub"></div>
+    <div class="board" id="endBoard"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="againBtn">PLAY AGAIN</button>
+      <a class="btn alt" href="../">🏠 ALL GAMES</a>
     </div>
-   </div>
   </div>
 </div>
 
@@ -231,7 +155,7 @@ function saved(targetPt, keeperPt, mult){ if(!keeperPt) return false; const dx=t
 
 /* ---- state ---- */
 const S={ phase:'menu', youScore:0,oppScore:0, youKicks:0,oppKicks:0, sd:false, youDots:[], oppDots:[], turn:'you' };
-const TOUR={ active:false, round:0, teams:[], names:['Quarter-Final','Semi-Final','Final'] };
+const TOUR={ active:false, round:0, teams:[], names:['QUARTER-FINAL','SEMI-FINAL','FINAL'] };
 function curDiff(){ return TOUR.active?TOUR.round:0; }   // 0..2, harder each round
 function decidedRegulation(){ const yRem=5-S.youKicks,oRem=5-S.oppKicks; return S.youScore>S.oppScore+oRem || S.oppScore>S.youScore+yRem; }
 function gameOver(){ if(!S.sd){ if(decidedRegulation())return true; return S.youKicks>=5&&S.oppKicks>=5&&S.youScore!==S.oppScore; }
@@ -266,12 +190,12 @@ function startTournament(){
 }
 function showBracket(){
   S.phase='bracket'; document.getElementById('scr-end').classList.add('hidden'); document.getElementById('scr-start').classList.add('hidden');
-  document.getElementById('brTitle').textContent=TOUR.names[TOUR.round];
-  document.getElementById('brSub').innerHTML=`Round ${TOUR.round+1} of 3 · win to advance<br>Your team: ${myTeam.flag} <b>${myTeam.name}</b>`;
+  document.getElementById('brTitle').textContent='🏆 '+TOUR.names[TOUR.round];
+  document.getElementById('brSub').innerHTML=`Round ${TOUR.round+1} of 3 — win to advance! Your team: ${myTeam.flag} <b>${myTeam.name}</b>`;
   const t=TOUR.teams; let h='';
   for(let i=0;i<t.length;i+=2){ const you=(i===0);
-    h+=`<div class="brow${you?' you':''}">
-      <span>${t[i].flag} ${t[i].name}${you?' <em>You</em>':''}</span><span class="vs">vs</span><span>${t[i+1].flag} ${t[i+1].name}</span></div>`; }
+    h+=`<div class="brow" style="${you?'background:rgba(255,213,74,.2);border:1px solid #ffd54a;':''}">
+      <span>${t[i].flag} ${t[i].name}${you?' (you)':''}</span><span style="color:#7e90b5;font-size:12px">vs</span><span>${t[i+1].flag} ${t[i+1].name}</span></div>`; }
   document.getElementById('brBoard').innerHTML=h;
   document.getElementById('scr-bracket').classList.remove('hidden');
 }
@@ -331,13 +255,13 @@ function showResult(kind){
   S.phase='over';
   const e=document.getElementById('scr-end'), title=document.getElementById('endTitle'), sub=document.getElementById('endSub'), btn=document.getElementById('againBtn');
   const score=`${myTeam.flag} ${S.youScore} – ${S.oppScore} ${oppTeam.flag} ${oppTeam.name}`;
-  if(kind==='cup'){ title.textContent='Champions!'; title.style.color='#e08a00';
-    sub.innerHTML=`${myTeam.flag} <b>${myTeam.name}</b> win the tournament!<br>Final: ${score}`; btn.textContent='New Tournament'; }
-  else if(kind==='advance'){ title.textContent='Match Won!'; title.style.color='#12917f';
-    sub.innerHTML=`${score}${S.sd?' (sudden death)':''}<br>You're through to the <b>${TOUR.names[TOUR.round]}</b>!`; btn.textContent='Continue'; }
-  else { title.textContent='Knocked Out'; title.style.color='#e0364f';
-    sub.innerHTML=`Lost ${score}<br>Out in the ${TOUR.names[TOUR.round]}.`; btn.textContent='Try Again'; }
-  let b=''; if(acct) b=`<div class="ig-stats"><div><b>${acct.pk.cups||0}</b><span>Cups</span></div><div><b>${acct.pk.won}</b><span>Wins</span></div><div><b>${acct.pk.goals}</b><span>Goals</span></div><div><b>${acct.pk.saves}</b><span>Saves</span></div></div>`;
+  if(kind==='cup'){ title.textContent='🏆 CHAMPIONS! 🏆'; title.style.color='#ffd54a';
+    sub.innerHTML=`${myTeam.flag} <b>${myTeam.name}</b> win the tournament!<br>Final: ${score}`; btn.textContent='🔁 NEW TOURNAMENT'; }
+  else if(kind==='advance'){ title.textContent='✅ MATCH WON!'; title.style.color='#39ff88';
+    sub.innerHTML=`${score}${S.sd?' (sudden death)':''}<br>You're through to the <b>${TOUR.names[TOUR.round]}</b>!`; btn.textContent='CONTINUE →'; }
+  else { title.textContent='❌ KNOCKED OUT'; title.style.color='#fb7185';
+    sub.innerHTML=`Lost ${score}<br>Out in the ${TOUR.names[TOUR.round]}.`; btn.textContent='🔁 TRY AGAIN'; }
+  let b=''; if(acct) b=`<div class="brow" style="background:none"><span class="sub" style="margin:0">Career: ${acct.pk.cups||0} cups 🏆 • ${acct.pk.won} wins • ${acct.pk.goals} goals • ${acct.pk.saves} saves</span></div>`;
   document.getElementById('endBoard').innerHTML=b;
   btn.onclick = (kind==='advance') ? (()=>{ e.classList.add('hidden'); showBracket(); }) : (()=>{ e.classList.add('hidden'); document.getElementById('scr-start').classList.remove('hidden'); });
   e.classList.remove('hidden');
@@ -525,20 +449,20 @@ function drawMsg(){
   ctx.save(); ctx.globalAlpha=Math.min(1,msgT*1.6); ctx.textAlign='center'; ctx.font='900 '+Math.round(Math.min(W*0.15,84))+'px Trebuchet MS';
   ctx.lineWidth=6; ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.strokeText(msg,W/2,H*0.52);
   ctx.fillStyle=msg==='GOAL!'?'#39ff88':msg.indexOf('SAVE')>=0?'#3aa0ff':'#fb7185'; ctx.fillText(msg,W/2,H*0.52); ctx.restore();
-  if(S.phase==='result'&&anim>0.45){ ctx.fillStyle='#9fb3d8'; ctx.font='600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif'; ctx.textAlign='center'; ctx.fillText('tap to continue',W/2,H*0.52+46); }
+  if(S.phase==='result'&&anim>0.45){ ctx.fillStyle='#9fb3d8'; ctx.font='14px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText('tap to continue',W/2,H*0.52+46); }
 }
 
 /* ---- boot ---- */
 resize();
 (function initStart(){
   document.getElementById('startWho').textContent = acct?('Playing as '+acct.name):'Not signed in — log in to save your matches';
-  if(acct&&acct.pk&&acct.pk.played>0){ const p=acct.pk; document.getElementById('startStats').innerHTML=`<div class="ig-stats"><div><b>${p.won}</b><span>Wins</span></div><div><b>${p.goals}</b><span>Goals</span></div><div><b>${p.saves}</b><span>Saves</span></div><div><b>${p.bestStreak}</b><span>Best streak</span></div></div>`; }
+  if(acct&&acct.pk&&acct.pk.played>0){ const p=acct.pk; document.getElementById('startStats').innerHTML=`🏆 ${p.won} wins • ${p.goals} goals • ${p.saves} saves • best streak <b>${p.bestStreak}</b>`; }
   const grid=document.getElementById('teamGrid');
-  TEAMS.forEach(t=>{ const d=document.createElement('div'); d.className='teamcard'; 
-    d.innerHTML=`<svg class="jersey" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 5l-9 5 3 8 4-2v19h16V16l4 2 3-8-9-5c-1 3-3.5 4.5-6 4.5S15 8 14 5z" fill="${t.c1}" stroke="${t.c2}" stroke-width="2.2" stroke-linejoin="round"/></svg><span>${t.flag} ${t.name}</span>`;
+  TEAMS.forEach(t=>{ const d=document.createElement('div'); d.className='teamcard'; d.style.background=`linear-gradient(135deg,${t.c1},${shade(t.c1)})`;
+    d.innerHTML=`<span class="jersey">👕</span><span>${t.flag} ${t.name}</span>`;
     d.onclick=()=>{ myTeam=t; grid.querySelectorAll('.teamcard').forEach(c=>c.classList.remove('sel')); d.classList.add('sel');
-      document.getElementById('playBtn').disabled=false; document.getElementById('playBtn').querySelector('small').textContent='Enter the tournament with '+t.name;
-      document.getElementById('vsLine').innerHTML=`You picked <b>${t.flag} ${t.name}</b>`; };
+      document.getElementById('playBtn').disabled=false; document.getElementById('playBtn').textContent='🏆 ENTER TOURNAMENT';
+      document.getElementById('vsLine').innerHTML=`You picked <b style="color:${t.c1==='#f2f2f2'||t.c1==='#e8e8e8'?'#fff':t.c1}">${t.flag} ${t.name}</b>`; };
     grid.appendChild(d); });
 })();
 function shade(hex){ let c=hex.replace('#',''); if(c.length===3)c=c.split('').map(x=>x+x).join(''); const r=Math.round(parseInt(c.slice(0,2),16)*0.55),g=Math.round(parseInt(c.slice(2,4),16)*0.55),b=Math.round(parseInt(c.slice(4,6),16)*0.55); return `rgb(${r},${g},${b})`; }
@@ -560,38 +484,26 @@ if('serviceWorker' in navigator){ let r=false; navigator.serviceWorker.addEventL
   .tutbtn{ padding:11px 22px; border:none; border-radius:14px; font-size:16px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg,#ffe14a,#ff9b3d); color:#2a1a00; }
   .tutbtn.alt{ background:#26466e; color:#cfe0ff; }
   .tutdots{ margin-top:12px; } .tutdots i{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#3a5a86; margin:0 3px; } .tutdots i.on{ background:#ffe14a; }
-  /* light theme coach */
-  .tutov{ background:rgba(20,20,40,.25); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
-  .tutbox{ background:var(--ig-sheet); border:1px solid var(--ig-line); border-radius:28px; padding:24px 22px 20px; color:var(--ig-text); font-family:var(--ig-font);
-    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:0 30px 80px rgba(20,20,50,.25), inset 0 1px 0 #fff; }
-  .tutcoach{ display:flex; justify-content:center; margin-bottom:10px; }
-  .tutcoach .ig-tile{ width:64px; height:64px; border-radius:18px; } .tutcoach .ig-tile svg{ width:34px; height:34px; }
-  .tuttext{ display:block; text-align:center; font-size:16.5px; line-height:1.5; min-height:76px; padding-top:2px; color:var(--ig-text); letter-spacing:-.01em; }
-  .tuttext b{ color:var(--ig-text); font-weight:700; }
-  .tutbtns{ margin-top:12px; }
-  .tutbtn{ flex:1; max-width:170px; min-height:50px; border-radius:999px; font:700 16px/1 var(--ig-font); color:#fff; background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 65%,transparent); }
-  .tutbtn.alt{ background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none; }
-  .tutdots i{ background:var(--ig-line2); transition:width .2s; } .tutdots i.on{ background:var(--accent); width:20px; border-radius:4px; }
 </style>
 <div id="tutOv" class="tutov hidden"><div class="tutbox">
-  <div class="tutcoach"><span class="ig-tile" style="--tile:linear-gradient(160deg,#43e97b,#12917f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h9l3-3h5a1 1 0 0 1 1 1v2a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6z"/><circle cx="9" cy="14" r="1.6"/><path d="M15 8V5"/></svg></span></div><div class="tuttext" id="tutText"></div>
-  <div class="tutbtns"><button id="tutSkip" class="tutbtn alt" type="button">Skip</button><button id="tutNext" class="tutbtn" type="button">Next</button></div>
+  <div class="tutcoach">🧑‍🏫</div><div class="tuttext" id="tutText"></div>
+  <div class="tutbtns"><button id="tutSkip" class="tutbtn alt" type="button">Skip</button><button id="tutNext" class="tutbtn" type="button">Next ▶</button></div>
   <div class="tutdots" id="tutDots"></div>
 </div></div>
 <script>
 (function(){
   const STEPS=[
-    "Hi! I'm your Coach. Welcome to <b>Penalty Kings</b>!",
+    "Hi! I'm your Coach. Welcome to <b>Penalty Kings</b>! ⚽",
     "When you <b>SHOOT</b>, a crosshair keeps sliding across the goal. Watch it move.",
-    "Hold to aim &amp; build power, then <b>release exactly when the crosshair is on the spot</b> you want — good timing scores a goal!",
+    "Hold to aim &amp; build power, then <b>release exactly when the crosshair is on the spot</b> you want — good timing scores a goal! 🥅",
     "When you're the <b>GOALKEEPER</b>, the striker's aim flashes with a red ✕ for a split second.",
-    "<b>Tap that red ✕ fast</b> to dive there and make the save!",
-    "Score more than your rival to win the match and lift the cup. Good luck!"
+    "<b>Tap that red ✕ fast</b> to dive there and make the save! 🧤",
+    "Score more than your rival to win the match and lift the cup. Good luck! 🏆"
   ];
   const KEY='tut_football_seen';
   const ov=document.getElementById('tutOv'), txt=document.getElementById('tutText'), dots=document.getElementById('tutDots'), next=document.getElementById('tutNext');
   let i=0;
-  function render(){ txt.innerHTML=STEPS[i]; dots.innerHTML=STEPS.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join(''); next.textContent=i===STEPS.length-1?'Got it':'Next'; }
+  function render(){ txt.innerHTML=STEPS[i]; dots.innerHTML=STEPS.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join(''); next.textContent=i===STEPS.length-1?'Got it! ✓':'Next ▶'; }
   function open(){ i=0; render(); ov.classList.remove('hidden'); }
   function close(){ ov.classList.add('hidden'); try{localStorage.setItem(KEY,'1');}catch(e){} }
   next.onclick=()=>{ if(i<STEPS.length-1){ i++; render(); } else close(); };

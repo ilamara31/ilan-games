@@ -54,24 +54,7 @@ let curScreen='menu';
 function show(id){$$('.screen').forEach(s=>s.classList.remove('on'));const e=$(id);if(e)e.classList.add('on');curScreen=id;window.scrollTo(0,0);}
 let toastT=null;
 function toast(m,ms){const t=$('toast');t.innerHTML=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms||1900);}
-/* big result icons: emoji -> line icon on a coloured tile (light theme, no emoji UI icons) */
-const BIGIC={
-  '🏆':['#ffd54a,#e0a000','<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4"/>'],
-  '🤝':['#5ac8fa,#0a60ff','<path d="M3 12l4-4 4 2 3-3 4 1 3 4"/><path d="M7 14l3 3c.8.8 2 .8 2.8 0l4.2-4.2"/><path d="M10.5 12.5l2.5 2.5"/>'],
-  '🎨':['#ff8ac8,#d9467f','<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7" r="1.2"/>'],
-  '🔌':['#9aa6b8,#5b6678','<path d="M9 3v5M15 3v5"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v4"/>'],
-  '🤖':['#a78bfa,#6d28d9','<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9.5 13h.01M14.5 13h.01M10 16.5h4"/>'],
-  '⭐':['#ffcf4a,#ff8a00','<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>'],
-  '🎯':['#5ee28a,#11998e','<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'],
-  '⏰':['#ff8a9a,#e0364f','<circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 2M5 4 2.5 6.5M19 4l2.5 2.5"/>'],
-  '🖼️':['#ff8ac8,#d9467f','<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-9 8"/>'],
-  '🎉':['#ffcf4a,#ff8a00','<path d="M4 20l5-14 9 9z"/><path d="M14 4l1 2M19 9l2-1M17 3l-1 3 3-1"/>'],
-  '😅':['#ffcf4a,#ff8a00','<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5c2 2 5 2 7 0M9 10h.01M15 10h.01"/>'],
-  '🌪️':['#5ee28a,#11998e','<path d="M4 7h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M5 17h7"/>']
-};
-function iconize(html){return String(html).replace(/<div class="big-emoji">([^<]*)<\/div>/,function(m,e){const k=e.trim();const ic=BIGIC[k]||BIGIC[k.replace(/️/g,'')]||BIGIC['🎨'];return '<div class="big-emoji" style="--tile:linear-gradient(160deg,'+ic[0]+')"><svg viewBox="0 0 24 24" aria-hidden="true">'+ic[1]+'</svg></div>';})
-  .replace(/>🔁 /g,'>').replace(/>🏠 /g,'>').replace(/>🖼️ /g,'>');}
-function openOv(html){$('ovBox').innerHTML=iconize(html);$('ov').classList.add('on');}
+function openOv(html){$('ovBox').innerHTML=html;$('ov').classList.add('on');}
 function closeOv(){$('ov').classList.remove('on');}
 function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
 function confetti(n){const c=$('confetti');c.innerHTML='';const cols=['#ffd23f','#ec4899','#06b6d4','#22d39a','#7c3aed'];
@@ -234,7 +217,7 @@ function wireTools(){
    Part 2: shared game state, HUD render, ONLINE multiplayer
    ============================================================ */
 const MODE_TIME={secret:60,bluff:60,rush:20};
-const MODE_NAME={secret:'Secret Theme',bluff:'Draw & Bluff',rush:'Draw Rush'};
+const MODE_NAME={secret:'🕵️ Secret Theme',bluff:'🎭 Draw & Bluff',rush:'⚡ Draw Rush'};
 const REVEAL_MS=4200, CHOOSE_TIME=25;
 
 let G=null;                 // active game (online or AI)
@@ -248,7 +231,7 @@ function guessMatches(guess,word){ const a=norm(guess),b=norm(word); if(!a||!b)r
   if(b.length>=4 && (a===b+'s'||a+'s'===b||a===b+'es'||a+'es'===b)) return true; return false; }
 
 /* ---------- HUD / game render (shared) ---------- */
-function pname(id){ if(!G)return 'Player'; if(id==='ai')return 'AI'; if(id===myId)return myName(); const p=G.players&&G.players[id]; return p?p.name:'Player'; }
+function pname(id){ if(!G)return 'Player'; if(id==='ai')return '🤖 AI'; if(id===myId)return myName(); const p=G.players&&G.players[id]; return p?p.name:'Player'; }
 function amDrawer(){ return G && G.drawerId===myId; }
 function renderGame(){
   if(!G)return;
@@ -257,14 +240,14 @@ function renderGame(){
   $('roundTag').textContent = G.phase==='over'?'Final Score':('Round '+G.round+' / '+G.totalRounds+' · '+(MODE_NAME[G.mode]||''));
   // scoreboard
   const ids=G.order||Object.keys(G.scores||{});
-  $('scoreboard').innerHTML=ids.map(id=>'<div class="sc'+(id===myId?' me':'')+'"><div class="n">'+esc(pname(id))+(G.drawerId===id&&G.phase!=='over'?' <svg class="ic" viewBox="0 0 24 24"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg>':'')+'</div><div class="v">'+(G.scores[id]|0)+'</div></div>').join('');
+  $('scoreboard').innerHTML=ids.map(id=>'<div class="sc'+(id===myId?' me':'')+'"><div class="n">'+esc(pname(id))+(G.drawerId===id&&G.phase!=='over'?' ✏️':'')+'</div><div class="v">'+(G.scores[id]|0)+'</div></div>').join('');
   // wordbar
   const wb=$('wordbar'); wb.classList.toggle('draw', amDrawer()&&G.phase==='draw');
   if(G.phase==='draw'){
-    if(amDrawer()) wb.innerHTML = G.mode==='bluff' ? 'Draw anything, then name it below!' : ('Draw: <span class="w">'+esc((G.word||'').toUpperCase())+'</span>');
-    else wb.innerHTML = G.mode==='bluff' ? 'Watch the artist…' : 'Guess what it is!';
-  } else if(G.phase==='choose'){ wb.innerHTML = amDrawer()?'Did your bluff work?':'Which is the REAL title?'; }
-  else if(G.phase==='reveal'){ wb.innerHTML = 'It was <span class="w">'+esc(((G.mode==='bluff'?G.title:G.word)||'').toUpperCase())+'</span>'; }
+    if(amDrawer()) wb.innerHTML = G.mode==='bluff' ? '🎭 Draw anything, then name it below!' : ('✏️ Draw: <span class="w">'+esc((G.word||'').toUpperCase())+'</span>');
+    else wb.innerHTML = G.mode==='bluff' ? '🎨 Watch the artist…' : '🤔 Guess what it is!';
+  } else if(G.phase==='choose'){ wb.innerHTML = amDrawer()?'🕵️ Did your bluff work?':'❓ Which is the REAL title?'; }
+  else if(G.phase==='reveal'){ wb.innerHTML = '👀 It was <span class="w">'+esc(((G.mode==='bluff'?G.title:G.word)||'').toUpperCase())+'</span>'; }
   else wb.innerHTML='…';
   // canvas / tools / inputs
   const canDraw = amDrawer() && G.phase==='draw';
@@ -569,13 +552,13 @@ function startAI(aimode){
   clearFeed(); show('game'); Draw.setEnabled(true);
   requestAnimationFrame(()=>{ Draw.applySnapshot([]); $('canvasWrap').style.transform=''; Draw.resize(); renderAIWordbar(); });
   renderGame();
-  if(aimode==='judge') $('wordbar').innerHTML='Draw a <span class="w">'+esc(word.toUpperCase())+'</span> — the AI will rate it!';
+  if(aimode==='judge') $('wordbar').innerHTML='✏️ Draw a <span class="w">'+esc(word.toUpperCase())+'</span> — the AI will rate it!';
   if(aimode==='secret') pushFeed('🤖 AI: I\'m watching… show me what you\'ve got!','sys');
   if(aimode==='disaster') pushFeed('🌪️ Survive the chaos! Draw a '+esc(word.toUpperCase())+'.','sys');
   aiTimer=setInterval(aiTick,1000);
   Sound.start();
 }
-function renderAIWordbar(){ if(!G)return; if(G.aimode==='bluff'){ $('wordbar').innerHTML='Draw anything, then name it below!'; $('titleInputWrap').style.display='block'; } }
+function renderAIWordbar(){ if(!G)return; if(G.aimode==='bluff'){ $('wordbar').innerHTML='🎭 Draw anything, then name it below!'; $('titleInputWrap').style.display='block'; } }
 function aiTick(){
   if(!G||!G.vsAI){ stopAI(); return; }
   if(G.phase!=='draw'){ return; }
@@ -666,7 +649,7 @@ function galleryBtn(defTitle){ if(!window.Gallery||!window.Gallery.openSave)retu
   if(Draw.isEmpty())return;   // nothing drawn -> nothing to save
   try{ window.Gallery.warm&&window.Gallery.warm(); }catch(e){}   // pre-warm Supabase so the first save is instant
   const b=document.createElement('button'); b.id='ovSaveGal'; b.className='btn cyan block'; b.style.marginBottom='8px';
-  b.innerHTML='Save to Gallery'; b.onclick=()=>{ Sound.click(); const img=window.DrawRushAPI.imageDataURL(); window.Gallery.openSave(img,defTitle||''); };
+  b.innerHTML='🖼️ Save to Gallery'; b.onclick=()=>{ Sound.click(); const img=window.DrawRushAPI.imageDataURL(); window.Gallery.openSave(img,defTitle||''); };
   btns.parentNode.insertBefore(b,btns);
 }
 /* disaster events */
@@ -687,10 +670,10 @@ function fireDisaster(){
 /* ---------- stats / settings render ---------- */
 function renderStats(){
   const s=SV.stats; const avg=s.guessTimeN?Math.round(s.guessTimeSum/s.guessTimeN):0;
-  const items=[['',s.played,'Played'],['',s.wins,'Wins'],['',s.correct,'Correct'],['',s.drawings,'Drawings'],['',s.played?Math.round(s.wins/s.played*100)+'%':'0%','Win rate'],['',(s.modes&&Object.keys(s.modes).length)||0,'Modes tried']];
+  const items=[['🎮',s.played,'Played'],['🏆',s.wins,'Wins'],['🎯',s.correct,'Correct'],['🖼️',s.drawings,'Drawings'],['⚡',s.played?Math.round(s.wins/s.played*100)+'%':'0%','Win rate'],['✏️',(s.modes&&Object.keys(s.modes).length)||0,'Modes tried']];
   $('statGrid').innerHTML=items.map(i=>'<div class="stat"><div class="v">'+i[0]+' '+i[1]+'</div><div class="l">'+i[2]+'</div></div>').join('');
   let fav='—',mx=0; for(const k in (s.modes||{})){ if(s.modes[k]>mx){mx=s.modes[k];fav=k;} }
-  const FN={secret:'Secret Theme',bluff:'Draw & Bluff',rush:'Draw Rush',disaster:'Disaster',judge:'AI Judge'};
+  const FN={secret:'🕵️ Secret Theme',bluff:'🎭 Draw & Bluff',rush:'⚡ Draw Rush',disaster:'🌪️ Disaster',judge:'⭐ AI Judge'};
   $('favMode').textContent=FN[fav]||fav;
 }
 function renderSettings(){ $('tSound').textContent=SV.sound?'On':'Off'; $('tMusic').textContent=SV.music?'On':'Off'; $('setName').value=SV.name||''; }
@@ -717,7 +700,6 @@ function boot(){
   $('copyBtn').onclick=async()=>{ Sound.click(); try{await navigator.clipboard.writeText(R?R.code:'');toast('Code copied!');}catch(e){toast('Code: '+(R?R.code:''));} };
   // AI menu
   $('ai').addEventListener('click',e=>{ const c=e.target.closest('[data-ai]'); if(!c)return; startAI(c.getAttribute('data-ai')); });
-  $('menu').addEventListener('click',e=>{ const c=e.target.closest('[data-ai]'); if(!c)return; startAI(c.getAttribute('data-ai')); });
   // game controls
   $('quitGameBtn').onclick=()=>{ Sound.click(); openOv('<h2>Quit game?</h2><p>Your current game will end.</p><div class="btns"><button class="btn ghost" id="ovNo">Stay</button><button class="btn" id="ovYes">Quit</button></div>'); $('ovNo').onclick=closeOv; $('ovYes').onclick=()=>{closeOv();stopAI();quitGame();}; };
   $('guessSend').onclick=()=>{ Sound.click(); sendGuess(); };

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Fruit Arena</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#f2f2f7" />
+<meta name="theme-color" content="#0a0e1a" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,55 +26,42 @@
 <meta name="twitter:title" content="Fruit Arena — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
-  :root, html[data-theme]{ --accent:#f857a6; --accent2:#ff7a59; --icon1:#f857a6; --icon2:#ff7a59; }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; overflow:hidden; font-family:var(--ig-font); color:var(--ig-text); user-select:none; -webkit-user-select:none; }
-  body { background:transparent; }
+  html,body { height:100%; overflow:hidden; background:#3a2414; font-family:'Trebuchet MS','Segoe UI',sans-serif;
+    color:#fff; user-select:none; -webkit-user-select:none; }
   #app { position:relative; width:100vw; height:100vh; }
   canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
   .hidden { display:none !important; }
-  button { font-family:inherit; }
-  /* menu-type screens sit on the light page: hide the arena behind them */
-  #app:has(> #menu:not(.hidden), > #shop:not(.hidden), > #missions:not(.hidden), > #collection:not(.hidden), > #settings:not(.hidden), > #tutorial:not(.hidden)) > canvas{ visibility:hidden; }
+  b { color:#ffd54a; }
 
-  /* ===== screens ===== */
-  .screen { position:absolute; inset:0; z-index:20; }
+  /* ===== overlays ===== */
+  .screen { position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; gap:14px; padding:22px;
+    background:radial-gradient(circle at 50% 28%, rgba(74,46,22,.86), rgba(24,14,7,.94)); overflow-y:auto; }
+  .screen h1 { font-size:clamp(30px,8vw,54px); margin:4px 0;
+    background:linear-gradient(90deg,#ff5e3a,#ffd54a 50%,#39d98a); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .screen h2 { font-size:22px; color:#ffe6c0; }
+  .screen p { font-size:15px; color:#f0e0c8; max-width:440px; line-height:1.55; }
+  .btn { font-size:19px; font-weight:800; padding:13px 30px; border:none; border-radius:28px; cursor:pointer; color:#3a1500;
+    background:linear-gradient(135deg,#ffd54a,#ff8c3d); box-shadow:0 7px 18px rgba(255,160,50,.4); transition:transform .07s; }
+  .btn:active { transform:translateY(2px) scale(.98); }
+  .btn.alt { background:linear-gradient(135deg,#cdb89a,#9a7a52); color:#241204; }
+  .btn.wide { width:min(320px,80%); }
+  .btn.grn { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .menu-btns { display:flex; flex-direction:column; gap:12px; width:min(320px,82%); }
 
-  /* ===== ilan Games theme — game-local layout (menu + light sheets) ===== */
-  .ag-screen{position:fixed;inset:0;z-index:20;display:block;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);
-    font-family:var(--ig-font);color:var(--ig-text);text-align:left;letter-spacing:-.01em;background:transparent}
-  .ag-screen .ig-col{gap:16px}
-  .ag-spacer{width:44px;height:44px;flex:none}
-  .ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px}
-  .ag-head h2{font:700 17px/1.2 var(--ig-font);letter-spacing:-.02em;color:var(--ig-text);margin:0}
-  .ag-note{font-size:14px;line-height:1.45;color:var(--ig-text2);text-align:center;font-weight:500}
-  .ag-note b{color:var(--ig-text)}
-  .ig-iconbtn{border:1px solid var(--ig-line);padding:0;font-family:var(--ig-font)}
-  .ig-mode,.ig-row,.ig-cta,.ig-sq,.ig-btn{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-  .ig-btn svg,.ig-row > svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .ig-row .ig-val{font-size:15px;font-weight:600;color:var(--ig-text2);margin-left:auto}
-  .ig-modes{grid-template-columns:repeat(var(--n,3),1fr)}
-  .ag-tips{display:flex;flex-direction:column;gap:12px}
-  .ag-tip{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--ig-text2);font-weight:500}
-  .ag-tip b{color:var(--ig-text);font-weight:700}
-  .ag-tip .ig-tile{width:32px;height:32px;border-radius:9px}
-  .ag-tip .ig-tile svg{width:18px;height:18px}
-  /* light sheet pop-ups (pause, game over…) over the game */
-  .ag-scrim{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow-y:auto;
-    background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);font-family:var(--ig-font);color:var(--ig-text)}
-  .ag-sheet{width:min(380px,100%);display:flex;flex-direction:column;align-items:stretch;gap:12px;text-align:center;margin:auto}
-  .ag-sheet .ig-eyebrow{margin-bottom:-4px}
-  .ag-sheet h2{font:800 28px/1.1 var(--ig-font);letter-spacing:-.035em;color:var(--ig-text);margin:0}
-  .ag-big{font:900 64px/1 var(--ig-font);letter-spacing:-.03em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding:2px 0}
-  .ag-badge{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font:700 13px/1 var(--ig-font);color:#fff;background:linear-gradient(160deg,#34c759,#1f9d48)}
-  .ag-btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .ag-btns .ig-btn{width:100%}
-  .ag-btnrow{display:flex;gap:10px}.ag-btnrow .ig-btn{flex:1;padding:0 12px}
-  .ig-sheet .ig-stats{background:rgba(118,118,128,.08);border-radius:18px;padding:12px 4px}
-  @media (max-width:370px){ .ig-mode small{display:none} }
+  /* ===== top bars (menu) ===== */
+  .topbar { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start;
+    padding:12px 14px; z-index:21; pointer-events:none; }
+  .tb-left, .tb-right { display:flex; align-items:center; gap:8px; }
+  .pill { background:rgba(12,18,38,.7); border:1px solid rgba(255,255,255,.14); border-radius:30px; padding:6px 12px;
+    font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .pill .ico { font-size:18px; }
+  .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#ff8c3d,#d4561c);
+    display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  .title-tag { font-size:12px; color:#ffe08a; }
+
   /* ===== game HUD ===== */
   #hud { position:absolute; inset:0; z-index:8; pointer-events:none; }
   #gScore { position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:40px; font-weight:900;
@@ -99,65 +86,43 @@
   #eventBanner.show { animation:evt 3s ease forwards; }
   @keyframes evt { 0%{opacity:0;transform:translateX(-50%) scale(.5);} 18%{opacity:1;transform:translateX(-50%) scale(1.08);} 80%{opacity:1;} 100%{opacity:0;} }
 
-
-  #hud{ color:#fff; font-family:var(--ig-font); }
-  #pauseBtn, #gShopBtn{ display:grid; place-items:center; padding:0; color:#fff; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.24);
-    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:0 6px 18px rgba(0,0,0,.3); }
-  #pauseBtn svg, #gShopBtn svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-  #eventBanner{ font-family:var(--ig-font); letter-spacing:-.02em; border-radius:999px; }
-
-  .ag-coins{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:999px; font:700 15px/1 var(--ig-font); color:#a3006b; background:rgba(248,87,166,.13); }
-  .ag-coins svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  /* shop */
-  .tabs{ margin-bottom:12px; }
-  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
-  .item{ background:rgba(255,255,255,.7); border:1.5px solid var(--ig-line); border-radius:18px; padding:10px 10px 12px; text-align:center; }
-  .item.eq{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-  .item .prev{ height:50px; border-radius:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); }
-  .item .prev svg{ width:24px; height:24px; fill:none; stroke:var(--accent2); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  .item .nm{ font-size:14px; font-weight:700; letter-spacing:-.01em; margin-bottom:2px; }
-  .item .ds{ font-size:12px; color:var(--ig-text2); min-height:14px; margin-bottom:8px; font-weight:500; }
-  .item button{ height:32px; padding:0 14px; border:none; border-radius:999px; cursor:pointer; font:700 13px/1 var(--ig-font);
-    background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; }
-  .item button.own{ background:rgba(118,118,128,.14); color:var(--ig-text); }
-  .item button.eq{ background:transparent; color:var(--accent2); }
-  .item button:disabled:not(.eq){ background:rgba(118,118,128,.12); color:var(--ig-text3); cursor:not-allowed; }
-  /* missions */
-  .mlist{ display:flex; flex-direction:column; }
-  .mrow{ display:flex; align-items:center; gap:12px; padding:12px 14px 12px 12px; text-align:left; }
-  .mrow + .mrow{ border-top:1px solid var(--ig-line); }
-  .mrow .mi{ flex:1; min-width:0; }
-  .mrow .mt{ font-weight:700; font-size:15px; letter-spacing:-.015em; }
-  .mrow .mp{ font-size:12.5px; color:var(--ig-text2); font-weight:500; margin-top:1px; }
-  .mbar{ height:6px; background:rgba(118,118,128,.16); border-radius:99px; overflow:hidden; margin-top:7px; }
-  .mbar > div{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
-  .mrow button{ height:32px; min-width:64px; padding:0 14px; border:none; border-radius:999px; cursor:pointer; font:700 13px/1 var(--ig-font);
-    background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; }
-  .mrow button:disabled{ background:rgba(118,118,128,.12); color:var(--ig-text3); }
-  /* collection */
-  .secTitle{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ig-text2); margin:6px 0 8px 4px; }
-  .colgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:8px; }
-  .cell{ background:rgba(255,255,255,.7); border:1px solid var(--ig-line); border-radius:14px; padding:10px 4px 8px; font-size:26px; text-align:center; }
-  .cell.lock{ filter:grayscale(1); opacity:.45; }
-  .cell small{ display:block; font-size:10px; color:var(--ig-text2); margin-top:4px; font-weight:600; }
-  /* settings */
-  .switch{ display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:16px; font-weight:600; padding:4px 0; }
-  .switch > span{ display:flex; align-items:center; gap:12px; }
-  .switch .ig-tile{ width:30px; height:30px; border-radius:8px; } .switch .ig-tile svg{ width:17px; height:17px; }
-  .switch input{ -webkit-appearance:none; appearance:none; width:51px; height:31px; flex:none; border-radius:999px; background:rgba(120,120,128,.18); position:relative; cursor:pointer; transition:background .2s; margin:0; }
-  .switch input::after{ content:''; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.15); transition:transform .2s var(--ig-ease); }
-  .switch input:checked{ background:#34c759; } .switch input:checked::after{ transform:translateX(20px); }
-  .ag-danger{ color:#e0364f !important; }
-  /* game over stats */
-  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .stat{ background:#f0f0f4; border-radius:14px; padding:10px 6px; text-align:center; }
-  .stat .v{ font-size:20px; font-weight:800; letter-spacing:-.03em; color:var(--ig-text); }
-  .stat .k{ font-size:11.5px; color:var(--ig-text2); font-weight:500; }
-  #goSub b{ color:var(--ig-text); }
-  /* slide tutorial */
-  #tutBody{ display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
-  #tutBody h2{ font:800 24px/1.15 var(--ig-font); letter-spacing:-.03em; }
-  #tutBody p{ font-size:15px; line-height:1.5; color:var(--ig-text2); }
+  /* ===== shop / lists ===== */
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:6px; }
+  .tab { font-size:14px; font-weight:700; padding:8px 18px; border:none; border-radius:20px; cursor:pointer;
+    background:rgba(255,255,255,.1); color:#e6d3b8; }
+  .tab.on { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#3a1500; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; width:min(560px,94%);
+    max-height:58vh; overflow-y:auto; padding:4px; }
+  .item { background:rgba(255,255,255,.07); border:2px solid transparent; border-radius:16px; padding:12px 10px; text-align:center; }
+  .item.eq { border-color:#39ff88; }
+  .item .prev { height:46px; border-radius:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .item .nm { font-size:13px; font-weight:800; margin-bottom:3px; }
+  .item .ds { font-size:11px; color:#cdb89a; min-height:14px; margin-bottom:6px; }
+  .item button { font-size:12px; font-weight:800; padding:6px 12px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#3a1500; }
+  .item button.own { background:#3a4c73; color:#dfe8fb; }
+  .item button.eq { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .item button:disabled { opacity:.45; }
+  .mlist { width:min(480px,94%); display:flex; flex-direction:column; gap:10px; }
+  .mrow { background:rgba(255,255,255,.07); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; text-align:left; }
+  .mrow .mi { flex:1; }
+  .mrow .mt { font-weight:800; font-size:15px; }
+  .mrow .mp { font-size:12px; color:#cdb89a; }
+  .mbar { height:8px; background:rgba(0,0,0,.4); border-radius:6px; overflow:hidden; margin-top:5px; }
+  .mbar > div { height:100%; background:linear-gradient(90deg,#39ff88,#1ea85a); }
+  .mrow button { font-size:12px; font-weight:800; padding:7px 12px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
+  .mrow button:disabled { background:#3a4c73; color:#9fb3d8; }
+  .colgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:8px; width:min(520px,94%); }
+  .cell { background:rgba(255,255,255,.07); border-radius:12px; padding:10px 4px; font-size:26px; }
+  .cell.lock { filter:grayscale(1) brightness(.5); }
+  .cell small { display:block; font-size:9px; color:#cdb89a; margin-top:3px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:min(420px,94%); }
+  .stat { background:rgba(255,255,255,.08); border-radius:14px; padding:10px 12px; text-align:left; }
+  .stat .v { font-size:22px; font-weight:900; color:#ffd54a; } .stat .k { font-size:11px; color:#e6d3b8; }
+  .switch { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.08); padding:10px 16px; border-radius:14px; }
+  .secTitle { font-size:13px; color:#ffe08a; font-weight:800; margin:8px 0 -2px; letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -165,41 +130,29 @@
   <canvas id="game"></canvas>
 
   <!-- ===================== MAIN MENU ===================== -->
-  <div id="menu" class="screen ag-screen">
-   <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-      <button class="ig-iconbtn" id="btnSettings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  <div id="menu" class="screen">
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="avatar" id="mAvatar">🧑</div>
+        <div style="text-align:left"><div style="font-size:13px;font-weight:700" id="mName">Player</div>
+          <div class="title-tag" id="mTitle">Fruit Beginner</div></div>
+      </div>
+      <div class="tb-right">
+        <div class="pill"><span class="ico">🪙</span><b id="mCoins">0</b></div>
+        <div class="pill"><span class="ico">⭐</span>Lv <b id="mLevel">1</b></div>
+      </div>
     </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M6 88 L94 10" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".35"/><path d="M10 84 L90 14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-<g transform="rotate(-20 30 58) translate(-6 6)"><path class="o" d="M6 52 A26 26 0 0 0 58 52Z" fill="#22a04a"/><path d="M10 52 A22 22 0 0 0 54 52Z" fill="#c8f5a0"/><path d="M13 52 A19 19 0 0 0 51 52Z" fill="#ff4d5e"/>
-<ellipse cx="24" cy="60" rx="1.6" ry="2.6" fill="#22120a"/><ellipse cx="32" cy="64" rx="1.6" ry="2.6" fill="#22120a"/><ellipse cx="40" cy="60" rx="1.6" ry="2.6" fill="#22120a"/></g>
-<g transform="rotate(160 70 40) translate(0 -2)"><path class="o" d="M44 40 A26 26 0 0 0 96 40Z" fill="#22a04a"/><path d="M48 40 A22 22 0 0 0 92 40Z" fill="#c8f5a0"/><path d="M51 40 A19 19 0 0 0 89 40Z" fill="#ff4d5e"/>
-<ellipse cx="62" cy="48" rx="1.6" ry="2.6" fill="#22120a"/><ellipse cx="70" cy="52" rx="1.6" ry="2.6" fill="#22120a"/><ellipse cx="78" cy="48" rx="1.6" ry="2.6" fill="#22120a"/></g>
-<circle class="o" cx="52" cy="46" r="4" fill="#ff4d5e"/><circle class="o" cx="60" cy="56" r="3" fill="#ff4d5e"/><circle class="o" cx="44" cy="38" r="2.5" fill="#ff4d5e"/></svg></div>
-      <div class="ig-title">Fruit Arena</div>
-      <div class="ig-tagline">Slice the fruit. Never the bombs.</div>
+    <h1>🍉 FRUIT ARENA</h1>
+    <div class="menu-btns">
+      <button class="btn grn" id="btnPlay">▶ PLAY</button>
+      <button class="btn" id="btnShop">🛒 SHOP</button>
+      <button class="btn" id="btnMissions">🎯 MISSIONS</button>
+      <button class="btn" id="btnTutorial">📖 TUTORIAL</button>
+      <button class="btn alt" id="btnSettings">⚙️ SETTINGS</button>
+      <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
+      <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('fruit-arena','Fruit Arena')">🏆 Leaderboard</button>
     </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" id="btnPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="agPlaySub">Slice to start</small></span></button>
-    </div>
-    <div class="ig-modes" style="--n:3">
-      <button class="ig-mode" id="btnMissions"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><b>Missions</b><small>Earn coins</small></button>
-      <button class="ig-mode" id="btnShop"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8fb1,#ff2d55)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg></span><b>Shop</b><small>New blades</small></button>
-      <button class="ig-mode" id="agCollection"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c58cff,#7b4dff)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></span><b>Collection</b><small>Fruits found</small></button>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" id="btnTutorial"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4"/><path d="M12 17.2h.01"/></svg></span><span class="ig-grow">Tutorial<small>Learn with the coach</small></span></button>
-      <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('fruit-arena','Fruit Arena')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd54a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Top slicers</small></span></button>
-      <button class="ig-row" id="agLogin" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4.2 4-6.2 7.5-6.2s6.5 2 7.5 6.2"/></svg></span><span class="ig-grow"><span id="agLoginTxt">Log in</span><small><span id="mTitle">Fruit Beginner</span><span id="mName" hidden>Player</span></small></span></button>
-    </div>
-    <div class="ig-stats">
-      <div><b id="mLevel">1</b><span>Level</span></div>
-      <div><b id="mCoins">0</b><span>Coins</span></div>
-      <div><b id="agBest">0</b><span>Best score</span></div>
-    </div>
-   </div>
+    <a href="../" style="color:#cdb89a;font-size:13px;margin-top:6px;text-decoration:none">🏠 All Ilan Games</a>
   </div>
 
   <!-- ===================== GAME HUD ===================== -->
@@ -208,97 +161,77 @@
     <div id="gScore">0</div>
     <div id="gCoins">🪙 0</div>
     <div id="bossBar"><div id="bossName">BOSS</div><div id="bossTrack"><div id="bossHp"></div></div></div>
-    <button id="pauseBtn" title="Pause" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5v13M15 5.5v13"/></svg></button>
-    <button id="gShopBtn" title="Shop" aria-label="Shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg></button>
+    <button id="pauseBtn">⏸</button>
+    <button id="gShopBtn">🛒</button>
     <div id="comboWrap"><div id="comboLbl">Combo x1</div><div id="comboBar"><div id="comboFill"></div></div></div>
     <div id="eventBanner"></div>
   </div>
 
   <!-- ===================== PAUSE ===================== -->
-  <div id="pause" class="screen ag-scrim hidden">
-    <div class="ig-sheet ag-sheet">
-      <h2>Paused</h2>
-      <div class="ag-btns">
-        <button class="ig-btn" id="btnResume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg>Resume</button>
-        <button class="ig-btn secondary" id="btnPauseShop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>Shop</button>
-        <button class="ig-btn secondary" id="btnQuit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Quit to menu</button>
-      </div>
+  <div id="pause" class="screen hidden">
+    <h1>⏸ Paused</h1>
+    <div class="menu-btns">
+      <button class="btn grn" id="btnResume">▶ RESUME</button>
+      <button class="btn" id="btnPauseShop">🛒 SHOP</button>
+      <button class="btn alt" id="btnQuit">🏠 QUIT TO MENU</button>
     </div>
   </div>
 
-  <!-- ===================== TUTORIAL (slides) ===================== -->
-  <div id="tutorial" class="screen ag-screen hidden">
-   <div class="ig-col">
-    <div class="ag-head"><span class="ag-spacer"></span><h2>How to play</h2><span class="ag-spacer"></span></div>
-    <div class="ig-sheet"><div id="tutBody"></div><div id="tutDots" style="margin-top:12px;text-align:center"></div></div>
-    <div class="ag-btnrow">
-      <button class="ig-btn secondary" id="tutBack" style="flex:0 0 64px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button class="ig-btn" id="tutNext">Next</button>
+  <!-- ===================== TUTORIAL ===================== -->
+  <div id="tutorial" class="screen hidden">
+    <div id="tutBody"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn alt" id="tutBack" style="font-size:15px;padding:10px 20px">⬅</button>
+      <button class="btn" id="tutNext">NEXT ▶</button>
     </div>
-   </div>
+    <div id="tutDots" style="margin-top:8px"></div>
   </div>
 
   <!-- ===================== SHOP ===================== -->
-  <div id="shop" class="screen ag-screen hidden">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="shopBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Shop</h2><span class="ag-coins"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M14.6 9.4c-.5-.8-1.5-1.2-2.6-1.2-1.4 0-2.5.8-2.5 1.9 0 2.6 5.1 1.3 5.1 3.9 0 1.1-1.1 1.9-2.6 1.9-1.1 0-2.1-.4-2.6-1.2"/></svg><span id="shopCoins">0</span></span></div>
-    <div class="ig-card">
-      <div class="tabs ig-seg">
-        <button class="tab on" data-cat="blades">Blades</button>
-        <button class="tab" data-cat="effects">Effects</button>
-        <button class="tab" data-cat="titles">Titles</button>
-      </div>
-      <div class="grid" id="shopGrid"></div>
+  <div id="shop" class="screen hidden">
+    <div class="topbar"><div></div><div class="tb-right"><div class="pill"><span class="ico">🪙</span><b id="shopCoins">0</b></div></div></div>
+    <h1>🛒 SHOP</h1>
+    <div class="tabs">
+      <button class="tab on" data-cat="blades">Blades</button>
+      <button class="tab" data-cat="effects">Effects</button>
+      <button class="tab" data-cat="titles">Titles</button>
     </div>
-   </div>
+    <div class="grid" id="shopGrid"></div>
+    <button class="btn alt" id="shopBack" style="margin-top:8px">⬅ Back</button>
   </div>
 
   <!-- ===================== MISSIONS ===================== -->
-  <div id="missions" class="screen ag-screen hidden">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="missionsBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Missions</h2><span class="ag-spacer"></span></div>
-    <div class="ag-note">Finish a mission for coins — then a harder one unlocks.</div>
-    <div class="ig-list mlist" id="missionList"></div>
-   </div>
+  <div id="missions" class="screen hidden">
+    <h1>🎯 DAILY MISSIONS</h1>
+    <p style="margin-top:-8px;font-size:13px">Resets every day. Complete them for coins!</p>
+    <div class="mlist" id="missionList"></div>
+    <button class="btn alt" id="missionsBack" style="margin-top:10px">⬅ Back</button>
   </div>
 
   <!-- ===================== COLLECTION ===================== -->
-  <div id="collection" class="screen ag-screen hidden">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="colBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Collection</h2><span class="ag-spacer"></span></div>
-    <div class="ig-card" id="colBody"></div>
-   </div>
+  <div id="collection" class="screen hidden">
+    <h1>📒 COLLECTION</h1>
+    <div id="colBody" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px"></div>
+    <button class="btn alt" id="colBack" style="margin-top:10px">⬅ Back</button>
   </div>
 
   <!-- ===================== SETTINGS ===================== -->
-  <div id="settings" class="screen ag-screen hidden">
-   <div class="ig-col">
-    <div class="ag-head"><button class="ig-iconbtn" id="setBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Settings</h2><span class="ag-spacer"></span></div>
-    <div class="ig-card">
-      <label class="switch"><span><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></span>Sound effects</span><input type="checkbox" id="setSound"></label>
-    </div>
-    <div class="ig-card">
-      <div class="ig-eyebrow" style="margin-bottom:10px">Profile</div>
-      <div class="ig-stats" style="padding:0">
-        <div><b id="setName">Player</b><span>Name</span></div>
-        <div><b id="setLevel">1</b><span>Level</span></div>
-        <div><b id="setTitle" style="font-size:16px;line-height:27px">Fruit Beginner</b><span>Title</span></div>
-      </div>
-    </div>
-    <button class="ig-btn secondary ag-danger" id="btnReset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>Reset all progress</button>
-   </div>
+  <div id="settings" class="screen hidden">
+    <h1>⚙️ SETTINGS</h1>
+    <label class="switch"><input type="checkbox" id="setSound"> 🔊 Sound effects</label>
+    <p style="font-size:13px">Profile: <b id="setName">Player</b> • Level <b id="setLevel">1</b> • <b id="setTitle">Fruit Beginner</b></p>
+    <button class="btn alt" id="btnReset" style="font-size:14px;padding:10px 20px;background:linear-gradient(135deg,#ff6b6b,#c0392b);color:#fff">🗑 Reset all progress</button>
+    <button class="btn alt" id="setBack" style="margin-top:6px">⬅ Back</button>
   </div>
 
   <!-- ===================== GAME OVER ===================== -->
-  <div id="gameover" class="screen ag-scrim hidden">
-    <div class="ig-sheet ag-sheet">
-      <h2 id="goTitle">Game over</h2>
-      <div class="ag-note" id="goSub"></div>
-      <div class="stats" id="goStats"></div>
-      <div class="ag-btns">
-        <button class="ig-btn" id="goAgain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v4.5h-4.5"/></svg>Play again</button>
-        <button class="ig-btn secondary" id="goMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Menu</button>
-      </div>
+  <div id="gameover" class="screen hidden">
+    <h1 id="goTitle">Game Over</h1>
+    <p id="goSub"></p>
+    <div class="stats" id="goStats"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn grn" id="goAgain">▶ PLAY AGAIN</button>
+      <button class="btn alt" id="goMenu">🏠 MENU</button>
     </div>
   </div>
 </div>
@@ -530,7 +463,7 @@ function unlockAch(id){ if(!S.ach[id]){ S.ach[id]=1; const a=ACHS.find(x=>x.id==
 
 function sliceObj(o, nx, ny){
   if(o.sliced) return;
-  if(o.kind==='bomb'){ if(tutMode){ o.sliced=true; juiceBurst(o,'#333',12); coachMsg='That was a BOMB — in a real game that ends it! Avoid bombs.'; Sfx.hit(); return; } endGame(true); return; }
+  if(o.kind==='bomb'){ if(tutMode){ o.sliced=true; juiceBurst(o,'#333',12); coachMsg='💣 That was a BOMB — in a real game that ends it! Avoid bombs.'; Sfx.hit(); return; } endGame(true); return; }
   o.sliced=true;
   comboCount++; comboTimer=0.4; comboMax=Math.max(comboMax,comboCount);
   if(comboCount>=10) unlockAch('combo10');
@@ -753,9 +686,7 @@ function showScreen(id){ for(const s of document.querySelectorAll('.screen')) s.
   $('hud').classList.add('hidden'); if(id) $(id).classList.remove('hidden'); }
 function refreshMenu(){ const lv=levelOf(S.xp);
   $('mCoins').textContent=S.coins; $('mLevel').textContent=lv; $('mName').textContent=playerName;
-  $('mTitle').textContent=titleObj(S.title).name;
-  $('agBest').textContent=S.best||0;
-  $('agPlaySub').textContent=S.seenTutorial ? ('Level '+lv+(S.best?' · Best '+S.best:'')) : 'Starts with a quick tutorial'; }
+  $('mTitle').textContent=titleObj(S.title).name; }
 
 function gotoMenu(){ state='menu'; tutMode=false; coachMsg=''; boss=null; objects=[]; halves=[]; juices=[]; floats=[]; blade_=[];
   $('bossBar').style.display='none'; showScreen('menu'); refreshMenu(); wakeLoop(); }
@@ -775,10 +706,10 @@ function endGame(byBomb){ if(state==='over')return; state='over';
   if(levelOf(S.xp) < titleObj(S.title).lv) S.title=highestTitle().id;
   save();
   if (window.IGAuth) IGAuth.submitScore('fruit-arena', S.best);
-  $('goTitle').textContent=byBomb?'Boom!':'Game over';
-  $('goSub').innerHTML=(byBomb?'You sliced a bomb!':'You ran out of lives!')+'<br>Score <b>'+score+'</b> · earned <b>'+matchCoins+' coins</b>'+(afterLv>beforeLv?' · <b>Level '+afterLv+'!</b>':'');
-  $('goStats').innerHTML = stat('Score',score)+stat('Best',S.best)+stat('Max combo',comboMax)
-    +stat('Level',afterLv)+stat('Plays',S.plays)+stat('Coins',S.coins);
+  $('goTitle').textContent=byBomb?'💥 BOOM!':'🍉 Game Over';
+  $('goSub').innerHTML=(byBomb?'You sliced a bomb!':'You ran out of lives!')+'<br>Score <b>'+score+'</b> • earned <b>🪙 '+matchCoins+'</b>'+(afterLv>beforeLv?' • <b>⬆ Level '+afterLv+'!</b>':'');
+  $('goStats').innerHTML = stat('🏆 Best',S.best)+stat('🎮 Plays',S.plays)+stat('💀 Lowest',S.worst==null?'—':S.worst)+stat('🔥 Max combo',comboMax)
+    +stat('⭐ Level',afterLv)+stat('🪙 Bank',S.coins);
   showScreen('gameover');
 }
 function stat(k,v){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
@@ -800,38 +731,38 @@ function showTutorial(){ tutI=0; renderTut(); showScreen('tutorial'); }
 function renderTut(){ const s=TUT[tutI];
   $('tutBody').innerHTML='<div style="font-size:64px">'+s.e+'</div><h2 style="margin:6px 0">'+s.t+'</h2><p>'+s.b+'</p>';
   $('tutBack').style.visibility=tutI>0?'visible':'hidden';
-  $('tutNext').textContent=tutI<TUT.length-1?'Next':'Start';
-  $('tutDots').innerHTML=TUT.map((_,i)=>'<span style="display:inline-block;width:'+(i===tutI?20:8)+'px;height:8px;border-radius:5px;margin:0 3px;background:'+(i===tutI?'var(--accent)':'rgba(0,0,0,.14)')+'"></span>').join('');
+  $('tutNext').textContent=tutI<TUT.length-1?'NEXT ▶':'🍉 START';
+  $('tutDots').innerHTML=TUT.map((_,i)=>'<span style="display:inline-block;width:'+(i===tutI?20:8)+'px;height:8px;border-radius:5px;margin:0 3px;background:'+(i===tutI?'#ffd54a':'#5a4530')+'"></span>').join('');
 }
 
 /* ---- interactive tutorial (coach-guided; each step waits for a tap, like the cricket coach) ---- */
 let tutPhase='brief', tutSliced=0, tutBombT=0, tutPow=0;
 const TUT_STEPS=[
-  { brief:"Hi! I'm your coach. To slice, SWIPE across a fruit — or even just touch it. Slice 3 to continue!",
-    act:"Slice the fruit!",
+  { brief:"👋 Hi! I'm your coach. To slice, SWIPE across a fruit — or even just touch it. Slice 3 to continue!",
+    act:"Slice the fruit! ✋🍉",
     spawn(){ tutSliced=0; spawnTutFruits(2); },
     tick(){ if(objects.length===0 && tutSliced<3) spawnTutFruits(2); },
     done(){ return tutSliced>=3; } },
-  { brief:"Now BOMBS! NEVER slice a bomb — in a real game it ends your run. Just let them fall past you.",
+  { brief:"💣 Now BOMBS! NEVER slice a bomb — in a real game it ends your run. Just let them fall past you.",
     act:"Don't slice the bombs — let them drop!",
     spawn(){ tutBombT=0; makeFruit('bomb'); },
     tick(dt){ tutBombT+=dt; if(objects.length===0 && tutBombT<4.5) makeFruit('bomb'); },
     done(){ return tutBombT>=4.5 && objects.length===0; } },
-  { brief:"Power-ups come inside a cluster of fruit: 🔥 explodes everything near it, ❄️ slows time, ⚡ slices all, 🪙 gives coins. Slice them!",
+  { brief:"✨ Power-ups come inside a cluster of fruit: 🔥 explodes everything near it, ❄️ slows time, ⚡ slices all, 🪙 gives coins. Slice them!",
     act:"Slice the glowing power-ups!",
     spawn(){ tutPow=0; spawnSpecialCluster('fire'); },
     tick(){ if(objects.length===0 && tutPow<3){ const t=['ice','lightning','coin'][tutPow]; tutPow++; spawnSpecialCluster(t); } },
     done(){ return tutPow>=3 && objects.length===0; } },
-  { brief:"GIANT FRUIT! It floats in slowly and never breaks — spam-slice it for tons of points!",
-    act:"SLICE THE GIANT as fast as you can!",
+  { brief:"🍈 GIANT FRUIT! It floats in slowly and never breaks — spam-slice it for tons of points!",
+    act:"SLICE THE GIANT as fast as you can! 🍈💥",
     spawn(){ spawnGiant(); }, tick(){}, done(){ return boss===null; } },
-  { brief:"That's everything — you're ready! Tap to go to the menu, then hit Play whenever you like.",
+  { brief:"🎉 That's everything — you're ready! Tap to go to the menu, then hit ▶ PLAY whenever you like.",
     act:"", spawn(){}, tick(){}, done(){ return true; }, end:true },
 ];
 function startInteractiveTutorial(){ state='play'; tutMode=true; showScreen(null); $('hud').classList.remove('hidden'); wakeLoop();
   resetGame(); tutStep=0; tutBrief(); }
 function tutBrief(){ objects.length=0; boss=null; $('bossBar').style.display='none'; tutPhase='brief';
-  coachMsg=TUT_STEPS[tutStep].brief+"\n\nTap the screen to continue"; }
+  coachMsg=TUT_STEPS[tutStep].brief+"\n\n👉 Tap the screen to continue"; }
 function tutBeginAct(){ const s=TUT_STEPS[tutStep]; if(s.end){ tutFinish(); return; }
   tutPhase='act'; tutData={t:0}; coachMsg=s.act||s.brief; s.spawn(); }
 function tutAdvance(){ tutStep++; if(tutStep>=TUT_STEPS.length){ tutFinish(); return; } tutBrief(); }
@@ -841,24 +772,20 @@ function tutUpdate(dt){ if(tutPhase!=='act') return; const s=TUT_STEPS[tutStep];
 function tutFinish(){ if(!tutMode) return; tutMode=false; coachMsg=''; if(!S.seenTutorial){ S.seenTutorial=true; save(); } gotoMenu(); }
 function spawnTutFruits(n){ for(let i=0;i<n;i++) makeFruit(null); }
 function tutOnSlice(o){ if(tutStep===0 && o.kind==='fruit') tutSliced++; }
-function tutOnMiss(o){ if(tutStep===0) coachMsg="So close — try again! Swipe right across the fruit."; }
+function tutOnMiss(o){ if(tutStep===0) coachMsg="😅 So close — try again! Swipe right across the fruit."; }
 function rRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCoachText(){ if(!coachMsg) return;
   ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-  const parts=coachMsg.split('\n\n'), body=parts[0], extra=parts[1]||'';
-  const maxw=Math.min(W*0.9,560), pad=16, x=W/2, F='-apple-system,BlinkMacSystemFont,system-ui,sans-serif';
-  ctx.font='600 17px '+F; ctx.textAlign='left'; ctx.textBaseline='top';
-  const words=body.split(' '); const lines=[]; let line='';
-  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxw-pad*2-44 && line){ lines.push(line); line=w; } else line=t; }
+  const maxw=Math.min(W*0.9,560), pad=16, x=W/2;
+  ctx.font='600 18px system-ui,Arial'; ctx.textAlign='left'; ctx.textBaseline='top';
+  const words=coachMsg.split(' '); const lines=[]; let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxw-pad*2-40 && line){ lines.push(line); line=w; } else line=t; }
   if(line) lines.push(line);
-  const lh=23, boxH=(lines.length+(extra?1:0))*lh+pad*2+(extra?2:0), boxY=H*0.12, boxX=x-maxw/2;
-  ctx.save(); ctx.shadowColor='rgba(20,20,60,.3)'; ctx.shadowBlur=26; ctx.shadowOffsetY=8; ctx.fillStyle='rgba(255,255,255,.94)'; rRect(boxX,boxY,maxw,boxH,20); ctx.fill(); ctx.restore();
-  ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1; rRect(boxX,boxY,maxw,boxH,20); ctx.stroke();
-  const ax=boxX+28, ay=boxY+pad+12, g=ctx.createLinearGradient(ax-14,ay-14,ax+14,ay+14); g.addColorStop(0,'#f857a6'); g.addColorStop(1,'#ff7a59');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(ax,ay,14,0,6.2832); ctx.fill();
-  ctx.strokeStyle='#fff'; ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(ax-6,ay+6); ctx.lineTo(ax+6,ay-6); ctx.stroke();
-  ctx.fillStyle='#1d1d1f'; ctx.font='600 17px '+F; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], boxX+pad+44, boxY+pad+i*lh);
-  if(extra){ ctx.fillStyle='#e0367f'; ctx.font='700 14px '+F; ctx.fillText(extra, boxX+pad+44, boxY+pad+lines.length*lh+3); }
+  const lh=24, boxH=lines.length*lh+pad*2, boxY=H*0.12, boxX=x-maxw/2;
+  ctx.fillStyle='rgba(10,14,8,.85)'; rRect(boxX,boxY,maxw,boxH,16); ctx.fill();
+  ctx.strokeStyle='rgba(255,213,74,.75)'; ctx.lineWidth=2; rRect(boxX,boxY,maxw,boxH,16); ctx.stroke();
+  ctx.fillStyle='#fff'; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], boxX+pad+40, boxY+pad+i*lh);
+  ctx.font='30px serif'; ctx.fillText('🧑', boxX+8, boxY+pad);
   ctx.restore(); }
 
 /* ---- shop ---- */
@@ -874,16 +801,16 @@ function renderShop(){ $('shopCoins').textContent=S.coins;
     const prevBg = e.color==='rainbow'?'background:conic-gradient(red,orange,yellow,green,cyan,blue,violet,red)':(e.color?'background:'+e.color:'background:#555');
     h+=item(e.id,'effects',e.icon,prevBg,e.name,'',e.cost,owned,eq); } }
   else { const lv=levelOf(S.xp); for(const t of TITLES){ const unlocked=lv>=t.lv, eq=S.title===t.id;
-    let btn; if(eq) btn='<button class="eq" disabled>Equipped</button>';
-      else if(unlocked) btn='<button class="own" data-eq="titles:'+t.id+'">Equip</button>';
+    let btn; if(eq) btn='<button class="eq" disabled>EQUIPPED</button>';
+      else if(unlocked) btn='<button class="own" data-eq="titles:'+t.id+'">EQUIP</button>';
       else btn='<button disabled>Reach Lv '+t.lv+'</button>';
-    h+='<div class="item'+(eq?' eq':'')+'"><div class="prev" style="background:rgba(248,87,166,.08)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></div><div class="nm">'+t.name+'</div><div class="ds">Level '+t.lv+'</div>'+btn+'</div>'; } }
+    h+='<div class="item'+(eq?' eq':'')+'"><div class="prev" style="background:rgba(255,255,255,.06)">🏷️</div><div class="nm">'+t.name+'</div><div class="ds">Level '+t.lv+'</div>'+btn+'</div>'; } }
   grid.innerHTML=h;
 }
 function item(id,cat,icon,prevBg,name,desc,cost,owned,eq){
-  let btn; if(eq) btn='<button class="eq" disabled>Equipped</button>';
-    else if(owned) btn='<button class="own" data-eq="'+cat+':'+id+'">Equip</button>';
-    else btn='<button data-buy="'+cat+':'+id+'" '+(S.coins>=cost?'':'disabled')+'>'+cost+' coins</button>';
+  let btn; if(eq) btn='<button class="eq" disabled>EQUIPPED</button>';
+    else if(owned) btn='<button class="own" data-eq="'+cat+':'+id+'">EQUIP</button>';
+    else btn='<button data-buy="'+cat+':'+id+'" '+(S.coins>=cost?'':'disabled')+'>🪙 '+cost+'</button>';
   return '<div class="item'+(eq?' eq':'')+'"><div class="prev" style="'+prevBg+'">'+icon+'</div><div class="nm">'+name+'</div><div class="ds">'+desc+'</div>'+btn+'</div>';
 }
 $('shopGrid').addEventListener('click',e=>{ const buy=e.target.closest('[data-buy]'), eq=e.target.closest('[data-eq]');
@@ -904,14 +831,13 @@ const MISSION_DEFS=[
 ];
 function mTier(id){ return (S.mTiers&&S.mTiers[id])||0; }
 function openMissions(){ renderMissions(); showScreen('missions'); }
-const AG_MICONS={score:'<span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>',combo:'<span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.6-5.3 3.6-8.8 2.3 1.6 2.8 3.9 2.6 5.6 1-.6 1.9-2 2-3.8 2.4 1.9 3.8 4.6 3.8 7 0 3.6-2.6 6.2-5.5 6.2z"/></svg></span>',slice:'<span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L18 6l2-2-1 4L7 21z"/><path d="M4 20l3 1"/></svg></span>',giant:'<span class="ig-tile" style="--tile:linear-gradient(160deg,#c58cff,#7b4dff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span>'};
 function renderMissions(){ let h='';
   for(const m of MISSION_DEFS){ const ti=mTier(m.id), maxed=ti>=m.tiers.length;
     const goal=m.tiers[Math.min(ti,m.tiers.length-1)], p=Math.min(goal,m.prog()), done=!maxed && m.prog()>=goal, rew=m.reward(goal);
-    h+='<div class="mrow">'+(AG_MICONS[m.id]||'')+'<div class="mi"><div class="mt">'+m.label(goal)+'</div>'
-      +'<div class="mp">'+(maxed?'Maxed — all tiers done!':(p+' / '+goal+' · '+rew+' coins'))+'</div>'
+    h+='<div class="mrow"><div class="mi"><div class="mt">'+m.icon+' '+m.label(goal)+(maxed?' ✓':'')+'</div>'
+      +'<div class="mp">'+(maxed?'⭐ MAXED — all tiers done!':(p+' / '+goal+' • 🪙 '+rew))+'</div>'
       +'<div class="mbar"><div style="width:'+(maxed?100:(p/goal*100))+'%"></div></div></div>'
-      +'<button data-claim="'+m.id+'" '+(done?'':'disabled')+'>'+(maxed?'Done':'Claim')+'</button></div>'; }
+      +'<button data-claim="'+m.id+'" '+(done?'':'disabled')+'>'+(maxed?'✓':(done?'Claim':'…'))+'</button></div>'; }
   $('missionList').innerHTML=h;
 }
 $('missionList').addEventListener('click',e=>{ const b=e.target.closest('[data-claim]'); if(!b)return;
@@ -920,10 +846,10 @@ $('missionList').addEventListener('click',e=>{ const b=e.target.closest('[data-c
 
 /* ---- collection ---- */
 function openCollection(){ const lv=levelOf(S.xp); let h='';
-  h+='<div class="secTitle">Fruits</div><div class="colgrid">'+FRUITS.map(f=>cell(f.icon,f.name,S.fruitsSeen[f.name])).join('')+'</div>';
-  h+='<div class="secTitle">Boss fruits</div><div class="colgrid">'+BOSS_NAMES.map(n=>cell('👑',n,S.bossesSeen[n])).join('')+'</div>';
-  h+='<div class="secTitle">Blades</div><div class="colgrid">'+BLADES.map(b=>cell(b.icon,b.name,S.ownedBlades.includes(b.id))).join('')+'</div>';
-  h+='<div class="secTitle">Achievements</div><div class="colgrid">'+ACHS.map(a=>cell('🏅',a.name,S.ach[a.id])).join('')+'</div>';
+  h+='<div class="secTitle">🍎 FRUITS</div><div class="colgrid">'+FRUITS.map(f=>cell(f.icon,f.name,S.fruitsSeen[f.name])).join('')+'</div>';
+  h+='<div class="secTitle">👑 BOSS FRUITS</div><div class="colgrid">'+BOSS_NAMES.map(n=>cell('👑',n,S.bossesSeen[n])).join('')+'</div>';
+  h+='<div class="secTitle">🗡️ BLADES</div><div class="colgrid">'+BLADES.map(b=>cell(b.icon,b.name,S.ownedBlades.includes(b.id))).join('')+'</div>';
+  h+='<div class="secTitle">🏅 ACHIEVEMENTS</div><div class="colgrid">'+ACHS.map(a=>cell('🏅',a.name,S.ach[a.id])).join('')+'</div>';
   $('colBody').innerHTML=h; showScreen('collection');
 }
 function cell(icon,name,unlocked){ return '<div class="cell'+(unlocked?'':' lock')+'">'+icon+'<small>'+(unlocked?name:'???')+'</small></div>'; }
@@ -940,7 +866,6 @@ $('btnShop').onclick=()=>openShop('menu');
 $('btnMissions').onclick=openMissions;
 $('btnTutorial').onclick=startInteractiveTutorial;
 $('btnSettings').onclick=openSettings;
-$('agCollection').onclick=openCollection;
 $('shopBack').onclick=()=>{ if(shopReturn==='game') resumeGame(); else gotoMenu(); };
 $('missionsBack').onclick=gotoMenu;
 $('colBack').onclick=gotoMenu;
@@ -973,8 +898,6 @@ if('serviceWorker' in navigator){ let _r=false;
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
-<script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
-  IGAuth.onChange(function(p){ var b=document.getElementById('agLoginTxt'); if(b)b.textContent=p?IGAuth.displayName():'Log in'; }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 <script src="../friends.js" defer></script>

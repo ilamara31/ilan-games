@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Speed Clicker</title>
-<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#f2f2f7" />
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#0b1226" />
 <meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Speed Clicker" />
 <link rel="apple-touch-icon" href="../icon-180.png?v=2" /><link rel="icon" href="../icon-192.png?v=2" />
@@ -20,7 +20,6 @@
 <meta name="twitter:title" content="Speed Clicker — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   html,body{height:100%;overflow:hidden;background:#0b1226;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff;touch-action:none;overscroll-behavior:none}
@@ -139,95 +138,11 @@
     #stage{padding:4px 0}
     #wrap{padding-top:calc(8px + env(safe-area-inset-top))}
   }
-
-  /* ===== ilan Games shared theme (light) — menu + sheets; the orb keeps its own look ===== */
-  html[data-theme]:root{ --accent:#00c6ff; --accent2:#0050e6; --icon1:#00c6ff; --icon2:#0050e6; }
-  html{background:var(--ig-bg)}
-  body{background:transparent;font-family:var(--ig-font);color:var(--ig-text);letter-spacing:-.01em}
-  /* main menu */
-  #menu{position:fixed;inset:0;z-index:6;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
-        padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
-  #menu.hidden{display:none}
-  body.menu #wrap{visibility:hidden}
-  #menu .ig-col{min-height:100%;justify-content:center}
-  #menu .ig-topbar{position:absolute;left:0;right:0;top:0}
-  #menu .ig-col{position:relative;padding-top:58px}
-  .ig-appicon{margin-top:6px}
-  .ig-row .ig-val{font-size:15px;font-weight:500;color:var(--ig-text2)}
-  #IGA_login{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  /* play screen: light, with the orb */
-  #gbar{width:100%;max-width:460px;display:flex;justify-content:space-between;align-items:center;flex:none;margin-bottom:6px}
-  body.playing #gbar .ig-navback{opacity:0;pointer-events:none}
-  #gbar .ig-navback{transition:opacity .2s}
-  .stat b{color:var(--ig-text);font-weight:800;letter-spacing:-.02em}
-  .stat span{color:var(--ig-text2);font-weight:600;letter-spacing:.08em}
-  .stat.score b{background:linear-gradient(160deg,#ff9f0a,#ff2d75);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;letter-spacing:-.04em}
-  .stat.score span{color:var(--ig-text2)}
-  #timeVal.low{color:#ff3b30}
-  #ringTrack{stroke:rgba(0,0,0,.08)}
-  #hint{color:var(--ig-text2);font-size:15px;font-weight:500}
-  #orbTxt{font-family:var(--ig-font);letter-spacing:.06em}
-  /* sheets */
-  .sheet{background:var(--ig-scrim);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-  .card{background:var(--ig-sheet);border:1px solid var(--ig-line);border-radius:28px;color:var(--ig-text);
-        -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:0 30px 80px rgba(20,20,50,.25),inset 0 1px 0 #fff}
-  .cbody{padding:24px 20px 10px}
-  .cfoot{background:transparent;border-top:1px solid var(--ig-line);box-shadow:none;display:flex;gap:10px;justify-content:center}
-  .card h2{font-size:22px;font-weight:800;letter-spacing:-.03em}
-  .final{background:linear-gradient(160deg,#ff9f0a,#ff2d75);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.04em}
-  .finalsub,.lbhead{color:var(--ig-text2);letter-spacing:.06em;font-weight:700;font-size:12px}
-  .title{color:var(--ig-text);font-weight:800;letter-spacing:-.03em;font-size:28px}
-  .titlesub,.bestline,.note{color:var(--ig-text2)}
-  .bestline b{color:var(--ig-text)}
-  .note b{color:var(--accent2)}
-  .newbest{background:linear-gradient(160deg,#ffcf4a,#ff9500);color:#2a1600;letter-spacing:.06em;font-weight:800}
-  .cfoot .ig-btn{flex:1;max-width:220px}
-  .lbrow{border-radius:12px;font-size:15px}
-  .lbrow:nth-child(odd){background:rgba(118,118,128,.08)}
-  .lbrow.me{background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
-  .lbrow .rk{color:var(--ig-text3)}
-  .lbrow .sc{color:var(--accent2)}
-  .lbempty{color:var(--ig-text2)}
-  @media (max-height:480px){ #menu .ig-appicon{width:96px;height:96px;border-radius:26px} #gbar{margin-bottom:2px} }
 </style></head>
 <body>
 <canvas id="fx"></canvas>
 
-<!-- ============ MENU ============ -->
-<section id="menu" class="ui ig-page">
-  <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-      <button class="ig-iconbtn" id="sndBtn" title="Sound" aria-label="Sound"></button>
-    </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="o" cx="46" cy="46" r="22" fill="#0e8fa8"/><circle cx="46" cy="46" r="13" fill="#7fd6e3"/><ellipse cx="38" cy="37" rx="6" ry="4" fill="#fff" opacity=".5"/>
-<path class="o" d="M60 56 L60 92 L69 84 L75 97 L81 94 L75 81 L87 81Z" fill="#fff"/>
-<path d="M52 66 L44 72 M56 74 L50 84 M66 52 L76 46" stroke="#ffcc00" stroke-width="3" stroke-linecap="round"/>
-<path class="o" d="M84 10 l-6 12 6 0 -4 12 10 -15 -6 0 4 -9Z" fill="#ffcc00"/>
-<path class="o" d="M10 70 l-4 8 4 0 -3 8 7 -10 -4 0 3 -6Z" fill="#ffcc00"/></svg></div>
-      <div class="ig-title">Speed Clicker</div>
-      <div class="ig-tagline">How many taps can you fit in 15 seconds?</div>
-    </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" id="playBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>15-second round</small></span></button>
-      <button class="ig-sq" id="lbSq" title="Leaderboard" aria-label="Leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></button>
-    </div>
-    <div class="ig-stats">
-      <div><b id="mBest">0</b><span>Best taps</span></div>
-      <div><b id="mTps">0</b><span>Taps / sec</span></div>
-      <div><b id="mRank">–</b><span>Your rank</span></div>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" id="lbBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Top 20 fastest players</small></span></button>
-      <button class="ig-row" onclick="window.IGAuth&amp;&amp;IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.9 3.8-6 7.5-6s6.6 2.1 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Put your score on the board</small></span></button>
-      <button class="ig-row nochev" id="vibBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3.5" width="8" height="17" rx="2"/><path d="M4 8v8M20 8v8"/></svg></span><span class="ig-grow">Vibration</span><span class="ig-val" id="vibVal">On</span></button>
-    </div>
-  </div>
-</section>
-
 <div id="wrap">
-  <div id="gbar"><button class="ig-navback ui" id="menuBtn" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button></div>
   <div id="hud">
     <div class="stat"><b id="timeVal">15.0</b><span>TIME</span></div>
     <div class="stat score"><b id="scoreVal">0</b><span>SCORE</span></div>
@@ -238,7 +153,7 @@
     <div id="orbBox">
       <div id="glow"></div>
       <svg id="ring" viewBox="0 0 100 100" aria-hidden="true">
-        <circle id="ringTrack" cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="3"></circle>
+        <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="3"></circle>
         <circle id="ringFg" cx="50" cy="50" r="47" fill="none" stroke="#ffd54a" stroke-width="3"
                 stroke-linecap="round" stroke-dasharray="295.31" stroke-dashoffset="0"></circle>
       </svg>
@@ -248,12 +163,21 @@
 
   <div id="hint">Tap as fast as you can for 15 seconds!</div>
 
+  <!-- `ui` marks what must NOT count as a game tap; it belongs on each control,
+       not on the row, or the gaps between them become a dead band -->
+  <div class="row">
+    <button class="ghost ui" id="lbBtn">🏆 Leaderboard</button>
+    <a class="ghost ui" id="IGA_login" onclick="window.IGAuth&amp;&amp;IGAuth.openAuth()">👤 Log in</a>
+    <button class="ghost ui" id="sndBtn" title="Sound">🔊</button>
+    <button class="ghost ui" id="vibBtn" title="Vibration">📳</button>
+    <a class="ghost ui" href="../">🏠</a>
+  </div>
 </div>
 
 <!-- result -->
 <div class="sheet hidden ui" id="resultSheet" style="z-index:10"><div class="card">
   <div class="cbody">
-    <h2>Time's up!</h2>
+    <h2>⏱️ Time's up!</h2>
     <div id="newBest" class="newbest" style="display:none">NEW BEST!</div>
     <div class="final" id="finalVal">0</div>
     <div class="finalsub">TAPS IN 15 SECONDS</div>
@@ -261,20 +185,20 @@
     <div class="titlesub" id="titleSub"></div>
     <div class="bestline">Your best: <b id="bestVal2">0</b></div>
     <div class="note" id="loginNote" style="display:none">Log in to put your score on the <b>leaderboard</b>.</div>
-    <div class="lbhead">TOP 20 PLAYERS</div>
+    <div class="lbhead">🏆 TOP 20 PLAYERS</div>
     <div class="lb-list" id="lb1"><div class="lbempty">Loading…</div></div>
   </div>
-  <div class="cfoot"><button class="ig-btn secondary" id="resMenuBtn">Menu</button><button class="ig-btn" id="againBtn">Play Again</button></div>
+  <div class="cfoot"><button class="btn" id="againBtn">PLAY AGAIN ▶</button></div>
 </div></div>
 
 <!-- leaderboard -->
 <div class="sheet hidden ui" id="boardSheet"><div class="card">
   <div class="cbody">
-    <h2>Leaderboard</h2>
+    <h2>🏆 Speed Clicker</h2>
     <div class="finalsub">TOP 20 — BEST TAPS IN 15s</div>
     <div class="lb-list" id="lb2" style="margin-top:14px"><div class="lbempty">Loading…</div></div>
   </div>
-  <div class="cfoot"><button class="ig-btn" id="closeBoard">Done</button></div>
+  <div class="cfoot"><button class="btn" id="closeBoard">CLOSE</button></div>
 </div></div>
 
 <script>
@@ -396,7 +320,6 @@ function countable(t){
   return wrapEl.contains(t);
 }
 function hit(now){
-  if (document.body.classList.contains('menu')) return;   // the menu is up — nothing counts
   if (state === 'idle'){ startRound(); tap(now); }
   else if (state === 'play'){ tap(now); }
 }
@@ -408,7 +331,7 @@ addEventListener('pointerdown', e => {
   hit(performance.now());
 }, {passive:false});
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ if (!$('boardSheet').classList.contains('hidden')) closeBoard(); else if (state === 'idle') showMenu(); return; }
+  if (e.key === 'Escape'){ if (!$('boardSheet').classList.contains('hidden')) closeBoard(); return; }
   if (e.code !== 'Space' && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
   if (e.repeat) return;                        // held key must not auto-fire
   // a focused button must keep its own Space/Enter behaviour; pointer clicks on
@@ -497,7 +420,7 @@ function finish(){
   document.body.classList.remove('playing');
   const beat = score > save.best;
   if (beat){ save.best = score; persist(); }
-  bestEl.textContent = save.best; paintMenu();
+  bestEl.textContent = save.best;
 
   const [emo, name, sub] = titleFor(score);
   $('finalVal').textContent = score;
@@ -601,49 +524,17 @@ $('boardSheet').addEventListener('pointerdown', e => { if (e.target === $('board
 document.addEventListener('visibilitychange', () => { if (!document.hidden && boardOpen()) refreshBoard(); });
 
 /* ---------------- sound / vibration toggles ---------------- */
-const SND_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>',
-      SND_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
 function paintToggles(){
-  $('sndBtn').innerHTML = save.snd ? SND_ON : SND_OFF;
+  $('sndBtn').textContent = save.snd ? '🔊' : '🔇';
   $('sndBtn').classList.toggle('off', !save.snd);
   const vb = $('vibBtn');
   if (!CAN_VIBRATE){ vb.style.display = 'none'; return; }   // desktop: no fake button
   vb.classList.toggle('off', !save.vib);
-  $('vibVal').textContent = save.vib ? 'On' : 'Off';
 }
 $('sndBtn').onclick = () => { save.snd = !save.snd; persist(); paintToggles(); if (save.snd){ audioReady(); click(0.2); } };
 $('vibBtn').onclick = () => { save.vib = !save.vib; persist(); paintToggles(); if (save.vib) buzz(1e9); };
 // clicking a button leaves it focused, which would make Space/Enter stop playing
-document.querySelectorAll('button').forEach(b => b.addEventListener('click', () => b.blur()));
-
-/* ---------------- main menu ---------------- */
-function paintMenu(){
-  $('mBest').textContent = save.best;
-  $('mTps').textContent = (save.best / (ROUND_MS/1000)).toFixed(1);
-  $('mRank').textContent = save.best > 0 ? titleFor(save.best)[1] : '–';
-}
-function showMenu(){
-  if (state === 'play') return;
-  $('resultSheet').classList.add('hidden'); $('boardSheet').classList.add('hidden'); stopPoll();
-  state = 'idle'; score = 0; remain = ROUND_MS; dirty = true; heat = 0;
-  glowEl.style.opacity = ''; glowEl.style.transform = '';
-  paintMenu();
-  document.body.classList.add('menu'); $('menu').classList.remove('hidden');
-  wake();
-}
-function hideMenu(){
-  $('menu').classList.add('hidden'); document.body.classList.remove('menu');
-  measureOrb(); wake();
-}
-$('playBtn').onclick = () => { audioReady(); hideMenu(); };
-$('menuBtn').onclick = showMenu;
-$('resMenuBtn').onclick = showMenu;
-$('lbSq').onclick = openBoard;
-/* the shared account script writes "👤 name" into #IGA_login — keep just the name here */
-(function(){ const el = $('IGA_login'); if (!el) return;
-  const fix = () => { const t = el.textContent; if (/^👤\s*/.test(t)) el.textContent = t.replace(/^👤\s*/, ''); };
-  try { new MutationObserver(fix).observe(el, { childList:true, characterData:true, subtree:true }); } catch(e){}
-  fix(); })();
+document.querySelectorAll('.ghost, .btn').forEach(b => b.addEventListener('click', () => b.blur()));
 
 /* ---------------- keep clear of the site's fixed bottom banner ---------------
    announce.js appends a position:fixed banner at the bottom of every game with
@@ -671,7 +562,6 @@ $('lbSq').onclick = openBoard;
 /* ---------------- boot ---------------- */
 bestEl.textContent = save.best;
 paintToggles();
-paintMenu(); document.body.classList.add('menu');
 resize();
 wake();
 </script>
@@ -683,7 +573,7 @@ wake();
     var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
     // account switched: this device's vault swapped in that player's own best
     try{ var s=JSON.parse(localStorage.getItem(SKEY)); save.best=Math.max(0,Math.round(+(s&&s.best)||0));
-         document.getElementById('bestVal').textContent=save.best; paintMenu(); }catch(e){}
+         document.getElementById('bestVal').textContent=save.best; }catch(e){}
     submitBest(); refreshBoard();
   });
 });</script>

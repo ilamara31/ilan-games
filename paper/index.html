@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Paper Territory</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#f2f2f7" />
+<meta name="theme-color" content="#0e0f1a" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,9 +26,7 @@
 <meta name="twitter:title" content="Paper Territory — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
-  :root, html[data-theme]{ --accent:#14b39a; --accent2:#5fae2e; --icon1:#00b09b; --icon2:#96c93d; }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:#0e0f1a;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff}
   body{position:fixed;inset:0;width:100%;touch-action:none}   /* lock page — no horizontal scroll / edge-swipe */
@@ -44,36 +42,15 @@
   #bR{left:94px;bottom:calc(env(safe-area-inset-bottom) + 36px)}
   #bU{right:52px;bottom:calc(env(safe-area-inset-bottom) + 104px)}
   #bD{right:52px;bottom:calc(env(safe-area-inset-bottom) + 30px)}
-  /* ---- menu / result overlay: light ilan Games look (Speed Sumo layout) ---- */
-  #ov{position:fixed;inset:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;font-family:var(--ig-font);color:var(--ig-text);letter-spacing:-.01em;
-    padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
-    background:radial-gradient(60vmax 50vmax at 15% 5%,rgba(20,179,154,.16),transparent 60%),radial-gradient(50vmax 50vmax at 90% 90%,rgba(95,174,46,.14),transparent 60%),radial-gradient(50vmax 40vmax at 90% 10%,rgba(94,92,230,.12),transparent 60%),var(--ig-bg)}
+  #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:5;padding:20px;background:rgba(8,8,16,.62)}
   #ov.hidden{display:none}
-  #ov .ig-col{gap:16px}
-  #ov .ig-modes{grid-template-columns:repeat(3,1fr)}
-  #ov .ig-tagline{max-width:360px;margin-left:auto;margin-right:auto}
-  #ov .ig-row .ig-tile{width:32px;height:32px;border-radius:9px}
-  #ov .ig-row .ig-tile svg{width:18px;height:18px}
-  #best:empty{display:none}
-  #best{text-align:center;padding:14px 16px}
-  #best .big{font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1.05;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  #best{font-size:14px;font-weight:500;color:var(--ig-text2)}
-  .howto{font-size:14px;line-height:1.5;color:var(--ig-text2)}
-  .howto b{color:var(--ig-text);font-weight:600}
-  /* multiplayer room screens (built in JS) */
-  #mpov{font-family:var(--ig-font);color:var(--ig-text);letter-spacing:-.01em;gap:10px;
-    background:radial-gradient(60vmax 50vmax at 15% 5%,rgba(20,179,154,.16),transparent 60%),radial-gradient(50vmax 50vmax at 90% 90%,rgba(95,174,46,.14),transparent 60%),var(--ig-bg) !important}
-  #mpov h1{font-weight:800;letter-spacing:-.04em;line-height:1.05;background:linear-gradient(160deg,var(--accent),var(--accent2) 75%);-webkit-background-clip:text;background-clip:text;color:transparent}
-  #mpov .sub{color:var(--ig-text2);margin:6px 0 10px;font-size:15px;line-height:1.5;max-width:420px}
-  #mpov .big{font-size:46px;font-weight:800;color:var(--ig-text);letter-spacing:-.03em}
-  #mpov .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:0 34px;border:0;border-radius:999px;cursor:pointer;color:#fff;
-    font:700 18px/1 var(--ig-font);letter-spacing:-.01em;background:linear-gradient(160deg,var(--accent),var(--accent2));box-shadow:0 12px 26px -10px color-mix(in srgb, var(--accent2) 70%, transparent)}
-  #mpov .btn:active,#mpov .ghost:active{transform:scale(.96)}
-  #mpov .ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;cursor:pointer;text-decoration:none;
-    font:600 15px/1 var(--ig-font);color:var(--ig-text);background:var(--ig-glass2);border:1px solid var(--ig-line)}
-  #igRecChip{background:rgba(255,255,255,.9) !important;color:#1d1d1f !important;border:1px solid rgba(0,0,0,.07) !important;box-shadow:0 8px 22px rgba(40,40,80,.14) !important;font-family:var(--ig-font) !important;font-weight:600 !important;padding:8px 14px !important;border-radius:999px !important;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
-  #mpov .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-</style></style>
+  h1{font-size:clamp(32px,8vw,54px);background:linear-gradient(90deg,#7dff9b,#5ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:#bcc6e6;margin:8px 0 16px;font-size:15px;line-height:1.5;max-width:440px}
+  .big{font-size:46px;font-weight:900;color:#7dff9b}
+  .btn{background:linear-gradient(135deg,#7dff9b,#22c55e);color:#04220f;border:none;padding:15px 40px;font-size:20px;font-weight:900;border-radius:30px;cursor:pointer;box-shadow:0 6px 18px rgba(40,200,120,.4)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(150,200,255,.3);color:#cfe0ff;border-radius:24px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
+</style>
 </head>
 <body>
 <canvas id="g"></canvas>
@@ -84,54 +61,37 @@
   <div class="dbtn" id="bD">▼</div>
 </div>
 <div id="ov">
- <div class="ig-col">
-  <div class="ig-topbar">
-    <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+  <h1>🟩 PAPER TERRITORY</h1>
+  <div class="sub">Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.<br>If a rival crosses your trail you pop — and don't cross your own, or hit the glowing wall! Own the most land.</div>
+  <button class="btn" id="start">CLAIM ▶</button>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="mpBtn" style="background:linear-gradient(135deg,#7dc4ff,#2a7ad6);color:#04203a;padding:13px 30px;font-size:17px">🎮 Play with Friends</button>
   </div>
-  <div class="ig-hero">
-    <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="8" y="8" width="16" height="16" fill="#fff" opacity=".08"/><rect x="8" y="25" width="16" height="16" fill="#fff" opacity=".08"/><rect x="8" y="42" width="16" height="16" fill="#fff" opacity=".08"/><rect x="8" y="59" width="16" height="16" fill="#fff" opacity=".08"/><rect x="8" y="76" width="16" height="16" fill="#fff" opacity=".08"/><rect x="25" y="8" width="16" height="16" fill="#fff" opacity=".08"/><rect x="25" y="25" width="16" height="16" fill="#fff" opacity=".08"/><rect x="25" y="42" width="16" height="16" fill="#fff" opacity=".08"/><rect x="25" y="59" width="16" height="16" fill="#fff" opacity=".08"/><rect x="25" y="76" width="16" height="16" fill="#fff" opacity=".08"/><rect x="42" y="8" width="16" height="16" fill="#fff" opacity=".08"/><rect x="42" y="25" width="16" height="16" fill="#fff" opacity=".08"/><rect x="42" y="42" width="16" height="16" fill="#fff" opacity=".08"/><rect x="42" y="59" width="16" height="16" fill="#fff" opacity=".08"/><rect x="42" y="76" width="16" height="16" fill="#fff" opacity=".08"/><rect x="59" y="8" width="16" height="16" fill="#fff" opacity=".08"/><rect x="59" y="25" width="16" height="16" fill="#fff" opacity=".08"/><rect x="59" y="42" width="16" height="16" fill="#fff" opacity=".08"/><rect x="59" y="59" width="16" height="16" fill="#fff" opacity=".08"/><rect x="59" y="76" width="16" height="16" fill="#fff" opacity=".08"/><rect x="76" y="8" width="16" height="16" fill="#fff" opacity=".08"/><rect x="76" y="25" width="16" height="16" fill="#fff" opacity=".08"/><rect x="76" y="42" width="16" height="16" fill="#fff" opacity=".08"/><rect x="76" y="59" width="16" height="16" fill="#fff" opacity=".08"/><rect x="76" y="76" width="16" height="16" fill="#fff" opacity=".08"/>
-<path class="o" d="M8 50 L8 92 L60 92 L60 70 L42 70 L42 50Z" fill="#2bd46a"/>
-<path class="o" d="M58 8 L92 8 L92 40 L74 40 L74 26 L58 26Z" fill="#ff9f1a"/>
-<path d="M42 52 L42 34 L66 34 L66 56" fill="none" stroke="#7fffa8" stroke-width="5" stroke-linejoin="round" stroke-dasharray="1 0"/>
-<rect class="o" x="58" y="52" width="16" height="16" rx="3" fill="#2bd46a"/><circle cx="63" cy="59" r="2.2" fill="#22120a"/><circle cx="70" cy="59" r="2.2" fill="#22120a"/>
-<rect class="o" x="76" y="42" width="12" height="12" rx="3" fill="#ff9f1a"/><circle cx="80" cy="47" r="1.6" fill="#22120a"/><circle cx="85" cy="47" r="1.6" fill="#22120a"/></svg></div>
-    <h1 class="ig-title">Paper Territory</h1>
-    <div class="sub ig-tagline">Leave your zone, draw a loop, come home — and the land inside is yours.</div>
+  <div class="sub" id="best" style="margin-top:14px"></div>
+  <div class="row">
+    <a class="ghost" id="tutBtn">📖 Tutorial</a>
+    <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
+    <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('paper','Paper Territory')">🏆 Leaderboard</a>
+    <a class="ghost" href="../">🏠 All Games</a>
   </div>
-  <div class="ig-playrow">
-    <button class="ig-cta" id="start"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b id="startLbl">Play</b><small>vs 3 bots</small></span></button>
-  </div>
-  <div class="ig-card" id="best"></div>
-  <div class="ig-modes">
-    <button class="ig-mode" id="mpBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>4 players</small></button>
-    <button class="ig-mode" id="tutBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg></span><b>Tutorial</b><small>Learn fast</small></button>
-    <button class="ig-mode" onclick="window.IGAuth&&IGAuth.showLeaderboard('paper','Paper Territory')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd54a,#e0a000)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg></span><b>Leaderboard</b><small>Top scores</small></button>
-  </div>
-  <div class="ig-card howto"><div class="ig-eyebrow" style="margin-bottom:6px">How it works</div><b>Swipe</b>, use the <b>arrow keys</b> or the on-screen pad to steer. Leave your zone to draw a trail, then return to claim everything inside. If a rival crosses your trail you pop — and never cross your own trail or hit the glowing wall.</div>
-  <div class="ig-list">
-    <a class="ig-row" onclick="window.IGAuth&&IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#9aa6b8,#5b6678)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1-3.8 4-5.8 7.5-5.8s6.5 2 7.5 5.8"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Save your best on the leaderboard</small></span></a>
-  </div>
- </div>
 </div>
 
 <!-- multiplayer overlay (room / lobby / rematch) — content set from JS -->
-<div id="mpov" class="hidden" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:6;padding:20px;overflow-y:auto">
+<div id="mpov" class="hidden" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:6;padding:20px;background:rgba(8,8,16,.8);overflow-y:auto">
 </div>
 <style>
   #mpov.hidden{display:none !important}
-  #mpov .card{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;padding:16px;width:100%;max-width:420px;margin:8px 0;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  #mpov input{background:var(--ig-field);border:1px solid var(--ig-line);border-radius:16px;height:56px;padding:0 12px;color:var(--ig-text);font:800 24px var(--ig-font);text-align:center;letter-spacing:6px;text-transform:uppercase;width:100%;outline:none;margin-top:8px;user-select:text}
-  #mpov input:focus{border-color:color-mix(in srgb, var(--accent) 70%, transparent);box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)}
-  #mpov .plist{display:flex;flex-direction:column;width:100%;max-width:420px;border-radius:22px;overflow:hidden;background:var(--ig-glass);border:1px solid var(--ig-line);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-  #mpov .prow{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:52px;font-weight:600;text-align:left}
-  #mpov .prow+.prow{border-top:1px solid var(--ig-line)}
-  #mpov .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-  #mpov .lbl{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ig-text2);text-transform:uppercase;margin:6px 0 4px}
-  #mpov .mini{font-size:14px;color:var(--ig-text2);font-weight:500}
-  #mpov .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent)}
+  #mpov .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;width:100%;max-width:420px;margin:8px 0}
+  #mpov input{background:rgba(0,0,0,.35);border:1px solid rgba(150,200,255,.3);border-radius:12px;padding:12px;color:#fff;font-size:22px;font-weight:900;text-align:center;letter-spacing:6px;text-transform:uppercase;width:100%}
+  #mpov .plist{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
+  #mpov .prow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;font-weight:700;text-align:left}
+  #mpov .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto}
+  #mpov .lbl{font-size:12px;font-weight:900;letter-spacing:1.5px;color:#9fb3d8;text-transform:uppercase}
+  #mpov .mini{font-size:13px;color:#bcc6e6}
+  #mpov .tag{font-size:11px;font-weight:900;padding:2px 8px;border-radius:999px;background:rgba(125,196,255,.2);color:#7dc4ff}
 </style>
 <div id="mpmsg" class="hidden" style="position:fixed;top:0;left:0;right:0;text-align:center;z-index:7;pointer-events:none;padding-top:max(10px,env(safe-area-inset-top))">
-  <span id="mpmsgt" style="display:inline-block;background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--ig-line);border-radius:999px;padding:10px 18px;font:600 14px var(--ig-font);box-shadow:0 14px 34px rgba(20,20,50,.2);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)"></span>
+  <span id="mpmsgt" style="display:inline-block;background:rgba(8,12,20,.85);border:1px solid rgba(150,200,255,.3);border-radius:999px;padding:8px 18px;font-weight:800;font-size:14px"></span>
 </div>
 <script>
 "use strict";
@@ -162,11 +122,11 @@ function spawnPlayer(id,cx,cy,dir){ return {id,x:cx,y:cy,dir,ndir:dir,onTrail:fa
 /* ---------- coach-guided tutorial (tap to continue, like Fruit Arena) ---------- */
 let tutMode=false, tutStep=0, tutPhase='brief', coachMsg='', tutClaimed=false;
 const TSTEPS=[
-  { brief:"Hi! I'm your coach. This green block is YOUR base — you always start here." },
+  { brief:"👋 Hi! I'm your coach. This green block is YOUR base — you always start here." },
   { brief:"Move with the ARROW KEYS, a SWIPE, or the on-screen ◀▶▲▼ buttons. Try moving OUT of your base!", act:true, hint:"move out of your base", done:()=>players[0]&&players[0].onTrail },
   { brief:"Nice — see the bright trail you leave behind? Now head BACK into your base to claim everything inside the loop!", act:true, hint:"return to your base", done:()=>tutClaimed },
-  { brief:"You claimed new land! But careful: if a rival crosses your trail — or you cross your OWN trail — you POP." },
-  { brief:"See the glowing WALL around the edge, with the yellow corners? Never run into it — you POP! Always stay INSIDE the border." },
+  { brief:"🎉 You claimed new land! But careful: if a rival crosses your trail — or you cross your OWN trail — you POP." },
+  { brief:"⚠️ See the glowing WALL around the edge, with the yellow corners? Never run into it — you POP! Always stay INSIDE the border." },
   { brief:"That's it! Claim as much land as you can. Tap to start playing!", end:true },
 ];
 function startTut(){ document.getElementById('ov').classList.add('hidden'); state='play'; showPad(true); tutMode=true; tutStep=0; tutPhase='brief'; tutClaimed=false; coachMsg='';
@@ -177,29 +137,22 @@ function tutContinue(){ if(tutPhase!=='brief')return; const s=TSTEPS[tutStep]; i
 function tutAdvance(){ tutStep++; if(tutStep>=TSTEPS.length){ tutFinish(); return; } tutBrief(); }
 function tutTick(){ if(tutPhase==='act'){ const s=TSTEPS[tutStep]; if(s.done&&s.done()) tutAdvance(); } }
 function tutFinish(){ tutMode=false; coachMsg=''; state='menu'; showPad(false); try{localStorage.setItem('paperTut','1');}catch(e){}
-  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='Paper Territory';
-  ov.querySelector('.sub').innerHTML="You're ready! Tap Play to start claiming land."; document.getElementById('startLbl').textContent='Play';
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='🟩 PAPER TERRITORY';
+  ov.querySelector('.sub').innerHTML="You're ready! Hit CLAIM to play."; ov.querySelector('#start').textContent='CLAIM ▶';
   ov.querySelector('#best').innerHTML = best?('Best: '+best+'%'):''; ov.classList.remove('hidden'); }
 function rrect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCoach(){ if(!coachMsg)return; ctx.setTransform(DPR,0,0,DPR,0,0);
   const maxw=Math.min(W*0.92,520), pad=14, x=W/2, tx0=x-maxw/2+pad+40;
-  const F='-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif';
-  ctx.font='600 17px '+F; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.font='600 17px Trebuchet MS'; ctx.textAlign='left'; ctx.textBaseline='top';
   const words=coachMsg.split(' '); const lines=[]; let line='';
   for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxw-pad*2-44 && line){lines.push(line);line=w;} else line=t; }
   if(line)lines.push(line);
-  const extra = tutPhase==='brief' ? 'Tap or press any key to continue' : ('▶ '+(TSTEPS[tutStep].hint||'do the action to continue…'));
+  const extra = tutPhase==='brief' ? '👉 Tap / press any key to continue' : ('▶ '+(TSTEPS[tutStep].hint||'do the action to continue…'));
   const lh=23, bh=(lines.length+1)*lh+pad*2, by=Math.max(12,H*0.05), bx=x-maxw/2;
-  ctx.save(); ctx.shadowColor='rgba(20,20,50,.28)'; ctx.shadowBlur=30; ctx.shadowOffsetY=10;
-  ctx.fillStyle='rgba(255,255,255,.94)'; rrect(bx,by,maxw,bh,22); ctx.fill(); ctx.restore();
-  ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1; rrect(bx,by,maxw,bh,22); ctx.stroke();
-  // coach badge: green rounded tile with a person glyph
-  const cx0=bx+12, cy0=by+pad; const gr=ctx.createLinearGradient(cx0,cy0,cx0+32,cy0+32); gr.addColorStop(0,'#14b39a'); gr.addColorStop(1,'#5fae2e');
-  ctx.fillStyle=gr; rrect(cx0,cy0,32,32,9); ctx.fill();
-  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.beginPath(); ctx.arc(cx0+16,cy0+12,4.5,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx0+7.5,cy0+26); ctx.quadraticCurveTo(cx0+16,cy0+15,cx0+24.5,cy0+26); ctx.stroke();
-  ctx.fillStyle='#1d1d1f'; ctx.font='600 17px '+F; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], tx0, by+pad+i*lh);
-  ctx.fillStyle='#0f8f7a'; ctx.font='700 14px '+F; ctx.fillText(extra, tx0, by+pad+lines.length*lh+2);
+  ctx.fillStyle='rgba(8,12,8,.9)'; rrect(bx,by,maxw,bh,14); ctx.fill(); ctx.strokeStyle='rgba(125,255,155,.75)'; ctx.lineWidth=2; rrect(bx,by,maxw,bh,14); ctx.stroke();
+  ctx.font='26px serif'; ctx.fillText('🧑', bx+10, by+pad+4);
+  ctx.fillStyle='#fff'; ctx.font='600 17px Trebuchet MS'; for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], tx0, by+pad+i*lh);
+  ctx.fillStyle='#7dff9b'; ctx.font='700 14px Trebuchet MS'; ctx.fillText(extra, tx0, by+pad+lines.length*lh+2);
 }
 
 function start(){ document.getElementById('ov').classList.add('hidden'); state='play'; showPad(true);
@@ -260,8 +213,8 @@ function nearestOwn(p){ let bd=1e9,bx=null,by=null; for(let y=0;y<GH;y+=2)for(le
 
 function gameOver(){ state='over'; showPad(false); const pv=Math.round(pct(1)); if(pv>best){ best=pv; saveBest(); }
   try{ if(window.IGAuth) IGAuth.submitScore('paper', best); }catch(e){}
-  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='Popped!'; ov.querySelector('.sub').innerHTML='A rival crossed your trail, you crossed your own — or you hit the wall.';
-  document.getElementById('startLbl').textContent='Play again'; ov.querySelector('#best').innerHTML='<div class="big">'+pv+'%</div>claimed this run · Best: '+best+'%'; ov.scrollTop=0;
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='💥 POPPED!'; ov.querySelector('.sub').innerHTML='A rival crossed your trail, you crossed your own — or you hit the wall!';
+  ov.querySelector('#start').textContent='PLAY AGAIN ▶'; ov.querySelector('#best').innerHTML='<div class="big">'+pv+'%</div>claimed this run • Best: '+best+'%';
   setTimeout(()=>ov.classList.remove('hidden'),500); }
 
 function drawArenaBorder(){
@@ -335,7 +288,7 @@ bindPad('bL',2); bindPad('bR',0); bindPad('bU',3); bindPad('bD',1);   // right=0
 function showPad(b){ const p=document.getElementById('pad'); if(p) p.classList.toggle('on', !!b && isTouch); }
 document.getElementById('start').onclick=start;
 document.getElementById('tutBtn').onclick=startTut;
-document.getElementById('best').innerHTML = best?('<div class="big">'+best+'%</div>your best claim'):'';
+document.getElementById('best').innerHTML = best?('Best: '+best+'%'):'';
 
 /* ============================================================================
    ONLINE MULTIPLAYER (Supabase Realtime, host-authoritative)
@@ -381,9 +334,9 @@ function hostDir(ev,payload){ if(!RM)return; payload.seq=++RM.seq; RM.lastDir={e
   if(!HB){ const g=RGEN; HB=setInterval(()=>{ if(g!==RGEN||!RM||!RM.isHost){clearInterval(HB);HB=null;return;} if(RM.lastDir)MP.send(RM.lastDir.ev,RM.lastDir.payload); },3000); } }
 function leaveRoom(){ RGEN++; if(HB){clearInterval(HB);HB=null;} MP.leave(); mp.on=false; mp.role=null; RM=null; state='menu'; showPad(false);
   document.getElementById('mpov').classList.add('hidden'); document.getElementById('mpmsg').classList.add('hidden');
-  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='Paper Territory';
-  ov.querySelector('.sub').innerHTML="Leave your zone, draw a loop, come home — and the land inside is yours.";
-  document.getElementById('startLbl').textContent='Play'; ov.classList.remove('hidden'); wakeLoop(); }
+  const ov=document.getElementById('ov'); ov.querySelector('h1').textContent='🟩 PAPER TERRITORY';
+  ov.querySelector('.sub').innerHTML="Swipe / arrow keys to steer. Leave your zone to draw a trail, then <b>return to your zone to claim everything inside</b>.";
+  ov.querySelector('#start').textContent='CLAIM ▶'; ov.classList.remove('hidden'); wakeLoop(); }
 function mpToast(t){ const el=document.getElementById('mpmsg'); document.getElementById('mpmsgt').textContent=t; el.classList.remove('hidden'); clearTimeout(mpToast._t); mpToast._t=setTimeout(()=>el.classList.add('hidden'),2600); }
 function shareLink(){ return location.origin+location.pathname+'?room='+(MP.code||''); }
 function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++)s+=A[(Math.random()*A.length)|0]; return s; }
@@ -393,11 +346,11 @@ const ovEl=()=>document.getElementById('mpov');
 function openRoom(){ PNAME=(()=>{ try{ return (window.IGAuth&&IGAuth.displayName&&IGAuth.displayName())||PNAME; }catch(e){ return PNAME; } })();
   document.getElementById('ov').classList.add('hidden'); showRoomChoice(); }
 function showRoomChoice(){ const el=ovEl(); el.innerHTML=
-  '<h1 style="font-size:34px">Play with Friends</h1>'+
+  '<h1 style="font-size:34px">🎮 Play with Friends</h1>'+
   '<div class="sub">Up to 4 players — empty spots become bots. Create a room and share the code, or join with a friend\'s.</div>'+
-  '<button class="btn" id="mkRoom">Create Room</button>'+
-  '<div class="card"><div class="lbl">Have a code?</div><input id="jCode" maxlength="4" placeholder="CODE" /><button class="btn" id="jRoom" style="margin-top:10px;width:100%">Join</button></div>'+
-  '<a class="ghost" id="mpBack">Back</a>';
+  '<button class="btn" id="mkRoom">➕ Create Room</button>'+
+  '<div class="card"><div class="lbl">Have a code?</div><input id="jCode" maxlength="4" placeholder="CODE" /><button class="btn" id="jRoom" style="margin-top:10px;padding:12px 30px;font-size:16px">🔑 Join</button></div>'+
+  '<a class="ghost" id="mpBack">← Back</a>';
   el.classList.remove('hidden');
   document.getElementById('mkRoom').onclick=function(){ createRoom(); };   // no arg — button passes an Event
   const jc=document.getElementById('jCode');
@@ -421,25 +374,25 @@ async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-le
 }
 function showJoining(code){ const el=ovEl(); el.innerHTML=
   '<h1 style="font-size:28px">Joining…</h1><div class="big" style="letter-spacing:10px">'+esc(code)+'</div>'+
-  '<div class="sub">Looking for the room…</div><a class="ghost" id="jCancel" style="margin-top:8px">Cancel</a>';
+  '<div class="sub">Looking for the room…</div><a class="ghost" id="jCancel" style="margin-top:8px">← Cancel</a>';
   el.classList.remove('hidden'); document.getElementById('jCancel').onclick=leaveRoom; }
 function roomNotFound(code){ try{ MP.leave(); }catch(e){} RM=null; const el=ovEl(); el.innerHTML=
-  '<h1 style="font-size:26px">Room not found</h1>'+
+  '<h1 style="font-size:26px">😕 Room not found</h1>'+
   '<div class="sub">There\'s no room with code <b>'+esc(code)+'</b> right now. Double-check the code with your friend (rooms are case-insensitive), or start your own.</div>'+
-  '<button class="btn" id="tryAgain">Try another code</button>'+
-  '<a class="ghost" id="mkInstead" style="margin-top:10px">Create a room instead</a>';
+  '<button class="btn" id="tryAgain">🔁 Try another code</button>'+
+  '<a class="ghost" id="mkInstead" style="margin-top:10px">➕ Create a room instead</a>';
   el.classList.remove('hidden'); document.getElementById('tryAgain').onclick=showRoomChoice; document.getElementById('mkInstead').onclick=()=>createRoom(); }
 function hostLobbyUpdate(){ if(!RM||!RM.isHost)return; RM.players=MP.presenceList().slice(0,MAXP); RM.hostId=myId;
   MP.send('lobby',{hostId:myId,players:RM.players}); renderLobby(); }
 function renderLobby(){ if(!RM)return; const el=ovEl(); const ps=RM.players||[]; const slots=[];
   for(let s=0;s<MAXP;s++){ const h=ps[s]; slots.push('<div class="prow"><span class="dot" style="background:'+COLS[s].b+'"></span>'+
-    (h? ('<b>'+esc(h.name)+'</b>'+(h.id===RM.hostId?' <span class="tag">HOST</span>':'')+(h.id===myId?' <span style="color:var(--accent);font-size:13px">· you</span>':'')) : '<span class="mini">Bot</span>')+'</div>'); }
-  el.innerHTML='<div class="lbl" style="margin-bottom:2px">Room Code — share it</div>'+
-    '<div class="big" style="font-size:clamp(46px,15vw,64px);letter-spacing:12px;color:var(--ig-text)">'+esc(RM.code)+'</div>'+
-    '<div class="row" style="margin:2px 0 10px"><button class="ghost" id="shWA">WhatsApp</button><button class="ghost" id="shCopy">Copy link</button></div>'+
+    (h? ('<b>'+esc(h.name)+'</b>'+(h.id===RM.hostId?' <span class="tag">HOST</span>':'')+(h.id===myId?' <span style="color:#7dff9b;font-size:12px">• you</span>':'')) : '<span class="mini">🤖 Bot</span>')+'</div>'); }
+  el.innerHTML='<div class="lbl" style="margin-bottom:2px">Room Code — share it 👇</div>'+
+    '<div class="big" style="font-size:clamp(46px,15vw,64px);letter-spacing:12px;color:#5ef0ff;filter:drop-shadow(0 3px 14px rgba(94,240,255,.4))">'+esc(RM.code)+'</div>'+
+    '<div class="row" style="margin:2px 0 10px"><button class="ghost" id="shWA">🟢 WhatsApp</button><button class="ghost" id="shCopy">🔗 Copy link</button></div>'+
     '<div class="lbl">Players — empty spots fill with bots</div><div class="plist">'+slots.join('')+'</div>'+
-    (RM.isHost? '<button class="btn" id="goStart" style="margin-top:14px">Start Game</button>' : '<div class="sub" style="margin-top:14px">Waiting for the host to start…</div>')+
-    '<a class="ghost" id="lvRoom" style="margin-top:8px">Leave</a>';
+    (RM.isHost? '<button class="btn" id="goStart" style="margin-top:14px">▶ Start Game</button>' : '<div class="sub" style="margin-top:14px">Waiting for the host to start…</div>')+
+    '<a class="ghost" id="lvRoom" style="margin-top:8px">← Leave</a>';
   el.classList.remove('hidden');
   document.getElementById('shWA').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent('Join my Paper Territory game! '+shareLink()),'_blank');
   document.getElementById('shCopy').onclick=async()=>{ try{ if(navigator.share){await navigator.share({url:shareLink(),title:'Paper Territory'});return;} }catch(e){} try{ await navigator.clipboard.writeText(shareLink()); mpToast('Link copied!'); }catch(e){ mpToast(shareLink()); } };
@@ -505,11 +458,11 @@ function mpHostGameOver(w){ if(state==='mpover')return; mp.winner=w; state='mpov
 function rosterName(slot){ const r=mp.roster&&mp.roster.find(x=>x.slot===slot); return r?r.name:('Player '+slot); }
 function applyGameOver(pkt){ if(state==='mpover')return; mp.winner=pkt.winner; state='mpover'; showMpOver(pkt.winner); }
 function showMpOver(w){ showPad(false); const iWon=(w===mp.slot); sfx(iWon?740:200,.3,'square');
-  const el=ovEl(); el.innerHTML='<h1 style="font-size:38px">'+(iWon?'You Win!':'Game Over')+'</h1>'+
+  const el=ovEl(); el.innerHTML='<h1 style="font-size:38px">'+(iWon?'🏆 YOU WIN!':'🏁 Game Over')+'</h1>'+
     '<div class="big" style="color:'+colOf(w).t+'">'+esc(rosterName(w))+' wins!</div>'+
     '<div class="sub">Last player standing takes the crown.</div>'+
-    (RM&&RM.isHost? '<button class="btn" id="rmBtn">Rematch</button>' : '<div class="sub" id="rmWait">The host can start a rematch…</div>')+
-    '<a class="ghost" id="lvRoom2" style="margin-top:10px">Leave Room</a>';
+    (RM&&RM.isHost? '<button class="btn" id="rmBtn">🔁 Rematch</button>' : '<div class="sub" id="rmWait">The host can start a rematch…</div>')+
+    '<a class="ghost" id="lvRoom2" style="margin-top:10px">← Leave Room</a>';
   el.classList.remove('hidden');
   const rb=document.getElementById('rmBtn'); if(rb) rb.onclick=hostRematch;
   document.getElementById('lvRoom2').onclick=leaveRoom;
@@ -520,10 +473,10 @@ function hostRematch(){ if(!RM||!RM.isHost)return; RM.acks={}; RM.acks[myId]=tru
   hostDir('rematch',{reqId, by:PNAME}); showRematchPrompt({by:PNAME, self:true});
   roomTimer(()=>hostBeginRematch(), REMATCH_MS); }
 function showRematchPrompt(pkt){ if(pkt.self && RM&&RM.isHost){ // host waits for others
-    const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">Rematch?</h1><div class="sub">Waiting for players to accept… (15s)</div><div class="big" id="rmCd">15</div><a class="ghost" id="lvRoom3">Leave</a>';
+    const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">Rematch?</h1><div class="sub">Waiting for players to accept… (15s)</div><div class="big" id="rmCd">15</div><a class="ghost" id="lvRoom3">← Leave</a>';
     el.classList.remove('hidden'); document.getElementById('lvRoom3').onclick=leaveRoom; rematchCountdown(); return; }
-  const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">Rematch?</h1><div class="sub"><b>'+esc(pkt.by||'The host')+'</b> wants a rematch!</div><div class="big" id="rmCd">15</div>'+
-    '<div class="row"><button class="btn" id="rmYes">Accept</button><button class="ghost" id="rmNo">Decline</button></div>';
+  const el=ovEl(); el.innerHTML='<h1 style="font-size:30px">🔁 Rematch?</h1><div class="sub"><b>'+esc(pkt.by||'The host')+'</b> wants a rematch!</div><div class="big" id="rmCd">15</div>'+
+    '<div class="row"><button class="btn" id="rmYes">✅ Accept</button><button class="ghost" id="rmNo">❌ Decline</button></div>';
   el.classList.remove('hidden'); rematchCountdown();
   document.getElementById('rmYes').onclick=()=>{ MP.send('rematchack',{ctrl:myId,accept:true}); const e=ovEl(); e.innerHTML='<h1 style="font-size:30px">Ready!</h1><div class="sub">Waiting for the host to start…</div>'; e.classList.remove('hidden'); };
   document.getElementById('rmNo').onclick=()=>{ MP.send('rematchack',{ctrl:myId,accept:false}); leaveRoom(); };
@@ -583,7 +536,7 @@ try{ if(!localStorage.getItem('paperTut')) startTut(); }catch(e){}   // first vi
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
-  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?IGAuth.displayName():'Log in';
+  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
     try{ var s=JSON.parse(localStorage.getItem('paperTerritory_v1')); if(s&&+s.best>0) IGAuth.submitScore('paper',+s.best); }catch(e){} }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>

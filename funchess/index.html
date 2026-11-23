@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Fun Chess</title>
 <link rel="manifest" href="../manifest.webmanifest">
-<meta name="theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#0b0d1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fun Chess">
@@ -21,7 +21,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<script src="../theme.js"></script>
 <style>
 /* Fun Chess — one page, several screens. Dark premium look shared with the other ilan Games titles. */
 :root{
@@ -431,141 +430,6 @@ body.mode4 .toast.on{transform:translate(-50%,0)}
 .pts4tbl{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .pts4tbl div{padding:8px;border-radius:12px;background:rgba(255,255,255,.05);text-align:center;font-weight:700;font-size:13px;color:#cfd4ec}
 .pts4tbl b{display:block;font-family:var(--f-display);font-size:16px;color:#fff}
-
-/* ===================== ilan Games shared theme (light glass). The chessboard keeps its own look. ===================== */
-:root,html[data-theme]{ --accent:#a07a52; --accent2:#4a3220; --icon1:#9a7650; --icon2:#3d2716; }
-html[data-theme]{ --text:var(--ig-text); --dim:var(--ig-text2); --faint:var(--ig-text3); --glass:var(--ig-glass); --glass2:rgba(118,118,128,.12); --line:var(--ig-line);
-  --f-display:var(--ig-font); --f-ui:var(--ig-font); --cyan:#0a84ff; --win:#28b14c; --lose:#e0364f; --gold:#b7791f; color-scheme:light; }
-/* the 4-player game keeps its dark colourful arena */
-html[data-theme] #four{ --text:#eef1ff; --dim:#9aa3c7; --faint:#5f6891; --glass:rgba(255,255,255,.07); --glass2:rgba(255,255,255,.1); --line:rgba(255,255,255,.14); --gold:#fbbf24; --win:#34d399; --lose:#fb7185; color:#eef1ff; }
-html[data-theme] body{ background:transparent; color:var(--ig-text); font-family:var(--ig-font); letter-spacing:-.01em; }
-html[data-theme] #bgfx{ display:none; }
-html[data-theme] .col{ gap:16px; }
-html[data-theme] .ig-col{ max-width:460px; }
-html[data-theme] .glass{ background:var(--glass); border:1px solid var(--line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
-html[data-theme] #four .glass{ background:var(--glass); box-shadow:none; }
-html[data-theme] .icon-btn{ border-radius:999px; background:var(--ig-glass); border:1px solid var(--ig-line); color:var(--ig-text); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
-html[data-theme] #four .icon-btn{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); color:#fff; box-shadow:none; }
-.icon-btn svg, .gctrl .ic svg, .btn svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-.icon-btn.sm svg{ width:19px; height:19px; }
-.ig-iconbtn{ border:1px solid var(--ig-line); }
-.ig-cta, .ig-row{ border:0; }
-.ig-mode{ border:1px solid var(--ig-line); }
-html[data-theme] .h2{ font-weight:700; font-size:17px; letter-spacing:-.02em; text-align:center; }
-html[data-theme] .topbar{ gap:10px; }
-html[data-theme] .topbar .h2{ text-align:center; }
-html[data-theme] .screen > .col > .topbar:not(:has(> .pill:not([hidden])))::after{ content:''; width:44px; flex:none; }
-html[data-theme] .acct .nm{ white-space:normal; line-height:1.25; }
-html[data-theme] .eyebrow, html[data-theme] .section-t{ font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--ig-text2); }
-html[data-theme] .section-t{ margin:4px 4px -6px; }
-html[data-theme] .muted{ font-weight:500; }
-html[data-theme] .note, html[data-theme] .empty{ font-weight:500; }
-/* buttons → capsules */
-html[data-theme] .btn{ border-radius:999px; font-weight:700; letter-spacing:-.01em; min-height:52px; }
-html[data-theme] .btn.sm{ border-radius:999px; min-height:40px; font-size:14px; }
-html[data-theme] .btn.primary{ background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent), inset 0 1px 0 rgba(255,255,255,.3); }
-html[data-theme] .btn.green{ background:linear-gradient(160deg,#5ee28a,#1ea85a); color:#fff; box-shadow:0 10px 24px -8px rgba(30,168,90,.55); }
-html[data-theme] .btn.gold{ background:linear-gradient(160deg,#ffcf4a,#ff9500); color:#3a2200; box-shadow:0 10px 24px -8px rgba(255,149,0,.5); }
-html[data-theme] .btn.ghost{ background:var(--ig-glass2); border:1px solid var(--ig-line); color:var(--ig-text); box-shadow:none; }
-html[data-theme] #four .btn.ghost{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.16); color:#fff; }
-html[data-theme] .btn.red{ background:rgba(224,54,79,.1); border:1px solid rgba(224,54,79,.3); color:#c41e3a; }
-html[data-theme] .btn:disabled{ filter:none; opacity:.45; }
-/* segmented controls */
-html[data-theme] .seg{ gap:0; padding:3px; border-radius:999px; background:rgba(118,118,128,.12); border:0; }
-html[data-theme] .seg button{ min-height:36px; border-radius:999px; font-weight:600; color:var(--ig-text2); transition:background .2s, color .2s; }
-html[data-theme] .seg button.on{ background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
-/* choice tiles (time, bot level, colours, puzzle categories) */
-html[data-theme] .chip, html[data-theme] .lvl, html[data-theme] .colors button, html[data-theme] .colors4 button, html[data-theme] .pcat{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:18px; color:var(--ig-text);
-  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); box-shadow:inset 0 1px 0 var(--ig-hl); }
-html[data-theme] .chip b, html[data-theme] .lvl b, html[data-theme] .pcat b{ font-weight:700; letter-spacing:-.01em; }
-html[data-theme] .chip.on, html[data-theme] .lvl.on, html[data-theme] .colors button.on, html[data-theme] .pcat.on{ background:linear-gradient(160deg,var(--accent),var(--accent2)); border-color:transparent; color:#fff; box-shadow:0 10px 22px -10px color-mix(in srgb, var(--accent2) 80%, transparent); }
-html[data-theme] .chip.on small, html[data-theme] .lvl.on small, html[data-theme] .pcat.on small{ color:rgba(255,255,255,.85); }
-html[data-theme] .colors4 button.on{ background:#fff; }
-html[data-theme] .pcat .em{ width:34px; height:34px; border-radius:10px; display:grid; place-items:center; color:#fff; background:linear-gradient(160deg,#5ee28a,#11998e); box-shadow:inset 0 0 0 1px rgba(255,255,255,.28); }
-html[data-theme] .pcat.on .em{ background:rgba(255,255,255,.22); }
-.pcat .em svg{ width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-html[data-theme] .bar{ background:rgba(118,118,128,.16); }
-html[data-theme] .pcat.on .bar{ background:rgba(255,255,255,.25); } html[data-theme] .pcat.on .bar i{ background:#fff; }
-html[data-theme] .stepper button{ background:rgba(118,118,128,.12); border-radius:999px; color:var(--ig-text); }
-html[data-theme] .stepper b{ font-weight:800; }
-html[data-theme] .switch{ background:rgba(120,120,128,.18); width:51px; height:31px; border-radius:999px; }
-html[data-theme] .switch::after{ top:2px; left:2px; width:27px; height:27px; box-shadow:0 3px 8px rgba(0,0,0,.15), 0 0 0 .5px rgba(0,0,0,.04); }
-html[data-theme] .switch.on{ background:#34c759; } html[data-theme] .switch.on::after{ left:22px; }
-html[data-theme] .optrow b{ font-weight:600; }
-html[data-theme] .text-in{ background:var(--ig-field); border:1px solid var(--ig-line); color:var(--ig-text); border-radius:16px; }
-html[data-theme] .text-in:focus{ border-color:color-mix(in srgb, var(--accent) 70%, transparent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); outline:none; }
-html[data-theme] .pill{ background:rgba(118,118,128,.12); border:0; color:var(--ig-text2); font-weight:700; }
-html[data-theme] #four .pill{ background:rgba(255,255,255,.1); color:#cfd4ec; }
-html[data-theme] .toast{ background:var(--ig-sheet); color:var(--ig-text); border:1px solid var(--ig-line); border-radius:999px; -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); box-shadow:var(--ig-shadow2); }
-/* home */
-#home .heroPieces{ margin-top:4px; }
-#home .heroPieces::before{ background:radial-gradient(circle,rgba(246,180,75,.35),transparent 65%); }
-#home .heroPieces .hp{ filter:drop-shadow(0 14px 16px rgba(60,35,10,.35)); }
-.homeCard{ padding:12px 14px 8px; display:flex; flex-direction:column; gap:10px; }
-.homeCard .acct{ padding:0 0 10px; border-bottom:1px solid var(--ig-line); }
-.homeCard .acct .nm{ font-weight:700; }
-.homeCard .ig-stats{ padding:2px 0 4px; }
-html[data-theme] .avatar{ box-shadow:none; font-family:var(--ig-font); }
-html[data-theme] .homeStats b{ font-weight:800; letter-spacing:-.03em; color:var(--ig-text); }
-html[data-theme] .homeStats span{ letter-spacing:.02em; text-transform:none; font-size:12px; font-weight:500; }
-@media (max-width:370px){ .ig-mode small{ display:none; } }
-/* lists of rooms / players / leaderboard */
-html[data-theme] .roomrow, html[data-theme] .lb-row, html[data-theme] .stand{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:18px; -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
-html[data-theme] .roomrow .nm, html[data-theme] .seatrow .nm, html[data-theme] .seat4 .nm, html[data-theme] .stand .nm{ font-weight:700; }
-html[data-theme] .roomrow .sub{ font-weight:500; }
-html[data-theme] .lb-row.me, html[data-theme] .stand.me{ background:color-mix(in srgb, var(--accent) 14%, var(--ig-glass)); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
-html[data-theme] .lb-row .rk{ color:var(--ig-text3); } html[data-theme] .lb-row.r1 .rk{ color:#d79b00; } html[data-theme] .lb-row.r2 .rk{ color:#8e8e93; } html[data-theme] .lb-row.r3 .rk{ color:#c2702a; }
-html[data-theme] .bigcode, html[data-theme] .eloCard b{ background:linear-gradient(160deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-html[data-theme] .eloCard span{ letter-spacing:.04em; font-weight:700; }
-html[data-theme] .stat{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:18px; }
-html[data-theme] .stat b{ font-weight:800; }
-html[data-theme] .stat span{ letter-spacing:.03em; font-weight:600; }
-html[data-theme] .howto h3{ font-size:17px; font-weight:700; letter-spacing:-.02em; }
-html[data-theme] .howto p, html[data-theme] .howto li{ color:var(--ig-text2); font-weight:500; }
-html[data-theme] .howto b{ color:var(--ig-text); }
-html[data-theme] .pts4tbl div{ background:rgba(118,118,128,.1); color:var(--ig-text2); font-weight:500; }
-html[data-theme] .pts4tbl b{ color:var(--ig-text); font-weight:800; }
-/* game screen (2-player + puzzles): light panels around the board */
-html[data-theme] .board{ box-shadow:0 0 0 calc(var(--bs,320px)*.016) var(--frame1),0 0 0 calc(var(--bs,320px)*.024) var(--frame2),0 26px 50px -12px rgba(60,35,15,.45); }
-html[data-theme] .board.four{ box-shadow:none; }
-html[data-theme] .gtop .gt b{ font-weight:700; letter-spacing:-.02em; }
-html[data-theme] .pbar .pav{ background:rgba(118,118,128,.12); border-color:var(--ig-line); }
-html[data-theme] .pbar .pav .off{ border-color:#fff; }
-html[data-theme] .pbar .pname{ font-weight:700; }
-html[data-theme] .clock{ font-family:var(--ig-font); font-weight:700; background:rgba(118,118,128,.12); border:1px solid var(--ig-line); color:var(--ig-text2); border-radius:999px; padding:7px 14px; }
-html[data-theme] .clock.on{ background:#1d1d1f; color:#fff; box-shadow:0 8px 18px -6px rgba(0,0,0,.35); }
-html[data-theme] .clock.low{ color:#e0364f; }
-html[data-theme] .clock.on.low{ background:linear-gradient(160deg,#ff5a6e,#e0364f); color:#fff; }
-html[data-theme] .clock.flag{ background:#e0364f; color:#fff; }
-html[data-theme] .moves{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:16px; }
-html[data-theme] .moves .mv{ color:var(--ig-text); font-weight:600; }
-html[data-theme] .moves .mv.last{ background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--ig-text); }
-html[data-theme] .gctrl button{ background:var(--glass); border:1px solid var(--line); border-radius:999px; font-weight:600; color:inherit; }
-html[data-theme] #game .gctrl button, html[data-theme] #pzPlay .gctrl button{ -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
-.gctrl .ic{ display:inline-flex; }
-.gctrl .ic svg{ width:18px; height:18px; }
-html[data-theme] .status .banner{ background:rgba(255,149,0,.12); border:1px solid rgba(255,149,0,.35); color:#8a4b00; border-radius:18px; }
-html[data-theme] .status .banner.red{ background:rgba(224,54,79,.1); border-color:rgba(224,54,79,.3); color:#b4233a; }
-html[data-theme] .status .banner .btn{ border-radius:999px; }
-html[data-theme] #four .status .banner{ background:rgba(246,180,75,.14); border-color:rgba(246,180,75,.4); color:#ffe8c2; }
-html[data-theme] .pzMsg{ font-weight:700; letter-spacing:-.01em; }
-html[data-theme] .overlayMsg{ background:var(--ig-sheet); color:var(--ig-text); border:1px solid var(--ig-line); border-radius:999px; box-shadow:var(--ig-shadow2); font-family:var(--ig-font); }
-html[data-theme] .promo{ background:rgba(20,20,40,.25); }
-html[data-theme] .promo .pbox{ background:var(--ig-sheet); border:1px solid var(--ig-line); border-radius:22px; box-shadow:var(--ig-shadow2); }
-html[data-theme] .promo button{ background:rgba(118,118,128,.1); border:1px solid var(--ig-line); }
-/* sheets / pop-ups */
-html[data-theme] .sheet-wrap{ background:var(--ig-scrim); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
-html[data-theme] .sheet{ background:var(--ig-sheet); color:var(--ig-text); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:0 30px 80px rgba(20,20,50,.25), inset 0 1px 0 #fff; --text:var(--ig-text); --dim:var(--ig-text2); }
-html[data-theme] .sheet::before{ background:rgba(0,0,0,.16); }
-html[data-theme] .sheet .h2{ font-size:20px; }
-html[data-theme] .resTitle{ font-family:var(--ig-font); font-weight:900; letter-spacing:-.04em; font-size:34px; }
-html[data-theme] .resTitle.win{ background:linear-gradient(160deg,#34c759,#16803c); -webkit-background-clip:text; background-clip:text; color:transparent; }
-html[data-theme] .resTitle.loss{ background:linear-gradient(160deg,#ff5a6e,#c41e3a); -webkit-background-clip:text; background-clip:text; color:transparent; }
-html[data-theme] .resTitle.draw{ background:linear-gradient(160deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-html[data-theme] .resIcon svg{ filter:drop-shadow(0 10px 14px rgba(60,35,15,.3)); }
-html[data-theme] .resReason{ font-weight:500; }
-html[data-theme] .eloBox b{ font-family:var(--ig-font); }
-html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-font); }
 </style>
 </head>
 <body>
@@ -588,44 +452,45 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
 
 <div id="app">
   <!-- HOME -->
-  <section class="screen ig-page" id="home">
-    <div class="col ig-col">
-      <div class="ig-topbar">
-        <a class="ig-navback" id="homeBtn" href="../" title="All games" aria-label="Back to all games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-        <div style="display:flex;gap:10px">
-          <button class="ig-iconbtn" id="muteBtn" aria-label="Sound on or off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
-          <button class="ig-iconbtn" id="setBtn" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-        </div>
+  <section class="screen" id="home">
+    <div class="col">
+      <div class="topbar">
+        <a class="icon-btn" id="homeBtn" href="../" aria-label="Back to all games">🏠</a>
+        <div style="flex:1"></div>
+        <button class="icon-btn" id="muteBtn" aria-label="Sound on or off">🔊</button>
+        <button class="icon-btn" id="setBtn" aria-label="Settings">⚙️</button>
       </div>
-      <div class="ig-hero">
+      <div class="hero">
         <div class="heroPieces" aria-hidden="true"><div class="hp q" id="heroQ"></div><div class="hp k" id="heroK"></div><div class="hp n" id="heroN"></div></div>
-        <h1 class="ig-title">Fun Chess</h1>
-        <div class="ig-tagline">Outsmart a bot, a friend or the whole world.</div>
+        <h1 class="wordmark">Fun Chess</h1>
       </div>
-      <div class="ig-playrow">
-        <button class="ig-cta" id="goPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="playSub">vs Bot</small></span></button>
+      <div class="glass acct" id="acctRow">
+        <div class="avatar" id="acctAv">?</div>
+        <div class="nm" id="acctName">Not logged in<small>Log in to play online and get a rating</small></div>
+        <button class="btn sm ghost" id="acctBtn2">Log in</button>
       </div>
-      <div class="ig-modes">
-        <button class="ig-mode" id="goOnline"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Rated games</small></button>
-        <button class="ig-mode" id="goFour"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="7.5" r="3"/><circle cx="16.5" cy="7.5" r="3"/><circle cx="7.5" cy="16.5" r="3"/><circle cx="16.5" cy="16.5" r="3"/></svg></span><b>4-Player</b><small>All vs all</small></button>
-        <button class="ig-mode" id="goPuzzles"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4h4v2a2 2 0 1 0 0 4v0h4v4h-2a2 2 0 1 0 0 4h2v2H6v-4h2a2 2 0 1 0 0-4H6V8h4z"/></svg></span><b>Puzzles</b><small>Mates, forks</small></button>
+      <div class="glass homeStats">
+        <div><b id="hsElo">500</b><span>Rating</span></div>
+        <div><b id="hsWins">0</b><span>Wins</span></div>
+        <div><b id="hsPuz">0</b><span>Puzzles</span></div>
       </div>
-      <div class="ig-card homeCard">
-        <div class="acct" id="acctRow">
-          <div class="avatar" id="acctAv">?</div>
-          <div class="nm" id="acctName">Not logged in<small>Log in to play online and get a rating</small></div>
-          <button class="btn sm ghost" id="acctBtn2">Log in</button>
-        </div>
-        <div class="ig-stats">
-          <div><b id="hsElo">500</b><span>Rating</span></div>
-          <div><b id="hsWins">0</b><span>Wins</span></div>
-          <div><b id="hsPuz">0</b><span>Puzzles</span></div>
-        </div>
+      <div class="cards">
+        <button class="glass card big play" id="goPlay"><div class="ci g1" id="ciPlay"></div><div><b>Play</b><small>Normal chess, 4 player or puzzles</small></div><span class="go">›</span></button>
+        <button class="glass card" id="goProfile"><div class="ci g4">📊</div><div><b>Profile</b><small>Your stats and rating</small></div></button>
+        <button class="glass card" id="goBoard"><div class="ci g5">🏆</div><div><b>Leaderboard</b><small>Top rated players</small></div></button>
+        <button class="glass card big" id="goHow"><div class="ci g6">📖</div><div><b>How to play</b><small>The rules, the pieces and ratings</small></div><span class="go">›</span></button>
       </div>
-      <div class="ig-list">
-        <button class="ig-row" id="goProfile"><span class="ig-tile" style="--tile:linear-gradient(160deg,#a78bfa,#6d28d9)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="ig-grow">Profile<small>Your stats and rating</small></span></button>
-        <button class="ig-row" id="goBoard"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></span><span class="ig-grow">Leaderboard<small>Top rated players</small></span></button>
-        <button class="ig-row" id="goHow"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#48484a)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span><span class="ig-grow">How to Play<small>Rules, pieces and ratings</small></span></button>
+    </div>
+  </section>
+
+  <!-- PLAY: pick a mode -->
+  <section class="screen" id="play" hidden>
+    <div class="col">
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">‹</button><div class="h2">Play</div></div>
+      <div class="modes">
+        <button class="glass card big mode1" id="goNormal"><div class="ci g1" id="ciNormal"></div><div><b>Normal Chess</b><small>Play a bot or a friend online</small></div><span class="go">›</span></button>
+        <button class="glass card big mode2" id="goFour"><div class="ci g2" id="ciFour"></div><div><b>4-Player</b><small>Red, Blue, Yellow and Green, everyone for themselves</small></div><span class="go">›</span></button>
+        <button class="glass card big mode3" id="goPuzzles"><div class="ci g3">🧩</div><div><b>Puzzles</b><small>Mates, forks, pins and more</small></div><span class="go">›</span></button>
       </div>
     </div>
   </section>
@@ -633,8 +498,8 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- NORMAL CHESS: bot or multiplayer -->
   <section class="screen" id="setup" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Normal Chess</div><span class="pill" id="netPill" hidden>Connecting…</span></div>
-      <div class="seg" id="segOpp"><button data-v="bot">Bot</button><button data-v="online">Online</button></div>
+      <div class="topbar"><button class="icon-btn" data-back="play" aria-label="Back">‹</button><div class="h2">Normal Chess</div><span class="pill" id="netPill" hidden>Connecting…</span></div>
+      <div class="seg" id="segOpp"><button data-v="bot">🤖 Bot</button><button data-v="online">🌐 Multiplayer</button></div>
       <div id="olLogin" class="glass acct" hidden><div class="nm">You need an account to play online<small>It's free and takes 10 seconds</small></div><button class="btn sm primary" id="olLoginBtn">Log in</button></div>
       <div class="section-t" id="tcTitle">Time</div>
       <div class="chips" id="tcChips"></div>
@@ -648,7 +513,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
         <div class="note" style="margin-top:10px">You get White or Black at random</div>
       </div>
       <div id="olBox" class="col" style="gap:12px;padding:0">
-        <button class="btn primary" id="createBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create room</button>
+        <button class="btn primary" id="createBtn">➕ Create room</button>
         <div class="codeIn"><input class="text-in" id="codeIn" maxlength="4" placeholder="Room code" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button class="btn ghost" id="joinBtn" style="flex:none;padding:0 22px">Join</button></div>
         <div class="note" id="olElo"></div>
         <div class="section-t">Open rooms · tap to join</div>
@@ -661,12 +526,12 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- WAITING ROOM -->
   <section class="screen" id="room" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" id="roomLeave" aria-label="Leave room"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Room</div><span class="pill" id="roomPill">Connecting…</span></div>
+      <div class="topbar"><button class="icon-btn" id="roomLeave" aria-label="Leave room">‹</button><div class="h2">Room</div><span class="pill" id="roomPill">Connecting…</span></div>
       <div class="glass" style="padding:10px 16px 16px">
         <div class="eyebrow" style="text-align:center;margin-top:6px">Room code</div>
         <div class="bigcode" id="roomCode">----</div>
         <div class="muted" style="text-align:center" id="roomTc">Blitz 5 min</div>
-        <div class="btnrow" style="margin-top:12px"><button class="btn ghost sm" id="roomCopy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy invite</button><button class="btn ghost sm" id="roomShare"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share</button></div>
+        <div class="btnrow" style="margin-top:12px"><button class="btn ghost sm" id="roomCopy">📋 Copy invite</button><button class="btn ghost sm" id="roomShare">📤 Share</button></div>
       </div>
       <div class="section-t">Players</div>
       <div id="roomSeats" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -677,9 +542,9 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- GAME -->
   <section class="screen" id="game" hidden>
     <div class="gtop">
-      <button class="icon-btn sm" id="gBack" aria-label="Leave game"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="icon-btn sm" id="gBack" aria-label="Leave game">‹</button>
       <div class="gt"><b id="gTitle">Fun Chess</b><small id="gSub">Blitz 5 min</small></div>
-      <button class="icon-btn sm" id="gMute" aria-label="Sound on or off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
+      <button class="icon-btn sm" id="gMute" aria-label="Sound on or off">🔊</button>
     </div>
     <div class="glayout">
       <div class="bcol" id="bcol">
@@ -691,10 +556,10 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
         <div class="status" id="gStatus"></div>
         <div class="moves" id="moveList"></div>
         <div class="gctrl">
-          <button id="cResign"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><span>Resign</span></button>
-          <button id="cDraw"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg></span><span>Draw</span></button>
-          <button id="cUndo"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></span><span>Undo</span></button>
-          <button id="cFlip"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><span>Flip</span></button>
+          <button id="cResign"><span class="ic">🏳️</span><span>Resign</span></button>
+          <button id="cDraw"><span class="ic">🤝</span><span>Draw</span></button>
+          <button id="cUndo"><span class="ic">↩️</span><span>Undo</span></button>
+          <button id="cFlip"><span class="ic">🔄</span><span>Flip</span></button>
         </div>
       </div>
     </div>
@@ -704,8 +569,8 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- 4 PLAYER SETUP (+ online lobby) -->
   <section class="screen" id="setup4" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">4-Player</div><span class="pill" id="f4Net" hidden>Connecting…</span></div>
-      <div class="seg" id="f4Mode"><button data-v="bot">Bots</button><button data-v="online">Online</button></div>
+      <div class="topbar"><button class="icon-btn" data-back="play" aria-label="Back">‹</button><div class="h2">4-Player</div><span class="pill" id="f4Net" hidden>Connecting…</span></div>
+      <div class="seg" id="f4Mode"><button data-v="bot">🤖 Bots</button><button data-v="online">🌐 Online</button></div>
       <div class="glass acct" id="f4Login" hidden><div class="nm">You need an account to play online<small>It's free and takes 10 seconds</small></div><button class="btn sm primary" id="f4LoginBtn">Log in</button></div>
       <div class="section-t" id="f4TcTitle">Time</div>
       <div class="chips" id="f4Tc"></div>
@@ -719,7 +584,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
         <div class="note" style="margin-top:10px">You play Red, at the bottom</div>
       </div>
       <div id="f4OnlineBox" class="col" style="gap:12px;padding:0">
-        <button class="btn primary" id="f4Create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create room</button>
+        <button class="btn primary" id="f4Create">➕ Create room</button>
         <div class="codeIn"><input class="text-in" id="f4CodeIn" maxlength="4" placeholder="Room code" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn ghost" id="f4Join" style="flex:none;padding:0 22px">Join</button></div>
         <div class="note" id="f4OlNote">2 to 4 players · empty seats are played by bots</div>
         <div class="section-t">Open rooms · tap to join</div>
@@ -732,12 +597,12 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- 4 PLAYER ROOM -->
   <section class="screen" id="room4" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" id="r4Leave" aria-label="Leave room"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">4 Player room</div><span class="pill" id="r4Pill">Connecting…</span></div>
+      <div class="topbar"><button class="icon-btn" id="r4Leave" aria-label="Leave room">‹</button><div class="h2">4 Player room</div><span class="pill" id="r4Pill">Connecting…</span></div>
       <div class="glass" style="padding:10px 16px 16px">
         <div class="eyebrow" style="text-align:center;margin-top:6px">Room code</div>
         <div class="bigcode" id="r4Code">----</div>
         <div class="muted" style="text-align:center" id="r4Tc">Blitz 5 min</div>
-        <div class="btnrow" style="margin-top:12px"><button class="btn ghost sm" id="r4Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy invite</button><button class="btn ghost sm" id="r4Share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share</button></div>
+        <div class="btnrow" style="margin-top:12px"><button class="btn ghost sm" id="r4Copy">📋 Copy invite</button><button class="btn ghost sm" id="r4Share">📤 Share</button></div>
       </div>
       <div class="section-t">Players</div>
       <div id="r4Seats" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -749,9 +614,9 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- 4 PLAYER GAME -->
   <section class="screen" id="four" hidden>
     <div class="gtop">
-      <button class="icon-btn sm" id="f4Back" aria-label="Leave game"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="icon-btn sm" id="f4Back" aria-label="Leave game">‹</button>
       <div class="gt"><b id="f4Title">4 Player</b><small id="f4Sub">Blitz 5 min</small></div>
-      <button class="icon-btn sm" id="f4Mute" aria-label="Sound on or off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
+      <button class="icon-btn sm" id="f4Mute" aria-label="Sound on or off">🔊</button>
     </div>
     <div class="glayout">
       <div class="bcol" id="f4Bcol">
@@ -760,9 +625,9 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
       <div class="side" id="f4Side">
         <div class="status" id="f4Status"></div>
         <div class="gctrl" style="grid-template-columns:repeat(3,1fr)">
-          <button id="f4Resign"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><span>Resign</span></button>
-          <button id="f4Rotate"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><span>Rotate</span></button>
-          <button id="f4Table"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></span><span>Scores</span></button>
+          <button id="f4Resign"><span class="ic">🏳️</span><span>Resign</span></button>
+          <button id="f4Rotate"><span class="ic">🔄</span><span>Rotate</span></button>
+          <button id="f4Table"><span class="ic">📋</span><span>Scores</span></button>
         </div>
       </div>
     </div>
@@ -771,7 +636,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- PUZZLE MENU -->
   <section class="screen" id="puzzles" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Puzzles</div><span class="pill" id="pzStreakPill">Streak 0</span></div>
+      <div class="topbar"><button class="icon-btn" data-back="play" aria-label="Back">‹</button><div class="h2">Puzzles</div><span class="pill" id="pzStreakPill">🔥 0</span></div>
       <div class="glass homeStats"><div><b id="pzSolved">0</b><span>Solved</span></div><div><b id="pzStreak">0</b><span>Streak</span></div><div><b id="pzBest">0</b><span>Best streak</span></div></div>
       <div class="section-t">Category</div>
       <div class="pcats" id="pzCats"></div>
@@ -785,9 +650,9 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- PUZZLE PLAY (uses the game screen layout) -->
   <section class="screen" id="pzPlay" hidden>
     <div class="gtop">
-      <button class="icon-btn sm" data-back="puzzles" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="icon-btn sm" data-back="puzzles" aria-label="Back">‹</button>
       <div class="gt"><b id="pzTitle">Mate in 1</b><small id="pzSub">Easy · White to move</small></div>
-      <span class="pill" id="pzStreak2">Streak 0</span>
+      <span class="pill" id="pzStreak2">🔥 0</span>
     </div>
     <div class="glayout">
       <div class="bcol" id="pzBcol">
@@ -796,9 +661,9 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
       </div>
       <div class="side" id="pzSide">
         <div class="gctrl" style="grid-template-columns:repeat(3,1fr)">
-          <button id="pzHint"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg></span><span>Hint</span></button>
-          <button id="pzShow"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span>Solution</span></button>
-          <button id="pzNext"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l9 7-9 7z"/><path d="M19 5v14"/></svg></span><span>Next</span></button>
+          <button id="pzHint"><span class="ic">💡</span><span>Hint</span></button>
+          <button id="pzShow"><span class="ic">👀</span><span>Solution</span></button>
+          <button id="pzNext"><span class="ic">⏭️</span><span>Next</span></button>
         </div>
       </div>
     </div>
@@ -807,7 +672,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- PROFILE -->
   <section class="screen" id="profile" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Profile</div><span class="pill" id="profSrc">This device</span></div>
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">‹</button><div class="h2">Profile</div><span class="pill" id="profSrc">This device</span></div>
       <div class="glass acct"><div class="avatar" id="profAv">?</div><div class="nm" id="profName">Player</div></div>
       <div class="elos">
         <div class="glass eloCard"><span>Rating</span><b id="pElo">500</b><small id="pEloPk">Peak 500</small></div>
@@ -823,8 +688,8 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- LEADERBOARD -->
   <section class="screen" id="leader" hidden>
     <div class="col">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Leaderboard</div></div>
-      <div class="seg" id="lbTabs"><button data-v="2p">Chess</button><button data-v="4p">4-Player</button></div>
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">‹</button><div class="h2">Leaderboard</div></div>
+      <div class="seg" id="lbTabs"><button data-v="2p">♟️ Chess</button><button data-v="4p">🎨 4 Player</button></div>
       <div class="glass row optrow" id="lbMe" hidden></div>
       <div id="lbList" style="display:flex;flex-direction:column;gap:6px"><div class="empty">Loading…</div></div>
     </div>
@@ -833,7 +698,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
   <!-- HOW TO PLAY -->
   <section class="screen" id="how" hidden>
     <div class="col howto">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">How to play</div></div>
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">‹</button><div class="h2">How to play</div></div>
       <div class="glass box"><h3>The goal</h3><p>Trap the other king so it can't escape. That's <b>checkmate</b> and you win. If a king is attacked it's in <b>check</b>, and its owner must get out of check right away.</p></div>
       <div class="glass box"><h3>How the pieces move</h3><div class="pmoves" id="pmoves"></div></div>
       <div class="glass box"><h3>Special moves</h3><ul>
@@ -870,7 +735,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
     <div class="resReason" id="resReason">by checkmate</div>
     <div class="glass eloBox" id="resElo" hidden></div>
     <div class="btnrow"><button class="btn primary" id="resRematch">Rematch</button><button class="btn ghost" id="resNew">New game</button></div>
-    <div class="btnrow"><button class="btn ghost sm" id="resView"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Look at board</button><button class="btn ghost sm" id="resHome"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Menu</button></div>
+    <div class="btnrow"><button class="btn ghost sm" id="resView">👀 Look at board</button><button class="btn ghost sm" id="resHome">🏠 Menu</button></div>
   </div>
 </div>
 
@@ -883,7 +748,7 @@ html[data-theme] .stand .pl, html[data-theme] .stand .sc{ font-family:var(--ig-f
     <div id="stList" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="glass eloBox" id="stElo" hidden></div>
     <div class="btnrow" id="stBtns"><button class="btn primary" id="stAgain">Play again</button><button class="btn ghost" id="stNew">New game</button></div>
-    <div class="btnrow"><button class="btn ghost sm" id="stView"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Look at board</button><button class="btn ghost sm" id="stHome"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Menu</button></div>
+    <div class="btnrow"><button class="btn ghost sm" id="stView">👀 Look at board</button><button class="btn ghost sm" id="stHome">🏠 Menu</button></div>
   </div>
 </div>
 <!-- confirm sheet -->
@@ -1644,7 +1509,7 @@ function renderStatus(){
   const el = $('gStatus');
   if (G.banner){ el.innerHTML = G.banner; return; }
   let t = '';
-  if (G.over){ el.innerHTML = $('resultSheet').hidden ? '<button class="btn ghost sm" data-a="result">Show result</button>' : ''; return; }
+  if (G.over){ el.innerHTML = $('resultSheet').hidden ? '<button class="btn ghost sm" data-a="result">🏁 Show result</button>' : ''; return; }
   else if (G.mode === 'bot' && G.ch.turn() !== G.my && G.active) t = `${BOTS[G.level - 1].n} is thinking…`;
   else if (G.mode === 'local' && G.active) t = `${COLOR_NAME[G.ch.turn()]} to move`;
   el.textContent = t;
@@ -1814,8 +1679,7 @@ $('gBack').onclick = () => {
   leaveGame(true);
 };
 $('gMute').onclick = $('muteBtn').onclick = () => { S.set.snd = !S.set.snd; save(); paintMute(); if (S.set.snd) { Snd.unlock(); Snd.tap(); } };
-const SND_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>', SND_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
-function paintMute(){ const t = S.set.snd ? SND_ON : SND_OFF; $('gMute').innerHTML = t; $('muteBtn').innerHTML = t; $('sndSw').classList.toggle('on', !!S.set.snd); }
+function paintMute(){ const t = S.set.snd ? '🔊' : '🔇'; $('gMute').textContent = t; $('muteBtn').textContent = t; $('sndSw').classList.toggle('on', !!S.set.snd); }
 
 /* ---------- bot (Web Worker ai.js, random-move fallback) ---------- */
 let worker = null, workerBad = false;
@@ -2325,13 +2189,13 @@ const Online = (() => {
     let h = '';
     const col = myColor(), opp = oppName();
     if (rs.status === 'playing'){
-      if (rs.drawOffer && rs.drawOffer !== col){ const k = rs.gameNo + ':' + rs.moves.length; if (drawToastKey !== k){ drawToastKey = k; toast(`${opp} offers a draw`); Snd.check(); } }
-      if (rs.drawOffer && rs.drawOffer !== col) h = `<div class="banner">${esc(opp)} offers a draw <button class="btn green" data-a="draw">Accept</button><button class="btn ghost" data-a="decline">No</button></div>`;
+      if (rs.drawOffer && rs.drawOffer !== col){ const k = rs.gameNo + ':' + rs.moves.length; if (drawToastKey !== k){ drawToastKey = k; toast(`🤝 ${opp} offers a draw`); Snd.check(); } }
+      if (rs.drawOffer && rs.drawOffer !== col) h = `<div class="banner">🤝 ${esc(opp)} offers a draw <button class="btn green" data-a="draw">Accept</button><button class="btn ghost" data-a="decline">No</button></div>`;
       else if (rs.drawOffer === col) h = `<div class="banner">You offered a draw…</div>`;
       if (awaySince){
         const left = Math.ceil((ABANDON_MS - (now() - awaySince)) / 1000);
         h = left > 0 ? `<div class="banner red">📡 ${esc(opp)} disconnected · you can claim the win in ${left}s</div>`
-          : `<div class="banner red">${esc(opp)} left the game <button class="btn gold" data-a="claim">Claim win</button></div>`;
+          : `<div class="banner red">📡 ${esc(opp)} left the game <button class="btn gold" data-a="claim">Claim win</button></div>`;
       } else if (!isHost && now() - lastRsAt > 7000) h = `<div class="banner">📡 Reconnecting…</div>`;
       else if (rs.moves.length < 2 && G.ch.turn() === col) h = h || `<div class="banner">Your move! The game is cancelled if no one moves in ${Math.max(0, Math.ceil((ABORT_MS - (Date.now() - rs.lastMoveAt)) / 1000))}s</div>`;
     }
@@ -2466,8 +2330,8 @@ const Setup = (() => {
    ===================================================================== */
 const Puz = (() => {
   const CATS = [
-    { id:'mate1', n:'Mate in 1', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h14l1-10-4.5 4L12 5l-3.5 7L4 8z"/><path d="M5 21h14"/></svg>' }, { id:'mate2', n:'Mate in 2', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l10 10M14 14l-2 2M14 14l2-2M20 4L10 14M10 14l2 2M10 14l-2-2M5 19l3-3M19 19l-3-3"/></svg>' }, { id:'mate3', n:'Mate in 3', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V9h3V6h2v3h4V6h2v3h3v12z"/><path d="M10 21v-4h4v4"/></svg>' },
-    { id:'material', n:'Win material', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1 0-2-.5-2.5-1.5M12 6.5V8M12 16v1.5"/></svg>' }, { id:'tactic', n:'Tactics', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg>' }, { id:'mixed', n:'Mixed', e:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r=".9"/><circle cx="15" cy="15" r=".9"/><circle cx="15" cy="9" r=".9"/><circle cx="9" cy="15" r=".9"/></svg>' },
+    { id:'mate1', n:'Mate in 1', e:'♛' }, { id:'mate2', n:'Mate in 2', e:'⚔️' }, { id:'mate3', n:'Mate in 3', e:'🏰' },
+    { id:'material', n:'Win material', e:'💰' }, { id:'tactic', n:'Tactics', e:'🎯' }, { id:'mixed', n:'Mixed', e:'🎲' },
   ];
   const THEMES = { fork:'Fork', discovered:'Discovered attack', skewer:'Skewer', pin:'Pin', deflection:'Deflection', 'double-check':'Double check',
     'removing-defender':'Remove the defender', 'x-ray':'X-ray', 'in-between':'In-between move', clearance:'Clearance', hanging:'Hanging piece',
@@ -2488,7 +2352,7 @@ const Puz = (() => {
   function renderMenu(){
     const p = S.puz, A = all();
     $('pzSolved').textContent = Math.max(solvedCount(), prof && prof.puzzles_solved || 0);
-    $('pzStreak').textContent = p.streak; $('pzBest').textContent = p.best; $('pzStreakPill').textContent = 'Streak ' + p.streak;
+    $('pzStreak').textContent = p.streak; $('pzBest').textContent = p.best; $('pzStreakPill').textContent = '🔥 ' + p.streak;
     $('pzCats').innerHTML = CATS.map(c => {
       const inCat = A.filter(z => c.id === 'mixed' || z.cat === c.id), sv = inCat.filter(z => p.solved[z.id]).length;
       return `<button class="pcat${p.cat === c.id ? ' on' : ''}" data-c="${c.id}"><span class="em">${c.e}</span><b>${c.n}</b><div class="bar"><i style="width:${inCat.length ? sv / inCat.length * 100 : 0}%"></i></div><small>${sv} / ${inCat.length} solved</small></button>`;
@@ -2517,7 +2381,7 @@ const Puz = (() => {
     $('pzSub').textContent = `${DIFF[cur.diff] || ''} · ${cur.rating} · ${COLOR_NAME[side]} to move`;
     msg(`Your move: you play ${COLOR_NAME[side]}`, '');
     $('pzNext').disabled = false; $('pzHint').disabled = false; $('pzShow').disabled = false;
-    $('pzStreak2').textContent = 'Streak ' + S.puz.streak;
+    $('pzStreak2').textContent = '🔥 ' + S.puz.streak;
     requestAnimationFrame(fitAll);
   }
   function msg(t, cls){ const el = $('pzMsg'); el.textContent = t; el.className = 'pzMsg ' + (cls || ''); }
@@ -2568,7 +2432,7 @@ const Puz = (() => {
     const before = ch.fen();
     pb.setPieces(posOf(test), true); pb.setHl({ bad:[sqIdx(tm.from), sqIdx(tm.to)] });
     Snd.bad(); msg('Not this one. Try again!', 'bad');
-    if (S.puz.streak){ S.puz.streak = 0; save(); $('pzStreak2').textContent = 'Streak 0'; }
+    if (S.puz.streak){ S.puz.streak = 0; save(); $('pzStreak2').textContent = '🔥 0'; }
     later(() => { pb.shake(); }, 250);
     later(() => { ch = new Chess(before); pb.setPieces(posOf(ch), true); pb.setHl({}); busy = false; }, 800);
   }
@@ -2578,8 +2442,8 @@ const Puz = (() => {
     S.puz.solved[cur.id] = 1;
     if (clean && !hinted){ S.puz.streak++; S.puz.best = Math.max(S.puz.best, S.puz.streak); }
     save();
-    $('pzStreak2').textContent = 'Streak ' + S.puz.streak;
-    msg(clean && !hinted ? (S.puz.streak > 1 ? `Solved! ${S.puz.streak} in a row` : 'Solved! Great job') : 'Solved!', 'good');
+    $('pzStreak2').textContent = '🔥 ' + S.puz.streak;
+    msg(clean && !hinted ? (S.puz.streak > 1 ? `Solved! 🔥 ${S.puz.streak} in a row` : 'Solved! Great job') : 'Solved!', 'good');
     Snd.good();
     if (first && me() && !ratingsOff) rpc('chess_puzzle', { p_puzzle_id:cur.id }).then(r => { if (r.data != null && prof) prof.puzzles_solved = +r.data; });
     $('pzHint').disabled = true; $('pzShow').disabled = true;
@@ -2594,7 +2458,7 @@ const Puz = (() => {
     tap(); if (!cur || done) return;
     stop(); clean = false; done = true; busy = true;
     if (S.puz.streak){ S.puz.streak = 0; save(); }
-    $('pzStreak2').textContent = 'Streak 0';
+    $('pzStreak2').textContent = '🔥 0';
     msg('Here is the solution', '');
     let k = 0;
     const playNext = () => {
@@ -2638,7 +2502,7 @@ function paintProfile(){
   // rating history sparkline (local record of rated results)
   const h = [{ e:500 }].concat(S.hist);
   const box = $('histBox');
-  if (h.length < 2){ box.hidden = false; $('spark').innerHTML = `<text x="150" y="50" text-anchor="middle" fill="#8e8e93" font-size="13" font-weight="600" font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif">Play rated online games to see your rating graph</text>`; }
+  if (h.length < 2){ box.hidden = false; $('spark').innerHTML = `<text x="150" y="50" text-anchor="middle" fill="#9aa3c7" font-size="13" font-weight="700" font-family="Plus Jakarta Sans,sans-serif">Play rated online games to see your rating graph</text>`; }
   else {
     const es = h.map(x => x.e), lo = Math.min(...es) - 20, hi = Math.max(...es) + 20;
     const pts = es.map((e, i) => `${(i / (es.length - 1) * 296 + 2).toFixed(1)},${(86 - (e - lo) / (hi - lo) * 80).toFixed(1)}`);
@@ -2681,11 +2545,10 @@ function renderHome(){
   $('hsWins').textContent = prof ? prof.wins | 0 : S.stats.wins;
   $('hsPuz').textContent = Math.max(prof && prof.puzzles_solved || 0, Object.keys(S.puz.solved).length);
   $('setAcctTxt').textContent = u ? 'Logged in as ' + u.name : 'Not logged in';
-  try { const lv = clamp(Math.round(+S.set.level) || 2, 1, BOTS.length); $('playSub').textContent = 'vs Bot · ' + BOTS[lv - 1].n + ' · ' + tcLabel(tcOf(S.set.tc)); } catch(e){}
 }
 $('acctBtn2').onclick = $('setAcct').onclick = () => { tap(); closeSheets(); try { if (window.IGAuth) (IGAuth.getUser() ? IGAuth.openAccount() : IGAuth.openAuth()); } catch(e){} };
-$('goPlay').onclick = () => { tap(); Setup.open('bot'); };
-$('goOnline').onclick = () => { tap(); Setup.open('online'); };
+$('goPlay').onclick = () => { tap(); show('play'); };
+$('goNormal').onclick = () => { tap(); Setup.open(); };
 $('goFour').onclick = () => { tap(); if (window.FourUI) window.FourUI.open(); else toast('4 Player is coming very soon!'); };
 $('goPuzzles').onclick = () => { tap(); show('puzzles'); Puz.renderMenu(); };
 $('goProfile').onclick = () => { tap(); openProfile(); };
@@ -2705,6 +2568,9 @@ const extraBoards = [];
 function redrawAllBg(){ extraBoards.forEach(b => b.drawBg()); }
 // art on home + how-to
 $('heroK').innerHTML = pieceSVG('k', 'w'); $('heroQ').innerHTML = pieceSVG('q', 'b'); $('heroN').innerHTML = pieceSVG('n', 'w');
+$('ciPlay').innerHTML = pieceSVG('k', 'w');
+$('ciNormal').innerHTML = pieceSVG('n', 'w');
+$('ciFour').innerHTML = `<svg viewBox="0 0 100 100">${['red','blue','yellow','green'].map((c, i) => `<g transform="translate(${(i % 2) * 48 + 2} ${Math.floor(i / 2) * 48 + 2}) scale(.48)">${pieceSVG('k', c).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>`).join('')}</svg>`;
 $('pmoves').innerHTML = [['k','King','One square in any direction.'],['q','Queen','Any number of squares in a straight line or diagonal.'],['r','Rook','Any number of squares straight: up, down, left or right.'],
   ['b','Bishop','Any number of squares diagonally.'],['n','Knight','An "L": two squares one way, then one to the side. It can jump over pieces.'],['p','Pawn','One square forward (two on its first move). It captures one square diagonally forward.']]
   .map(([t, n, d]) => `<div class="pmove">${pieceSVG(t, 'w')}<div><b>${n}</b><div class="muted">${d}</div></div></div>`).join('');

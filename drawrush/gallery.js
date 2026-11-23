@@ -9,8 +9,7 @@ const API=window.DrawRushAPI; if(!API){ return; }
 const $=id=>document.getElementById(id);
 const esc=API.esc||(s=>String(s==null?'':s));
 const CATS=['animals','food','sports','funny','nature','fantasy','vehicles','random'];
-const CATNAME={animals:'Animals',food:'Food',sports:'Sports',funny:'Funny',nature:'Nature',fantasy:'Fantasy',vehicles:'Vehicles',random:'Random'};
-const HEART='<svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.7 12 20 12 20z"/></svg>', EYE='<svg class="ic" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>', CAL='<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>', PAL='<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7" r="1.2"/></svg>';
+const CATNAME={animals:'🐾 Animals',food:'🍕 Food',sports:'⚽ Sports',funny:'😂 Funny',nature:'🌳 Nature',fantasy:'🐉 Fantasy',vehicles:'🚗 Vehicles',random:'🎲 Random'};
 const PAGE=12;
 
 /* ---- identity (persistent per device, no auth) ---- */
@@ -37,15 +36,15 @@ function goBack(){ const p=navBack.pop(); if(p){ goScreen(p); } else { API.show(
 const gs={ sort:'likes', category:'all', search:'', offset:0, busy:false, done:false };
 function renderChips(){
   const box=$('gChips'); if(box.getAttribute('data-built'))return; box.setAttribute('data-built','1');
-  box.innerHTML=['all'].concat(CATS).map(c=>'<button class="gchip'+(c==='all'?' on':'')+'" data-c="'+c+'">'+(c==='all'?'All':CATNAME[c])+'</button>').join('');
+  box.innerHTML=['all'].concat(CATS).map(c=>'<button class="gchip'+(c==='all'?' on':'')+'" data-c="'+c+'">'+(c==='all'?'✨ All':CATNAME[c])+'</button>').join('');
   box.querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{ gs.category=b.getAttribute('data-c'); box.querySelectorAll('.gchip').forEach(x=>x.classList.toggle('on',x===b)); loadGallery(true); });
 }
 function cardHTML(d){
   const img=d.image_url?('<img class="thumb" loading="lazy" src="'+esc(d.image_url)+'" alt="">'):'<div class="thumb"></div>';
   return '<div class="gcard" data-id="'+d.id+'">'+img+'<div class="gc-b"><div class="gc-t">'+esc(d.title||'Untitled')+'</div>'
     +'<div class="gc-c">by '+esc(d.creator_name||'Artist')+'</div>'
-    +'<div class="gc-m"><span>'+HEART+' '+(d.likes|0)+'</span><span>'+EYE+' '+(d.views|0)+'</span></div>'
-    +'<span class="gcat">'+(CATNAME[d.category]||'Random')+'</span></div></div>';
+    +'<div class="gc-m"><span>❤️ '+(d.likes|0)+'</span><span>👁 '+(d.views|0)+'</span></div>'
+    +'<span class="gcat">'+(CATNAME[d.category]||'🎲')+'</span></div></div>';
 }
 function wireCards(grid){ grid.querySelectorAll('.gcard').forEach(c=>{ if(c.getAttribute('data-w'))return; c.setAttribute('data-w','1'); c.onclick=()=>{ API.sound&&API.sound.click(); openDetail(c.getAttribute('data-id')); }; }); }
 async function loadGallery(reset){
@@ -62,7 +61,7 @@ async function loadGallery(reset){
     const col=gs.sort==='likes'?'likes':gs.sort==='views'?'views':'created_at';
     q=q.order(col,{ascending:false}).order('id',{ascending:false}).range(gs.offset,gs.offset+PAGE-1);
     const r=await q;
-    if(r.error){ if(reset)grid.innerHTML='<div class="gempty">The gallery isn\'t set up yet.<br><span class="small">Run the gallery SQL in Supabase, then reload.</span></div>'; more.style.display='none'; gs.done=true; gs.busy=false; return; }
+    if(r.error){ if(reset)grid.innerHTML='<div class="gempty">🖼️ The gallery isn\'t set up yet.<br><span class="small">Run the gallery SQL in Supabase, then reload.</span></div>'; more.style.display='none'; gs.done=true; gs.busy=false; return; }
     const rows=r.data||[];
     if(reset && !rows.length){ grid.innerHTML='<div class="gempty">No drawings yet.<br><span class="small">Be the first — draw one in an AI mode and tap “Save to Gallery”!</span></div>'; more.style.display='none'; gs.done=true; gs.busy=false; return; }
     if(reset) grid.innerHTML='';
@@ -70,7 +69,7 @@ async function loadGallery(reset){
     wireCards(grid);
     gs.offset+=rows.length;
     if(rows.length<PAGE){ gs.done=true; more.style.display='none'; }
-    else { more.style.display='block'; more.innerHTML='<button class="btn ghost sm" id="gMoreBtn">Load more</button>'; $('gMoreBtn').onclick=()=>loadGallery(false); }
+    else { more.style.display='block'; more.innerHTML='<button class="btn ghost sm" id="gMoreBtn">Load more ↓</button>'; $('gMoreBtn').onclick=()=>loadGallery(false); }
   }catch(e){ if(reset)grid.innerHTML='<div class="gempty">Couldn\'t load the gallery.</div>'; more.style.display='none'; }
   gs.busy=false;
 }
@@ -92,13 +91,13 @@ async function openDetail(id){
     let views=d.views|0; try{ const vr=await s.rpc('dr_add_view',{p_drawing:Number(id),p_user:userKey()}); if(vr&&!vr.error&&typeof vr.data==='number')views=vr.data; }catch(e){}
     $('detailBody').innerHTML=(d.image_url?'<img class="dimg" src="'+esc(d.image_url)+'" alt="">':'<div class="dimg"></div>')
       +'<h2 style="margin:12px 0 4px">'+esc(d.title||'Untitled')+'</h2>'
-      +'<span class="gcat">'+(CATNAME[d.category]||'Random')+'</span>'
-      +'<div class="dmeta"><span class="dstat">'+HEART+' <span id="dLikes">'+(d.likes|0)+'</span></span><span class="dstat">'+EYE+' <span id="dViews">'+views+'</span></span><span class="dstat">'+CAL+' '+fmtDate(d.created_at)+'</span></div>'
-      +'<button class="btn likebtn'+(liked?' liked':'')+' block" id="dLike">'+(liked?HEART+' Liked':HEART+' Like')+'</button>'
-      +'<div class="dcreator" id="dCreator"><span class="av">'+PAL+'</span><div style="flex:1"><b>'+esc(d.creator_name||'Artist')+'</b><div class="small">View creator profile ›</div></div></div>';
+      +'<span class="gcat">'+(CATNAME[d.category]||'🎲 Random')+'</span>'
+      +'<div class="dmeta"><span class="dstat">❤️ <span id="dLikes">'+(d.likes|0)+'</span></span><span class="dstat">👁 <span id="dViews">'+views+'</span></span><span class="dstat">📅 '+fmtDate(d.created_at)+'</span></div>'
+      +'<button class="btn likebtn'+(liked?' liked':'')+' block" id="dLike">'+(liked?'❤️ Liked':'🤍 Like')+'</button>'
+      +'<div class="dcreator" id="dCreator"><span class="av">🎨</span><div style="flex:1"><b>'+esc(d.creator_name||'Artist')+'</b><div class="small">👤 View creator profile ›</div></div></div>';
     $('dLike').onclick=async()=>{ API.sound&&API.sound.click(); $('dLike').disabled=true;
       try{ const lr=await s.rpc('dr_like_toggle',{p_drawing:Number(id),p_user:userKey()});
-        if(lr&&!lr.error&&lr.data){ const liked2=!!lr.data.liked; $('dLikes').textContent=lr.data.likes|0; $('dLike').classList.toggle('liked',liked2); $('dLike').innerHTML=liked2?HEART+' Liked':HEART+' Like'; if(liked2)API.sound&&API.sound.pop&&API.sound.pop(); } }catch(e){ API.toast('Couldn\'t like — try again'); }
+        if(lr&&!lr.error&&lr.data){ const liked2=!!lr.data.liked; $('dLikes').textContent=lr.data.likes|0; $('dLike').classList.toggle('liked',liked2); $('dLike').innerHTML=liked2?'❤️ Liked':'🤍 Like'; if(liked2)API.sound&&API.sound.pop&&API.sound.pop(); } }catch(e){ API.toast('Couldn\'t like — try again'); }
       $('dLike').disabled=false; };
     $('dCreator').onclick=()=>{ API.sound&&API.sound.click(); openProfile(d.user_key); };
   }catch(e){ $('detailBody').innerHTML='<div class="gempty">Couldn\'t open this drawing.</div>'; }
@@ -117,16 +116,16 @@ async function openProfile(key){
   let st={drawings:0,likes:0,views:0,followers:0,following:0};
   try{ const sr=await s.rpc('dr_profile_stats',{p_user:key}); if(sr&&!sr.error&&sr.data)st=sr.data; }catch(e){}
   let following=false; if(!ps.isMe){ try{ const fr=await s.from('dr_followers').select('creator_key').eq('follower_key',userKey()).eq('creator_key',key).maybeSingle(); following=!!(fr&&fr.data); }catch(e){} }
-  $('profileBody').innerHTML='<div class="phead"><div class="pav">'+PAL+'</div><div style="flex:1"><div style="font-size:22px;font-weight:900">'+esc(name)+(ps.isMe?' <span class="small">(you)</span>':'')+'</div><div class="small">Joined '+(joined||'recently')+'</div></div></div>'
-    +'<div class="pstats"><div class="pstat"><div class="v">'+(st.drawings|0)+'</div><div class="l">Drawings</div></div><div class="pstat"><div class="v">'+(st.likes|0)+'</div><div class="l">Likes</div></div><div class="pstat"><div class="v">'+(st.views|0)+'</div><div class="l">👁 Views</div></div></div>'
+  $('profileBody').innerHTML='<div class="phead"><div class="pav">🎨</div><div style="flex:1"><div style="font-size:22px;font-weight:900">'+esc(name)+(ps.isMe?' <span class="small">(you)</span>':'')+'</div><div class="small">Joined '+(joined||'recently')+'</div></div></div>'
+    +'<div class="pstats"><div class="pstat"><div class="v">'+(st.drawings|0)+'</div><div class="l">Drawings</div></div><div class="pstat"><div class="v">'+(st.likes|0)+'</div><div class="l">❤️ Likes</div></div><div class="pstat"><div class="v">'+(st.views|0)+'</div><div class="l">👁 Views</div></div></div>'
     +'<div class="pstats"><div class="pstat"><div class="v">'+(st.followers|0)+'</div><div class="l">Followers</div></div><div class="pstat"><div class="v">'+(st.following|0)+'</div><div class="l">Following</div></div></div>'
-    +(ps.isMe?'':'<button class="btn'+(following?' ghost':'')+' block" id="pFollow" style="margin:4px 0 10px">'+(following?'✓ Following':'Follow')+'</button>')
-    +'<div class="gtabs" id="pTabs"><button data-s="new" class="on">Newest</button><button data-s="likes">Most Liked</button></div>'
+    +(ps.isMe?'':'<button class="btn'+(following?' ghost':'')+' block" id="pFollow" style="margin:4px 0 10px">'+(following?'✓ Following':'➕ Follow')+'</button>')
+    +'<div class="gtabs" id="pTabs"><button data-s="new" class="on">🆕 Newest</button><button data-s="likes">🔥 Most Liked</button></div>'
     +'<div class="ggrid" id="pGrid"></div><div class="gmore" id="pMore" style="display:none"></div>';
   if(!ps.isMe){ $('pFollow').onclick=async()=>{ API.sound&&API.sound.click(); const btn=$('pFollow'); btn.disabled=true;
     try{ if(following){ await s.from('dr_followers').delete().eq('follower_key',userKey()).eq('creator_key',key); following=false; }
       else { await s.from('dr_followers').upsert({follower_key:userKey(),creator_key:key},{onConflict:'follower_key,creator_key'}); following=true; }
-      btn.classList.toggle('ghost',following); btn.innerHTML=following?'✓ Following':'Follow';
+      btn.classList.toggle('ghost',following); btn.innerHTML=following?'✓ Following':'➕ Follow';
     }catch(e){ API.toast('Couldn\'t update follow'); } btn.disabled=false; }; }
   $('pTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{ ps.sort=b.getAttribute('data-s'); $('pTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); loadProfileDrawings(true); });
   loadProfileDrawings(true);
@@ -147,7 +146,7 @@ async function loadProfileDrawings(reset){
     grid.insertAdjacentHTML('beforeend', rows.map(cardHTML).join('')); wireCards(grid);
     ps.offset+=rows.length;
     if(rows.length<PAGE){ ps.done=true; more.style.display='none'; }
-    else { more.style.display='block'; more.innerHTML='<button class="btn ghost sm" id="pMoreBtn">Load more</button>'; $('pMoreBtn').onclick=()=>loadProfileDrawings(false); }
+    else { more.style.display='block'; more.innerHTML='<button class="btn ghost sm" id="pMoreBtn">Load more ↓</button>'; $('pMoreBtn').onclick=()=>loadProfileDrawings(false); }
   }catch(e){ grid.innerHTML='<div class="gempty">Couldn\'t load drawings.</div>'; }
   ps.busy=false;
 }
@@ -161,18 +160,18 @@ function openSave(dataURL, defTitle){
   warm();                                   // start loading the client now, before the user fills the form
   let cat=CATS[0];
   API.openOv('<div class="big-emoji">🖼️</div><h2>Save to Gallery</h2>'
-    +'<img src="'+dataURL+'" style="width:62%;border-radius:12px;background:#fff;margin:4px auto 8px;display:block;box-shadow:0 6px 18px rgba(40,40,80,.18)">'
+    +'<img src="'+dataURL+'" style="width:62%;border-radius:12px;background:#fff;margin:4px auto 8px;display:block;box-shadow:0 6px 18px rgba(0,0,0,.4)">'
     +'<input id="gvTitle" class="field" placeholder="Give it a title…" maxlength="40" value="'+esc((defTitle||'').replace(/^\w/,c=>c.toUpperCase()))+'" style="text-align:center">'
     +'<div style="text-align:left;font-weight:800;font-size:13px;margin:12px 2px 6px">Category</div>'
     +'<div id="gvCats" style="display:flex;flex-wrap:wrap;gap:6px">'+CATS.map((c,i)=>'<button class="gchip'+(i===0?' on':'')+'" data-c="'+c+'">'+CATNAME[c]+'</button>').join('')+'</div>'
-    +'<div class="btns"><button class="btn ghost" id="gvCancel">Cancel</button><button class="btn" id="gvSave">Save</button></div>');
+    +'<div class="btns"><button class="btn ghost" id="gvCancel">Cancel</button><button class="btn" id="gvSave">Save ▶</button></div>');
   $('gvCats').querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{ cat=b.getAttribute('data-c'); $('gvCats').querySelectorAll('.gchip').forEach(x=>x.classList.toggle('on',x===b)); });
   $('gvCancel').onclick=()=>API.closeOv();
   $('gvSave').onclick=async()=>{ const t=($('gvTitle').value.trim()||defTitle||'Untitled').slice(0,40); const btn=$('gvSave'); btn.disabled=true; btn.textContent='Saving…';
     let ok=false;
     for(let i=0;i<4&&!ok;i++){ if(i){ btn.textContent='Saving…'; await wait(400+i*300); } ok=await saveDrawing(t,cat,dataURL); }   // self-heal a cold first attempt
-    if(ok){ API.closeOv(); API.sound&&API.sound.win&&API.sound.win(); API.toast('Saved to Gallery!'); }
-    else { btn.disabled=false; btn.textContent='Save'; API.toast('Couldn\'t save right now — please try once more.'); } };
+    if(ok){ API.closeOv(); API.sound&&API.sound.win&&API.sound.win(); API.toast('🎉 Saved to Gallery!'); }
+    else { btn.disabled=false; btn.textContent='Save ▶'; API.toast('😕 Couldn\'t save right now — please try once more.'); } };
 }
 async function saveDrawing(title, category, dataURL){
   const s=await client(); if(!s)return false;

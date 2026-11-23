@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Rock Paper Scissors</title>
 <link rel="manifest" href="../manifest.webmanifest">
-<meta name="theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#080b1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Rock Paper Scissors">
 <link rel="apple-touch-icon" href="../icon-180.png?v=2">
 <link rel="icon" href="../icon-192.png?v=2">
@@ -21,7 +21,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<script src="../theme.js"></script>
 <style>
 /* Layout: one phone-width column centred on a deep night gradient; screens stack inside it and slide in one at a time. */
 :root{
@@ -278,112 +277,6 @@ input{font-family:inherit}
   .orb,.floaty,.logo img,.res-hero img,.res-hero::before,.slot-empty{animation:none}
   .screen,.sheet{animation:none}
 }
-
-/* ===== ilan Games shared theme (light, Apple style) — overrides the old night look ===== */
-html[data-theme], :root{ --accent:#b07cf0; --accent2:#6b4bd8; --icon1:#fbc2eb; --icon2:#a6c1ee; }
-html[data-theme]{
-  --text:var(--ig-text); --dim:var(--ig-text2); --faint:var(--ig-text3);
-  --glass:rgba(118,118,128,.1); --glass2:var(--ig-glass2); --line:var(--ig-line);
-  --f-display:var(--ig-font); --f-ui:var(--ig-font);
-  --blue:#0a7aff; --purple:#7a52e0; --cyan:#0aa5c9;
-  --win:#1f9d55; --lose:#e5484d; --gold:#d48806;
-  color-scheme:light;
-}
-html[data-theme] body{background:transparent;letter-spacing:-.01em}
-#bgfx{display:none}
-html[data-theme] .screen{padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 20px)}
-.homecol{gap:16px;padding-bottom:8px}
-/* hero art: the three 3D move icons */
-.ig-hero .logo{height:170px;width:260px;margin:0 auto}
-.ig-hero .logo img{width:104px;filter:drop-shadow(0 14px 16px rgba(60,40,120,.28))}
-.ig-hero .logo .l1{top:50px} .ig-hero .logo .l2{left:74px;width:112px} .ig-hero .logo .l3{top:54px}
-.ig-hero .logo::before{background:radial-gradient(circle,rgba(176,124,240,.35),transparent 65%)}
-.ig-hero .ig-title{font-size:clamp(34px,9.6vw,48px);line-height:1.02;text-wrap:balance;padding-bottom:2px}
-.ig-mode b .live{display:inline-block;vertical-align:middle;margin-left:3px}
-.ig-mode b .live i{display:block;width:7px;height:7px;border-radius:50%;background:#30d158;box-shadow:0 0 0 3px rgba(48,209,88,.2)}
-.statcard{padding:12px 10px}
-.statcard .ig-stats{padding:2px 0}
-@media (max-width:360px){ .ig-mode small{display:none} }
-/* glass panels + icon buttons */
-html[data-theme] .glass{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-html[data-theme] .icon-btn{border-radius:999px;color:var(--ig-text);background:var(--ig-glass);border:1px solid var(--ig-line);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-html[data-theme] .h2{font-size:17px;font-weight:700;letter-spacing:-.02em}
-html[data-theme] .sheet .h2,html[data-theme] #confirm .box h3{font-size:22px;font-weight:800;letter-spacing:-.03em}
-html[data-theme] .eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em}
-html[data-theme] .muted{font-weight:500}
-/* buttons → capsules */
-html[data-theme] .btn{border-radius:999px;height:52px;font-weight:700;font-size:16px;letter-spacing:-.01em}
-html[data-theme] .btn.primary{background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 65%,transparent),inset 0 1px 0 rgba(255,255,255,.3)}
-html[data-theme] .btn.cyan{background:linear-gradient(160deg,#5ac8fa,#0a60ff);color:#fff;box-shadow:0 10px 24px -8px rgba(10,96,255,.55)}
-html[data-theme] .btn.ghost{background:var(--ig-glass2);border:1px solid var(--ig-line);color:var(--ig-text)}
-html[data-theme] .btn:disabled{filter:grayscale(.6);opacity:.55}
-/* segmented controls, fields, switches */
-html[data-theme] .seg{gap:0;padding:3px;border-radius:999px;background:rgba(118,118,128,.12);border:0}
-html[data-theme] .seg button{height:34px;border-radius:999px;font-weight:600;color:var(--ig-text2)}
-html[data-theme] .seg button.on{background:#fff;color:var(--ig-text);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
-html[data-theme] .text-in,html[data-theme] .code-in input{background:var(--ig-field);border:1px solid var(--ig-line);color:var(--ig-text);border-radius:16px}
-html[data-theme] .text-in:focus,html[data-theme] .code-in input:focus{outline:none;border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
-html[data-theme] .code-in input{font-weight:700;letter-spacing:.3em}
-html[data-theme] .code-in input::placeholder,html[data-theme] .text-in::placeholder{color:var(--ig-text3)}
-html[data-theme] .code-in .btn{height:56px}
-html[data-theme] .switch{background:rgba(120,120,128,.16)}
-html[data-theme] .switch::after{box-shadow:0 3px 8px rgba(0,0,0,.15),0 0 0 .5px rgba(0,0,0,.04)}
-html[data-theme] .switch.on{background:#34c759}
-html[data-theme] .chip{background:var(--ig-glass2);border:1px solid var(--ig-line);font-weight:700;letter-spacing:.01em;color:var(--ig-text2)}
-html[data-theme] .chip.warn{color:#c77700;border-color:rgba(255,149,0,.35);background:rgba(255,149,0,.1)}
-/* avatars */
-html[data-theme] .avatar{box-shadow:0 0 0 3px #fff,0 8px 18px rgba(40,40,80,.18)}
-html[data-theme] .avatar.bot{background:linear-gradient(160deg,#8e8e93,#48484a)}
-.avatar .botsvg{width:58%;height:58%;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-html[data-theme] .fr .dot{border-color:#fff}
-html[data-theme] .fr,html[data-theme] .lb-row,html[data-theme] .hist-row{background:rgba(255,255,255,.7);border:1px solid var(--ig-line)}
-html[data-theme] .lb-row.me{background:linear-gradient(135deg,rgba(176,124,240,.18),rgba(255,255,255,.7));border-color:rgba(176,124,240,.45)}
-html[data-theme] .lb-row:nth-child(2) .rk{color:#8e8e93}
-html[data-theme] .fr .btn{height:36px;border-radius:999px}
-/* sheets + dialogs: light glass */
-html[data-theme] .sheet-wrap,html[data-theme] #confirm{background:var(--ig-scrim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-html[data-theme] .sheet{background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--ig-line);border-bottom:0;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:0 -20px 60px rgba(20,20,50,.18);border-radius:28px 28px 0 0;padding-left:20px;padding-right:20px}
-html[data-theme] .sheet::before{background:rgba(0,0,0,.18)}
-html[data-theme] .sheet .homestats{background:rgba(255,255,255,.7)}
-html[data-theme] #confirm .box{background:var(--ig-sheet);border-radius:28px;box-shadow:0 30px 80px rgba(20,20,50,.25),inset 0 1px 0 #fff}
-html[data-theme] .toast{background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--ig-line);border-radius:999px;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--ig-shadow2)}
-html[data-theme] #cover{background:var(--ig-bg)}
-html[data-theme] #cover::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 40% at 50% 35%,color-mix(in srgb,var(--accent) 28%,transparent),transparent)}
-html[data-theme] #cover h2{font-weight:800;letter-spacing:-.03em}
-html[data-theme] .homestats b{font-weight:800;letter-spacing:-.03em}
-html[data-theme] .homestats span{font-weight:600;letter-spacing:.04em;font-size:11px}
-/* lobby */
-html[data-theme] .lobby-code{background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.16em}
-html[data-theme] .slot-empty{border-color:var(--ig-line2);color:var(--ig-text3)}
-/* match screen (HTML, so it follows the light look too) */
-html[data-theme] .center .track{stroke:rgba(0,0,0,.08)}
-html[data-theme] .pips i{background:rgba(0,0,0,.1)}
-html[data-theme] .pips i.on{box-shadow:none}
-html[data-theme] .pl.turn .avatar{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--accent),0 8px 20px rgba(107,75,216,.35)}
-html[data-theme] .hand img{filter:drop-shadow(0 16px 18px rgba(60,40,120,.25))}
-html[data-theme] .hand.idle img{opacity:.25;filter:grayscale(1)}
-html[data-theme] .hand.lose{filter:grayscale(.85) brightness(1.05);opacity:.7}
-html[data-theme] .hand .q{color:rgba(0,0,0,.14)}
-html[data-theme] .hand::before{background:radial-gradient(circle,rgba(10,122,255,.18),transparent 70%)}
-html[data-theme] .hand.r::before{background:radial-gradient(circle,rgba(224,64,138,.16),transparent 70%)}
-html[data-theme] .hand.win::before{background:radial-gradient(circle,rgba(48,209,88,.35),transparent 68%)}
-html[data-theme] .callout{text-shadow:0 4px 18px rgba(255,255,255,.9);font-weight:900;letter-spacing:-.03em}
-html[data-theme] .countdown{color:var(--accent2);text-shadow:0 10px 30px color-mix(in srgb,var(--accent) 50%,transparent);font-weight:900}
-html[data-theme] .mv{background:var(--ig-glass);border:1px solid var(--ig-line);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
-html[data-theme] .mv img{filter:drop-shadow(0 8px 10px rgba(60,40,120,.22))}
-html[data-theme] .mv span{font-weight:700}
-html[data-theme] .mv.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 12px 30px -8px color-mix(in srgb,var(--accent) 60%,transparent)}
-html[data-theme] .verdict b{font-weight:800;letter-spacing:-.02em}
-/* result */
-html[data-theme] .res-banner .ey{letter-spacing:.12em;font-weight:700}
-html[data-theme] .res-banner h1{font-weight:900;letter-spacing:-.045em;background:linear-gradient(160deg,#34c759,#11998e);-webkit-background-clip:text;background-clip:text;padding-bottom:3px}
-html[data-theme] .res-banner h1.lose{background:linear-gradient(160deg,#8e8e93,#3a3a3c);-webkit-background-clip:text;background-clip:text}
-html[data-theme] .res-hero::before{opacity:.3}
-html[data-theme] .res-hero img{filter:drop-shadow(0 20px 22px rgba(60,40,120,.28))}
-html[data-theme] .rchip{background:rgba(255,255,255,.7);border-color:var(--ig-line)}
-html[data-theme] .rchip.w{border-color:rgba(48,209,88,.6)} html[data-theme] .rchip.l{border-color:rgba(229,72,77,.5)}
-html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 </style>
 </head>
 <body>
@@ -393,38 +286,33 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 <div id="app">
   <!-- HOME -->
   <section class="screen" id="home">
-    <div class="ig-col homecol">
-      <div class="ig-topbar">
-        <a class="ig-navback" id="homeBtn" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-        <button class="ig-iconbtn" id="setBtn" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-      </div>
-      <div class="ig-hero">
-        <div class="logo" aria-hidden="true"><img class="l1 ic-rock" alt=""><img class="l2 ic-paper" alt=""><img class="l3 ic-scissors" alt=""></div>
-        <h1 class="ig-title">Rock Paper Scissors</h1>
-        <div class="ig-tagline">Outsmart the computer, a friend, or anyone online.</div>
-      </div>
-      <div class="ig-playrow">
-        <button class="ig-cta" id="playQuick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small id="playSub">vs Computer</small></span></button>
-      </div>
-      <div class="ig-modes">
-        <button class="ig-mode" id="goCpu"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b07cf0,#6b4bd8)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4.5"/><circle cx="12" cy="4" r=".6"/><path d="M9.5 13v.5M14.5 13v.5M3 12.5v3M21 12.5v3"/></svg></span><b>Computer</b><small>Easy to Hard</small></button>
-        <button class="ig-mode" id="goOnline"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online <span class="live"><i></i></span></b><small>Play a friend</small></button>
-        <button class="ig-mode" id="goLocal"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7eb3,#e0408a)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9" r="2.6"/><path d="M15.5 14.2c2.6-.3 4.4 1.3 5 4.3"/></svg></span><b>2 Players</b><small>One device</small></button>
-      </div>
-      <div class="ig-card statcard">
-        <div class="ig-stats"><div><b id="stWins">0</b><span>Wins</span></div><div><b id="stStreak">0</b><span>Best streak</span></div><div><b id="stTroph">0</b><span>Trophies</span></div></div>
-      </div>
-      <div class="ig-list">
-        <button class="ig-row" id="goLb"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Trophies from every win</small></span></button>
-        <button class="ig-row" id="goHist"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4M12 7.5V12l3 2"/></svg></span><span class="ig-grow">History<small>Your recent matches</small></span></button>
-        <button class="ig-row" id="goSet"><span class="ig-tile" style="--tile:linear-gradient(160deg,#a1a1aa,#636366)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span><span class="ig-grow">Settings<small>Sound, vibration, timer</small></span></button>
-      </div>
+    <div class="topbar">
+      <a class="icon-btn" id="homeBtn" href="../" aria-label="Back to Ilan Games" style="text-decoration:none;color:inherit">⌂</a>
+      <button class="icon-btn" id="setBtn" aria-label="Settings">⚙</button>
+    </div>
+    <div class="logo" aria-hidden="true"><img class="l1 ic-rock" alt=""><img class="l2 ic-paper" alt=""><img class="l3 ic-scissors" alt=""></div>
+    <h1 class="wordmark">Rock Paper Scissors</h1>
+    <div class="byline">by ilan Games</div>
+    <div class="homestats glass">
+      <div><b id="stWins">0</b><span>Wins</span></div>
+      <div><b id="stStreak">0</b><span>Best streak</span></div>
+      <div><b id="stTroph">0</b><span>Trophies</span></div>
+    </div>
+    <div class="modes">
+      <button class="mode glass" id="goCpu"><span class="mi a">🤖</span><span><b>Play vs Computer</b><small>Easy, Normal or Hard. Hard learns your habits.</small></span><span class="go">›</span></button>
+      <button class="mode glass" id="goOnline"><span class="mi b">🌐</span><span><b>Online Multiplayer <span class="live"><i></i>Live</span></b><small>Make a room, send the code to a friend</small></span><span class="go">›</span></button>
+      <button class="mode glass" id="goLocal"><span class="mi c">👥</span><span><b>Two Players, One Device</b><small>Take turns picking, then pass the phone</small></span><span class="go">›</span></button>
+    </div>
+    <div class="tiles">
+      <button class="tile glass" id="goLb"><span>🏆</span>Leaderboard</button>
+      <button class="tile glass" id="goHist"><span>🕘</span>History</button>
+      <button class="tile glass" id="goSet"><span>⚙️</span>Settings</button>
     </div>
   </section>
 
   <!-- MULTIPLAYER -->
   <section class="screen" id="mp" hidden>
-    <div class="topbar"><button class="icon-btn" data-home aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Online</div><div style="width:44px"></div></div>
+    <div class="topbar"><button class="icon-btn" data-home aria-label="Back">‹</button><div class="h2">Multiplayer</div><div style="width:44px"></div></div>
     <div class="stack" style="margin-top:14px">
       <div class="login-card glass" id="mpLogin" hidden>
         <b>Log in to play online</b>
@@ -452,7 +340,7 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 
   <!-- LOBBY -->
   <section class="screen" id="lobby" hidden>
-    <div class="topbar"><button class="icon-btn" id="lobbyLeave" aria-label="Leave room"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Room</div><span class="chip" id="netChip"><i></i><span>Connecting</span></span></div>
+    <div class="topbar"><button class="icon-btn" id="lobbyLeave" aria-label="Leave room">‹</button><div class="h2">Room</div><span class="chip" id="netChip"><i></i><span>Connecting</span></span></div>
     <div class="stack" style="margin-top:14px">
       <div class="lobby-card glass">
         <div class="eyebrow" style="text-align:center">Room code</div>
@@ -476,7 +364,7 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
   <!-- GAME -->
   <section class="screen" id="game" hidden>
     <div class="g-top">
-      <button class="icon-btn" id="gQuit" aria-label="Leave match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="icon-btn" id="gQuit" aria-label="Leave match">✕</button>
       <div class="ttl"><b id="gTitle">Round 1</b><small id="gSub">First to 3 wins</small></div>
       <span class="chip" id="gNet" style="visibility:hidden"><i></i><span>Online</span></span>
     </div>
@@ -524,7 +412,7 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 
 <!-- SHEETS -->
 <div class="sheet-wrap" id="shCpu" hidden><div class="sheet">
-  <div class="sheet-head"><div class="h2">vs Computer</div><button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet-head"><div class="h2">vs Computer</div><button class="icon-btn" data-close aria-label="Close">✕</button></div>
   <div class="field"><span class="muted">Difficulty</span><div class="seg" id="cpuDiff"><button data-v="easy">Easy</button><button data-v="normal">Normal</button><button data-v="hard">Hard</button></div></div>
   <div class="muted" id="cpuDiffNote"></div>
   <div class="field"><span class="muted">Match length</span><div class="seg" id="cpuBest"><button data-v="3">Best of 3</button><button data-v="5">Best of 5</button><button data-v="7">Best of 7</button></div></div>
@@ -532,7 +420,7 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 </div></div>
 
 <div class="sheet-wrap" id="shLocal" hidden><div class="sheet">
-  <div class="sheet-head"><div class="h2">Two players</div><button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet-head"><div class="h2">Two players</div><button class="icon-btn" data-close aria-label="Close">✕</button></div>
   <div class="muted">You both use this device. Player 1 picks while Player 2 looks away, then you pass it over. Nobody sees the other's move until the reveal.</div>
   <div class="field"><span class="muted">Player 1</span><input class="text-in" id="lp1" maxlength="14" placeholder="Player 1"></div>
   <div class="field"><span class="muted">Player 2</span><input class="text-in" id="lp2" maxlength="14" placeholder="Player 2"></div>
@@ -541,19 +429,19 @@ html[data-theme] .res-score .big{font-weight:900;letter-spacing:-.03em}
 </div></div>
 
 <div class="sheet-wrap" id="shLb" hidden><div class="sheet">
-  <div class="sheet-head"><div class="h2">Leaderboard</div><button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet-head"><div class="h2">Leaderboard</div><button class="icon-btn" data-close aria-label="Close">✕</button></div>
   <div class="muted">Trophies: 3 for every online win, 1 for every win against the computer.</div>
   <div class="stack" id="lbList" style="gap:8px"></div>
 </div></div>
 
 <div class="sheet-wrap" id="shHist" hidden><div class="sheet">
-  <div class="sheet-head"><div class="h2">Match history</div><button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet-head"><div class="h2">Match history</div><button class="icon-btn" data-close aria-label="Close">✕</button></div>
   <div class="homestats glass" style="margin-top:0" id="histStats"></div>
   <div class="stack" id="histList" style="gap:8px"></div>
 </div></div>
 
 <div class="sheet-wrap" id="shSet" hidden><div class="sheet">
-  <div class="sheet-head"><div class="h2">Settings</div><button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet-head"><div class="h2">Settings</div><button class="icon-btn" data-close aria-label="Close">✕</button></div>
   <div class="row"><b>Sound</b><button class="switch" id="swSound" role="switch" aria-label="Sound"></button></div>
   <div class="row"><b>Vibration</b><button class="switch" id="swVib" role="switch" aria-label="Vibration"></button></div>
   <div class="field"><span class="muted">Time to pick vs the computer</span><div class="seg" id="setTimer"><button data-v="0">Off</button><button data-v="7">7 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
@@ -582,8 +470,7 @@ const rndMove = () => MOVES[Math.floor(Math.random()*3)];
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const hueOf = s => { let h=0; for (const ch of String(s||'?')) h = (h*31 + ch.charCodeAt(0)) % 360; return h; };
 const initial = s => (String(s||'?').trim()[0] || '?').toUpperCase();
-const BOT_SVG = '<svg class="botsvg" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4.5M9.5 13v.5M14.5 13v.5"/></svg>';
-function setAvatar(el, name, bot){ if (bot) el.innerHTML = BOT_SVG; else el.textContent = initial(name); el.classList.toggle('bot', !!bot); el.style.setProperty('--h', hueOf(name)); }
+function setAvatar(el, name, bot){ el.textContent = bot ? '🤖' : initial(name); el.classList.toggle('bot', !!bot); el.style.setProperty('--h', hueOf(name)); }
 function explain(a,b){ if (a===b) return 'Both picked '+LABEL[a]; const w = judge(a,b)>0 ? a : b, l = w===a ? b : a; return LABEL[w]+' '+VERB[w]+' '+LABEL[l]; }
 
 /* ================================================================
@@ -739,16 +626,14 @@ function myName(){ try { return (window.IGAuth && IGAuth.displayName && IGAuth.d
    ================================================================ */
 function renderHome(){
   $('stWins').textContent = totalWins(); $('stStreak').textContent = save.bestStreak; $('stTroph').textContent = save.trophies;
-  const d = String(save.set.diff || 'normal'); $('playSub').textContent = 'vs Computer · ' + d.charAt(0).toUpperCase() + d.slice(1) + ' · Best of ' + save.set.best;
 }
 $('goCpu').onclick = () => { sfx.tap(); ac();
   const notes = { easy:'Picks at random. Good for warming up.', normal:'Watches what you pick most and plays against it half the time.', hard:'Tracks your patterns: repeats, switches after a loss, favourite follow-ups.' };
-  seg('cpuDiff', save.set.diff, v => { save.set.diff = v; persist(); $('cpuDiffNote').textContent = notes[v]; renderHome(); });
+  seg('cpuDiff', save.set.diff, v => { save.set.diff = v; persist(); $('cpuDiffNote').textContent = notes[v]; });
   $('cpuDiffNote').textContent = notes[save.set.diff];
-  seg('cpuBest', save.set.best, v => { save.set.best = +v; persist(); renderHome(); });
+  seg('cpuBest', save.set.best, v => { save.set.best = +v; persist(); });
   openSheet('shCpu'); };
 $('cpuStart').onclick = () => { closeSheets(); startCpu(); };
-$('playQuick').onclick = () => { sfx.tap(); ac(); startCpu(); };
 $('goLocal').onclick = () => { sfx.tap(); ac(); $('lp1').value = save.set.p1; $('lp2').value = save.set.p2;
   seg('localBest', save.set.localBest, v => { save.set.localBest = +v; persist(); }); openSheet('shLocal'); };
 $('localStart').onclick = () => { save.set.p1 = $('lp1').value.trim().slice(0,14); save.set.p2 = $('lp2').value.trim().slice(0,14); persist(); closeSheets(); startLocal(); };
@@ -773,7 +658,7 @@ function renderHistory(){
   $('histList').innerHTML = h.length ? h.map(r => {
     const d = new Date(r.t), when = d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
     const badge = r.mode==='local' ? `<span class="badge w">${esc(r.winner)}</span>` : `<span class="badge ${r.won?'w':'l'}">${r.won?'Won':'Lost'}</span>`;
-    return `<div class="hist-row"><div class="avatar${r.mode==='cpu'?' bot':''}" style="--h:${hueOf(r.opp)};width:40px;height:40px;font-size:16px">${r.mode==='cpu'?BOT_SVG:esc(initial(r.opp))}</div>
+    return `<div class="hist-row"><div class="avatar${r.mode==='cpu'?' bot':''}" style="--h:${hueOf(r.opp)};width:40px;height:40px;font-size:16px">${r.mode==='cpu'?'🤖':esc(initial(r.opp))}</div>
       <div class="nm">${esc(r.mode==='local' ? r.names.join(' vs ') : r.opp)}<small>${modeName[r.mode]}${r.diff?' · '+r.diff:''}${r.forfeit?' · opponent left':''} · ${when}</small></div>
       <span class="sc">${r.s[0]}–${r.s[1]}</span>${badge}</div>`; }).join('') : '<div class="empty">No matches yet. Your games will show up here.</div>';
 }

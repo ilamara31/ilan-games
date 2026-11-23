@@ -74,9 +74,9 @@ export class HUD {
       const sw = it.rainbow ? 'background:conic-gradient(red,orange,yellow,green,cyan,blue,violet,red)'
         : it.swatch != null ? `background:#${it.swatch.toString(16).padStart(6, '0')}` : 'background:repeating-linear-gradient(45deg,#444,#444 5px,#666 5px,#666 10px)';
       let btn;
-      if (it.equipped) btn = `<button class="equip" data-id="${it.id}" data-action="equip" disabled>Equipped</button>`;
-      else if (it.owned) btn = `<button class="owned" data-id="${it.id}" data-action="equip">Equip</button>`;
-      else btn = `<button data-id="${it.id}" data-action="buy" ${it.afford ? '' : 'disabled'}>${it.cost} coins</button>`;
+      if (it.equipped) btn = `<button class="equip" data-id="${it.id}" data-action="equip" disabled>EQUIPPED</button>`;
+      else if (it.owned) btn = `<button class="owned" data-id="${it.id}" data-action="equip">EQUIP</button>`;
+      else btn = `<button data-id="${it.id}" data-action="buy" ${it.afford ? '' : 'disabled'}>🪙 ${it.cost}</button>`;
       return `<div class="shop-item${it.equipped ? ' equipped' : ''}"><div class="sw" style="${sw}"></div><div class="nm">${it.name}</div>${it.desc ? `<div class="desc">${it.desc}</div>` : ''}${btn}</div>`;
     }).join('');
   }

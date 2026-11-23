@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Stack Tower</title>
-<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#f2f2f7" />
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#0b1226" />
 <meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Stack Tower" />
 <link rel="apple-touch-icon" href="../icon-180.png?v=2" /><link rel="icon" href="../icon-192.png?v=2" />
@@ -20,55 +20,31 @@
 <meta name="twitter:title" content="Stack Tower — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<script src="../theme.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-  html,body{height:100%;overflow:hidden;background:#0b1226;font-family:var(--ig-font,system-ui);color:#fff}
+  html,body{height:100%;overflow:hidden;background:#0b1226;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
-  :root,html[data-theme]{ --accent:#f5af19; --accent2:#f12711; --icon1:#f5af19; --icon2:#f12711; }
-  /* menu / game-over overlay: ilan Games light glass page (gameplay canvas keeps its own look) */
-  #ov{position:fixed;inset:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(242,242,247,.86);-webkit-backdrop-filter:blur(26px) saturate(160%);backdrop-filter:blur(26px) saturate(160%);
-    padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);user-select:none}
-  #ov::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;filter:blur(40px);
-    background:radial-gradient(40vmax 40vmax at 15% 10%,rgba(245,175,25,.35),transparent 60%),radial-gradient(36vmax 36vmax at 90% 25%,rgba(241,39,17,.18),transparent 60%),radial-gradient(40vmax 40vmax at 60% 95%,rgba(10,132,255,.18),transparent 60%)}
+  #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:5;padding:20px;background:rgba(8,10,26,.55)}
   #ov.hidden{display:none}
-  #ov .ig-col{min-height:100%}
-  #ov .ig-cta{border:0}
-  #ov h1{margin:0}
-  .ig-row svg.chev{display:none}
-  #best:empty{display:none}
-  #best .big{font:800 64px/1 var(--ig-font);letter-spacing:-.05em;color:var(--ig-text)}
-  #best .bl{font:600 15px/1.3 var(--ig-font);color:var(--ig-text2);margin-top:6px}
-  #best.ig-card{text-align:center;padding:18px 16px}
-  #ovSub{max-width:360px;margin-left:auto;margin-right:auto}
-  #ovSub b{color:var(--ig-text);font-weight:700}
-  .ig-row{font-family:var(--ig-font)}
+  h1{font-size:clamp(34px,9vw,60px);background:linear-gradient(90deg,#ffd54a,#ff7bd5);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:#c7d2f0;margin:8px 0 18px;font-size:16px;line-height:1.5;max-width:420px}
+  .big{font-size:50px;font-weight:900;color:#ffd54a}
+  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:15px 44px;font-size:20px;font-weight:900;border-radius:30px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(180,180,255,.3);color:#dfe4ff;border-radius:24px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
 </style></head>
 <body>
 <canvas id="g"></canvas>
-<div id="ov" class="ig-page">
-  <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-    </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="22" y="80" width="56" height="13" rx="2" fill="#6e0f3d"/><rect x="25" y="82" width="50" height="3" rx="1.5" fill="#fff" opacity=".35"/><rect class="o" x="18" y="66" width="56" height="13" rx="2" fill="#a3174f"/><rect x="21" y="68" width="50" height="3" rx="1.5" fill="#fff" opacity=".35"/><rect class="o" x="26" y="52" width="52" height="13" rx="2" fill="#c8283c"/><rect x="29" y="54" width="46" height="3" rx="1.5" fill="#fff" opacity=".35"/><rect class="o" x="20" y="38" width="54" height="13" rx="2" fill="#d9661f"/><rect x="23" y="40" width="48" height="3" rx="1.5" fill="#fff" opacity=".35"/>
-<rect class="o" x="34" y="8" width="52" height="13" rx="2" fill="#ffcc00"/><rect x="37" y="10" width="46" height="3" rx="1.5" fill="#fff" opacity=".45"/>
-<path d="M60 24 V33 M55 29 L60 34 L65 29" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M88 8 L92 4 M90 16 L96 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-<path d="M10 94 H90" stroke="#22120a" stroke-width="4" stroke-linecap="round"/></svg></div>
-      <h1 class="ig-title" id="ovTitle">Stack Tower</h1>
-      <div class="ig-tagline sub" id="ovSub">Drop each block right on top. Perfect stacks keep full width and build a combo.</div>
-    </div>
-    <div class="ig-card" id="best"></div>
-    <div class="ig-playrow">
-      <button class="ig-cta" id="start"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b id="startLbl">Play</b><small id="startSub">Tap or press Space to drop</small></span></button>
-    </div>
-    <div class="ig-list">
-      <a class="ig-row" id="tutBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span><span class="ig-grow">Tutorial<small>Learn in 3 blocks</small></span></a>
-      <a class="ig-row" onclick="window.IGAuth&&IGAuth.showLeaderboard('stack','Stack Tower')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></span><span class="ig-grow">Leaderboard<small>Tallest towers</small></span></a>
-      <a class="ig-row" onclick="window.IGAuth&&IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6.5 8-6.5s7.2 2.5 8 6.5"/></svg></span><span class="ig-grow"><span id="igaName">Log in</span><small>Save your best score</small></span></a>
-    </div>
+<div id="ov">
+  <h1>🏗️ STACK TOWER</h1>
+  <div class="sub">Tap / click / SPACE to drop the moving block.<br>Line it up — overhang gets sliced off and the block shrinks. <b>Perfect stacks</b> keep full width and build a combo!</div>
+  <button class="btn" id="start">STACK ▶</button>
+  <div class="sub" id="best"></div>
+  <div class="row">
+    <a class="ghost" id="tutBtn">📖 Tutorial</a>
+    <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
+    <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('stack','Stack Tower')">🏆 Leaderboard</a>
+    <a class="ghost" href="../">🏠 All Games</a>
   </div>
 </div>
 <script>
@@ -87,24 +63,22 @@ const SKEY=acctSaveKey('stackTower_v1');
 let best=(()=>{try{return(+JSON.parse(localStorage.getItem(SKEY)).best)||0;}catch(e){return 0;}})();
 function saveBest(){try{localStorage.setItem(SKEY,JSON.stringify({best}));}catch(e){}}
 const BH=34;
-let state='menu',stack,cur,camY,score,combo,parts=[],speed,shake,flash;
+let state='menu',stack,cur,camY,score,combo,parts,speed,shake,flash;
 let tutMode=false,tutCount=0,coachMsg='';
 function hue(i){return (i*9+200)%360;}
 function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutCount=0;
   const w=Math.min(PW*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=2.6;parts=[];shake=0;flash=0;
   coachMsg='Tap / SPACE to drop the block right over the one below. Line up 3 to finish!';spawn();wakeLoop();}
 function tutFinish(){tutMode=false;coachMsg='';state='menu';try{localStorage.setItem('stackTut','1');}catch(e){}
-  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='Stack Tower';ov.querySelector('.sub').innerHTML="You're ready! Press Play to build your tower.";document.getElementById('startLbl').textContent='Play';ov.querySelector('#best').innerHTML=bestHTML();ov.classList.remove('hidden');}
-function bestHTML(){return best?('<div class="ig-stats"><div><b>'+best+'</b><span>Best tower</span></div></div>'):'';}
+  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ STACK TOWER';ov.querySelector('.sub').innerHTML="You're ready! Hit STACK to play.";ov.querySelector('#start').textContent='STACK ▶';ov.querySelector('#best').innerHTML=best?('Best: '+best):'';ov.classList.remove('hidden');}
 function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=16,x=W/2,tx0=x-maxw/2+pad+40;
-  const CF='600 17px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.font=CF;ctx.textAlign='left';ctx.textBaseline='top';
+function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=14,x=W/2,tx0=x-maxw/2+pad+40;
+  ctx.font='600 17px Trebuchet MS';ctx.textAlign='left';ctx.textBaseline='top';
   const words=coachMsg.split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxw-pad*2-44&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);
   const lh=23,bh=lines.length*lh+pad*2,by=Math.max(12,H*0.06),bx=x-maxw/2;
-  ctx.save();ctx.shadowColor='rgba(20,20,50,.28)';ctx.shadowBlur=30;ctx.shadowOffsetY=10;ctx.fillStyle='rgba(255,255,255,.94)';rrect(bx,by,maxw,bh,22);ctx.fill();ctx.restore();
-  const g=ctx.createLinearGradient(bx+12,by+pad,bx+44,by+pad+32);g.addColorStop(0,'#f5af19');g.addColorStop(1,'#f12711');ctx.fillStyle=g;rrect(bx+12,by+pad-2,30,30,9);ctx.fill();
-  ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx+27,by+pad+4);ctx.lineTo(bx+27,by+pad+20);ctx.moveTo(bx+21,by+pad+14);ctx.lineTo(bx+27,by+pad+20);ctx.lineTo(bx+33,by+pad+14);ctx.stroke();
-  ctx.fillStyle='#1d1d1f';ctx.font=CF;for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);}
+  ctx.fillStyle='rgba(8,12,30,.92)';rrect(bx,by,maxw,bh,14);ctx.fill();ctx.strokeStyle='rgba(255,213,74,.75)';ctx.lineWidth=2;rrect(bx,by,maxw,bh,14);ctx.stroke();
+  ctx.font='26px serif';ctx.fillText('🧑',bx+10,by+pad+4);
+  ctx.fillStyle='#fff';ctx.font='600 17px Trebuchet MS';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);}
 function start(){document.getElementById('ov').classList.add('hidden');state='play';
   const w=Math.min(PW*0.5,260);stack=[{x:W/2-w/2,w,y:0}];score=0;combo=0;camY=0;speed=3.0;parts=[];shake=0;flash=0;spawn();wakeLoop();}
 function spawn(){const top=stack[stack.length-1];cur={x:0,w:top.w,y:(stack.length)*BH,dir:1};speed=3.0+score*0.06;}
@@ -129,8 +103,8 @@ function drop(){const top=stack[stack.length-1];const L=Math.max(cur.x,top.x),R=
   if(tutMode){ tutCount++; coachMsg='Nice! '+tutCount+' / 3 — keep stacking!'; if(tutCount>=3){ coachMsg='Perfect — you’re ready!'; setTimeout(tutFinish,700); } }
 }
 function gameOver(){if(tutMode)return;state='over';if(score>best){best=score;saveBest();}try{if(window.IGAuth)IGAuth.submitScore('stack',best);}catch(e){}shake=.5;
-  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='Toppled!';ov.querySelector('.sub').innerHTML='You missed the stack.';
-  document.getElementById('startLbl').textContent='Play again';ov.querySelector('#best').innerHTML='<div class="big">'+score+'</div><div class="bl">blocks stacked · Best '+best+'</div>';
+  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏗️ TOPPLED!';ov.querySelector('.sub').innerHTML='You missed the stack.';
+  ov.querySelector('#start').textContent='STACK AGAIN ▶';ov.querySelector('#best').innerHTML='<div class="big">'+score+'</div>blocks • Best: '+best;
   setTimeout(()=>ov.classList.remove('hidden'),650);}
 let last=0,rafId=null;
 function loop(now){rafId=null;const dt=Math.min(.04,(now-last)/1000||0);last=now;
@@ -149,9 +123,9 @@ function loop(now){rafId=null;const dt=Math.min(.04,(now-last)/1000||0);last=now
   // perfect flashes
   for(const p of parts){if(p.perfect){const yy=sy2(p.y);ctx.globalAlpha=Math.max(0,p.life*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(stack[stack.length-1].x-4,yy-BH-4,stack[stack.length-1].w+8,BH+8);ctx.globalAlpha=1;}}
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,90);ctx.globalAlpha=1;
-    if(combo>=2){ctx.fillStyle='#ffd54a';ctx.font='900 22px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.fillText('PERFECT x'+combo+'!',W/2,120);}
-    ctx.font='600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.fillStyle='#c7d2f0';ctx.fillText('best '+best,W/2,H-16);}
+  if(state!=='menu'){ctx.fillStyle='#fff';ctx.font='900 60px Trebuchet MS';ctx.textAlign='center';ctx.globalAlpha=.9;ctx.fillText(score,W/2,90);ctx.globalAlpha=1;
+    if(combo>=2){ctx.fillStyle='#ffd54a';ctx.font='900 22px Trebuchet MS';ctx.fillText('PERFECT x'+combo+'!',W/2,120);}
+    ctx.font='600 14px Trebuchet MS';ctx.fillStyle='#c7d2f0';ctx.fillText('best '+best,W/2,H-16);}
   if(tutMode)drawCoach();
   if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash*0.25+')';ctx.fillRect(0,0,W,H);}
   /* park the loop when the scene is static (menu / settled game-over) to save battery */
@@ -164,14 +138,14 @@ addEventListener('pointerdown',()=>{if(state==='play')act();});
 addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();act();}});
 document.getElementById('start').onclick=start;
 document.getElementById('tutBtn').onclick=startTut;
-document.getElementById('best').innerHTML=bestHTML();
+document.getElementById('best').innerHTML=best?('Best: '+best):'';
 wakeLoop();
 try{ if(!localStorage.getItem('stackTut')) startTut(); }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
-  IGAuth.onChange(function(p){ var b=document.getElementById('igaName'); if(b)b.textContent=p?IGAuth.displayName():'Log in';
+  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
     try{ var s=JSON.parse(localStorage.getItem(SKEY)); if(s&&+s.best>0) IGAuth.submitScore('stack',+s.best); }catch(e){} }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>

@@ -49,8 +49,7 @@ hud.hideLoading();
 function refreshMenu() {
   const d = Save.data;
   hud.setName(d.name); hud.setBest(d.bestTimeMs);
-  hud.setMenuStats(`<span>Best Stage <b>${d.bestStage}</b></span><span>Best Time <b>${hud.fmtTime(d.bestTimeMs)}</b></span><span>Coins <b>${d.coins}</b></span>`);
-  const cs = document.getElementById('contSub'); if (cs) cs.textContent = 'From stage ' + d.bestStage;
+  hud.setMenuStats(`<span>Best Stage <b>${d.bestStage}</b></span><span>Best Time <b>${hud.fmtTime(d.bestTimeMs)}</b></span><span>🪙 <b>${d.coins}</b></span>`);
   hud.showContinue(d.bestStage > 1);
   hud.showMenuShop(true);
 }
@@ -67,7 +66,7 @@ function maybeDaily() {
   const reward = 25 + Math.min(Save.data.dailyStreak, 7) * 8;
   Save.data.lastDaily = today; Save.addCoins(reward);
   music.ensure(); music.sfxUnlock();
-  hud.popup('Daily Reward!', `Welcome back! Here are <b>${reward}</b> coins.<br>Daily streak: <b>${Save.data.dailyStreak}</b>`, 'Collect', refreshMenu);
+  hud.popup('🎁 Daily Reward!', `Welcome back! Here are <b>${reward}</b> coins.<br>Daily streak: <b>${Save.data.dailyStreak}</b> 🔥`, 'COLLECT', refreshMenu);
 }
 
 // ---------- shop ----------
@@ -153,13 +152,13 @@ function onWin() {
   const prevBest = Save.data.bestTimeMs; Save.recordTime(ms); Save.reachStage(world.totalStages);
   hud.setComplete(world.totalStages);
   const isPB = prevBest === 0 || ms < prevBest;
-  hud.showWin(`You finished all <b>${world.totalStages}</b> stages!<br>Time: <b>${hud.fmtTime(ms)}</b>${isPB ? ' · New best!' : ''}<br>Best: <b>${hud.fmtTime(Save.data.bestTimeMs)}</b> &nbsp;·&nbsp; Coins: <b>${Save.data.coins}</b>`);
+  hud.showWin(`You finished all <b>${world.totalStages}</b> stages!<br>Time: <b>${hud.fmtTime(ms)}</b>${isPB ? ' 🏆 New Best!' : ''}<br>Best: <b>${hud.fmtTime(Save.data.bestTimeMs)}</b> &nbsp;•&nbsp; 🪙 Bank: <b>${Save.data.coins}</b>`);
 }
 hud.onAgain(() => location.reload());
 hud.onPlay(() => startGame(false));
 hud.onContinue(() => startGame(true));
 hud.onExit(() => { Save.save(); location.reload(); });   // back to home menu; stage is saved -> Continue resumes it
-document.getElementById('musicBtn').addEventListener('click', () => { document.getElementById('musicBtn').innerHTML = music.toggle() ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>'; });
+document.getElementById('musicBtn').addEventListener('click', () => { document.getElementById('musicBtn').textContent = music.toggle() ? '🔊' : '🔇'; });
 
 // battery: stop music + suspend audio while the tab is hidden; resume only if it was playing
 let musicWasPlaying = false;

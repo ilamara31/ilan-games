@@ -20,8 +20,7 @@
 <meta name="twitter:title" content="Codebreaker: Secret Agent — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<meta name="theme-color" content="#f2f2f7">
-<script src="../theme.js"></script>
+<meta name="theme-color" content="#05070e">
 <style>
 :root{
   --bg1:#0a1020; --bg2:#05070e;
@@ -32,12 +31,12 @@
   --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
 }
 /* ---- themes ---- */
-body.t-gold #game{ --accent:#ffd24a; --accent2:#ffae3d; --key-bg:linear-gradient(180deg,#4a3a12,#2a1f08); --key-br:rgba(255,210,90,.5); }
-body.t-neon #game{ --accent:#ff43e0; --accent2:#43f7ff; --key-bg:linear-gradient(180deg,#2a1040,#140825); --key-br:rgba(255,80,220,.5); }
-body.t-hacker #game{ --accent:#39ff88; --accent2:#a6ff4d; --ink:#d6ffe6; --key-bg:linear-gradient(180deg,#0b2016,#04120a); --key-br:rgba(60,255,140,.5); }
-body.t-spy #game{ --accent:#ff5a4d; --accent2:#ffcf3d; --key-bg:linear-gradient(180deg,#3a1010,#1e0808); --key-br:rgba(255,90,70,.5); }
-body.t-future #game{ --accent:#6ab8ff; --accent2:#b58bff; --key-bg:linear-gradient(180deg,#132a4d,#0a1730); --key-br:rgba(140,180,255,.55); }
-body.t-space #game{ --accent:#8f7bff; --accent2:#43d7ff; --key-bg:linear-gradient(180deg,#1a1642,#0c0a26); --key-br:rgba(150,120,255,.55); }
+body.t-gold{ --accent:#ffd24a; --accent2:#ffae3d; --key-bg:linear-gradient(180deg,#4a3a12,#2a1f08); --key-br:rgba(255,210,90,.5); }
+body.t-neon{ --accent:#ff43e0; --accent2:#43f7ff; --key-bg:linear-gradient(180deg,#2a1040,#140825); --key-br:rgba(255,80,220,.5); }
+body.t-hacker{ --accent:#39ff88; --accent2:#a6ff4d; --ink:#d6ffe6; --key-bg:linear-gradient(180deg,#0b2016,#04120a); --key-br:rgba(60,255,140,.5); }
+body.t-spy{ --accent:#ff5a4d; --accent2:#ffcf3d; --key-bg:linear-gradient(180deg,#3a1010,#1e0808); --key-br:rgba(255,90,70,.5); }
+body.t-future{ --accent:#6ab8ff; --accent2:#b58bff; --key-bg:linear-gradient(180deg,#132a4d,#0a1730); --key-br:rgba(140,180,255,.55); }
+body.t-space{ --accent:#8f7bff; --accent2:#43d7ff; --key-bg:linear-gradient(180deg,#1a1642,#0c0a26); --key-br:rgba(150,120,255,.55); }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -230,136 +229,40 @@ body{background:var(--bg2);color:var(--ink);font-family:'Trebuchet MS','Segoe UI
 .disclaimer{color:var(--dim);font-size:11px;text-align:center;margin-top:8px}
 
 ::-webkit-scrollbar{width:0}
-
-/* ===== ilan Games shared theme (light). The mission room (#game) keeps its own dark spy look. ===== */
-html[data-theme]:root{ --accent:#636366; --accent2:#2c2c2e; --icon1:#8e8e93; --icon2:#2c2c2e; }
-#game{ --accent:#37e0ff; --accent2:#7cff6b; }
-html{background:var(--ig-bg)}
-body{background:transparent;font-family:var(--ig-font);letter-spacing:-.01em}
-.screen{background:transparent;color:var(--ig-text)}
-#game{background:radial-gradient(130% 100% at 50% -10%,var(--bg1),var(--bg2) 70%);color:var(--ink)}
-.screen .wrap{max-width:460px;padding:calc(12px + env(safe-area-inset-top)) 16px 32px;gap:16px}
-
-.ig-sv{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.coin{display:inline-block;width:.95em;height:.95em;border-radius:50%;vertical-align:-.12em;margin-right:4px;
-  background:radial-gradient(circle at 35% 30%,#fff3b0,#ffcc00 45%,#d98e00);box-shadow:inset 0 0 0 1.5px rgba(150,90,0,.45)}
-/* sub-screen top bars */
-.screen .topbar{min-height:46px}
-.screen .topbar h2{font-size:17px;font-weight:700;letter-spacing:-.02em}
-.back{display:inline-flex;align-items:center;gap:2px;height:44px;padding:0 14px 0 8px;border-radius:999px;color:var(--ig-text);font:600 16px/1 var(--ig-font);letter-spacing:-.01em;
-  background:var(--ig-glass);border:1px solid var(--ig-line);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.back svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.tb-spacer{width:88px}
-.coinchip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;font-weight:700;font-size:15px;background:var(--ig-glass);border:1px solid var(--ig-line);box-shadow:inset 0 1px 0 var(--ig-hl)}
-/* missions list */
-.mlist{gap:0;border-radius:22px;overflow:hidden;background:var(--ig-glass);border:1px solid var(--ig-line);-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.mcard{background:none;border:0;border-radius:0;padding:12px 16px 12px 12px;gap:12px}
-.mcard + .mcard{border-top:1px solid var(--ig-line)}
-.mcard:hover{transform:none;background:rgba(0,0,0,.025)}
-.mcard:active{background:rgba(0,0,0,.05)}
-.mcard .em{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:26px;border-radius:12px;background:rgba(118,118,128,.12);filter:none}
-.mcard .em svg{width:22px;height:22px;color:var(--ig-text2)}
-.mcard .mn{font-weight:700;font-size:16px;letter-spacing:-.015em}
-.mcard .md{color:var(--ig-text2);font-size:13px;letter-spacing:0}
-.mcard .done{color:#28a745}
-.mcard.locked{opacity:.45}
-.mcard .pill{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none;border-radius:999px;padding:4px 10px}
-.pill.easy{background:rgba(52,199,89,.14);color:#1f8a3b}
-.pill.medium{background:rgba(10,132,255,.12);color:#0a60d8}
-.pill.hard{background:rgba(255,149,0,.14);color:#b86200}
-.pill.expert{background:rgba(255,59,48,.12);color:#d70015}
-.pill.impossible{background:rgba(175,82,222,.14);color:#8e3ac0}
-.pill.enigma{background:linear-gradient(90deg,rgba(255,204,0,.2),rgba(255,45,146,.16));color:#b0408a}
-/* shop / stats / settings */
-.section{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;padding:6px 16px;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.section h3{font-family:var(--ig-font);font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ig-text2);margin:10px 0 2px}
-.srow{border-bottom:1px solid var(--ig-line);padding:11px 0}
-.srow .se{width:40px;height:40px;flex:none;display:grid;place-items:center;font-size:22px;border-radius:11px;background:rgba(118,118,128,.12)}
-.srow .se.ig-tile{background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),var(--tile)}
-.srow .se .swatch{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
-.srow .st{font-weight:700;font-size:16px;letter-spacing:-.015em}
-.srow .sd{color:var(--ig-text2);font-size:13px}
-.buy{font-family:var(--ig-font);font-weight:700;font-size:14px;border-radius:999px;padding:8px 14px;background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff}
-.buy.owned{background:rgba(52,199,89,.14);color:#1f8a3b}
-.buy.equipped{background:rgba(118,118,128,.14);color:var(--ig-text2)}
-.buy.cant{background:rgba(118,118,128,.12);color:var(--ig-text3)}
-.statgrid{gap:10px}
-.stat{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);padding:18px 14px}
-.stat .sv{font-family:var(--ig-font);font-weight:800;letter-spacing:-.03em;color:var(--ig-text)}
-.stat .sl{color:var(--ig-text2);font-weight:600;letter-spacing:.04em;font-size:11px}
-.toggle{background:rgba(120,120,128,.16)}
-.toggle.on{background:#34c759}
-.toggle::after{box-shadow:0 3px 8px rgba(0,0,0,.15),0 0 0 .5px rgba(0,0,0,.04)}
-.resetbtn{width:100%;color:#d70015 !important}
-.screen .disclaimer{color:var(--ig-text3);font-size:12px}
-/* result / decrypting overlay */
-.ov{background:var(--ig-scrim);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.ovcard{background:rgba(255,255,255,.96);color:var(--ig-text);border:1px solid var(--ig-line);border-radius:28px;box-shadow:0 30px 80px rgba(20,20,50,.25),inset 0 1px 0 #fff;
-  -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%)}
-.ovcard .big{font-weight:800;letter-spacing:-.03em;font-size:26px}
-.ovcard .em{display:grid;place-items:center;width:64px;height:64px;margin:0 auto 12px;border-radius:18px;color:#fff;font-size:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%),var(--tile,linear-gradient(160deg,#34c759,#11998e));box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 10px 20px -8px rgba(0,0,0,.4)}
-.ovcard .em svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ovcard .em.alarm{--tile:linear-gradient(160deg,#ff6b5e,#d70015)}
-.ovcard .em.wait{--tile:linear-gradient(160deg,var(--accent),var(--accent2))}
-.ovcard [style*="var(--dim)"]{color:var(--ig-text2) !important}
-.ovstat{background:rgba(118,118,128,.1);border-radius:14px;font-size:15px}
-.ovstat b{color:var(--ig-text);font-family:var(--ig-font);font-weight:800}
-.ovbtns .btn{border-radius:999px;font-family:var(--ig-font);font-weight:700;font-size:16px;min-height:50px;border:0;gap:6px}
-.ovbtns .btn.ghost{background:var(--ig-glass2);color:var(--ig-text);border:1px solid var(--ig-line)}
-.ovbtns .btn.primary{background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 65%,transparent)}
-.ovbtns .btn:hover{transform:none}
-.toast{background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--ig-line);border-radius:999px;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--ig-shadow2);font-weight:600}
-/* in the mission room: keep the dark look, just round the back button */
-#game .back{width:40px;height:40px;padding:0;justify-content:center;background:rgba(255,255,255,.08);border-color:rgba(120,170,255,.2);color:var(--ink);box-shadow:none}
-#game .gtitle .n, #game .timer{font-family:var(--ig-font)}
-#game .timer{font-family:var(--mono)}
 </style>
 </head>
 <body>
+<a class="exit" href="../">← Arcade</a>
 <div id="app"></div>
 
 <!-- MENU -->
-<div class="screen" id="menu">
-  <div class="wrap ig-page">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-      <button class="ig-iconbtn" onclick="CB.go('settings')" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+<div class="screen center" id="menu">
+  <div class="wrap">
+    <div class="brand">
+      <div class="tag">Classified · Level 5 Clearance</div>
+      <h1>CODEBREAKER</h1>
+      <div class="sub">Secret Agent</div>
     </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="8" y="10" width="84" height="80" rx="8" fill="#64748b"/>
-<rect class="o" x="14" y="16" width="72" height="68" rx="5" fill="#94a3b8"/>
-<rect class="o" x="4" y="26" width="8" height="14" rx="2" fill="#475569"/><rect class="o" x="4" y="62" width="8" height="14" rx="2" fill="#475569"/>
-<circle class="o" cx="44" cy="50" r="24" fill="#cbd5e1"/><circle class="o" cx="44" cy="50" r="14" fill="#e2e8f0"/>
-<g stroke="#22120a" stroke-width="2.2" stroke-linecap="round"><path d="M44 27v5M44 68v5M21 50h5M62 50h5M28 34l3 3M57 63l3 3M60 34l-3 3M31 63l-3 3"/></g>
-<path d="M44 50 L44 38" stroke="#b3122f" stroke-width="4" stroke-linecap="round"/><circle class="o" cx="44" cy="50" r="4" fill="#475569"/>
-<rect class="o" x="72" y="26" width="10" height="48" rx="3" fill="#1e293b"/>
-<circle cx="77" cy="34" r="2.6" fill="#34d399"/><circle cx="77" cy="42" r="2.6" fill="#34d399"/><circle cx="77" cy="50" r="2.6" fill="#34d399"/><circle cx="77" cy="58" r="2.6" fill="#b3122f"/><circle cx="77" cy="66" r="2.6" fill="#475569"/>
-<ellipse cx="34" cy="38" rx="6" ry="3" fill="#fff" opacity=".5" transform="rotate(-30 34 38)"/></svg></div>
-      <div class="ig-title">Codebreaker</div>
-      <div class="ig-tagline">Find the clues. Crack the code. Beat the clock.</div>
+    <div class="hudrow">
+      <div class="chip"><span class="menoji">🎖️</span><div><small>Level</small><b id="mLevel">1</b></div></div>
+      <div class="chip"><span class="menoji">🪙</span><div><small>Coins</small><b id="mCoins">0</b></div></div>
+      <div class="chip"><span class="menoji">✔️</span><div><small>Missions</small><b id="mDone">0</b></div></div>
     </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" onclick="CB.playNext()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small id="mNext">Mission 1</small></span></button>
-      <button class="ig-sq" onclick="CB.go('missions')" title="All missions" aria-label="All missions"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
+    <div class="mbtns">
+      <button class="btn primary" onclick="CB.go('missions')"><span class="ic">▶</span> Play</button>
+      <button class="btn" onclick="CB.go('missions')"><span class="ic">🏆</span> Missions</button>
+      <button class="btn" onclick="CB.go('stats')"><span class="ic">📊</span> Statistics</button>
+      <button class="btn" onclick="CB.go('shop')"><span class="ic">🛒</span> Shop</button>
+      <button class="btn" onclick="CB.go('settings')"><span class="ic">⚙</span> Settings</button>
     </div>
-    <div class="ig-stats">
-      <div><b id="mLevel">1</b><span>Agent level</span></div>
-      <div><b><i class="coin"></i><span id="mCoins" style="font:inherit;color:inherit">0</span></b><span>Coins</span></div>
-      <div><b id="mDone">0</b><span>Missions cleared</span></div>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" onclick="CB.go('missions')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span><span class="ig-grow">Missions<small>54 vaults, Easy to Enigma</small></span></button>
-      <button class="ig-row" onclick="CB.go('shop')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><span class="ig-grow">Shop<small>Keypad themes and gadgets</small></span></button>
-      <button class="ig-row" onclick="CB.go('stats')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="ig-grow">Statistics<small>Fastest solve, streaks</small></span></button>
-    </div>
+    <div class="disclaimer">Crack the code. Beat the clock. Trust no one.</div>
   </div>
 </div>
 
 <!-- MISSIONS -->
 <div class="screen" id="missions">
   <div class="wrap">
-    <div class="topbar"><button class="back" onclick="CB.go('menu')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button><h2>Missions</h2><div class="tb-spacer"></div></div>
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>🏆 Missions</h2><div style="width:56px"></div></div>
     <div class="mlist" id="mlist"></div>
   </div>
 </div>
@@ -367,9 +270,9 @@ body{background:transparent;font-family:var(--ig-font);letter-spacing:-.01em}
 <!-- GAME -->
 <div class="screen" id="game">
   <div class="gtop">
-    <button class="back" onclick="CB.quitToMissions()" aria-label="Back to missions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="back" onclick="CB.quitToMissions()">‹</button>
     <div class="gtitle"><div class="n" id="gName">Mission</div><div class="l" id="gDiff">3-digit code</div></div>
-    <div class="gcoins"><i class="coin"></i><span id="gCoins">0</span></div>
+    <div class="gcoins">🪙 <span id="gCoins">0</span></div>
     <div class="timer" id="gTimer">3:00</div>
   </div>
   <div class="room" id="room"><div class="scene" id="scene"></div><div class="objs" id="objs"></div></div>
@@ -385,16 +288,16 @@ body{background:transparent;font-family:var(--ig-font);letter-spacing:-.01em}
 <!-- SHOP -->
 <div class="screen" id="shop">
   <div class="wrap">
-    <div class="topbar"><button class="back" onclick="CB.go('menu')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button><h2>Shop</h2><div class="coinchip" style="width:88px;justify-content:center"><i class="coin"></i><b id="shopCoins">0</b></div></div>
-    <div class="section"><h3>KEYPAD THEMES</h3><div id="themeList"></div></div>
-    <div class="section"><h3>FIELD GADGETS</h3><div id="itemList"></div></div>
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>🛒 Shop</h2><div class="chip" style="padding:7px 12px">🪙 <b id="shopCoins" style="margin-left:5px">0</b></div></div>
+    <div class="section"><h3>🎨 Themes</h3><div id="themeList"></div></div>
+    <div class="section"><h3>🧰 Field Gadgets</h3><div id="itemList"></div></div>
   </div>
 </div>
 
 <!-- STATS -->
 <div class="screen" id="stats">
   <div class="wrap">
-    <div class="topbar"><button class="back" onclick="CB.go('menu')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button><h2>Statistics</h2><div class="tb-spacer"></div></div>
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>📊 Statistics</h2><div style="width:56px"></div></div>
     <div class="statgrid" id="statgrid"></div>
   </div>
 </div>
@@ -402,12 +305,12 @@ body{background:transparent;font-family:var(--ig-font);letter-spacing:-.01em}
 <!-- SETTINGS -->
 <div class="screen" id="settings">
   <div class="wrap">
-    <div class="topbar"><button class="back" onclick="CB.go('menu')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button><h2>Settings</h2><div class="tb-spacer"></div></div>
+    <div class="topbar"><button class="back" onclick="CB.go('menu')">‹ Back</button><h2>⚙ Settings</h2><div style="width:56px"></div></div>
     <div class="section">
-      <div class="srow"><span class="se ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></span><div class="si"><div class="st">Sound Effects</div><div class="sd">Beeps, clicks, alarms</div></div><div class="toggle" id="tgSfx" onclick="CB.toggle('sfx')"></div></div>
-      <div class="srow"><span class="se ig-tile" style="--tile:linear-gradient(160deg,#ff6fae,#d6246e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span><div class="si"><div class="st">Suspense Music</div><div class="sd">Background tension loop</div></div><div class="toggle" id="tgMusic" onclick="CB.toggle('music')"></div></div>
+      <div class="srow"><span class="se">🔊</span><div class="si"><div class="st">Sound Effects</div><div class="sd">Beeps, clicks, alarms</div></div><div class="toggle" id="tgSfx" onclick="CB.toggle('sfx')"></div></div>
+      <div class="srow"><span class="se">🎵</span><div class="si"><div class="st">Suspense Music</div><div class="sd">Background tension loop</div></div><div class="toggle" id="tgMusic" onclick="CB.toggle('music')"></div></div>
     </div>
-    <button class="ig-btn secondary resetbtn" onclick="CB.resetProgress()">Reset all progress</button>
+    <button class="btn ghost" onclick="CB.resetProgress()"><span class="ic">🗑️</span> Reset all progress</button>
     <div class="disclaimer">Codebreaker: Secret Agent — an Ilan Games original.</div>
   </div>
 </div>
@@ -451,13 +354,13 @@ const OBJECTS=[
   ['☎️','Phone'],['📰','Report'],['🧰','Safe'],['📻','Radio']
 ];
 const THEMES=[
-  {id:'default',name:'Agency Blue',em:'🔵',price:0,cls:'',sw:'linear-gradient(135deg,#37e0ff,#7cff6b)'},
-  {id:'gold',   name:'Golden Keypad',em:'🟡',price:300,cls:'t-gold',sw:'linear-gradient(135deg,#ffd24a,#ffae3d)'},
-  {id:'neon',   name:'Neon Theme',   em:'🟣',price:450,cls:'t-neon',sw:'linear-gradient(135deg,#ff43e0,#43f7ff)'},
-  {id:'hacker', name:'Hacker Theme',  em:'🟢',price:500,cls:'t-hacker',sw:'linear-gradient(135deg,#39ff88,#0b2016)'},
-  {id:'spy',    name:'Spy Theme',     em:'🔴',price:600,cls:'t-spy',sw:'linear-gradient(135deg,#ff5a4d,#ffcf3d)'},
-  {id:'future', name:'Futuristic Theme',em:'🔷',price:750,cls:'t-future',sw:'linear-gradient(135deg,#6ab8ff,#b58bff)'},
-  {id:'space',  name:'Space Theme',   em:'🟪',price:900,cls:'t-space',sw:'linear-gradient(135deg,#8f7bff,#43d7ff)'}
+  {id:'default',name:'Agency Blue',em:'🔵',price:0,cls:''},
+  {id:'gold',   name:'Golden Keypad',em:'🟡',price:300,cls:'t-gold'},
+  {id:'neon',   name:'Neon Theme',   em:'🟣',price:450,cls:'t-neon'},
+  {id:'hacker', name:'Hacker Theme',  em:'🟢',price:500,cls:'t-hacker'},
+  {id:'spy',    name:'Spy Theme',     em:'🔴',price:600,cls:'t-spy'},
+  {id:'future', name:'Futuristic Theme',em:'🔷',price:750,cls:'t-future'},
+  {id:'space',  name:'Space Theme',   em:'🟪',price:900,cls:'t-space'}
 ];
 const GADGETS=[
   {id:'hint',    name:'Hint Scanner', em:'🛰️',price:40, desc:'Reveals one clue instantly'},
@@ -680,7 +583,7 @@ let G=null, tick=null;
 function startMission(idx){
   const m=MISSIONS[idx];
   // show a quick "decrypting" splash so bigger codes generate without a visible freeze
-  overlay(`<div class="em wait"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></div><div class="big">Decrypting…</div><div style="color:var(--dim);font-size:13px">${m.name}</div>`);
+  overlay(`<div class="em">🔓</div><div class="big">Decrypting…</div><div style="color:var(--dim);font-size:13px">${m.name}</div>`);
   actx(); if(ac&&ac.state==='suspended')ac.resume();
   setTimeout(()=>{ _beginMission(idx,m); closeOv(); }, 60);
 }
@@ -812,13 +715,13 @@ function winMission(){
   if(firstClear){ S.completed=G.idx+1; S.stats.completed=Math.max(S.stats.completed,S.completed); }
   if(G.idx+1>S.unlocked && G.idx+1<MISSIONS.length) S.unlocked=G.idx+1;
   save(); refreshMenu();
-  overlay(`<div class="em"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></div><div class="big">Mission Complete</div>
+  overlay(`<div class="em">🔓</div><div class="big">Mission Complete</div>
     <div style="color:var(--dim);font-size:13px">${G.m.name}</div>
     <div class="ovstats">
-      <div class="ovstat"><span>Time remaining</span><b>${Math.floor(G.time/60)}:${String(G.time%60).padStart(2,'0')}</b></div>
-      <div class="ovstat"><span>Coins earned</span><b>+${coins}</b></div>
-      <div class="ovstat"><span>Accuracy</span><b>${accuracy}%</b></div>
-      <div class="ovstat"><span>Streak</span><b>${S.stats.streak}</b></div>
+      <div class="ovstat"><span>⏱️ Time Remaining</span><b>${Math.floor(G.time/60)}:${String(G.time%60).padStart(2,'0')}</b></div>
+      <div class="ovstat"><span>🪙 Coins Earned</span><b>+${coins}</b></div>
+      <div class="ovstat"><span>🎯 Accuracy</span><b>${accuracy}%</b></div>
+      <div class="ovstat"><span>🔥 Streak</span><b>${S.stats.streak}</b></div>
     </div>
     <div class="ovbtns">
       <button class="btn ghost" onclick="CB.closeOv();CB.go('missions')">Missions</button>
@@ -828,7 +731,7 @@ function winMission(){
 function failMission(){
   G.over=true; clearInterval(tick); stopMusic(); SFX.fail();
   S.stats.streak=0; save();
-  overlay(`<div class="em alarm"><svg viewBox="0 0 24 24"><path d="M12 3v2M5 21h14M7 21v-6a5 5 0 0 1 10 0v6"/><path d="M3.5 9.5l1.8.8M20.5 9.5l-1.8.8"/></svg></div><div class="big">Time's Up!</div>
+  overlay(`<div class="em">🚨</div><div class="big">Time's Up!</div>
     <div style="color:var(--dim);font-size:13px">The vault sealed. The code was <b class="mono" style="color:var(--danger)">${G.secret.join('')}</b></div>
     <div class="ovbtns" style="margin-top:20px">
       <button class="btn ghost" onclick="CB.closeOv();CB.go('missions')">Missions</button>
@@ -846,10 +749,7 @@ function go(id){ SFX && SFX.click&&SFX.click(); document.querySelectorAll('.scre
   if(id==='menu') refreshMenu();
   if(id!=='game') stopMusic();
 }
-function nextIdx(){ return Math.max(0,Math.min(S.unlocked,MISSIONS.length-1)); }
-function playNext(){ startMission(nextIdx()); }
 function refreshMenu(){
-  const nm=MISSIONS[nextIdx()]; document.getElementById('mNext').textContent='Mission '+(nextIdx()+1)+' · '+nm.name;
   document.getElementById('mLevel').textContent=1+S.completed;
   document.getElementById('mCoins').textContent=S.coins;
   document.getElementById('mDone').textContent=S.completed;
@@ -859,11 +759,11 @@ function renderMissions(){
   MISSIONS.forEach((m,i)=>{
     const locked=i>S.unlocked; const done=i<S.completed;
     const d=document.createElement('div'); d.className='mcard'+(locked?' locked':'');
-    d.innerHTML=`<div class="em">${locked?'<svg viewBox="0 0 24 24" class="ig-sv"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>':m.em}</div>
+    d.innerHTML=`<div class="em">${locked?'🔒':m.em}</div>
       <div class="mi"><div class="mn">${i+1}. ${m.name}</div>
         <div class="md">${m.len}-digit code · ${m.time%60===0?(m.time/60)+' min':m.time+'s'} ${done?'· <span class="done">✔ Cleared</span>':''}</div></div>
       <div class="pill ${m.diff}">${DIFF_LABEL[m.diff]}</div>`;
-    if(!locked) d.onclick=()=>startMission(i); else d.onclick=()=>{toast('Clear the previous mission first');SFX.error();};
+    if(!locked) d.onclick=()=>startMission(i); else d.onclick=()=>{toast('🔒 Clear the previous mission first');SFX.error();};
     l.appendChild(d);
   });
 }
@@ -874,21 +774,21 @@ function renderShop(){
     const r=document.createElement('div'); r.className='srow';
     let btn = eq?`<button class="buy equipped" disabled>Equipped</button>`
       : owned?`<button class="buy owned" onclick="CB.equip('${t.id}')">Equip</button>`
-      : `<button class="buy ${S.coins>=t.price?'':'cant'}" onclick="CB.buyTheme('${t.id}')"><i class="coin"></i>${t.price}</button>`;
-    r.innerHTML=`<span class="se"><i class="swatch" style="background:${t.sw}"></i></span><div class="si"><div class="st">${t.name}</div><div class="sd">${owned?'Owned':'Theme skin'}</div></div>${btn}`;
+      : `<button class="buy ${S.coins>=t.price?'':'cant'}" onclick="CB.buyTheme('${t.id}')">🪙 ${t.price}</button>`;
+    r.innerHTML=`<span class="se">${t.em}</span><div class="si"><div class="st">${t.name}</div><div class="sd">${owned?'Owned':'Theme skin'}</div></div>${btn}`;
     tl.appendChild(r); });
   const il=document.getElementById('itemList'); il.innerHTML='';
   GADGETS.forEach(g=>{ const r=document.createElement('div'); r.className='srow';
-    r.innerHTML=`<span class="se">${g.em}</span><div class="si"><div class="st">${g.name} <span style="color:var(--ig-text2);font-weight:600">×${S.items[g.id]||0}</span></div><div class="sd">${g.desc}</div></div>
-      <button class="buy ${S.coins>=g.price?'':'cant'}" onclick="CB.buyItem('${g.id}')"><i class="coin"></i>${g.price}</button>`;
+    r.innerHTML=`<span class="se">${g.em}</span><div class="si"><div class="st">${g.name} <span style="color:var(--accent);font-family:var(--mono)">×${S.items[g.id]||0}</span></div><div class="sd">${g.desc}</div></div>
+      <button class="buy ${S.coins>=g.price?'':'cant'}" onclick="CB.buyItem('${g.id}')">🪙 ${g.price}</button>`;
     il.appendChild(r); });
 }
 function buyTheme(id){ const t=THEMES.find(x=>x.id===id); if(S.themes.indexOf(id)>=0)return;
   if(S.coins<t.price){ toast('Not enough coins'); SFX.error(); return; }
-  S.coins-=t.price; S.themes.push(id); S.theme=id; applyTheme(); save(); SFX.buy(); toast(t.name+' unlocked & equipped'); renderShop(); }
-function equip(id){ S.theme=id; applyTheme(); save(); SFX.click(); toast('Theme equipped'); renderShop(); }
+  S.coins-=t.price; S.themes.push(id); S.theme=id; applyTheme(); save(); SFX.buy(); toast('✅ '+t.name+' unlocked & equipped'); renderShop(); }
+function equip(id){ S.theme=id; applyTheme(); save(); SFX.click(); toast('🎨 Theme equipped'); renderShop(); }
 function buyItem(id){ const g=GADGETS.find(x=>x.id===id); if(S.coins<g.price){ toast('Not enough coins'); SFX.error(); return; }
-  S.coins-=g.price; S.items[id]=(S.items[id]||0)+1; save(); SFX.buy(); toast(g.name+' +1'); renderShop(); }
+  S.coins-=g.price; S.items[id]=(S.items[id]||0)+1; save(); SFX.buy(); toast('✅ '+g.name+' +1'); renderShop(); }
 function applyTheme(){ const t=THEMES.find(x=>x.id===S.theme)||THEMES[0];
   document.body.className=''; if(t.cls) document.body.classList.add(t.cls); }
 function renderStats(){
@@ -917,7 +817,7 @@ document.getElementById('menu').classList.add('on');
 // resume audio on first interaction (autoplay policy)
 document.addEventListener('pointerdown',function once(){ actx(); if(ac&&ac.state==='suspended')ac.resume(); document.removeEventListener('pointerdown',once); },{once:true});
 
-return { go, startMission, playNext, buyTheme, equip, buyItem, toggle, resetProgress, quitToMissions, closeOv,
+return { go, startMission, buyTheme, equip, buyItem, toggle, resetProgress, quitToMissions, closeOv,
   // expose for tests
   _buildMission:buildMission, _makeCluePool:makeCluePool };
 })();

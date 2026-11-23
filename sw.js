@@ -1,5 +1,5 @@
 /* Ilan's Arcade — service worker (offline support) */
-const CACHE = 'ilan-arcade-v131';
+const CACHE = 'ilan-arcade-v128';
 const ASSETS = [
   './',
   './index.html',
@@ -8,8 +8,6 @@ const ASSETS = [
   './announce.js',
   './friends.js',
   './rec.js',
-  './theme.js',
-  './theme.css',
   './supabase-config.js',
   './auth.js',
   './icon-192.png?v=2',
@@ -94,12 +92,20 @@ const ASSETS = [
   './obby/js/Aura.js',
   './puzzles/',
   './puzzles/index.html',
+  './anime-tycoon/',
+  './anime-tycoon/index.html',
   './tennis/',
   './tennis/index.html',
+  './karate/',
+  './karate/index.html',
   './thisorthat/',
   './thisorthat/index.html',
   './codebreaker/',
   './codebreaker/index.html',
+  './codewords/',
+  './codewords/index.html',
+  './codewords/game.js',
+  './codewords/data.js',
   './drawrush/',
   './drawrush/index.html',
   './drawrush/game.js',
@@ -153,7 +159,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   // auth/config/analytics scripts change often — always try the network first (fall back to cache offline)
-  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js') || path.endsWith('/friends.js') || path.endsWith('/analytics.js') || path.endsWith('/announce.js') || path.endsWith('/theme.js') || path.endsWith('/theme.css') || path.endsWith('/rec.js')) {
+  if (path.endsWith('/auth.js') || path.endsWith('/supabase-config.js') || path.endsWith('/friends.js') || path.endsWith('/analytics.js') || path.endsWith('/announce.js')) {
     e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; }).catch(() => caches.match(req)));
     return;
   }

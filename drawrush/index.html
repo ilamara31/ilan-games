@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Draw Rush</title>
+<title>Draw Rush 🎨</title>
 <link rel="apple-touch-icon" href="../icon-180.png?v=2">
 <link rel="icon" href="../icon-192.png?v=2">
 <meta name="description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
@@ -20,27 +20,25 @@
 <meta name="twitter:title" content="Draw Rush 🎨 — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<meta name="theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#5b2be0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<script src="../theme.js"></script>
 <style>
 /* ==================== DRAW RUSH ==================== */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root, html[data-theme]{ --accent:#7f7fe8; --accent2:#3fb6b0; --icon1:#8f8fe0; --icon2:#5ad1c9; }
 :root{
-  --bg:transparent; --bg2:transparent; --panel:var(--ig-glass); --panel2:rgba(118,118,128,.10); --line:var(--ig-line);
-  --ink:var(--ig-text); --muted:var(--ig-text2);
+  --bg:#160a2e; --bg2:#2a1160; --panel:#22143f; --panel2:#2c1a52; --line:rgba(255,255,255,.12);
+  --ink:#f3eefe; --muted:#b39fe0;
   --p1:#7c3aed; --p2:#ec4899; --p3:#06b6d4; --acc:#ffd23f;
   --good:#22d39a; --bad:#ff5d7a;
-  --grad:linear-gradient(160deg,var(--accent),var(--accent2)); --grad2:linear-gradient(160deg,#5ac8fa,#0a84ff); --acc:#d9467f;
+  --grad:linear-gradient(135deg,#7c3aed,#ec4899); --grad2:linear-gradient(135deg,#06b6d4,#7c3aed);
 }
 html,body{height:100%}
-body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
-  background:transparent;
+body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(120% 90% at 50% -10%,#3a1a7a,#160a2e 65%);
   min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .app{max-width:760px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
-  padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
 
 .screen{display:none;flex:1;flex-direction:column;animation:fade .25s ease}
 .screen.on{display:flex}
@@ -48,64 +46,63 @@ body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
 
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:none;font-family:inherit;
-  font-weight:700;font-size:16px;letter-spacing:-.01em;border-radius:999px;padding:0 22px;min-height:50px;color:#fff;background:var(--grad);
-  box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent);transition:transform .15s var(--ig-ease);line-height:1.1;text-decoration:none}
-.btn:active{transform:scale(.96)}
+  font-weight:800;font-size:17px;border-radius:16px;padding:15px 22px;color:#fff;background:var(--grad);
+  box-shadow:0 6px 0 rgba(0,0,0,.28),0 10px 26px rgba(124,58,237,.4);transition:transform .08s,box-shadow .08s;line-height:1.1;text-decoration:none}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
 .btn.block{display:flex;width:100%}
-.btn.ghost{background:var(--ig-glass2);border:1px solid var(--ig-line);box-shadow:none;color:var(--ig-text)}
-.btn.sm{font-size:14px;padding:0 14px;min-height:38px}
-.btn.cyan{background:var(--grad2);box-shadow:0 10px 24px -8px rgba(10,132,255,.55)}
-.btn.gold{background:linear-gradient(160deg,#ffcf4a,#ff9500);color:#3a1c00;box-shadow:0 10px 24px -8px rgba(255,149,0,.55)}
+.btn.ghost{background:var(--panel);border:1.5px solid var(--line);box-shadow:0 4px 0 rgba(0,0,0,.25);color:var(--ink)}
+.btn.ghost:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn.sm{font-size:14px;padding:9px 15px;border-radius:12px;box-shadow:0 4px 0 rgba(0,0,0,.22)}
+.btn.sm:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.btn.cyan{background:var(--grad2);box-shadow:0 6px 0 rgba(0,0,0,.28),0 10px 26px rgba(6,182,212,.35)}
+.btn.gold{background:linear-gradient(135deg,#ffd23f,#ff9b3d);color:#3a1c00;box-shadow:0 6px 0 rgba(160,90,0,.5)}
 .btn:disabled{opacity:.45;pointer-events:none;filter:grayscale(.3)}
-.btn svg,.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ic{width:14px;height:14px;vertical-align:-2px}
 
-.top{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:46px}
-.top .btn.ghost.sm,.g-top .btn.ghost.sm{min-height:44px;padding:0 14px 0 10px;font-size:16px;font-weight:600;background:var(--ig-glass);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:40px}
 .spacer{flex:1}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--ig-glass);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:7px 14px;font-weight:800;font-size:14px}
 
-/* ---------- main menu (Speed Sumo layout) ---------- */
-#menu{align-items:stretch}
-#menu .ig-col{gap:16px}
-#menu .ig-modes{grid-template-columns:repeat(3,1fr)}
-.ig-row .ig-tile{width:32px;height:32px;border-radius:9px}
-.ig-row .ig-tile svg{width:18px;height:18px}
-.screen:not(#menu):not(#game){width:100%;max-width:520px;margin:0 auto}
-#game{width:100%;max-width:680px;margin:0 auto}
-#swatches{flex-wrap:wrap;justify-content:center;max-width:100%}
-.roundtag{font-weight:600}
+/* ---------- main menu ---------- */
+#menu{align-items:center;justify-content:center;text-align:center}
+.logo{margin:8px 0 6px}
+.logo .em{font-size:64px;display:block;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
+.logo h1{font-size:clamp(40px,12vw,68px);font-weight:900;letter-spacing:1px;margin-top:2px;line-height:.95;
+  background:linear-gradient(135deg,#ffd23f,#ec4899 60%,#06b6d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo .tag{color:var(--muted);font-size:clamp(13px,3.6vw,16px);margin-top:8px;font-weight:600}
+.menu-btns{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;margin-top:26px}
+.menu-btns .btn{font-size:19px;padding:18px}
+.menu-foot{display:flex;gap:10px;margin-top:18px;width:100%;max-width:420px}
+.menu-foot .btn{flex:1}
 
 /* ---------- panels/forms ---------- */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.h2{font-size:28px;font-weight:800;letter-spacing:-.03em;margin:4px 0 14px;display:flex;align-items:center;gap:10px}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.h2{font-size:24px;font-weight:900;margin:4px 0 14px;display:flex;align-items:center;gap:10px}
 .sub{color:var(--muted);font-size:14.5px;line-height:1.55}
-.lbl{font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ig-text2);margin:14px 0 8px;display:block}
-.plabel{font-size:16px;font-weight:600;letter-spacing:-.01em}
-.field{width:100%;background:var(--ig-field);border:1px solid var(--ig-line);color:var(--ink);border-radius:16px;
-  padding:0 16px;height:52px;font-size:17px;font-weight:600;font-family:inherit;outline:none}
-.field:focus{border-color:color-mix(in srgb, var(--accent) 70%, transparent);box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)}
-.codein{text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:24px;font-weight:800}
+.lbl{font-weight:800;font-size:14px;margin:14px 0 8px;display:block}
+.field{width:100%;background:var(--panel2);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;
+  padding:14px 16px;font-size:17px;font-weight:700;font-family:inherit;outline:none}
+.field:focus{border-color:var(--p2)}
+.codein{text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px;font-weight:900}
 
 .modegrid{display:grid;grid-template-columns:1fr;gap:10px}
-.modecard{cursor:pointer;text-align:left;border:1.5px solid var(--line);background:var(--ig-glass);border-radius:22px;padding:14px 16px;color:var(--ig-text);font-family:inherit;
-  display:flex;align-items:center;gap:14px;transition:.12s;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+.modecard{cursor:pointer;text-align:left;border:2px solid var(--line);background:var(--panel2);border-radius:16px;padding:14px 16px;
+  display:flex;align-items:center;gap:14px;transition:.12s}
 .modecard:active{transform:scale(.98)}
-.modecard.on{border-color:var(--accent);background:linear-gradient(135deg,color-mix(in srgb, var(--accent) 16%, transparent),var(--ig-glass) 60%)}
-.modecard .mi{font-size:0;width:44px;height:44px;border-radius:12px}.modecard .mi svg{width:22px;height:22px}
-.modecard .mt{font-weight:700;font-size:17px;letter-spacing:-.02em}
+.modecard.on{border-color:var(--p2);background:linear-gradient(135deg,rgba(236,72,153,.16),rgba(124,58,237,.12))}
+.modecard .mi{font-size:34px;line-height:1}
+.modecard .mt{font-weight:900;font-size:17px}
 .modecard .md{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
 
-.seg{display:flex;background:rgba(118,118,128,.12);border-radius:999px;padding:3px;gap:2px}
-.seg button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:600;font-size:15px;color:var(--ig-text2);
-  background:transparent;border-radius:999px;padding:8px;transition:background .2s,color .2s}
-.seg button.on{background:#fff;color:var(--ig-text);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.seg{display:flex;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:800;font-size:15px;color:var(--muted);
+  background:transparent;border-radius:10px;padding:11px 8px;transition:.12s}
+.seg button.on{background:var(--grad);color:#fff}
 
-.codebox{text-align:center;background:var(--ig-glass);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);border-radius:22px;padding:16px;margin:6px 0 12px}
-.codebox .c{font-size:40px;font-weight:800;letter-spacing:10px;color:var(--ig-text)}
+.codebox{text-align:center;background:var(--panel2);border:2px dashed var(--line);border-radius:16px;padding:16px;margin:6px 0 12px}
+.codebox .c{font-size:40px;font-weight:900;letter-spacing:10px;color:var(--acc)}
 .codebox .l{font-size:12.5px;color:var(--muted);margin-top:2px}
 .players{display:flex;gap:10px;margin:10px 0}
-.pcard{flex:1;background:var(--ig-glass);border:1px solid var(--line);box-shadow:var(--ig-shadow);border-radius:20px;padding:12px;text-align:center}
+.pcard{flex:1;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:12px;text-align:center}
 .pcard .av{font-size:30px}
 .pcard .nm{font-weight:800;font-size:15px;margin-top:3px}
 .pcard .st{font-size:12px;color:var(--muted);margin-top:2px}
@@ -115,22 +112,22 @@ body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
 /* ---------- GAME screen ---------- */
 #game{padding:0}
 .g-top{display:flex;align-items:center;gap:8px;padding:4px 2px 8px}
-.timer{font-weight:800;font-size:24px;min-width:72px;text-align:center;background:var(--ig-glass);border:1px solid var(--line);border-radius:999px;padding:6px 12px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);font-variant-numeric:tabular-nums}
-.timer.warn{border-color:var(--bad);color:#e0304f;animation:pulse .6s infinite}
+.timer{font-weight:900;font-size:26px;min-width:64px;text-align:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:4px 6px}
+.timer.warn{border-color:var(--bad);color:#ffd0da;animation:pulse .6s infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-.scoreb{display:flex;gap:8px;flex:0 0 auto;margin-bottom:8px}
-.sc{flex:1;background:var(--ig-glass);border:1px solid var(--line);border-radius:16px;padding:5px 8px;text-align:center;overflow:hidden}
+.scoreb{display:flex;gap:8px;flex:1}
+.sc{flex:1;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:5px 8px;text-align:center;overflow:hidden}
 .sc .n{font-size:12px;color:var(--muted);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sc .v{font-size:20px;font-weight:800}
+.sc .v{font-size:20px;font-weight:900}
 .sc.me{border-color:var(--p2)}
 .roundtag{font-size:12px;color:var(--muted);font-weight:800;text-align:center;margin-bottom:4px}
 
-.wordbar{border-radius:999px;padding:10px 16px;text-align:center;font-weight:600;margin-bottom:8px;background:var(--ig-glass2);border:1px solid var(--line);box-shadow:var(--ig-shadow);font-size:15px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px}
-.wordbar .w{font-size:21px;font-weight:800;letter-spacing:2px;color:var(--acc)}
-.wordbar.draw{border-color:rgba(217,70,127,.35)}
+.wordbar{border-radius:14px;padding:11px 14px;text-align:center;font-weight:800;margin-bottom:8px;background:var(--panel);border:1.5px solid var(--line);font-size:15px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px}
+.wordbar .w{font-size:22px;font-weight:900;letter-spacing:3px;color:var(--acc)}
+.wordbar.draw{background:linear-gradient(135deg,rgba(255,210,63,.14),rgba(236,72,153,.1));border-color:rgba(255,210,63,.4)}
 
 .canvas-wrap{position:relative;width:100%;background:#fff;border-radius:16px;overflow:hidden;
-  box-shadow:0 14px 34px rgba(40,40,80,.16),0 0 0 1px rgba(0,0,0,.06);border-radius:22px;touch-action:none;aspect-ratio:4/3}
+  box-shadow:0 8px 30px rgba(0,0,0,.4);touch-action:none;aspect-ratio:4/3}
 #canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
 .canvas-wrap.rotated #canvas{}
 .disaster-tag{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,93,122,.92);
@@ -143,41 +140,40 @@ body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
 /* toolbar */
 .tools{display:none;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
 .tools.on{display:flex}
-.swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:0 0 auto}
-.swatch.on{border-color:#fff;transform:scale(1.12);box-shadow:0 0 0 2px var(--ig-text)}
-.tbtn{width:42px;height:42px;border-radius:999px;border:1px solid var(--line);background:var(--ig-glass);color:var(--ink);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow);
+.swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid rgba(255,255,255,.25);flex:0 0 auto}
+.swatch.on{border-color:#fff;transform:scale(1.12);box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+.tbtn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);
   font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .tbtn:active{transform:scale(.92)}
-.tbtn.on{background:var(--grad);border-color:transparent;color:#fff}
-.tbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tbtn.on{background:var(--grad);border-color:transparent}
 .tbtn:disabled{opacity:.4;pointer-events:none}
-.sizewrap{display:flex;align-items:center;gap:8px;background:var(--ig-glass);border:1px solid var(--line);border-radius:999px;padding:6px 14px;height:42px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+.sizewrap{display:flex;align-items:center;gap:8px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:6px 12px}
 .sizewrap input{width:96px}
-.sizedot{border-radius:50%;background:var(--ig-text);flex:0 0 auto}
+.sizedot{border-radius:50%;background:#fff;flex:0 0 auto}
 
 /* guesser input / feed */
 .guessbar{display:none;gap:8px;margin-top:8px}
 .guessbar.on{display:flex}
 .guessbar .field{flex:1}
 .feed{margin-top:8px;max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
-.feed .g{font-size:14px;padding:7px 13px;border-radius:16px;background:var(--ig-glass2);border:1px solid var(--line);align-self:flex-start;max-width:90%}
-.feed .g.me{align-self:flex-end;background:color-mix(in srgb, var(--accent) 16%, #fff)}
+.feed .g{font-size:14px;padding:6px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);align-self:flex-start;max-width:90%}
+.feed .g.me{align-self:flex-end;background:var(--panel2)}
 .feed .g.correct{background:linear-gradient(135deg,#22d39a,#06b6d4);color:#052b22;font-weight:800;align-self:center}
 .feed .g.sys{color:var(--muted);font-style:italic;align-self:center;background:transparent;border:none}
 
 /* bluff options */
 .bluff{display:none;flex-direction:column;gap:8px;margin-top:8px}
 .bluff.on{display:flex}
-.bluff .opt{cursor:pointer;text-align:center;border:1.5px solid var(--line);background:var(--ig-glass);color:var(--ig-text);font-family:inherit;box-shadow:var(--ig-shadow);border-radius:999px;padding:14px;font-weight:800;font-size:16px}
+.bluff .opt{cursor:pointer;text-align:center;border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:14px;font-weight:800;font-size:16px}
 .bluff .opt:active{transform:scale(.98)}
 .bluff .opt.right{border-color:var(--good);background:linear-gradient(135deg,rgba(34,211,154,.2),transparent)}
 .bluff .opt.wrong{border-color:var(--bad);background:linear-gradient(135deg,rgba(255,93,122,.2),transparent)}
 
 /* stats */
 .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:var(--ig-glass);border:1px solid var(--line);border-radius:20px;padding:14px;text-align:center;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
-.stat .v{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--ig-text)}
-.stat .l{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.stat{background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat .v{font-size:26px;font-weight:900;color:var(--acc)}
+.stat .l{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
 
 /* settings rows */
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -185,26 +181,23 @@ body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
 
 /* overlays */
 .overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;
-  background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  background:rgba(6,3,18,.82);backdrop-filter:blur(3px)}
 .overlay.on{display:flex;animation:fade .2s ease}
-.sheet{background:var(--ig-sheet);color:var(--ig-text);border:1px solid var(--line);border-radius:28px;padding:24px 22px 22px;max-width:420px;width:100%;text-align:center;
-  max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(20,20,50,.25),inset 0 1px 0 #fff;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%)}
-.sheet h2{font-size:24px;margin-bottom:8px;font-weight:800;letter-spacing:-.03em}
-.sheet .btns .btn{flex:1}
+.sheet{background:var(--panel);border:1.5px solid var(--line);border-radius:22px;padding:24px;max-width:440px;width:100%;text-align:center;
+  max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.sheet h2{font-size:26px;margin-bottom:8px;font-weight:900}
 .sheet p{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:8px}
 .sheet .btns{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
-.big-emoji{width:72px;height:72px;border-radius:22px;margin:0 auto 12px;display:grid;place-items:center;color:#fff;font-size:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 50%),var(--tile,var(--grad));box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 14px 28px -12px rgba(0,0,0,.45)}
-.big-emoji svg{width:38px;height:38px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.reveal-word{font-size:30px;font-weight:800;color:var(--acc);letter-spacing:2px;margin:6px 0}
+.big-emoji{font-size:62px;margin-bottom:6px;line-height:1}
+.reveal-word{font-size:30px;font-weight:900;color:var(--acc);letter-spacing:2px;margin:6px 0}
 .judge-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0}
-.judge-bar{flex:1;height:10px;border-radius:6px;background:rgba(118,118,128,.14);overflow:hidden;margin:0 10px}
+.judge-bar{flex:1;height:10px;border-radius:6px;background:var(--panel2);overflow:hidden;margin:0 10px}
 .judge-bar>span{display:block;height:100%;background:var(--grad)}
 .judge-score{font-weight:900;min-width:44px;text-align:right}
 
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);z-index:80;opacity:0;pointer-events:none;
-  background:var(--ig-sheet);border:1px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;
-  box-shadow:0 14px 34px rgba(20,20,50,.2);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:.25s;max-width:88vw;text-align:center}
+  background:var(--panel);border:1.5px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:24px;font-weight:800;font-size:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);transition:.25s;max-width:88vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden;display:none}
@@ -214,45 +207,44 @@ body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;
 
 /* ---------- community gallery ---------- */
 .gbar{display:flex;gap:8px;margin-bottom:10px}
-.gsearch{flex:1;background:var(--ig-field);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:12px 18px;font-size:15px;font-weight:600;font-family:inherit;outline:none;min-width:0}
-.gsearch:focus{border-color:var(--accent)}
+.gsearch{flex:1;background:var(--panel2);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;font-family:inherit;outline:none;min-width:0}
+.gsearch:focus{border-color:var(--p2)}
 .gtabs{display:flex;gap:6px;margin-bottom:10px}
-.gtabs{background:rgba(118,118,128,.12);border-radius:999px;padding:3px;gap:2px}
-.gtabs button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:600;font-size:13px;color:var(--ig-text2);background:transparent;border-radius:999px;padding:8px 6px}
-.gtabs button.on{background:#fff;color:var(--ig-text);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.gtabs button{flex:1;cursor:pointer;border:none;font-family:inherit;font-weight:800;font-size:13px;color:var(--muted);background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:10px 6px}
+.gtabs button.on{background:var(--grad);color:#fff;border-color:transparent}
 .gchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
-.gchip{flex:0 0 auto;cursor:pointer;border:1px solid var(--line);background:var(--ig-glass);color:var(--ig-text);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;white-space:nowrap;font-family:inherit}
-.gchip.on{background:var(--ig-solid);color:#fff;border-color:transparent}
+.gchip{flex:0 0 auto;cursor:pointer;border:1.5px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:800;white-space:nowrap}
+.gchip.on{background:var(--p3);color:#04202a;border-color:transparent}
 .ggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.gcard{background:var(--ig-glass);border:1px solid var(--line);box-shadow:var(--ig-shadow);border-radius:20px;overflow:hidden;cursor:pointer;transition:transform .1s}
+.gcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .1s}
 .gcard:active{transform:scale(.97)}
 .gcard .thumb{width:100%;aspect-ratio:4/3;background:#fff;object-fit:cover;display:block}
 .gcard .gc-b{padding:9px 10px}
 .gcard .gc-t{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gcard .gc-c{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gcard .gc-m{display:flex;gap:10px;font-size:12px;font-weight:600;margin-top:5px;color:var(--muted)}
-.gcat{display:inline-block;font-size:11px;font-weight:600;background:rgba(118,118,128,.12);border-radius:999px;padding:2px 8px;color:var(--ig-text2);margin-top:5px}
+.gcard .gc-m{display:flex;gap:10px;font-size:12px;font-weight:800;margin-top:5px;color:var(--muted)}
+.gcat{display:inline-block;font-size:10px;font-weight:800;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:2px 7px;color:var(--p3);margin-top:5px}
 .gmore{text-align:center;padding:16px;color:var(--muted);font-weight:700}
 .gempty{text-align:center;color:var(--muted);padding:44px 10px;font-weight:700}
-.dimg{width:100%;background:#fff;border-radius:22px;aspect-ratio:4/3;object-fit:contain;box-shadow:0 14px 34px rgba(40,40,80,.16)}
+.dimg{width:100%;background:#fff;border-radius:16px;aspect-ratio:4/3;object-fit:contain;box-shadow:0 8px 30px rgba(0,0,0,.4)}
 .dmeta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.dstat{background:var(--ig-glass);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
-.dcreator{display:flex;align-items:center;gap:10px;background:var(--ig-glass);border:1px solid var(--line);box-shadow:var(--ig-shadow);border-radius:20px;padding:12px;cursor:pointer;margin-top:8px}
-.dcreator .av{width:40px;height:40px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0;flex:0 0 auto}.dcreator .av svg,.pav svg{width:55%;height:55%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dstat{background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:800;font-size:14px}
+.dcreator{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;margin-top:8px}
+.dcreator .av{width:40px;height:40px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto}
 .likebtn.liked{background:linear-gradient(135deg,#ff5d7a,#ec4899)}
 .phead{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.pav{width:64px;height:64px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0;flex:0 0 auto}
+.pav{width:64px;height:64px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:32px;flex:0 0 auto}
 .pstats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.pstat{flex:1;min-width:80px;background:var(--ig-glass);border:1px solid var(--line);border-radius:18px;padding:10px;text-align:center}
-.pstat .v{font-size:20px;font-weight:800;color:var(--ig-text)}
+.pstat{flex:1;min-width:80px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.pstat .v{font-size:20px;font-weight:900;color:var(--acc)}
 .pstat .l{font-size:11px;color:var(--muted);font-weight:700}
-.spin{width:26px;height:26px;border:3px solid var(--ig-line2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto}
+.spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--p2);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none!important}
 .center{text-align:center}
 .mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
 .small{font-size:12.5px;color:var(--muted)}
-a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
+a.link{color:var(--p2);font-weight:800;cursor:pointer;text-decoration:none}
 </style>
 </head>
 <body>
@@ -260,45 +252,31 @@ a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
 
   <!-- ============ MAIN MENU ============ -->
   <div id="menu" class="screen on">
-   <div class="ig-col">
-    <div class="ig-topbar">
-      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
-      <button class="ig-iconbtn" data-go="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <div class="logo">
+      <span class="em">🎨</span>
+      <h1>DRAW<br>RUSH</h1>
+      <div class="tag">Draw fast. Guess faster. Beat your friends! ✏️⚡</div>
     </div>
-    <div class="ig-hero">
-      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M24 62 L16 94 M58 62 L66 94 M41 62 L41 92" stroke="#22120a" stroke-width="6" stroke-linecap="round"/><path d="M24 62 L16 94 M58 62 L66 94 M41 62 L41 92" stroke="#a8692f" stroke-width="3" stroke-linecap="round"/>
-<rect class="o" x="8" y="14" width="66" height="50" rx="4" fill="#fff"/>
-<path d="M18 52 Q22 26 34 40 Q42 52 48 30 Q52 20 62 34" fill="none" stroke="#7c3aed" stroke-width="4.5" stroke-linecap="round"/>
-<path class="o" d="M22 30 l2.5 5 5.5 .5 -4 3.5 1.5 5.5 -5 -3 -5 3 1.5 -5.5 -4 -3.5 5.5 -.5Z" fill="#ffcc00"/>
-<g transform="rotate(40 74 64)"><rect class="o" x="68" y="34" width="12" height="40" rx="2" fill="#ffcc00"/><rect class="o" x="68" y="34" width="12" height="7" fill="#ff7ad9"/><path class="o" d="M68 74 L74 86 L80 74Z" fill="#f3e2c0"/><path d="M72.5 82 L74 86 L75.5 82Z" fill="#22120a"/></g>
-<path class="o" d="M72 6 Q94 4 94 18 Q94 30 80 30 L76 36 L76 29 Q68 26 68 18 Q68 8 72 6Z" fill="#fff"/>
-<text x="81" y="25" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="18" text-anchor="middle" fill="#ec4899">?</text></svg></div>
-      <div class="ig-title">Draw Rush</div>
-      <div class="ig-tagline">Draw fast. Guess faster.</div>
+    <div class="menu-btns">
+      <button class="btn" data-go="online">🌐 Play Online</button>
+      <button class="btn cyan" data-go="ai">🤖 Play vs AI</button>
+      <button class="btn gold" id="galleryOpenBtn">🖼️ Community Gallery</button>
+      <div class="menu-foot">
+        <button class="btn ghost" data-go="stats">📊 Stats</button>
+        <button class="btn ghost" data-go="settings">⚙️ Settings</button>
+      </div>
+      <a class="btn ghost" href="../" title="All games" style="text-decoration:none;display:flex;align-items:center;justify-content:center">🏠 All Games</a>
     </div>
-    <div class="ig-playrow">
-      <button class="ig-cta" data-ai="secret"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small>Secret word · AI guesses</small></span></button>
-      <button class="ig-sq" data-go="ai" title="All AI modes" aria-label="All AI modes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
-    </div>
-    <div class="ig-modes">
-      <button class="ig-mode" data-go="online"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Play a friend</small></button>
-      <button class="ig-mode" data-ai="judge"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><b>AI Judge</b><small>Get rated</small></button>
-      <button class="ig-mode" id="galleryOpenBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8ac8,#d9467f)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-9 8"/></svg></span><b>Gallery</b><small>Community art</small></button>
-    </div>
-    <div class="ig-list">
-      <button class="ig-row" data-go="ai"><span class="ig-tile" style="--tile:linear-gradient(160deg,#a78bfa,#6d28d9)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></span><span class="ig-grow">All AI Modes<small>Bluff, Disaster and more</small></span></button>
-      <button class="ig-row" data-go="stats"><span class="ig-tile" style="--tile:linear-gradient(160deg,#6fd3ff,#1c7cf0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></span><span class="ig-grow">Your Stats<small>Wins, drawings &amp; favourite mode</small></span></button>
-    </div>
-   </div>
+    <div class="small" style="margin-top:26px">🧪 Test build — feedback welcome</div>
   </div>
 
   <!-- ============ ONLINE ENTRY ============ -->
   <div id="online" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
-    <div class="h2">Play Online</div>
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🌐 Play Online</div>
     <div class="card">
-      <p class="sub">Play with a friend on another device. Create a room and share the 4-letter code.</p>
-      <button class="btn block mt16" id="createRoomBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Create a Room</button>
+      <p class="sub">Play with a friend on another device. Create a room and share the 4-letter code — just like Hand Cricket League.</p>
+      <button class="btn block mt16" id="createRoomBtn">➕ Create a Room</button>
     </div>
     <div class="card">
       <label class="lbl">Join a friend's room</label>
@@ -312,51 +290,51 @@ a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
 
   <!-- ============ CREATE ROOM SETUP ============ -->
   <div id="createSetup" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="online"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
-    <div class="h2">Choose a Mode</div>
+    <div class="top"><button class="btn ghost sm" data-back="online">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🎮 Choose a Mode</div>
     <div class="modegrid" id="modeGrid">
-      <button class="modecard on" data-mode="secret"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#6b7a99,#2a3352)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h18"/><path d="M6 11l1.5-5.5h9L18 11"/><circle cx="8" cy="16" r="2.6"/><circle cx="16" cy="16" r="2.6"/><path d="M10.6 16h2.8"/></svg></span><div><div class="mt">Secret Theme</div><div class="md">You get a secret word, draw it in 60s, your friend guesses.</div></div></button>
-      <button class="modecard" data-mode="bluff"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#c792ff,#7b2fd6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c3 1.2 5.5 1.2 8 0 2.5 1.2 5 1.2 8 0v5c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9z"/><path d="M8 11h2M14 11h2M9 15.5c1.8 1.2 4.2 1.2 6 0"/></svg></span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw anything, name it — can your friend spot the real title among fakes?</div></div></button>
-      <button class="modecard" data-mode="rush"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></span><div><div class="mt">Draw Rush</div><div class="md">Fast &amp; frantic — 20 seconds to draw, quick guesses, more rounds!</div></div></button>
+      <button class="modecard on" data-mode="secret"><span class="mi">🕵️</span><div><div class="mt">Secret Theme</div><div class="md">You get a secret word, draw it in 60s, your friend guesses.</div></div></button>
+      <button class="modecard" data-mode="bluff"><span class="mi">🎭</span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw anything, name it — can your friend spot the real title among fakes?</div></div></button>
+      <button class="modecard" data-mode="rush"><span class="mi">⚡</span><div><div class="mt">Draw Rush</div><div class="md">Fast &amp; frantic — 20 seconds to draw, quick guesses, more rounds!</div></div></button>
     </div>
     <div class="card">
       <label class="lbl">Rounds (total)</label>
       <div class="seg" id="roundsSeg"><button data-r="4">4</button><button data-r="6" class="on">6</button><button data-r="8">8</button></div>
     </div>
-    <button class="btn block" id="doCreateBtn" style="min-height:58px;font-size:18px">Create Room</button>
+    <button class="btn block" id="doCreateBtn">Create Room ▶</button>
   </div>
 
   <!-- ============ LOBBY ============ -->
   <div id="lobby" class="screen">
-    <div class="top"><button class="btn ghost sm" id="leaveLobbyBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Leave</button><span class="spacer"></span><span id="lobbyConn" class="small">●</span></div>
-    <div class="h2">Room Lobby</div>
+    <div class="top"><button class="btn ghost sm" id="leaveLobbyBtn">‹ Leave</button><span class="spacer"></span><span id="lobbyConn" class="small">●</span></div>
+    <div class="h2">🛰️ Room Lobby</div>
     <div class="codebox"><div class="c" id="lobbyCode">----</div><div class="l">Share this code with your friend</div></div>
     <div class="row" style="border:none;padding:0;gap:8px;margin-bottom:10px">
-      <button class="btn ghost sm" id="shareBtn" style="flex:1"><svg viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share</button>
-      <button class="btn ghost sm" id="copyBtn" style="flex:1"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy code</button>
+      <button class="btn ghost sm" id="shareBtn" style="flex:1">🔗 Share</button>
+      <button class="btn ghost sm" id="copyBtn" style="flex:1">📋 Copy code</button>
     </div>
     <div class="players" id="lobbyPlayers"></div>
     <div class="chip center" id="lobbyMode" style="justify-content:center;margin:6px 0">Mode</div>
-    <div id="hostStartWrap"><button class="btn block" id="startGameBtn" style="margin-top:8px;min-height:58px;font-size:18px"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg>Start Game</button><p class="small center mt8" id="startHint">Waiting for a second player…</p></div>
+    <div id="hostStartWrap"><button class="btn block gold" id="startGameBtn" style="margin-top:8px">▶ Start Game</button><p class="small center mt8" id="startHint">Waiting for a second player…</p></div>
     <p class="small center mt8" id="waitHostMsg" style="display:none">Waiting for the host to start…</p>
   </div>
 
   <!-- ============ AI MENU ============ -->
   <div id="ai" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
-    <div class="h2">Play vs AI</div>
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">🤖 Play vs AI</div>
     <div class="modegrid">
-      <button class="modecard" data-ai="secret"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#6b7a99,#2a3352)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11h18"/><path d="M6 11l1.5-5.5h9L18 11"/><circle cx="8" cy="16" r="2.6"/><circle cx="16" cy="16" r="2.6"/><path d="M10.6 16h2.8"/></svg></span><div><div class="mt">Secret Theme</div><div class="md">You draw a secret word — the AI tries to guess it (with funny guesses!).</div></div></button>
-      <button class="modecard" data-ai="bluff"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#c792ff,#7b2fd6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c3 1.2 5.5 1.2 8 0 2.5 1.2 5 1.2 8 0v5c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9z"/><path d="M8 11h2M14 11h2M9 15.5c1.8 1.2 4.2 1.2 6 0"/></svg></span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw &amp; name it — the AI must pick your real title from the fakes.</div></div></button>
-      <button class="modecard" data-ai="disaster"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M5 17h7"/></svg></span><div><div class="mt">Disaster Drawing</div><div class="md">Draw while chaos strikes — spinning canvas, wild brushes &amp; more!</div></div></button>
-      <button class="modecard" data-ai="judge"><span class="mi ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><div><div class="mt">AI Judge</div><div class="md">Pick a subject, draw it, and get rated on creativity, detail &amp; more.</div></div></button>
+      <button class="modecard" data-ai="secret"><span class="mi">🕵️</span><div><div class="mt">Secret Theme</div><div class="md">You draw a secret word — the AI tries to guess it (with funny guesses!).</div></div></button>
+      <button class="modecard" data-ai="bluff"><span class="mi">🎭</span><div><div class="mt">Draw &amp; Bluff</div><div class="md">Draw &amp; name it — the AI must pick your real title from the fakes.</div></div></button>
+      <button class="modecard" data-ai="disaster"><span class="mi">🌪️</span><div><div class="mt">Disaster Drawing</div><div class="md">Draw while chaos strikes — spinning canvas, wild brushes &amp; more!</div></div></button>
+      <button class="modecard" data-ai="judge"><span class="mi">⭐</span><div><div class="mt">AI Judge</div><div class="md">Pick a subject, draw it, and get rated on creativity, detail &amp; more.</div></div></button>
     </div>
   </div>
 
   <!-- ============ GAME (shared) ============ -->
   <div id="game" class="screen">
     <div class="g-top">
-      <button class="btn ghost sm" id="quitGameBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Quit</button>
+      <button class="btn ghost sm" id="quitGameBtn">‹ Quit</button>
       <span class="spacer"></span>
       <div class="timer" id="timer">–</div>
     </div>
@@ -370,21 +348,21 @@ a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
     </div>
     <div class="tools" id="tools">
       <div id="swatches" style="display:flex;gap:6px"></div>
-      <button class="tbtn" id="tBrush" title="Brush"><svg viewBox='0 0 24 24'><path d='M18.5 3.5a2.1 2.1 0 0 1 3 3L11 17l-4 1 1-4z'/><path d='M4 20c1.5 0 3-1 3-2.5'/></svg></button>
-      <button class="tbtn" id="tEraser" title="Eraser"><svg viewBox='0 0 24 24'><path d='M7 20h12'/><path d='M4.5 15.5 14 6a2.1 2.1 0 0 1 3 0l2.5 2.5a2.1 2.1 0 0 1 0 3L12 19H8z'/><path d='M9 10.5l5 5'/></svg></button>
+      <button class="tbtn" id="tBrush" title="Brush">🖌️</button>
+      <button class="tbtn" id="tEraser" title="Eraser">🧽</button>
       <div class="sizewrap"><span class="sizedot" id="sizeDot" style="width:12px;height:12px"></span><input id="sizeSlider" type="range" min="2" max="42" value="8"></div>
-      <button class="tbtn" id="tUndo" title="Undo"><svg viewBox='0 0 24 24'><path d='M9 14 4 9l5-5'/><path d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/></svg></button>
-      <button class="tbtn" id="tRedo" title="Redo"><svg viewBox='0 0 24 24'><path d='m15 14 5-5-5-5'/><path d='M20 9H9.5a5.5 5.5 0 0 0 0 11H13'/></svg></button>
-      <button class="tbtn" id="tClear" title="Clear"><svg viewBox='0 0 24 24'><path d='M4 7h16M10 11v6M14 11v6'/><path d='M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12'/><path d='M9 7V4h6v3'/></svg></button>
+      <button class="tbtn" id="tUndo" title="Undo">↩️</button>
+      <button class="tbtn" id="tRedo" title="Redo">↪️</button>
+      <button class="tbtn" id="tClear" title="Clear">🗑️</button>
     </div>
     <div class="guessbar" id="guessbar">
       <input id="guessInput" class="field" maxlength="40" placeholder="Type your guess…" autocomplete="off">
       <button class="btn" id="guessSend">Guess</button>
     </div>
-    <button class="btn block gold" id="doneBtn" style="display:none;margin-top:8px"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done!</button>
+    <button class="btn block gold" id="doneBtn" style="display:none;margin-top:8px">✅ Done!</button>
     <div id="titleInputWrap" style="display:none;margin-top:8px">
       <input id="titleInput" class="field" maxlength="40" placeholder="Name your masterpiece…" autocomplete="off">
-      <button class="btn block mt8" id="titleSubmit">Submit Title</button>
+      <button class="btn block mt8" id="titleSubmit">Submit Title ▶</button>
     </div>
     <div class="bluff" id="bluffOpts"></div>
     <div class="feed" id="feed"></div>
@@ -392,32 +370,32 @@ a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
 
   <!-- ============ STATS ============ -->
   <div id="stats" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
-    <div class="h2">Your Stats</div>
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">📊 Your Stats</div>
     <div class="statgrid" id="statGrid"></div>
-    <div class="card mt12"><div class="row" style="border:none;padding:0"><span class="sub">Favourite mode</span><b id="favMode">—</b></div></div>
+    <div class="card mt12"><div class="row" style="border:none;padding:0"><span class="sub">⭐ Favorite mode</span><b id="favMode">—</b></div></div>
     <button class="btn ghost block mt12" id="resetStats">Reset stats</button>
   </div>
 
   <!-- ============ SETTINGS ============ -->
   <div id="settings" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
-    <div class="h2">Settings</div>
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span></div>
+    <div class="h2">⚙️ Settings</div>
     <div class="card">
-      <div class="row"><span class="plabel">Sound effects</span><button class="btn ghost sm" id="tSound">On</button></div>
-      <div class="row"><span class="plabel">Music</span><button class="btn ghost sm" id="tMusic">On</button></div>
+      <div class="row"><span class="lbl" style="margin:0">🔊 Sound effects</span><button class="btn ghost sm" id="tSound">On</button></div>
+      <div class="row"><span class="lbl" style="margin:0">🎵 Music</span><button class="btn ghost sm" id="tMusic">On</button></div>
     </div>
     <label class="lbl">Your name</label>
     <input id="setName" class="field" maxlength="14" placeholder="Player">
-    <p class="small mt12">Draw Rush — test build. Report anything weird!</p>
+    <p class="small mt12">Draw Rush 🎨 — test build. Report anything weird!</p>
   </div>
 
   <!-- ============ COMMUNITY GALLERY ============ -->
   <div id="gallery" class="screen">
-    <div class="top"><button class="btn ghost sm" data-back="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span><button class="btn ghost sm" id="myProfileBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1-3.8 4-5.8 7.5-5.8s6.5 2 7.5 5.8"/></svg>My Profile</button></div>
-    <div class="h2">Community Gallery</div>
-    <div class="gbar"><input id="gSearch" class="gsearch" placeholder="Search title, creator, category…" autocomplete="off" spellcheck="false"><button class="btn sm" id="gSearchBtn">Go</button></div>
-    <div class="gtabs" id="gTabs"><button data-sort="likes" class="on">Most Liked</button><button data-sort="views">Most Viewed</button><button data-sort="new">Newest</button></div>
+    <div class="top"><button class="btn ghost sm" data-back="menu">‹ Back</button><span class="spacer"></span><button class="btn ghost sm" id="myProfileBtn">👤 My Profile</button></div>
+    <div class="h2">🖼️ Community Gallery</div>
+    <div class="gbar"><input id="gSearch" class="gsearch" placeholder="🔍 Search title, creator, category…" autocomplete="off" spellcheck="false"><button class="btn sm" id="gSearchBtn">Go</button></div>
+    <div class="gtabs" id="gTabs"><button data-sort="likes" class="on">🔥 Most Liked</button><button data-sort="views">👁 Most Viewed</button><button data-sort="new">🆕 Newest</button></div>
     <div class="gchips" id="gChips"></div>
     <div class="ggrid" id="gGrid"></div>
     <div class="gmore" id="gMore" style="display:none"></div>
@@ -425,13 +403,13 @@ a.link{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:none}
 
   <!-- ============ DRAWING DETAIL ============ -->
   <div id="detail" class="screen">
-    <div class="top"><button class="btn ghost sm" id="detailBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
+    <div class="top"><button class="btn ghost sm" id="detailBack">‹ Back</button><span class="spacer"></span></div>
     <div id="detailBody"><div class="spin"></div></div>
   </div>
 
   <!-- ============ CREATOR PROFILE ============ -->
   <div id="profile" class="screen">
-    <div class="top"><button class="btn ghost sm" id="profileBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</button><span class="spacer"></span></div>
+    <div class="top"><button class="btn ghost sm" id="profileBack">‹ Back</button><span class="spacer"></span></div>
     <div id="profileBody"><div class="spin"></div></div>
   </div>
 </div>

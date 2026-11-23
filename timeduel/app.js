@@ -296,7 +296,7 @@
       if (r.error === "broke") {
         var need = r.need != null ? r.need : (S.room ? S.room.entry : 0);
         $("lobbyHint").textContent = "You don't have enough coins for this round — " +
-          "it costs " + need + " coins and you have " + (r.coins == null ? "fewer" : r.coins) + ".";
+          "it costs " + need + " 🪙 and you have " + (r.coins == null ? "fewer" : r.coins) + ".";
       }
       toast(rpcError(r));
       refreshCoins();
@@ -366,27 +366,12 @@
     return (r.seats || []).filter(function (s) { return s.name === me; })[0] || null;
   }
 
-  // Line icons (no emoji) for the lobby seats and the result badge.
-  function svgI(p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; }
-  var SEAT_HOST = svgI('<path d="M4 17l-1-9 5 4 4-6 4 6 5-4-1 9z"/><path d="M5 20h14"/>');
-  var SEAT_IN = svgI('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>');
-  var SEAT_OPEN = svgI('<path d="M12 6v12M6 12h12"/>');
-  var CROWNS = {
-    wait: svgI('<path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),
-    target: svgI('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
-    trophy: svgI('<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>'),
-    fire: svgI('<path d="M12 21c-4 0-7-2.7-7-6.5 0-3.3 2.4-5.3 3.6-7.9.4 1.8 1.4 3 2.4 3.4C11 7 12.5 4.5 15 3c-.3 3 1.3 4.7 2.6 6.4A7.6 7.6 0 0 1 19 14.5C19 18.3 16 21 12 21z"/>'),
-    thumb: svgI('<path d="M7 11v9H4v-9zM7 11l4-8c1.7 0 2.6 1.2 2.3 2.8L12.8 9H18a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 16.8 20H7"/>'),
-    clock: svgI('<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 3h4M12 3v2.5"/>')
-  };
-  function setCrown(el, kind) { el.innerHTML = CROWNS[kind] || ""; el.setAttribute("data-k", kind); }
-
   function renderLobby(r) {
     var a = arenaById(r.arena);
     $("lobbyCode").textContent = r.code;
-    $("lobbyMeta").textContent = a.name + " · " +
-      (r.mode === "blind" ? "Blind" : "Classic") + " · entry " + r.entry +
-      " coins · pot " + r.pot + " coins";
+    $("lobbyMeta").textContent = a.icon + " " + a.name + " · " +
+      (r.mode === "blind" ? "🙈 Blind" : "🎯 Classic") + " · entry " + r.entry +
+      " 🪙 · pot " + r.pot + " 🪙";
 
     var seats = r.seats || [];
     var box = $("lobbySeats");
@@ -396,9 +381,9 @@
       var d = document.createElement("div");
       d.className = "row" + (s && s.name === myName() ? " me" : "");
       d.innerHTML = s
-        ? '<span class="seat-ic">' + (s.name === r.host ? SEAT_HOST : SEAT_IN) + '</span><span class="nm"></span>' +
+        ? '<span>' + (s.name === r.host ? "👑" : "🎮") + '</span><span class="nm"></span>' +
           '<span class="rt">' + (s.name === myName() ? "you" : "ready") + "</span>"
-        : '<span class="seat-ic empty">' + SEAT_OPEN + '</span><span class="nm" style="color:var(--dim)">waiting…</span>';
+        : '<span>➕</span><span class="nm" style="color:var(--dim)">waiting…</span>';
       if (s) el(".nm", d).textContent = s.name;
       box.appendChild(d);
     }
@@ -412,7 +397,7 @@
     // have to buy back in. Nobody is ever re-staked without tapping.
     $("rejoinBtn").style.display = seatedMe ? "none" : "block";
     $("rejoinBtn").textContent = room > 0
-      ? "Take your seat (" + r.entry + " coins)"
+      ? "🎟 Take your seat (" + r.entry + " 🪙)"
       : "Room is full";
     if (room > 0) $("rejoinBtn").removeAttribute("disabled");
     else $("rejoinBtn").setAttribute("disabled", "");
@@ -550,7 +535,7 @@
     $("roundHint").textContent = msg;
     var b = $("roundBail");
     b.style.display = "block";
-    b.textContent = S.inPractice ? "Back to practice" : "Back to the room";
+    b.textContent = S.inPractice ? "← Back to practice" : "← Back to the room";
   }
 
   $("roundBail").addEventListener("click", function () {
@@ -683,21 +668,21 @@
     var crown = $("resultCrown"), nameEl = $("winnerName"), subEl = $("winnerSub");
 
     if (voided) {
-      setCrown(crown, "wait");
+      crown.textContent = "⏳";
       nameEl.className = "winner void";
       nameEl.textContent = "Nobody stopped the clock";
       subEl.className = "winner-sub";
       subEl.textContent = "Every entry fee was returned.";
     } else {
       var dot = winners.some(function (x) { return x.diff_ms === 0; });
-      setCrown(crown, dot ? "target" : "trophy");
+      crown.textContent = dot ? "🎯" : "🏆";
       nameEl.className = "winner" + (dot ? " dot" : "");
       nameEl.textContent = winners.length > 1
         ? winners.map(function (x) { return x.name; }).join("  &  ")
         : (r.winner || "—");
       subEl.className = "winner-sub" + (delta < 0 ? " neg" : "");
-      subEl.textContent = (winners.length > 1 ? "split " : "wins ") + r.pot + " coins" +
-        (me ? "   ·   you " + (delta >= 0 ? "+" : "") + delta : "");
+      subEl.textContent = (winners.length > 1 ? "split " : "wins ") + r.pot + " 🪙" +
+        (me ? "   ·   you " + (delta >= 0 ? "+" : "") + delta + " 🪙" : "");
       if (me && me.diff_ms === 0) TDSound.dot();
       else if (iWon) TDSound.win();
       else TDSound.lose();
@@ -718,7 +703,7 @@
       var row = document.createElement("div");
       row.className = "trow" + (isWin ? " win" : "") + (x.name === myName() ? " me" : "");
       row.innerHTML = '<span class="tn"></span><span class="td"></span><span class="tt"></span>';
-      el(".tn", row).textContent = x.name;
+      el(".tn", row).textContent = (isWin ? "🏆 " : "") + x.name;
       el(".tt", row).textContent = x.stop_ms == null ? "—" : TDClock.secs(x.stop_ms, 3) + "s";
       el(".td", row).textContent = x.diff_ms == null ? "no time" : TDClock.diffLabel(x.diff_ms);
       board.appendChild(row);
@@ -748,17 +733,17 @@
         ? "You're in the next round. Waiting for " + r.host + " to start…"
         : r.host + " opened another round.";
       again.style.display = seated ? "none" : "block";
-      again.textContent = "Take your seat (" + r.entry + " coins)";
+      again.textContent = "🎟 Take your seat (" + r.entry + " 🪙)";
       again.setAttribute("data-act", "join");
       $("resultMenuBtn").textContent = "Leave room";
       return;
     }
 
     again.style.display = isHost ? "block" : "none";
-    again.textContent = "Rematch (" + r.entry + " coins each)";
+    again.textContent = "↻ Rematch (" + r.entry + " 🪙 each)";
     again.setAttribute("data-act", "rematch");
     note.textContent = isHost
-      ? "A rematch costs every player another " + r.entry + " coins."
+      ? "A rematch costs every player another " + r.entry + " 🪙."
       : "Waiting to see if " + r.host + " starts another round…";
     $("resultMenuBtn").textContent = "Leave room";
   }
@@ -781,7 +766,7 @@
         var have = r.coins != null ? r.coins : S.coins;
         $("resultNote").textContent =
           "You don't have enough coins to play again — this round costs " +
-          need + " coins and you have " + (have == null ? "fewer" : have) + ".";
+          need + " \ud83e\ude99 and you have " + (have == null ? "fewer" : have) + ".";
         toast("Not enough coins for another round");
       } else {
         $("resultNote").textContent = rpcError(r);
@@ -875,15 +860,15 @@
     S.resultKey = "practice#" + Date.now();
 
     var crown = $("resultCrown"), nameEl = $("winnerName"), subEl = $("winnerSub");
-    if (d === 0)        { setCrown(crown, "target"); nameEl.className = "winner dot"; nameEl.textContent = "DOT! PERFECT"; TDSound.dot(); }
-    else if (d <= 50)   { setCrown(crown, "fire"); nameEl.className = "winner";     nameEl.textContent = "So close!";     TDSound.win(); }
-    else if (d <= 200)  { setCrown(crown, "thumb"); nameEl.className = "winner";     nameEl.textContent = "Nice one";      TDSound.stop(); }
-    else                { setCrown(crown, "clock"); nameEl.className = "winner void"; nameEl.textContent = "Keep practising"; TDSound.stop(); }
+    if (d === 0)        { crown.textContent = "\ud83c\udfaf"; nameEl.className = "winner dot"; nameEl.textContent = "DOT! PERFECT"; TDSound.dot(); }
+    else if (d <= 50)   { crown.textContent = "\ud83d\udd25"; nameEl.className = "winner";     nameEl.textContent = "So close!";     TDSound.win(); }
+    else if (d <= 200)  { crown.textContent = "\ud83d\udc4d"; nameEl.className = "winner";     nameEl.textContent = "Nice one";      TDSound.stop(); }
+    else                { crown.textContent = "\u23f1\ufe0f"; nameEl.className = "winner void"; nameEl.textContent = "Keep practising"; TDSound.stop(); }
 
     if (r && r.ok) {
       subEl.className = "winner-sub" + (r.reward > 0 ? "" : " neg");
       subEl.textContent = r.reward > 0
-        ? "+" + r.reward + " coins" + (r.capped ? "  (daily practice cap reached)" : "")
+        ? "+" + r.reward + " \ud83e\ude99" + (r.capped ? "  (daily practice cap reached)" : "")
         : "No reward this time";
       setCoins(r.coins);
     } else {
@@ -914,7 +899,7 @@
 
     $("resultNote").textContent = "";
     $("againBtn").style.display = "block";
-    $("againBtn").textContent = "Practise again";
+    $("againBtn").textContent = "\u21bb Practise again";
     $("againBtn").setAttribute("data-act", "practice");
     $("resultMenuBtn").textContent = "Back to menu";
     show("result");
@@ -961,13 +946,13 @@
     h.rows.forEach(function (row) {
       var d = document.createElement("div");
       d.className = "row" + (row.won ? " win" : "");
-      var label = row.mode === "practice" ? "Practice"
-        : (row.mode === "blind" ? "Blind" : "Classic") +
+      var label = row.mode === "practice" ? "🎯 Practice"
+        : (row.mode === "blind" ? "🙈 Blind" : "🎯 Classic") +
           (row.players > 2 ? " ×" + row.players : "");
       d.innerHTML = '<span class="nm">' + label + "</span>" +
         (row.diff_ms === 0 ? '<span class="dotpill">DOT</span>' : "") +
         '<span class="rt">' + (row.diff_ms == null ? "—" : "±" + TDClock.secs(row.diff_ms, 3)) +
-        "  " + (row.delta >= 0 ? "+" : "") + row.delta + " coins</span>";
+        "  " + (row.delta >= 0 ? "+" : "") + row.delta + " 🪙</span>";
       box.appendChild(d);
     });
   }
