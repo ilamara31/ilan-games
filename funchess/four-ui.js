@@ -206,10 +206,10 @@ function renderStatus() {
   const el = $('f4Status');
   if (X.banner) { el.innerHTML = X.banner; return; }
   if (!X.st) { el.innerHTML = ''; return; }
-  if (X.over) { el.innerHTML = $('standSheet').hidden ? '<button class="btn ghost sm" data-a="result">🏁 Show result</button>' : ''; return; }
+  if (X.over) { el.innerHTML = $('standSheet').hidden ? '<button class="btn ghost sm" data-a="result">Show result</button>' : ''; return; }
   const t = X.st.turn;
   if (X.st.out[X.my] && !X.spectator) {
-    el.innerHTML = `<div class="banner">You're out (${OUTTXT[X.st.out[X.my]] || ''}). Keep watching or leave.${X.mode === 'bot' ? ' <button class="btn ghost" data-a="fast">⏩ Fast-forward</button>' : ''}</div>`;
+    el.innerHTML = `<div class="banner">You're out (${OUTTXT[X.st.out[X.my]] || ''}). Keep watching or leave.${X.mode === 'bot' ? ' <button class="btn ghost" data-a="fast">Fast-forward</button>' : ''}</div>`;
     return;
   }
   el.innerHTML = t === X.my ? `<span style="color:${SEATHEX[t]}">● Your turn</span>` : `<span style="color:${SEATHEX[t]}">● ${esc(nameOf(t))}${X.bots[t] ? ' is thinking…' : '’s turn'}</span>`;
@@ -323,7 +323,8 @@ $('f4Back').onclick = () => {
   leaveGame(); show('home');
 };
 $('f4Mute').onclick = () => { S().set.snd = !S().set.snd; F.save(); F.paintMute(); paintMute4(); if (S().set.snd) { Snd.unlock(); Snd.tap(); } };
-function paintMute4() { $('f4Mute').textContent = S().set.snd ? '🔊' : '🔇'; }
+const SND_ON4 = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>', SND_OFF4 = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
+function paintMute4() { $('f4Mute').innerHTML = S().set.snd ? SND_ON4 : SND_OFF4; }
 
 /* ---------------------------------------------------------------- local save (vs bots game survives a reload) */
 const LKEY = 'funChess_game4';

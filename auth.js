@@ -16,21 +16,21 @@
   const NS = ["ipl", "odi", "basket", "f1", "pk", "puz"];
   const GAME_TITLES = {
     catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
-    try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
-    tennis: "Tennis", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
+    try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby",
+    tennis: "Tennis", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush",
     speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", chess: "Fun Chess", stars: "⭐ Stars"
   };
   // Dropped/retired games — their leftover scores must never show as a leaderboard tab.
-  const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue"]);  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
+  const HIDDEN_GAMES = new Set(["cricket2bowl", "cricket2bat", "rescue", "karate", "anime-tycoon", "codewords"]);  // + Karate, Anime Tycoon, Codewords (removed Nov 2026)  // Super Over Cricket 2 (dropped); rescue (removed) — hides any leftover scores
   // Auto-generated "Guest-1234" identities (test runs / one-off visits) are noise,
   // not players — never show them on any leaderboard.
   function isAutoGuest(n) { return /^guest[-_ ]?\d{3,}$/i.test(String(n || "").trim()); }
   const GAME_METRIC = {
     catch: "Best score", cricket: "Career runs", f1: "Money earned", football: "Matches won",
-    try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
-    tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
+    try: "Best level", puzzles: "Puzzles solved", obby: "Best stage",
+    tennis: "Trophies", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
     scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
     speedclicker: "Best taps in 15s", rps: "Trophies (3 per online win, 1 per computer win)",
@@ -74,10 +74,10 @@
   const VKEY = "ig_vault_", VOWNER = "ig_vault_owner", VDECLINED = "ig_vault_declined";
   const OWNED_KEYS = [
     // per-game saves
-    "airHockeyArena_v1", "animeTycoon_v1", "archerDuel_v1", "basketCatchV2_guest",
+    "airHockeyArena_v1", "archerDuel_v1", "basketCatchV2_guest",
     "basketCatch2_guest", "basketCatchHigh", "basketScoop_v1", "cb_secret_agent_v1",
     "cricTourLive_v1", "cw_save_v1", "draw_rush_v1", "dr_gallery_key", "fruitArena_v1",
-    "hcl_save_v1", "ilanObbySave_v1", "karateChamp_v1", "ms_pub_count_v1", "omt_save_v1",
+    "hcl_save_v1", "ilanObbySave_v1", "ms_pub_count_v1", "omt_save_v1",
     "paperTerritory_v1", "penaltyKings_v1", "ppTour_v2", "soc_profile_v2", "speedClicker_v1",
     "stackTower_v1", "tennisTour_v1", "thisOrThat_v2", "rpsArena_v1", "funChess_v1", "speedSumo_v1",
     // hub: stars, passport, Game of the Day/Week goal tracking

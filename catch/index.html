@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Basket Catch</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,12 +26,14 @@
 <meta name="twitter:title" content="Basket Catch — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
+  :root, html[data-theme]{ --accent:#2fd08a; --accent2:#12945f; --icon1:#c9ffe2; --icon2:#f6ffd1; }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
-  html, body {
-    height:100%; width:100%;
+  html, body { height:100%; width:100%; }
+  body {
     background:linear-gradient(#87ceeb, #c9f0ff 60%, #a8e6a3);
-    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    font-family:var(--ig-font);
     overflow:hidden; overscroll-behavior:none;
   }
   #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
@@ -131,6 +133,72 @@
   .buyBtn:disabled { background:#5a6b72; color:#c8d2d6; cursor:not-allowed; }
   .selBtn { background:#3a8fd9; color:#fff; }
   .selBtn.on { background:#ffd34d; color:#5a3d00; }
+
+  /* ===== ilan Games theme — game-local layout (menu + light sheets) ===== */
+  .ag-screen{position:fixed;inset:0;z-index:20;display:block;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);
+    font-family:var(--ig-font);color:var(--ig-text);text-align:left;letter-spacing:-.01em;background:transparent}
+  .ag-screen .ig-col{gap:16px}
+  .ag-spacer{width:44px;height:44px;flex:none}
+  .ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px}
+  .ag-head h2{font:700 17px/1.2 var(--ig-font);letter-spacing:-.02em;color:var(--ig-text);margin:0}
+  .ag-note{font-size:14px;line-height:1.45;color:var(--ig-text2);text-align:center;font-weight:500}
+  .ag-note b{color:var(--ig-text)}
+  .ig-iconbtn{border:1px solid var(--ig-line);padding:0;font-family:var(--ig-font)}
+  .ig-mode,.ig-row,.ig-cta,.ig-sq,.ig-btn{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  .ig-btn svg,.ig-row > svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ig-row .ig-val{font-size:15px;font-weight:600;color:var(--ig-text2);margin-left:auto}
+  .ig-modes{grid-template-columns:repeat(var(--n,3),1fr)}
+  .ag-tips{display:flex;flex-direction:column;gap:12px}
+  .ag-tip{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--ig-text2);font-weight:500}
+  .ag-tip b{color:var(--ig-text);font-weight:700}
+  .ag-tip .ig-tile{width:32px;height:32px;border-radius:9px}
+  .ag-tip .ig-tile svg{width:18px;height:18px}
+  /* light sheet pop-ups (pause, game over…) over the game */
+  .ag-scrim{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow-y:auto;
+    background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);font-family:var(--ig-font);color:var(--ig-text)}
+  .ag-sheet{width:min(380px,100%);display:flex;flex-direction:column;align-items:stretch;gap:12px;text-align:center;margin:auto}
+  .ag-sheet .ig-eyebrow{margin-bottom:-4px}
+  .ag-sheet h2{font:800 28px/1.1 var(--ig-font);letter-spacing:-.035em;color:var(--ig-text);margin:0}
+  .ag-big{font:900 64px/1 var(--ig-font);letter-spacing:-.03em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding:2px 0}
+  .ag-badge{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font:700 13px/1 var(--ig-font);color:#fff;background:linear-gradient(160deg,#34c759,#1f9d48)}
+  .ag-btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .ag-btns .ig-btn{width:100%}
+  .ag-btnrow{display:flex;gap:10px}.ag-btnrow .ig-btn{flex:1;padding:0 12px}
+  .ig-sheet .ig-stats{background:rgba(118,118,128,.08);border-radius:18px;padding:12px 4px}
+  @media (max-width:370px){ .ig-mode small{display:none} }
+
+  /* menu-type screens sit on the light page: hide the game scene + HUD behind them */
+  body:has(#overlay:not(.hidden)), body:has(#shop:not(.hidden)), body:has(#tut:not(.hidden)){ background:transparent; }
+  body:has(#overlay:not(.hidden)) :is(canvas,#hud,#muteBtn,#homeBtn,#shieldBtn,#banner),
+  body:has(#shop:not(.hidden)) :is(canvas,#hud,#muteBtn,#homeBtn,#shieldBtn,#banner),
+  body:has(#tut:not(.hidden)) :is(canvas,#hud,#muteBtn,#homeBtn,#shieldBtn,#banner){ visibility:hidden; }
+  .ag-screen.hidden, .ag-scrim.hidden{ display:none !important; }
+  /* in-game round buttons: glass */
+  #muteBtn, #homeBtn{ display:grid; place-items:center; padding:0; color:#1d1d1f; background:rgba(255,255,255,.7); border:1px solid rgba(0,0,0,.06);
+    -webkit-backdrop-filter:blur(14px) saturate(170%); backdrop-filter:blur(14px) saturate(170%); box-shadow:0 6px 18px rgba(40,40,80,.16); width:46px; height:46px; }
+  #muteBtn svg, #homeBtn svg, #agMute svg{ width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ag-coins{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:999px; font:700 15px/1 var(--ig-font); color:#7a5600; background:rgba(255,196,0,.18); }
+  .ag-coins svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  /* shop rows */
+  #shopList{ display:flex; flex-direction:column; gap:10px; width:100%; max-width:none; }
+  .bcard{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:20px; text-align:left; color:var(--ig-text);
+    background:var(--ig-glass); border:1.5px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  .bcard.sel{ background:var(--ig-glass2); border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent), var(--ig-shadow); }
+  .bcard .ico{ font-size:30px; width:50px; height:50px; flex:none; display:grid; place-items:center; border-radius:14px; background:rgba(118,118,128,.1); }
+  .bcard .info{ flex:1; min-width:0; }
+  .bcard .info b{ font-size:16px; font-weight:700; letter-spacing:-.015em; }
+  .bcard .info .eq{ font-size:12px; font-weight:700; color:var(--accent2); margin-left:4px; }
+  .bcard .info .d{ font-size:13px; color:var(--ig-text2); line-height:1.35; font-weight:500; margin-top:2px; }
+  .bcard .info .d b{ font-size:13px; color:var(--accent2); }
+  .bcard .bars{ font-size:11.5px; margin-top:4px; color:var(--ig-text2); font-weight:600; letter-spacing:.02em; }
+  .bcard .act{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .bcard .price{ font-size:13px; font-weight:700; color:#7a5600; white-space:nowrap; }
+  .bcard button{ border:none; border-radius:999px; padding:0 16px; height:34px; font:700 14px/1 var(--ig-font); cursor:pointer; white-space:nowrap; }
+  .buyBtn{ background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; }
+  .buyBtn:disabled{ background:rgba(118,118,128,.16); color:var(--ig-text3); cursor:not-allowed; }
+  .selBtn{ background:rgba(118,118,128,.14); color:var(--ig-text); }
+  .selBtn.on{ background:transparent; color:var(--accent2); }
 </style>
 </head>
 <body>
@@ -151,37 +219,62 @@
   </div>
 
   <button id="shieldBtn" title="Shield">🛡️<small id="shieldLbl"></small></button>
-  <button id="muteBtn" title="Sound">🔊</button>
-  <a id="homeBtn" href="../" title="Back">🏠</a>
+  <button id="muteBtn" title="Sound" aria-label="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
+  <a id="homeBtn" href="../" title="All games" aria-label="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg></a>
 
   <div id="banner" class="hidden"></div>
 
-  <!-- START / GAME OVER -->
-  <div id="overlay" class="screen">
-    <h1>🧺 Basket Catch</h1>
-    <p>Drag (or <b>← →</b>) to move the basket. Catch falling fruit — it drops <i>into</i> the basket!<br>
-       Miss a fruit, lose a life. A 💣 is game over — move away from bombs or tap <b>🛡️ Shield</b>.</p>
-    <p class="small">Your score becomes <b>coins</b> 🪙 — spend them on better baskets in the shop.</p>
-    <div class="coinbig">🪙 <span id="ovCoins">0</span> coins</div>
-    <p class="small" id="ovBest"></p>
-    <div class="row">
-      <button class="pill green" id="startBtn">▶ Play</button>
-      <button class="pill blue" id="shopBtn">🧺 Baskets</button>
+<!-- START (menu) -->
+  <div id="overlay" class="ag-screen">
+   <div class="ig-col">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <button class="ig-iconbtn" id="agMute" title="Sound" aria-label="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
     </div>
-    <div class="row">
-      <button class="pill sm" id="lbBtn">🏆 Leaderboard</button>
-      <button class="pill sm blue" id="acctBtn">👤 Log in</button>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="o" cx="32" cy="18" r="9" fill="#b3122f"/><path d="M32 9 Q34 4 38 4" fill="none" stroke="#22120a" stroke-width="2.5" stroke-linecap="round"/><path class="o" d="M34 8 Q42 4 42 10 Q36 12 34 8Z" fill="#22c55e"/>
+<path d="M32 30 V38 M26 30 V35 M38 30 V35" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<path class="o" d="M70 30 l3.5 7 7.5 1 -5.5 5 1.5 7.5 -7 -3.5 -7 3.5 1.5 -7.5 -5.5 -5 7.5 -1Z" fill="#ffcc00"/>
+<circle class="o" cx="50" cy="50" r="7" fill="#ffb13d"/>
+<path class="o" d="M10 60 L90 60 L80 92 L20 92Z" fill="#c98a4a"/>
+<path class="o" d="M8 56 L92 56 L92 63 L8 63Z" fill="#a8692f"/>
+<path d="M16 70 L84 70 M19 80 L81 80 M30 63 L33 92 M50 63 L50 92 M70 63 L67 92" stroke="#22120a" stroke-width="2" opacity=".55"/>
+<path d="M14 58 L86 58" stroke="#fff" stroke-width="1.5" opacity=".5"/></svg></div>
+      <div class="ig-title">Basket Catch</div>
+      <div class="ig-tagline">Catch the fruit. Dodge the bombs.</div>
     </div>
-    <p class="small" id="ovWho"></p>
+    <div class="ig-playrow">
+      <button class="ig-cta" id="startBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="agPlaySub">Score becomes coins</small></span></button>
+    </div>
+    <div class="ig-modes" style="--n:2">
+      <button class="ig-mode" id="shopBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8fb1,#ff2d55)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10h17l-2 10h-13z"/><path d="M8 10l3.2-6M16 10l-3.2-6M9 13.5v3.5M12 13.5v3.5M15 13.5v3.5"/></svg></span><b>Baskets</b><small>Faster baskets</small></button>
+      <button class="ig-mode" id="lbBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd54a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg></span><b>Leaderboard</b><small>Top scores</small></button>
+    </div>
+    <div class="ig-card ag-tips">
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></span><span><b>Drag</b> or use the arrow keys to move the basket.</span></div>
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span><span><b>Miss a fruit</b>, lose a life. Three lives.</span></div>
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/></svg></span><span><b>Bombs end the game</b> — dodge them or tap Shield.</span></div>
+    </div>
+    <div class="ig-list">
+      <button class="ig-row" id="agLogin"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4.2 4-6.2 7.5-6.2s6.5 2 7.5 6.2"/></svg></span><span class="ig-grow"><span id="agLoginTxt">Log in</span><small id="ovWho">Log in to save your score</small></span></button>
+    </div>
+    <div class="ig-stats">
+      <div><b id="ovBest">0</b><span>Best score</span></div>
+      <div><b id="ovCoins">0</b><span>Coins</span></div>
+    </div>
+   </div>
   </div>
 
+  <!-- GAME OVER -->
+  <div id="over" class="ag-scrim hidden"></div>
+
   <!-- SHOP -->
-  <div id="shop" class="screen hidden">
-    <h1>🧺 Basket Shop</h1>
-    <div class="coinbig">🪙 <span id="shopCoins">0</span> coins</div>
-    <p class="small">Better baskets move faster (+ handy perks) — never wider, so you can always dodge!</p>
+  <div id="shop" class="ag-screen hidden">
+   <div class="ig-col">
+    <div class="ag-head"><button class="ig-iconbtn" id="shopBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Basket Shop</h2><span class="ag-coins"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M14.6 9.4c-.5-.8-1.5-1.2-2.6-1.2-1.4 0-2.5.8-2.5 1.9 0 2.6 5.1 1.3 5.1 3.9 0 1.1-1.1 1.9-2.6 1.9-1.1 0-2.1-.4-2.6-1.2"/></svg><span id="shopCoins">0</span></span></div>
+    <div class="ag-note">Better baskets move faster (+ handy perks) — never wider, so you can always dodge!</div>
     <div id="shopList"></div>
-    <button class="pill sm" id="shopBack" style="margin-top:6px">← Back</button>
+   </div>
   </div>
 </div>
 
@@ -645,7 +738,7 @@ setInterval(()=>{ if (!running || document.hidden) return; refreshShieldBtn(); }
    ============================================================ */
 function start(){
   resize(); reset();
-  $('overlay').classList.add('hidden'); $('shop').classList.add('hidden');
+  $('overlay').classList.add('hidden'); $('shop').classList.add('hidden'); $('over').classList.add('hidden');
   running = true;
   Sound.ready(); Sound.startMusic();
   lastSpawn = performance.now() - spawnGap;
@@ -674,26 +767,33 @@ function gameOver(byBomb){
   // post your best to the cross-player leaderboard (only if signed in)
   if (window.IGAuth) IGAuth.submitScore('catch', data.best);
 
-  $('overlay').classList.remove('hidden');
-  $('overlay').innerHTML = `
-    <h1>${byBomb ? '💥 Boom!' : 'Game Over'}</h1>
-    <p>${byBomb ? 'You caught a bomb!' : 'You ran out of lives.'}</p>
-    <p>Score: <b>${score}</b> &nbsp;•&nbsp; Level <b>${level}</b></p>
-    <div class="coinbig">🪙 +${earned} coins ${mult>1?'(✨ basket bonus!)':''}</div>
-    <p class="small">Total coins: <b>${data.coins}</b></p>
-    ${isNewHigh ? `<p style="color:#ffd34d;font-size:22px">🏆 New High Score!</p>`
-                : `<p class="small">🏆 Your best: <b>${data.best}</b> — beat it!</p>`}
-    <div class="row">
-      <button class="pill green" id="againBtn">▶ Play Again</button>
-      <button class="pill blue" id="shopBtn2">🧺 Baskets</button>
-    </div>
-    <div class="row">
-      <button class="pill sm" id="lbBtn2">🏆 Leaderboard</button>
+  $('over').innerHTML = `
+    <div class="ig-sheet ag-sheet">
+      <div class="ig-eyebrow">${byBomb ? 'Boom!' : 'Game over'}</div>
+      <div class="ag-big">${score}</div>
+      <div class="ag-note" style="margin-top:-6px">${byBomb ? 'You caught a bomb!' : 'You ran out of lives.'}</div>
+      ${isNewHigh ? `<div class="ag-badge">New high score!</div>` : ''}
+      <div class="ig-stats">
+        <div><b>${level}</b><span>Level</span></div>
+        <div><b>+${earned}</b><span>Coins${mult>1?' (basket bonus)':''}</span></div>
+        <div><b>${data.best}</b><span>Best</span></div>
+      </div>
+      <div class="ag-btns">
+        <button class="ig-btn" id="againBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v4.5h-4.5"/></svg>Play again</button>
+        <div class="ag-btnrow">
+          <button class="ig-btn secondary" id="shopBtn2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10h17l-2 10h-13z"/><path d="M8 10l3.2-6M16 10l-3.2-6M9 13.5v3.5M12 13.5v3.5M15 13.5v3.5"/></svg>Baskets</button>
+          <button class="ig-btn secondary" id="lbBtn2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg>Leaderboard</button>
+        </div>
+        <button class="ig-btn secondary" id="menuBtn2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Menu</button>
+      </div>
     </div>`;
+  $('over').classList.remove('hidden');
   $('againBtn').addEventListener('click', start);
   $('shopBtn2').addEventListener('click', openShop);
+  $('menuBtn2').addEventListener('click', agShowMenu);
   $('lbBtn2').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch','Basket Catch'));
 }
+
 
 /* ---------- shop ---------- */
 function renderShop(){
@@ -708,14 +808,14 @@ function renderShop(){
     card.innerHTML = `
       <div class="ico">${b.ico}</div>
       <div class="info">
-        <b>${b.name}</b> ${selected?'<span style="color:#ffd34d">• equipped</span>':''}
-        <div class="d">${b.tease}${b.perk ? ' <b style="color:#9be15d">('+b.perkTxt+')</b>' : ''}</div>
+        <b>${b.name}</b>
+        <div class="d">${b.tease}${b.perk ? ' <b>('+b.perkTxt+')</b>' : ''}</div>
         <div class="bars">Move speed ${sBar}</div>
       </div>
       <div class="act">
         ${owned
           ? `<button class="selBtn ${selected?'on':''}" data-sel="${b.id}">${selected?'Equipped':'Use'}</button>`
-          : `<div class="price">🪙 ${b.price}</div><button class="buyBtn" data-buy="${b.id}" ${data.coins<b.price?'disabled':''}>Buy</button>`}
+          : `<div class="price">${b.price} coins</div><button class="buyBtn" data-buy="${b.id}" ${data.coins<b.price?'disabled':''}>Buy</button>`}
       </div>`;
     list.appendChild(card);
   });
@@ -729,8 +829,14 @@ function renderShop(){
     data.sel = btn.dataset.sel; saveData(); Sound.catchSfx(); renderShop(); updateHud();
   });
 }
-function openShop(){ $('overlay').classList.add('hidden'); $('shop').classList.remove('hidden'); renderShop(); }
-function closeShop(){ $('shop').classList.add('hidden'); $('overlay').classList.remove('hidden'); }
+function openShop(){ $('overlay').classList.add('hidden'); $('over').classList.add('hidden'); $('shop').classList.remove('hidden'); renderShop(); }
+function closeShop(){ $('shop').classList.add('hidden'); agShowMenu(); }
+function agShowMenu(){ $('over').classList.add('hidden'); if (typeof $('tut')!=='undefined' && $('tut')) $('tut').classList.add('hidden');
+  $('ovCoins').textContent = data.coins; $('ovBest').textContent = data.best;
+  $('agPlaySub').textContent = data.best>0 ? ('Best ' + data.best + ' · beat it!') : 'Score becomes coins';
+  $('overlay').classList.remove('hidden'); }
+function agMuteIcon(on){ const i = on ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
+  $('muteBtn').innerHTML = i; $('agMute').innerHTML = i; }
 
 /* ============================================================
    INPUT
@@ -738,7 +844,7 @@ function closeShop(){ $('shop').classList.add('hidden'); $('overlay').classList.
 window.addEventListener('keydown', e => {
   if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') leftHeld=true;
   if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') rightHeld=true;
-  if (e.key===' '||e.key==='Enter'){ if(!running && $('overlay').classList.contains('hidden')===false) start(); }
+  if (e.key===' '||e.key==='Enter'){ if(!running && ($('overlay').classList.contains('hidden')===false || $('over').classList.contains('hidden')===false)) start(); }
   if (e.key==='Shift') tryShield();
 });
 window.addEventListener('keyup', e => {
@@ -757,26 +863,27 @@ $('startBtn').addEventListener('click', start);
 $('shopBtn').addEventListener('click', openShop);
 $('shopBack').addEventListener('click', closeShop);
 $('shieldBtn').addEventListener('click', tryShield);
-$('muteBtn').addEventListener('click', () => { Sound.ready(); const on = Sound.toggleMusic(); $('muteBtn').textContent = on ? '🔊' : '🔇'; });
+$('muteBtn').addEventListener('click', () => { Sound.ready(); const on = Sound.toggleMusic(); agMuteIcon(on); });
+$('agMute').addEventListener('click', () => $('muteBtn').click());
 
 // online account + leaderboard buttons (IGAuth from ../auth.js)
 $('lbBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.showLeaderboard('catch','Basket Catch'));
-$('acctBtn').addEventListener('click', ()=> window.IGAuth && IGAuth.openAuth());
+$('agLogin').addEventListener('click', ()=> window.IGAuth && IGAuth.openAuth());
 
 /* ---------- boot ---------- */
 function boot(){
   $('who').textContent = acct ? '👤 ' + acct.name : '👤 Not signed in';
-  $('ovWho').innerHTML = acct ? `Playing as <b>${acct.name}</b>` : 'Log in to save your score';
-  $('ovCoins').textContent = data.coins;
-  $('ovBest').innerHTML = data.best>0 ? `🏆 Your best: <b>${data.best}</b>` : `🏆 No high score yet — set one!`;
+  $('ovWho').textContent = acct ? ('Playing as ' + acct.name) : 'Log in to save your score';
+  if (acct) $('agLoginTxt').textContent = acct.name;
+  agShowMenu();
   resize();
 }
 boot();
 // reflect signed-in status on the account button + "who" labels
 if (window.IGAuth) IGAuth.onChange(u => {
   const nm = u ? (IGAuth.displayName()) : null;
-  $('acctBtn').textContent = nm ? ('👤 ' + nm) : '👤 Log in';
-  if (nm){ $('who').textContent = '👤 ' + nm; $('ovWho').innerHTML = `Signed in as <b>${nm}</b>`; }
+  $('agLoginTxt').textContent = nm ? nm : 'Log in';
+  if (nm){ $('who').textContent = '👤 ' + nm; $('ovWho').textContent = 'Signed in · tap to switch account'; }
 });
 </script>
 <script src="../supabase-config.js"></script>

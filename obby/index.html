@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Ilan Obby — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <link rel="stylesheet" href="./css/style.css" />
 <script type="importmap">
 { "imports": { "three": "./libs/three.module.js" } }
@@ -58,57 +59,70 @@
       <button id="jumpBtn" class="actbtn big">⤒<span>JUMP</span></button>
     </div>
   </div>
-  <button id="musicBtn" class="iconbtn hidden" title="Music">🔊</button>
-  <button id="shopBtn" class="iconbtn hidden" title="Shop" style="right:64px">🛍️</button>
-  <button id="exitBtn" class="iconbtn hidden" title="Exit to menu (progress saved)" style="right:114px">🚪</button>
-  <a id="homeBtn" href="../" title="All games" style="position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:calc(env(safe-area-inset-left,0px) + 12px);z-index:1000;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(8,16,30,.7);border:2px solid rgba(255,255,255,.18);font-size:22px;text-decoration:none">🏠</a>
+  <button id="musicBtn" class="iconbtn hidden" title="Music" aria-label="Music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
+  <button id="shopBtn" class="iconbtn hidden" title="Shop" aria-label="Shop" style="right:64px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
+  <button id="exitBtn" class="iconbtn hidden" title="Exit to menu (progress saved)" aria-label="Exit to menu" style="right:114px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button>
 
   <!-- ===== WELCOME (first time only) ===== -->
-  <div id="welcome" class="screen hidden">
-    <div class="card pop">
-      <h1>👋 Welcome to Ilan Obby!</h1>
+  <div id="welcome" class="screen ig-page hidden">
+    <div class="card ig-sheet pop">
+      <h1>Welcome to Ilan Obby!</h1>
       <ul class="welcome-list">
-        <li>🕹️ Move using joystick, WASD, or arrow keys</li>
-        <li>⬆️ Jump across obstacles</li>
-        <li>💰 Collect coins while playing</li>
-        <li>🚩 Reach checkpoints to save progress</li>
-        <li>🏁 Complete stages to unlock rewards</li>
+        <li><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg></span>Move with the joystick, WASD or arrow keys</li>
+        <li><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>Jump across obstacles</li>
+        <li><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/></svg></span>Collect coins while you play</li>
+        <li><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a65,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg></span>Reach checkpoints to save progress</li>
+        <li><span class="ig-tile" style="--tile:linear-gradient(160deg,#c48bff,#7a3ff0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>Finish stages to unlock rewards</li>
       </ul>
-      <button id="welcomePlay" class="big-btn">PLAY ▶</button>
+      <button id="welcomePlay" class="big-btn">Play</button>
     </div>
   </div>
 
   <!-- ===== START MENU ===== -->
-  <div id="overlay" class="screen">
-    <div class="card">
-      <h1>🌈 ILAN OBBY</h1>
-      <p class="sub">50 stages across 5 worlds. Jump, collect coins, beat your best time!</p>
-      <input id="nameInput" maxlength="14" placeholder="Your username" />
-      <div id="menuStats" class="menu-stats"></div>
-      <div class="btn-row">
-        <button id="continueBtn" class="big-btn hidden">CONTINUE ▶</button>
-        <button id="playBtn" class="big-btn">PLAY ▶</button>
-      </div>
-      <button id="menuShopBtn" class="ghost-btn hidden">🛍️ Shop</button>
-      <button id="IGA_login" class="ghost-btn" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-      <button id="IGA_lb" class="ghost-btn" onclick="window.IGAuth && IGAuth.showLeaderboard('obby','Rainbow Obby')">🏆 Leaderboard</button>
+  <div id="overlay" class="screen ig-page">
+   <div class="ig-col omenu">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
     </div>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M20 72 L34 65.0 L20 58.0 L6 65.0Z" fill="#ff6b6b"/><path class="o" d="M6 65.0 L20 72 L20 86 L6 79.0Z" fill="#c0392b"/><path class="o" d="M20 72 L34 65.0 L34 79.0 L20 86Z" fill="#e74c3c"/><path class="o" d="M48 54 L61 47.5 L48 41.0 L35 47.5Z" fill="#ffcc00"/><path class="o" d="M35 47.5 L48 54 L48 67 L35 60.5Z" fill="#c99a10"/><path class="o" d="M48 54 L61 47.5 L61 60.5 L48 67Z" fill="#f0b90b"/><path class="o" d="M76 36 L88 30.0 L76 24.0 L64 30.0Z" fill="#169b62"/><path class="o" d="M64 30.0 L76 36 L76 48 L64 42.0Z" fill="#16803a"/><path class="o" d="M76 36 L88 30.0 L88 42.0 L76 48Z" fill="#22a04a"/>
+<path d="M24 52 Q34 24 46 36" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 4" stroke-linecap="round"/>
+<rect class="o" x="40" y="14" width="13" height="13" rx="2" fill="#f3c99b"/><circle cx="44" cy="20" r="1.6" fill="#22120a"/><circle cx="49" cy="20" r="1.6" fill="#22120a"/>
+<rect class="o" x="39" y="27" width="15" height="12" rx="2" fill="#3b82f6"/><rect class="o" x="40" y="39" width="5" height="7" fill="#1e3a8a"/><rect class="o" x="48" y="39" width="5" height="7" fill="#1e3a8a"/>
+<circle class="o" cx="76" cy="14" r="5" fill="#ffcc00"/><circle class="o" cx="88" cy="22" r="4" fill="#ffcc00"/></svg></div>
+      <div class="ig-title">Ilan Obby</div>
+      <div class="ig-tagline">50 stages, 5 worlds. Jump, collect, beat your best time.</div>
+    </div>
+    <div class="ig-playrow">
+      <button id="continueBtn" class="ig-cta hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Continue</b><small id="contSub">Pick up where you left off</small></span></button>
+      <button id="playBtn" class="ig-cta" title="Start from stage 1"><svg class="oplay" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><svg class="orestart" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span><b>Play</b><small>Start at stage 1</small></span></button>
+    </div>
+    <div class="ig-card oprefs">
+      <div class="ig-prow"><span class="ig-plabel">Username</span><input id="nameInput" class="ig-field" maxlength="14" placeholder="Your username" autocomplete="off" /></div>
+      <div id="menuStats" class="menu-stats"></div>
+    </div>
+    <div class="ig-list">
+      <button id="menuShopBtn" class="ig-row hidden"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a65,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><span class="ig-grow">Shop<small>Skins, trails, auras, power-ups</small></span></button>
+      <button class="ig-row" onclick="window.IGAuth && IGAuth.showLeaderboard('obby','Rainbow Obby')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#4aa8ff,#5e5ce6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20V11M12 20V4M18 20v-6"/></svg></span><span class="ig-grow"><span id="IGA_lb">Leaderboard</span><small>Furthest stage</small></span></button>
+      <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.8 3.9-6 7.5-6s6.6 2.2 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Keep your coins and skins</small></span></button>
+    </div>
+   </div>
   </div>
 
   <!-- ===== GENERIC ANNOUNCE POPUP (unlocks, daily) ===== -->
   <div id="popup" class="screen hidden">
-    <div class="card pop">
+    <div class="card ig-sheet pop">
       <h1 id="popTitle"></h1>
       <div id="popBody" class="sub"></div>
-      <button id="popBtn" class="big-btn">AWESOME!</button>
+      <button id="popBtn" class="big-btn">Awesome!</button>
     </div>
   </div>
 
   <!-- ===== SHOP ===== -->
   <div id="shop" class="screen hidden">
-    <div class="card shop-card">
-      <h1>🛍️ Shop</h1>
-      <div class="shop-bal">Balance: 🪙 <b id="shopBal">0</b></div>
+    <div class="card ig-sheet shop-card">
+      <h1>Shop</h1>
+      <div class="shop-bal"><b id="shopBal">0</b> coins</div>
       <div class="shop-tabs">
         <button id="tabSkins" class="tab active">Skins</button>
         <button id="tabTrails" class="tab">Trails</button>
@@ -116,26 +130,33 @@
         <button id="tabPower" class="tab">Power</button>
       </div>
       <div id="shopGrid" class="shop-grid"></div>
-      <button id="shopClose" class="ghost-btn">Close</button>
+      <button id="shopClose" class="ghost-btn">Done</button>
     </div>
   </div>
 
   <!-- ===== WIN ===== -->
   <div id="winScreen" class="screen hidden">
-    <div class="card pop">
-      <h1 id="winTitle">🏆 YOU WIN!</h1>
+    <div class="card ig-sheet pop">
+      <h1 id="winTitle">You Win!</h1>
       <div id="winStats" class="sub"></div>
       <div class="btn-row">
-        <button id="rebirthBtn" class="big-btn hidden" style="background:linear-gradient(135deg,#b18cff,#6a3bd0);color:#fff">⭐ REBIRTH</button>
-        <button id="againBtn" class="big-btn">PLAY AGAIN ▶</button>
+        <button id="rebirthBtn" class="big-btn hidden" style="background:linear-gradient(160deg,#b18cff,#6a3bd0);color:#fff">Rebirth</button>
+        <button id="againBtn" class="big-btn">Play Again</button>
       </div>
     </div>
   </div>
 
   <div id="loading" class="screen"><div class="card"><h1>Loading…</h1></div></div>
+  <a id="homeBtn" href="../" title="All games" aria-label="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/></svg></a>
 </div>
 
 <script type="module" src="./js/main.js"></script>
+<script>
+/* auth.js writes "👤 name" into #IGA_login; keep the label plain (the row already has an icon) */
+(function(){ var el=document.getElementById('IGA_login'); if(!el||!window.MutationObserver) return;
+  var fix=function(){ var t=el.textContent, c=t.replace(/^\s*👤\s*/,''); if(c!==t) el.textContent=c; };
+  new MutationObserver(fix).observe(el,{childList:true,characterData:true,subtree:true}); fix(); })();
+</script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script>

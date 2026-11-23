@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Hand Cricket League — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   :root{
     --bg1:#0b1020; --bg2:#141a33; --accent:#ffcf3d; --accent2:#ff5e8a;
@@ -215,6 +216,118 @@
 
   .hidden{display:none !important;}
   ::-webkit-scrollbar{width:0;height:0;}
+
+  /* ===== ilan Games shared theme (light, Apple glass) — menus & panels; the match keeps its own look ===== */
+  :root{ --accent:#fa709a; --accent2:#f0803c; --icon1:#fa709a; --icon2:#fec140; }
+  html[data-theme]{ --accent:#fa709a; --accent2:#f0803c; --icon1:#fa709a; --icon2:#fec140; background:var(--ig-bg); }
+  html[data-theme]{ --ink:var(--ig-text); --muted:var(--ig-text2); --card:var(--ig-glass); --cardb:var(--ig-line);
+    --good:#1fa85a; --bad:#e5383b; }
+  html[data-theme] body{ background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; color:var(--ig-text); }
+  html[data-theme] #app{ background:transparent; }
+  html[data-theme] .wrap{ max-width:460px; }
+  .hc-menu{ margin:0 auto; padding-bottom:10px; }
+  #menu .ig-title.hc-title{ font-size:clamp(36px,10vw,50px); line-height:1.02; padding:0 6px; }
+  #menu .ig-appicon{ margin-top:6px; }
+  #menu .ig-cta small{ white-space:nowrap; }
+  #menu .ig-row{ font-family:var(--ig-font); }
+  .hc-tright{ display:flex; gap:8px; align-items:center; }
+  .hc-av{ font-size:21px; --tile:linear-gradient(160deg,#fec140,#fa709a); }
+  #muteBtn .snd-off{ display:none; } #muteBtn.off .snd-on{ display:none; } #muteBtn.off .snd-off{ display:contents; }
+  #muteBtn span{ display:contents; }
+  #muteBtn #muteTxt{ display:none; }
+  svg.cn{ width:17px; height:17px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-3px; }
+
+  /* top bars of the inner screens */
+  html[data-theme] .topbar{ max-width:460px; min-height:46px; }
+  html[data-theme] .topbar h2.title{ font-size:17px; font-weight:700; letter-spacing:-.02em; }
+  html[data-theme] h2.title{ font-weight:800; letter-spacing:-.03em; font-size:clamp(24px,6.5vw,30px); }
+  html[data-theme] .iconbtn{ width:44px; height:44px; border-radius:999px; background:var(--ig-glass); border:1px solid var(--ig-line); color:var(--ig-text);
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); flex:none; }
+  .iconbtn svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .iconbtn:active{ transform:scale(.94); }
+  html[data-theme] .coins{ display:inline-flex; align-items:center; gap:6px; height:44px; padding:0 14px 0 12px; border-radius:999px; font:700 16px/1 var(--ig-font); letter-spacing:-.01em;
+    color:var(--ig-text); background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  html[data-theme] .coins svg.cn{ color:#e8a000; width:20px; height:20px; }
+
+  /* cards, labels, chips */
+  html[data-theme] .card{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:22px; padding:16px;
+    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  html[data-theme] .label{ font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--ig-text2); }
+  html[data-theme] .muted{ color:var(--ig-text2); font-size:13.5px; line-height:1.4; }
+  html[data-theme] .seg{ gap:6px; }
+  html[data-theme] .chip{ display:inline-flex; align-items:center; gap:5px; border:0; background:rgba(118,118,128,.12); color:var(--ig-text2); border-radius:999px;
+    padding:0 16px; height:36px; font:600 14.5px/1 var(--ig-font); letter-spacing:-.01em; box-shadow:none; transition:background .2s,color .2s,box-shadow .2s; }
+  html[data-theme] .chip.on{ background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 1.5px color-mix(in srgb, var(--accent) 80%, transparent); }
+  html[data-theme] .chip svg.cn{ width:15px; height:15px; color:#e8a000; }
+  html[data-theme] .stakepill{ background:rgba(48,199,89,.14); color:#1f9d4c; }
+  html[data-theme] .pill-tag{ background:color-mix(in srgb, var(--accent) 16%, transparent); color:color-mix(in srgb, var(--accent2) 80%, #000); font-weight:700; letter-spacing:.01em; }
+
+  /* buttons → capsules */
+  html[data-theme] .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:50px; padding:0 22px; border-radius:999px; border:0;
+    font:700 16px/1.1 var(--ig-font); letter-spacing:-.01em; color:#fff;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent); transition:transform .15s var(--ig-ease); }
+  html[data-theme] .btn:active{ transform:scale(.96); box-shadow:0 6px 16px -8px color-mix(in srgb, var(--accent2) 65%, transparent); }
+  html[data-theme] .btn.g{ background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent); }
+  html[data-theme] .btn.b{ background:linear-gradient(160deg,#4aa8ff,#0a60ff); box-shadow:0 10px 24px -8px rgba(10,96,255,.55); }
+  html[data-theme] .btn.y{ background:linear-gradient(160deg,#ffd34a,#ff9f0a); color:#3a2300; box-shadow:0 10px 24px -8px rgba(255,149,0,.55); }
+  html[data-theme] .btn.gray{ background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none; }
+  html[data-theme] .btn.sm{ min-height:40px; padding:0 16px; font-size:14.5px; border-radius:999px; }
+  html[data-theme] .btn:disabled{ filter:grayscale(.4); opacity:.55; }
+  html[data-theme] #resetBtn{ color:#e5383b; }
+  #shareWA{ --accent:#34c759; --accent2:#1f9d4c; }
+
+  /* inputs & settings */
+  html[data-theme] .field input, html[data-theme] .numsel{ height:52px; border-radius:16px; border:1px solid var(--ig-line); background:var(--ig-field); color:var(--ig-text); font:600 17px var(--ig-font); padding:0 16px; outline:none; }
+  html[data-theme] .field input:focus, html[data-theme] .numsel:focus{ border-color:color-mix(in srgb, var(--accent) 70%, transparent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  html[data-theme] #joinCode{ -webkit-user-select:text; user-select:text; }
+  html[data-theme] .field input{ -webkit-user-select:text; user-select:text; }
+  html[data-theme] .toggle{ border-bottom:1px solid var(--ig-line); font-weight:600; font-size:16px; }
+  html[data-theme] .sw{ width:51px; height:31px; background:rgba(120,120,128,.2); }
+  html[data-theme] .sw.on{ background:#34c759; }
+  html[data-theme] .sw i{ top:2px; left:2px; width:27px; height:27px; box-shadow:0 3px 8px rgba(0,0,0,.15), 0 0 0 .5px rgba(0,0,0,.04); }
+  html[data-theme] .sw.on i{ left:22px; }
+  html[data-theme] .avpick button{ border-radius:14px; background:var(--ig-glass2); border:1.5px solid var(--ig-line); }
+  html[data-theme] .avpick button.on{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  html[data-theme] .statrow{ border-bottom:1px solid var(--ig-line); font-weight:600; font-size:15.5px; }
+  html[data-theme] .statrow{ align-items:center; }
+  html[data-theme] #lobby .wrap{ padding-top:54px !important; }
+  html[data-theme] .statrow:last-child{ border-bottom:0; }
+  html[data-theme] .statrow b{ color:var(--ig-text); font-weight:800; }
+  html[data-theme] .match{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:16px; font-weight:600; }
+  html[data-theme] .match.win{ border-color:rgba(48,199,89,.6); } html[data-theme] .match.lose{ border-color:rgba(229,56,59,.5); }
+
+  /* shop */
+  html[data-theme] .item{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:22px; padding:12px;
+    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  html[data-theme] .item .prev{ border-radius:16px; background:rgba(118,118,128,.1); }
+  html[data-theme] .item .prev.pk .ig-tile{ width:44px; height:44px; border-radius:12px; }
+  html[data-theme] .item .prev.pk .ig-tile svg{ width:24px; height:24px; }
+  html[data-theme] .item .p{ display:inline-flex; align-items:center; gap:4px; color:var(--ig-text); font-weight:700; }
+  html[data-theme] .item .p svg.cn{ color:#e8a000; }
+  html[data-theme] .item .st{ color:#1f9d4c; font-weight:700; }
+  html[data-theme] .item .btn.y{ background:color-mix(in srgb, var(--accent) 15%, #fff); color:color-mix(in srgb, var(--accent2) 75%, #000); box-shadow:none; }
+  html[data-theme] .item b{ font-weight:700; letter-spacing:-.01em; }
+
+  /* toss / waits / results */
+  html[data-theme] .coin{ box-shadow:0 18px 40px -12px rgba(160,100,0,.55), inset 0 2px 0 rgba(255,255,255,.6); }
+  html[data-theme] .prompt{ font-weight:600; letter-spacing:-.01em; }
+  html[data-theme] .result-hero{ font-weight:900; letter-spacing:-.045em; }
+  html[data-theme] .result-hero.win{ color:#1fa85a; text-shadow:none; }
+  html[data-theme] .result-hero.lose{ color:#e5383b; }
+  html[data-theme] .result-hero.tie{ color:#ff9500; }
+  html[data-theme] .reward{ display:inline-flex; color:var(--ig-text); font-weight:800; font-size:20px; letter-spacing:-.02em; }
+  html[data-theme] .reward svg.cn{ width:24px; height:24px; color:#e8a000; }
+  html[data-theme] #resExtra:empty{ display:none; }
+  html[data-theme] #lobbyCode{ color:var(--ig-text) !important; filter:none !important; letter-spacing:.14em !important; }
+
+  /* the match screen keeps its original night look */
+  html[data-theme] #game{ background:radial-gradient(1200px 800px at 50% -10%, #202a55 0%, #0b1020 55%, #070a15 100%);
+    --ink:#eaf0ff; --muted:#9aa6c8; --card:rgba(255,255,255,.06); --cardb:rgba(255,255,255,.12);
+    --accent:#ffcf3d; --accent2:#ff5e8a; --good:#3ddc84; --bad:#ff5252; color:var(--ink); }
+  html[data-theme] #game .iconbtn{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.14); color:#fff; box-shadow:none; }
+  html[data-theme] #game .pill-tag{ background:rgba(255,207,61,.2); color:#ffcf3d; }
+  html[data-theme] #game .topbar{ max-width:none; }
+  html[data-theme] #game .wrap{ max-width:600px; }
 </style>
 </head>
 <body>
@@ -223,46 +336,62 @@
 
   <!-- ===================== MENU ===================== -->
   <div id="menu" class="screen on">
-    <div class="topbar">
-      <div class="prof" id="profBtn">
-        <div class="av" id="pAv">🧢</div>
-        <div><div class="nm" id="pName">Player</div><div class="lv" id="pLv">Level 1</div></div>
+    <div class="ig-col hc-menu">
+      <div class="ig-topbar">
+        <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+        <div class="hc-tright">
+          <div class="coins" title="Coins"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg><span id="coinN">0</span></div>
+          <button class="ig-iconbtn" id="muteBtn" title="Sound" aria-label="Sound"><span class="snd-on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></span><span class="snd-off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg></span><span id="muteTxt" hidden>Sound On</span></button>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <div class="coins">🪙 <span id="coinN">0</span></div>
-        <a class="iconbtn" href="../" title="Arcade">🏠</a>
+      <div class="ig-hero">
+        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M30 92 L30 62 Q22 54 22 44 L22 30 Q22 25 27 25 Q32 25 32 30 L32 44 L34 44 L34 14 Q34 9 39.5 9 Q45 9 45 14 L45 42 L47 42 L47 10 Q47 5 52.5 5 Q58 5 58 10 L58 42 L60 42 L60 16 Q60 11 65.5 11 Q71 11 71 16 L71 58 Q71 70 62 78 L62 92Z" fill="#f3c99b"/>
+<path d="M36 52 Q48 46 62 52" fill="none" stroke="#c68642" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="36" y="16" width="4" height="16" rx="2" fill="#fff" opacity=".5"/><rect x="49" y="12" width="4" height="16" rx="2" fill="#fff" opacity=".5"/>
+<rect class="o" x="26" y="84" width="40" height="10" rx="3" fill="#12c2a0"/>
+<circle class="o" cx="84" cy="70" r="11" fill="#d61f2c"/><path d="M76 63 Q84 70 92 77" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="2 2"/>
+<circle class="o" cx="14" cy="16" r="11" fill="#ffcc00"/><text x="14" y="21.5" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="15" text-anchor="middle" fill="#22120a">6</text></svg></div>
+        <div class="ig-title hc-title">Hand Cricket League</div>
+        <div class="ig-tagline">Pick a number. Score big. Don’t get out.</div>
       </div>
-    </div>
-    <div class="wrap">
-      <div style="align-self:flex-start;margin:2px 0 -2px;background:rgba(61,220,132,.16);color:var(--good);border:1px solid rgba(61,220,132,.4);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;letter-spacing:.2px;">🛠️ Bugs Fixed · Smoother Online Play</div>
-      <div class="logo"><h1>HAND CRICKET<br>LEAGUE</h1><div class="sub">Normal · Crazy Mode</div></div>
-      <div class="menu">
-        <button class="mbtn m2" data-go="ai"><span class="ic">🤖</span>Play vs AI<span class="d">Easy → Expert, learns you</span></button>
-        <button class="mbtn m3" data-go="friend"><span class="ic">🌐</span>Play with Friend<span class="d">Online room — real friend</span></button>
-        <button class="mbtn m4" data-go="league"><span class="ic">🏆</span>League Mode<span class="d">Climb the tiers</span></button>
-        <button class="mbtn m6" data-go="stats"><span class="ic">📊</span>Statistics<span class="d">Your records</span></button>
-        <button class="mbtn m5 wide" data-go="shop"><span class="ic">🛍️</span>Shop<span class="d">Themes & effects</span></button>
+      <div class="ig-playrow">
+        <button class="ig-cta" data-go="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>vs Computer · Easy to Expert</small></span></button>
+        <button class="ig-sq" data-go="shop" title="Shop" aria-label="Shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg></button>
       </div>
-      <div class="row"><button class="iconbtn" id="muteBtn" style="width:auto;padding:0 14px;gap:8px;">🔊 <span id="muteTxt" style="font-size:13px;font-weight:800;">Sound On</span></button></div>
+      <div class="ig-modes">
+        <button class="ig-mode" data-go="friend"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Play a friend</small></button>
+        <button class="ig-mode" data-go="league"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c77dff,#7b2fd0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg></span><b>League</b><small>Climb the tiers</small></button>
+        <button class="ig-mode" data-go="worldcup"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17M6 6c3 2 9 2 12 0M6 18c3-2 9-2 12 0"/></svg></span><b>World Cup</b><small>Knockout cup</small></button>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row" id="profBtn"><span class="ig-tile hc-av" id="pAv">🧢</span><span class="ig-grow"><span id="pName">Player</span><small><span id="pLv">Level 1</span> · Name, avatar &amp; sound</small></span></button>
+        <button class="ig-row" data-go="stats"><span class="ig-tile" style="--tile:linear-gradient(160deg,#37c7d4,#1481a6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></span><span class="ig-grow">Statistics<small>Your records</small></span></button>
+        <button class="ig-row" id="menuLb"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1A3 3 0 0 0 7.5 10M17 6h2.5v1a3 3 0 0 1-3 3"/></svg></span><span class="ig-grow">Leaderboard<small>Top players worldwide</small></span></button>
+      </div>
+      <div class="ig-stats">
+        <div><b id="stM">0</b><span>Matches</span></div>
+        <div><b id="stW">0</b><span>Wins</span></div>
+        <div><b id="stH">0</b><span>Highest score</span></div>
+      </div>
     </div>
   </div>
 
   <!-- ===================== SETUP ===================== -->
   <div id="setup" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title" id="setupTitle">Match Setup</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title" id="setupTitle">Match Setup</h2><div style="width:42px"></div></div>
     <div class="wrap">
       <div class="card">
         <div class="label">Game Mode</div>
         <div class="seg" id="modeSeg" style="margin-top:8px">
-          <button class="chip on" data-mode="normal">🏏 Normal</button>
-          <button class="chip" data-mode="crazy">🔥 Crazy Mode</button>
-          <button class="chip" data-mode="custom">🎯 Custom</button>
+          <button class="chip on" data-mode="normal">Normal</button>
+          <button class="chip" data-mode="crazy">Crazy</button>
+          <button class="chip" data-mode="custom">Custom</button>
         </div>
         <div class="subcard" id="customCard">
           <div class="label" style="margin-top:14px">Custom rules</div>
           <div class="seg" id="customRuleSeg" style="margin-top:8px">
-            <button class="chip on" data-crule="normal">🏏 Normal</button>
-            <button class="chip" data-crule="crazy">🔥 Crazy</button>
+            <button class="chip on" data-crule="normal">Normal</button>
+            <button class="chip" data-crule="crazy">Crazy</button>
           </div>
           <div class="label" style="margin-top:14px">Highest number</div>
           <select class="numsel" id="customMax"></select>
@@ -281,57 +410,57 @@
       <div class="card" id="typeCard">
         <div class="label">Match Type</div>
         <div class="seg" id="typeSeg" style="margin-top:8px">
-          <button class="chip on" data-type="quick">⚡ Quick</button>
-          <button class="chip" data-type="league">📋 League</button>
-          <button class="chip" data-type="tournament">🥇 Tournament</button>
-          <button class="chip" data-type="worldcup">🌍 World Cup</button>
+          <button class="chip on" data-type="quick">Quick</button>
+          <button class="chip" data-type="league">League</button>
+          <button class="chip" data-type="tournament">Tournament</button>
+          <button class="chip" data-type="worldcup">World Cup</button>
         </div>
         <div class="muted" id="typeDesc" style="text-align:center;margin-top:10px"></div>
       </div>
-      <button class="btn g block" id="setupPlay">▶ Play</button>
+      <button class="btn g block" id="setupPlay">Play</button>
     </div>
   </div>
 
   <!-- ===================== ROOM LOBBY (online multiplayer) ===================== -->
   <div id="room" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title">Play with Friend</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title">Play with Friend</h2><div style="width:42px"></div></div>
     <div class="wrap">
       <div class="card">
         <div class="label">Game Mode (host picks)</div>
         <div class="seg" id="roomModeSeg" style="margin-top:8px">
-          <button class="chip on" data-rmode="normal">🏏 Normal</button>
-          <button class="chip" data-rmode="crazy">🔥 Crazy Mode</button>
-          <button class="chip" data-rmode="custom">🎯 Custom</button>
+          <button class="chip on" data-rmode="normal">Normal</button>
+          <button class="chip" data-rmode="crazy">Crazy</button>
+          <button class="chip" data-rmode="custom">Custom</button>
         </div>
         <div class="subcard" id="roomCustomCard">
           <div class="label" style="margin-top:14px">Custom rules</div>
           <div class="seg" id="roomCustomRuleSeg" style="margin-top:8px">
-            <button class="chip on" data-rcrule="normal">🏏 Normal</button>
-            <button class="chip" data-rcrule="crazy">🔥 Crazy</button>
+            <button class="chip on" data-rcrule="normal">Normal</button>
+            <button class="chip" data-rcrule="crazy">Crazy</button>
           </div>
           <div class="label" style="margin-top:14px">Highest number</div>
           <select class="numsel" id="roomCustomMax"></select>
         </div>
       </div>
       <div class="card" id="stakeCard">
-        <div class="label">💰 Coin Match (host picks)</div>
+        <div class="label">Coin Match (host picks)</div>
         <div class="muted" style="font-size:12px;margin-top:4px;text-align:left">Both players put in half the pot. <b>Winner takes it all.</b> Tie = everyone gets their coins back. Quit = you lose your coins.</div>
         <div class="seg" id="roomStakeSeg" style="margin-top:10px;flex-wrap:wrap;gap:6px">
-          <button class="chip on" data-stake="0">🤝 Friendly</button>
-          <button class="chip" data-stake="100">🪙 100</button>
-          <button class="chip" data-stake="500">🪙 500</button>
-          <button class="chip" data-stake="1000">💰 1000</button>
-          <button class="chip" data-stake="1500">💰 1500</button>
-          <button class="chip" data-stake="2000">💎 2000</button>
-          <button class="chip" data-stake="5000">👑 5000</button>
+          <button class="chip on" data-stake="0">Friendly</button>
+          <button class="chip" data-stake="100"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>100</button>
+          <button class="chip" data-stake="500"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>500</button>
+          <button class="chip" data-stake="1000"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>1000</button>
+          <button class="chip" data-stake="1500"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>1500</button>
+          <button class="chip" data-stake="2000"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>2000</button>
+          <button class="chip" data-stake="5000"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>5000</button>
         </div>
         <div class="muted" id="stakeInfo" style="margin-top:10px;font-size:12px">No coins at stake — just for fun.</div>
       </div>
-      <button class="btn g block" id="createRoomBtn">➕ Create Room</button>
+      <button class="btn g block" id="createRoomBtn">Create Room</button>
       <div class="card">
         <div class="field"><div class="label" style="text-align:left">Have a code?</div>
           <input id="joinCode" maxlength="4" placeholder="ENTER CODE" style="text-transform:uppercase;text-align:center;letter-spacing:6px;font-size:22px;font-weight:900" /></div>
-        <button class="btn b block" id="joinRoomBtn" style="margin-top:10px">🔑 Join Room</button>
+        <button class="btn b block" id="joinRoomBtn" style="margin-top:10px">Join Room</button>
       </div>
       <div class="muted" style="text-align:center">Real-time match with a friend on another device. You both need internet. Create a room and share the 4-letter code, or join with theirs.</div>
     </div>
@@ -339,23 +468,23 @@
 
   <!-- ===================== ROOM LOBBY ===================== -->
   <div id="lobby" class="screen">
-    <button class="iconbtn" id="lobbyCancel" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5">←</button>
+    <button class="iconbtn" id="lobbyCancel" aria-label="Back" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="wrap" style="justify-content:flex-start;margin:0;padding-top:6px">
       <h2 class="title">Room Lobby</h2>
       <div class="card" id="lobbyCodeCard" style="text-align:center">
         <div class="muted">Room code — share it!</div>
         <div id="lobbyCode" style="font-size:clamp(34px,12vw,56px);font-weight:900;letter-spacing:8px;color:var(--accent);filter:drop-shadow(0 4px 14px rgba(255,150,60,.35))">----</div>
         <div class="row" id="shareRow" style="justify-content:center;margin-top:4px">
-          <button class="btn sm g" id="shareWA">🟢 WhatsApp</button>
-          <button class="btn sm b" id="shareMail">✉️ Email</button>
-          <button class="btn sm gray" id="shareCopy">🔗 Copy link</button>
+          <button class="btn sm g" id="shareWA">WhatsApp</button>
+          <button class="btn sm b" id="shareMail">Email</button>
+          <button class="btn sm gray" id="shareCopy">Copy link</button>
         </div>
         <div class="pill-tag" id="lobbyMode" style="margin-top:10px;display:inline-block">Normal</div><span class="stakepill" id="lobbyStake" style="display:none"></span>
       </div>
       <div class="label">Players (<span id="lobbyCount">1</span>/10)</div>
       <div id="lobbyList" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
-      <button class="btn b block" id="stakeAccept" style="display:none">💰 Accept stake</button>
-      <button class="btn g block" id="lobbyStart" style="display:none">▶ Start Match</button>
+      <button class="btn b block" id="stakeAccept" style="display:none">Accept stake</button>
+      <button class="btn g block" id="lobbyStart" style="display:none">Start Match</button>
       <div class="muted" id="lobbyWait" style="text-align:center">Waiting for the host to start…</div>
       <div class="muted" style="text-align:center;font-size:12px">2 players = quick match (rematch on). 3+ = tournament: everyone plays everyone → top players qualify → knockouts.</div>
     </div>
@@ -382,14 +511,14 @@
 
   <!-- ===================== TOSS ===================== -->
   <div id="toss" class="screen">
-    <button class="iconbtn" id="tossBack" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5">←</button>
+    <button class="iconbtn" id="tossBack" aria-label="Back" style="position:absolute;top:max(14px,env(safe-area-inset-top));left:16px;z-index:5"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="wrap" style="align-items:center;text-align:center;">
       <h2 class="title">The Toss</h2>
       <div class="coin" id="tossCoin">🪙</div>
       <div class="prompt" id="tossMsg">Tap to flip</div>
       <div class="row" id="tossChoice" style="display:none">
-        <button class="btn g" data-toss="bat">🏏 Bat First</button>
-        <button class="btn b" data-toss="bowl">🎯 Bowl First</button>
+        <button class="btn g" data-toss="bat">Bat First</button>
+        <button class="btn b" data-toss="bowl">Bowl First</button>
       </div>
       <button class="btn y" id="tossFlip">Flip Coin</button>
     </div>
@@ -399,9 +528,9 @@
   <div id="game" class="screen">
     <div class="wrap">
       <div class="topbar" style="max-width:none">
-        <button class="iconbtn" id="quitBtn">←</button>
+        <button class="iconbtn" id="quitBtn" aria-label="Quit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <div class="pill-tag" id="gameTag">Quick · Normal</div>
-        <button class="iconbtn" id="gMute">🔊</button>
+        <button class="iconbtn" id="gMute" aria-label="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
       </div>
       <div class="score-strip">
         <div class="side" id="sideA"><div class="who"><span id="aAv">🧢</span><span id="aName">You</span></div><div class="sc" id="aScore">0</div><div class="st" id="aStat">yet to bat</div><div class="batflag" id="aFlag"></div></div>
@@ -429,19 +558,19 @@
       <h2 class="title">Innings Break</h2>
       <div class="result-hero" style="font-size:clamp(24px,8vw,40px)" id="brkScore"></div>
       <div class="prompt" id="brkMsg"></div>
-      <button class="btn g block" id="brkNext">Start 2nd Innings ▶</button>
+      <button class="btn g block" id="brkNext">Start 2nd Innings</button>
     </div>
   </div>
 
   <!-- ===================== RESULT ===================== -->
   <div id="result" class="screen">
     <div class="wrap" style="align-items:center;text-align:center;justify-content:center;height:100%">
-      <div class="result-hero" id="resHero">YOU WIN!</div>
+      <div class="result-hero" id="resHero">You Win!</div>
       <div class="prompt" id="resScore"></div>
       <div class="card" id="resExtra" style="text-align:left"></div>
-      <div class="reward" id="resReward">🪙 +50</div>
+      <div class="reward" id="resReward"></div>
       <div class="row">
-        <button class="btn g" id="resNext">Continue ▶</button>
+        <button class="btn g" id="resNext">Continue</button>
         <button class="btn gray sm" id="resMenu">Main Menu</button>
       </div>
     </div>
@@ -449,7 +578,7 @@
 
   <!-- ===================== SHOP ===================== -->
   <div id="shop" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title">Shop</h2><div class="coins">🪙 <span id="shopCoins">0</span></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title">Shop</h2><div class="coins"><svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg><span id="shopCoins">0</span></div></div>
     <div class="wrap">
       <div class="label">Number Button Themes</div>
       <div class="shopgrid" id="themeGrid"></div>
@@ -460,27 +589,27 @@
 
   <!-- ===================== LEAGUE HUB ===================== -->
   <div id="leaguehub" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title">League Mode</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title">League Mode</h2><div style="width:42px"></div></div>
     <div class="wrap" id="leagueBody"></div>
   </div>
 
   <!-- ===================== STANDINGS / BRACKET ===================== -->
   <div id="standings" class="screen">
-    <div class="topbar"><button class="iconbtn" id="standBack">←</button><h2 class="title" id="standTitle">Standings</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" id="standBack" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title" id="standTitle">Standings</h2><div style="width:42px"></div></div>
     <div class="wrap" id="standBody"></div>
   </div>
 
   <!-- ===================== STATS ===================== -->
   <div id="stats" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title">Statistics</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title">Statistics</h2><div style="width:42px"></div></div>
     <div class="wrap"><div class="card" id="statBody"></div>
-      <button class="btn b block" id="lbBtn">🏆 Global Leaderboard</button>
+      <button class="btn b block" id="lbBtn">Global Leaderboard</button>
     </div>
   </div>
 
   <!-- ===================== SETTINGS ===================== -->
   <div id="settings" class="screen">
-    <div class="topbar"><button class="iconbtn" data-back="menu">←</button><h2 class="title">Settings</h2><div style="width:42px"></div></div>
+    <div class="topbar"><button class="iconbtn" data-back="menu" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="title">Settings</h2><div style="width:42px"></div></div>
     <div class="wrap">
       <div class="card">
         <div class="field"><div class="label" style="text-align:left">Player Name</div><input id="nameInput" maxlength="14" placeholder="Your name" /></div>
@@ -635,13 +764,15 @@ function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.r
   if(id==='menu'){ Sound.startMusic(); syncMenu(); } else { Sound.stopMusic(); } }
 
 /* ---------------- profile / menu ---------------- */
+const SND_ON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>', SND_OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>', COIN_SVG='<svg class="cn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5c.4-1 1.4-1.6 2.6-1.6 1.5 0 2.5.8 2.5 1.9 0 2.6-5.2 1.5-5.2 4.3 0 1.1 1.1 1.9 2.7 1.9 1.2 0 2.2-.6 2.6-1.6"/></svg>';
 function levelFromMatches(m){ return 1+Math.floor(m/5); }
 function syncMenu(){
   $('pName').textContent=SV.name; $('pAv').textContent=SV.avatar;
   $('pLv').textContent='Level '+levelFromMatches(SV.stats.matches);
   $('coinN').textContent=SV.coins;
   $('muteTxt').textContent=SV.sound?'Sound On':'Sound Off';
-  $('muteBtn').firstChild.textContent=SV.sound?'🔊 ':'🔇 ';
+  $('muteBtn').classList.toggle('off',!SV.sound);
+  $('stM').textContent=SV.stats.matches|0; $('stW').textContent=SV.stats.wins|0; $('stH').textContent=SV.stats.high|0;
 }
 
 /* ================= GAME STATE ================= */
@@ -714,7 +845,7 @@ function startInnings(){
   G.batting=G.innings===1?G.firstBat:(G.firstBat==='a'?'b':'a');
   G.busy=false; G.pending=null;
   show('game'); renderScore(); buildPad(); padEnableAll(); padLock(false);
-  $('gMute').textContent=SV.sound?'🔊':'🔇';
+  $('gMute').innerHTML=SV.sound?SND_ON:SND_OFF;
   $('numBat').textContent='–'; $('numBowl').textContent='–';
   $('cardBat').classList.remove('pop'); $('cardBowl').classList.remove('pop');
   nextBall(true);
@@ -927,19 +1058,19 @@ function endMatch(){
   // render result (vs AI / competitions)
   $('resNext').style.display=''; $('resMenu').textContent='Main Menu';
   const hero=$('resHero'); hero.className='result-hero '+outcome;
-  hero.textContent = outcome==='win'?'YOU WIN! 🏆':(outcome==='tie'?'TIE MATCH!':'YOU LOST');
+  hero.textContent = outcome==='win'?'You Win!':(outcome==='tie'?'Tie Match':'You Lost');
   $('resScore').innerHTML = esc(G.aName)+' <b>'+aFinal+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+bFinal+'</b>';
-  const ex=[]; if(G.mCrazy)ex.push('🔥 Crazy hits: <b>'+G.mCrazy+'</b>'); if(G.mHundred)ex.push('💯 100-run hits: <b>'+G.mHundred+'</b>');
-  ex.push('🏏 Your score: <b>'+myFinal+'</b>');
+  const ex=[]; if(G.mCrazy)ex.push('Crazy hits <b>'+G.mCrazy+'</b>'); if(G.mHundred)ex.push('100-run hits <b>'+G.mHundred+'</b>');
+  ex.push('Your score <b>'+myFinal+'</b>');
   $('resExtra').innerHTML=ex.map(e=>'<div class="statrow" style="border:none;padding:6px 2px">'+e+'</div>').join('');
-  $('resReward').innerHTML='🪙 +'+reward+' coins';
+  $('resReward').innerHTML=COIN_SVG+' +'+reward+' coins';
   if(outcome==='win'){ Sound.win(); Sound.crowd(); confetti(140); fxStart(); }
   else if(outcome==='tie'){ Sound.win(); }
   else Sound.lose();
   // context (league/tournament)
-  if(G.ctx){ finishCtxMatch(outcome, aFinal, bFinal); $('resNext').textContent='Continue ▶'; }
-  else if(G.online){ $('resNext').textContent = G.host?'Rematch ▶':'⏳ Host may rematch'; }
-  else { $('resNext').textContent='Rematch ▶'; }
+  if(G.ctx){ finishCtxMatch(outcome, aFinal, bFinal); $('resNext').textContent='Continue'; }
+  else if(G.online){ $('resNext').textContent = G.host?'Rematch':'Host may rematch…'; }
+  else { $('resNext').textContent='Rematch'; }
   show('result');
 }
 $('resNext').addEventListener('click',()=>{ Sound.click();
@@ -950,7 +1081,7 @@ $('resNext').addEventListener('click',()=>{ Sound.click();
 $('resMenu').addEventListener('click',()=>{ Sound.click(); $('resNext').style.display=''; if(G.online)leaveRoom(); show('menu'); });
 $('quitBtn').addEventListener('click',()=>{ if(confirm(G.tourney?'Leave the tournament?':'Quit this match?')){ EPOCH++; G.busy=false; clearAfk(); $('banner').classList.remove('show');
   if(G.online){ leaveRoom(); show('menu'); } else if(G.ctx){ renderStandings(); } else show('menu'); } });
-$('gMute').addEventListener('click',()=>{ SV.sound=!SV.sound; save(); $('gMute').textContent=SV.sound?'🔊':'🔇'; });
+$('gMute').addEventListener('click',()=>{ SV.sound=!SV.sound; save(); $('gMute').innerHTML=SV.sound?SND_ON:SND_OFF; });
 
 /* ================= SETUP SCREEN (vs AI) ================= */
 // Custom mode: play with numbers 1..maxN. Options 1–9, then 10s up to 100 (min 2 — a
@@ -1200,9 +1331,9 @@ function renderLobbyStake(ps){
   if(sa){
     if(R && !R.isHost && st>0){
       sa.style.display='block';
-      if(SV.coins<half){ sa.disabled=true; sa.className='btn gray block'; sa.textContent='❌ You need '+half+' 🪙 (you have '+SV.coins+')'; }
-      else if(R.stakeOkMe){ sa.disabled=false; sa.className='btn gray block'; sa.textContent='✅ Accepted — waiting for host…'; }
-      else { sa.disabled=false; sa.className='btn b block'; sa.textContent='💰 Accept — put in '+half+' 🪙'; }
+      if(SV.coins<half){ sa.disabled=true; sa.className='btn gray block'; sa.textContent='You need '+half+' coins (you have '+SV.coins+')'; }
+      else if(R.stakeOkMe){ sa.disabled=false; sa.className='btn gray block'; sa.textContent='Accepted — waiting for host…'; }
+      else { sa.disabled=false; sa.className='btn b block'; sa.textContent='Accept — put in '+half+' coins'; }
     } else sa.style.display='none';
   }
   if(R&&R.isHost){
@@ -1215,7 +1346,7 @@ function renderLobbyStake(ps){
     else if(st>0 && others.some(o=>!(R.stakeOk&&R.stakeOk[o.id]))) block='Waiting for opponent to accept…';
     else if(st>0 && others.some(o=>((R.coinsOf&&R.coinsOf[o.id])|0)<half)) block='Opponent can\'t afford it';
     b.disabled=!!block;
-    b.textContent = block || (n===2?(st>0?'▶ Start '+st+' 🪙 Match':'▶ Start Quick Match'):'▶ Start Tournament ('+n+' players)');
+    b.textContent = block || (n===2?(st>0?'Start '+st+'-coin Match':'Start Quick Match'):'Start Tournament ('+n+' players)');
   }
 }
 $('stakeAccept').addEventListener('click',()=>{ if(!R||R.isHost)return;
@@ -1443,7 +1574,7 @@ function clientOnDone(pkt){
   R&&(R.phase='done');
   const win = pkt.champion===myId;
   const hero=$('resHero'); hero.className='result-hero '+(win?'win':'lose');
-  hero.textContent = win?'🏆 CHAMPION!':'Tournament Over';
+  hero.textContent = win?'Champion!':'Tournament Over';
   $('resScore').innerHTML = '🏆 Winner: <b>'+pkt.champAv+' '+esc(pkt.champName)+'</b>';
   const rows=pkt.rows||[];
   $('resExtra').innerHTML = rows.map((r,i)=>'<div class="statrow" style="border:none;padding:5px 2px"><span>'+(i+1)+'. '+r.av+' '+esc(r.name)+'</span><span>'+r.w+'W '+r.l+'L</span></div>').join('');
@@ -1590,12 +1721,12 @@ function settleStake(tie, iWon){
 function showQuickResult(res, iWon){
   const hero=$('resHero'); const tie=res.winner==null;
   hero.className='result-hero '+(tie?'tie':iWon?'win':'lose');
-  hero.textContent = tie?'TIE MATCH!':(iWon?'YOU WIN! 🏆':'YOU LOST');
+  hero.textContent = tie?'Tie Match':(iWon?'You Win!':'You Lost');
   $('resScore').innerHTML = esc(G.aName)+' <b>'+G.a+'</b> &nbsp;—&nbsp; '+esc(G.bName)+' <b>'+G.b+'</b>';
   $('resExtra').innerHTML='';
   $('resReward').innerHTML = settleStake(tie, iWon);
   if(iWon){ Sound.win(); confetti(120); fxStart(); } else if(!tie) Sound.lose();
-  $('resNext').style.display=''; $('resNext').textContent = MP.isHost?'🔁 Rematch':'⏳ Host may rematch';
+  $('resNext').style.display=''; $('resNext').textContent = MP.isHost?'Rematch':'Host may rematch…';
   $('resMenu').textContent='Leave Room';
   show('result');
 }
@@ -1724,12 +1855,12 @@ function renderStandings(){
   const rows=standRows();
   let html='<div class="card"><div class="statrow" style="color:var(--muted);font-size:12px"><span>Team</span><span>P&nbsp;&nbsp;W&nbsp;&nbsp;Pts</span></div>';
   rows.forEach(([nm,r],i)=>{ const q=COMP.ko>0&&i<COMP.ko;
-    html+='<div class="statrow"'+(q?' style="color:var(--good)"':'')+'><span>'+(nm===SV.name?'⭐ ':(q?'✔ ':''))+esc(nm)+'</span><span>'+r.p+'&nbsp;&nbsp;'+r.w+'&nbsp;&nbsp;<b>'+r.pts+'</b></span></div>'; });
+    html+='<div class="statrow"'+(q?' style="color:var(--good)"':'')+'><span>'+esc(nm)+(nm===SV.name?' <span class="pill-tag">You</span>':'')+'</span><span>'+r.p+'&nbsp;&nbsp;'+r.w+'&nbsp;&nbsp;<b>'+r.pts+'</b></span></div>'; });
   html+='</div><div class="muted" style="text-align:center">'+(COMP.ko>0?('Top '+COMP.ko+' qualify for the knockouts'):'Table topper wins the season')+'</div>';
 
   if(COMP.stage==='group'){
     html+='<div class="pill-tag" style="align-self:center">Group Match '+(COMP.groupRound+1)+' of '+COMP.fixtures.length+'</div>';
-    html+='<button class="btn g block" id="ctxPlay">▶ Play vs '+esc(nextOpponentName())+'</button>';
+    html+='<button class="btn g block" id="ctxPlay">Play vs '+esc(nextOpponentName())+'</button>';
   } else if(COMP.stage==='ko'){
     html+='<div class="label" style="margin-top:4px">Knockouts</div><div class="bracket">';
     COMP.koRounds.forEach((rn,i)=>{ let cls='',tag='';
@@ -1737,7 +1868,7 @@ function renderStandings(){
       else if(i===COMP.koRound){ tag='<span class="pill-tag">NEXT</span>'; }
       html+='<div class="match'+cls+'"><span>'+rn+(i===COMP.koRound?' — vs '+esc(nextOpponentName()):'')+'</span>'+(tag||'<span class="vsx">—</span>')+'</div>'; });
     html+='</div>';
-    html+='<button class="btn g block" id="ctxPlay">▶ Play '+COMP.koRounds[COMP.koRound]+'</button>';
+    html+='<button class="btn g block" id="ctxPlay">Play '+COMP.koRounds[COMP.koRound]+'</button>';
   } else { // done
     const R=COMP.endReason; let cls='lose', txt='';
     if(R==='champion'){ cls='win'; txt='🏆 '+(COMP.type==='worldcup'?'WORLD CHAMPIONS!':'TOURNAMENT CHAMPIONS!'); }
@@ -1766,6 +1897,7 @@ function playCtxMatch(){
 function advanceCtx(){ renderStandings(); }
 
 /* ================= SHOP ================= */
+const PACK_SVG={explosion:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5 4.7-2.3-2.3 4.7 5 1.8-5 1.8 2.3 4.7-4.7-2.3L12 21l-1.8-5-4.7 2.3 2.3-4.7-5-1.8 5-1.8L5.5 5.7l4.7 2.3z"/></svg>',score:'<svg viewBox="0 0 24 24"><path d="M12 3l2.5 6 6.5.5-5 4.2 1.6 6.3L12 16.5 6.4 20l1.6-6.3-5-4.2 6.5-.5z"/></svg>',reveal:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="9" height="13" rx="2"/><path d="M15 7.5l3.5 1-3 11.5-6-1.6"/></svg>'};
 function renderShop(){
   $('shopCoins').textContent=SV.coins;
   const tg=$('themeGrid'); tg.innerHTML='';
@@ -1773,8 +1905,8 @@ function renderShop(){
     const owned=SV.owned.includes(t.id), sel=SV.theme===t.id;
     const prevClass = t.id==='default'?'':'theme-'+t.id;
     const div=document.createElement('div'); div.className='item';
-    div.innerHTML='<div class="prev pad '+prevClass+'" style="--btn-ink:#fff"><span class="num" style="width:46px;height:46px;aspect-ratio:auto;box-shadow:none">'+t.ico+'</span></div>'+
-      '<b>'+t.name+'</b>'+ (owned?('<div class="st">'+(sel?'Equipped':'Owned')+'</div>'):('<div class="p">🪙 '+t.price+'</div>'))+
+    div.innerHTML='<div class="prev pad '+prevClass+'" style="--btn-ink:#fff"><span class="num" style="width:46px;height:46px;aspect-ratio:auto;box-shadow:none">7</span></div>'+
+      '<b>'+t.name+'</b>'+ (owned?('<div class="st">'+(sel?'Equipped':'Owned')+'</div>'):('<div class="p">'+COIN_SVG+t.price+'</div>'))+
       '<button class="btn sm '+(owned?(sel?'gray':'g'):'y')+'" '+(owned&&sel?'disabled':'')+'>'+(owned?(sel?'Equipped':'Equip'):'Buy')+'</button>';
     div.querySelector('button').onclick=()=>{
       if(!owned){ if(SV.coins<t.price){ toast('Not enough coins'); return; } SV.coins-=t.price; SV.owned.push(t.id); SV.theme=t.id; Sound.coin(); }
@@ -1787,8 +1919,8 @@ function renderShop(){
   PACKS.forEach(p=>{
     const owned=SV.packs.includes(p.id);
     const div=document.createElement('div'); div.className='item';
-    div.innerHTML='<div class="prev" style="background:linear-gradient(150deg,#2b3566,#151a34)">'+p.ico+'</div><b>'+p.name+'</b><div class="muted" style="font-size:11px">'+p.desc+'</div>'+
-      (owned?'<div class="st">Owned</div>':'<div class="p">🪙 '+p.price+'</div>')+
+    div.innerHTML='<div class="prev pk"><span class="ig-tile">'+(PACK_SVG[p.id]||'')+'</span></div><b>'+p.name+'</b><div class="muted" style="font-size:11px">'+p.desc+'</div>'+
+      (owned?'<div class="st">Owned</div>':'<div class="p">'+COIN_SVG+p.price+'</div>')+
       '<button class="btn sm '+(owned?'gray':'y')+'" '+(owned?'disabled':'')+'>'+(owned?'Owned':'Buy')+'</button>';
     if(!owned)div.querySelector('button').onclick=()=>{ if(SV.coins<p.price){ toast('Not enough coins'); return; } SV.coins-=p.price; SV.packs.push(p.id); Sound.coin(); save(); renderShop(); };
     pg.appendChild(div);
@@ -1796,15 +1928,15 @@ function renderShop(){
 }
 let toastT;
 function toast(msg){ let el=$('_toast'); if(!el){ el=document.createElement('div'); el.id='_toast';
-  el.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#000a;border:1px solid var(--cardb);padding:10px 18px;border-radius:999px;font-weight:800;z-index:200;color:#fff;'; document.body.appendChild(el); }
+  el.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,.07);box-shadow:0 10px 30px rgba(20,20,50,.18);padding:11px 20px;border-radius:999px;font:600 15px var(--ig-font,system-ui);z-index:200;color:#1d1d1f;transition:opacity .2s;'; document.body.appendChild(el); }
   el.textContent=msg; el.style.opacity='1'; clearTimeout(toastT); toastT=setTimeout(()=>el.style.opacity='0',1400); }
 
 /* ================= STATS ================= */
 function renderStats(){
   const s=SV.stats; const wp = s.matches?Math.round(s.wins/s.matches*100):0;
   $('statBody').innerHTML=[
-    ['🏏 Highest Score',s.high],['💯 Most 100-Run Hits',s.hundreds],['🔥 Most Crazy Hits',s.crazy],
-    ['✅ Win Percentage',wp+'%'],['🎮 Matches Played',s.matches],['🏆 Wins',s.wins],['🪙 Coins',SV.coins]
+    ['Highest Score',s.high],['Most 100-Run Hits',s.hundreds],['Most Crazy Hits',s.crazy],
+    ['Win Percentage',wp+'%'],['Matches Played',s.matches],['Wins',s.wins],['Coins',SV.coins]
   ].map(([k,v])=>'<div class="statrow"><span>'+k+'</span><b>'+v+'</b></div>').join('');
 }
 $('lbBtn').addEventListener('click',()=>{ if(window.IGAuth)IGAuth.showLeaderboard('handcricket','Hand Cricket League'); else toast('Leaderboard needs the arcade'); });
@@ -1819,7 +1951,7 @@ function renderLeagueHub(){
     '<div class="muted">Win a League season to reach the next tier. Higher tiers = tougher AI & bigger coin rewards.</div></div>'+
     '<div class="card"><div class="statrow"><span>Seasons Won</span><b>'+SV.league.won+'</b></div>'+
     '<div class="statrow" style="border:none"><span>Difficulty</span><b>'+['Easy','Medium','Hard','Expert'][t]+'</b></div></div>'+
-    '<button class="btn g block" id="leaguePlay">▶ Play '+tiers[t]+' Season</button>'+
+    '<button class="btn g block" id="leaguePlay">Play '+tiers[t]+' Season</button>'+
     '<div class="muted" style="text-align:center">Mode: pick on the next screen</div>';
   $('leaguePlay').onclick=()=>{ Sound.click(); setupCfg.entry='ai'; setupCfg.type='league'; setupCfg.diff=['easy','medium','hard','expert'][t];
     // jump straight into a league season using tier difficulty; let player pick mode
@@ -1844,16 +1976,18 @@ $('resetBtn').addEventListener('click',()=>{ if(confirm('Reset ALL progress, coi
 /* ================= NAV WIRING ================= */
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ Sound.click();
   const go=b.dataset.go;
-  if(go==='ai')openSetup();
+  if(go==='ai'){ setupCfg.type='quick'; segOn('typeSeg',$('typeSeg').querySelector('[data-type="quick"]')); openSetup(); }
   else if(go==='friend')openRoom();
   else if(go==='league'){ renderLeagueHub(); show('leaguehub'); }
   else if(go==='shop'){ renderShop(); show('shop'); }
   else if(go==='stats'){ renderStats(); show('stats'); }
   else if(go==='settings'){ renderSettings(); show('settings'); }
+  else if(go==='worldcup'){ openSetup(); setupCfg.type='worldcup'; segOn('typeSeg',$('typeSeg').querySelector('[data-type="worldcup"]')); updateTypeDesc(); }
 }));
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{ Sound.click(); show(b.dataset.back); }));
 $('profBtn').addEventListener('click',()=>{ Sound.click(); renderSettings(); show('settings'); });
 $('muteBtn').addEventListener('click',()=>{ SV.sound=!SV.sound; save(); syncMenu(); });
+$('menuLb').addEventListener('click',()=>{ Sound.click(); if(window.IGAuth)IGAuth.showLeaderboard('handcricket','Hand Cricket League'); else toast('Leaderboard needs the arcade'); });
 
 /* ================= keyboard (desktop) ================= */
 window.addEventListener('keydown',e=>{

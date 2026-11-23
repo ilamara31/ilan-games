@@ -1,0 +1,328 @@
+/* ilan Games design system (light only) — shared by the home page and all games. Loaded by theme.js.
+   Reference implementation: sumo/index.html. Each game sets its colours:  :root{ --accent:#ff8a65; --accent2:#e0364f; --icon1:…; --icon2:… }  (accent = buttons/title, icon = app-icon tile)  */
+:root, html[data-theme] {
+  --ig-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  --ig-ease: cubic-bezier(.2, .8, .2, 1);
+  --ig-bg:#f2f2f7; --ig-text:#1d1d1f; --ig-text2:rgba(0,0,0,.56); --ig-text3:rgba(0,0,0,.34);
+  --ig-glass:rgba(255,255,255,.62); --ig-glass2:rgba(255,255,255,.88); --ig-field:rgba(255,255,255,.8);
+  --ig-line:rgba(0,0,0,.07); --ig-line2:rgba(0,0,0,.14); --ig-hl:rgba(255,255,255,.95);
+  --ig-shadow:0 8px 26px rgba(40,40,80,.10); --ig-shadow2:0 22px 46px rgba(40,40,80,.18);
+  --ig-solid:#1d1d1f; --ig-onsolid:#fff; --ig-seg:#fff; --ig-sheet:rgba(255,255,255,.9); --ig-scrim:rgba(20,20,40,.25); --ig-aur:.5;
+  color-scheme:light;
+}
+/* default accent with zero specificity, so a game's own :root{--accent…} always wins */
+:where(html) { --accent:#0a84ff; --accent2:#0a5bd8; }
+html { background:var(--ig-bg); }
+.ig-aurora { position:fixed; inset:-20vmax; z-index:-1; pointer-events:none; opacity:var(--ig-aur); filter:blur(40px);
+  background: radial-gradient(38vmax 38vmax at 18% 12%, rgba(94,92,230,.45), transparent 60%),
+              radial-gradient(34vmax 34vmax at 85% 18%, rgba(255,55,95,.32), transparent 60%),
+              radial-gradient(40vmax 40vmax at 70% 85%, rgba(48,209,88,.22), transparent 60%),
+              radial-gradient(36vmax 36vmax at 10% 80%, rgba(10,132,255,.30), transparent 60%);
+  animation: ig-aurora 26s ease-in-out infinite alternate; }
+@keyframes ig-aurora { 0%{transform:translate(0,0) rotate(0) scale(1)} 50%{transform:translate(3vmax,-2vmax) rotate(8deg) scale(1.08)} 100%{transform:translate(-3vmax,2vmax) rotate(-6deg) scale(1.02)} }
+@media (prefers-reduced-motion: reduce) { .ig-aurora { animation:none; } }
+
+/* ---------- building blocks (see sumo/ for the reference menu) ---------- */
+.ig-page { font-family:var(--ig-font); color:var(--ig-text); letter-spacing:-.01em; }
+.ig-col { width:100%; max-width:460px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+.ig-glass { background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+
+/* top bar: "‹ Games" pill left, round icon buttons right */
+.ig-topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:46px; width:100%; }
+.ig-topbar .ig-navtitle { font-size:17px; font-weight:700; letter-spacing:-.02em; }
+.ig-navback { display:inline-flex; align-items:center; gap:2px; height:44px; padding:0 14px 0 8px; border-radius:999px; text-decoration:none; color:var(--ig-text); font:600 16px/1 var(--ig-font); letter-spacing:-.01em; cursor:pointer;
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ig-iconbtn { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:999px; color:var(--ig-text); cursor:pointer; text-decoration:none;
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ig-navback svg, .ig-iconbtn svg, .ig-sq svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* hero: art (canvas / big app icon) + title + tagline, with a soft accent glow */
+.ig-hero { position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; margin-top:4px; }
+.ig-hero::before { content:''; position:absolute; left:50%; top:10px; width:min(420px,110%); height:240px; transform:translateX(-50%); z-index:-1; pointer-events:none;
+  background:radial-gradient(closest-side, color-mix(in srgb, var(--accent) 30%, transparent), transparent); filter:blur(10px); opacity:.8; }
+.ig-appicon { width:132px; height:132px; border-radius:34px; position:relative; margin:14px 0 6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0) 46%), linear-gradient(160deg,var(--icon1,var(--accent)),var(--icon2,var(--accent2)));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35), inset 0 -8px 18px rgba(0,0,0,.16), 0 18px 36px -10px color-mix(in srgb, var(--accent2) 55%, transparent); }
+.ig-appicon svg { position:absolute; left:9%; top:9%; width:82%; height:82%; overflow:visible; filter:drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
+.ig-appicon svg .o { stroke:#16121f; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round; }
+.ig-title { font:900 clamp(40px,11vw,56px)/1 var(--ig-font); letter-spacing:-.045em; margin-top:6px;
+  background:linear-gradient(160deg,var(--accent),var(--accent2) 75%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.ig-tagline { margin-top:8px; color:var(--ig-text2); font:500 17px/1.35 var(--ig-font); letter-spacing:-.02em; }
+
+/* one big Play capsule (+ optional square side button) */
+.ig-playrow { display:flex; gap:10px; }
+.ig-cta { flex:1; display:flex; align-items:center; justify-content:center; gap:12px; min-height:64px; padding:0 22px; border:0; border-radius:999px; color:#fff; cursor:pointer; font-family:var(--ig-font);
+  background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 14px 30px -10px color-mix(in srgb, var(--accent2) 75%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .2s var(--ig-ease), box-shadow .2s; text-decoration:none; }
+.ig-cta:hover { transform:translateY(-1px); }
+.ig-cta svg { width:26px; height:26px; flex:none; }
+.ig-cta > span { display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; text-align:left; }
+.ig-cta b { font-size:20px; font-weight:700; letter-spacing:-.02em; }
+.ig-cta small { font-size:13px; font-weight:500; opacity:.88; }
+.ig-sq { width:64px; height:64px; flex:none; border-radius:22px; display:grid; place-items:center; color:var(--ig-text); cursor:pointer;
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ig-cta:active, .ig-sq:active, .ig-mode:active, .ig-row:active, .ig-btn:active, .ig-navback:active, .ig-iconbtn:active { transform:scale(.96); }
+
+/* mode tiles (2–4 across) */
+.ig-modes { display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:10px; }
+.ig-mode { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:14px 12px 13px; border-radius:22px; text-align:left; color:var(--ig-text); cursor:pointer; font-family:var(--ig-font);
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); transition:transform .25s var(--ig-ease), box-shadow .25s; }
+.ig-mode:hover { box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow2); transform:translateY(-2px); }
+.ig-mode .ig-tile { width:40px; height:40px; border-radius:11px; margin-bottom:10px; }
+.ig-mode .ig-tile svg { width:22px; height:22px; }
+.ig-mode b { font-size:15px; font-weight:700; letter-spacing:-.02em; }
+.ig-mode small { font-size:12px; font-weight:500; color:var(--ig-text2); }
+
+/* coloured icon tile (white line icon on a gradient square) */
+.ig-tile { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; flex:none; color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28), 0 6px 14px -6px rgba(0,0,0,.45);
+  background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 50%), var(--tile, linear-gradient(160deg,var(--accent),var(--accent2))); }
+.ig-tile svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* grouped list (iOS Settings style) for extra items: Shop, Stats, How to play, Leaderboard… */
+.ig-list { border-radius:22px; overflow:hidden; background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ig-row { display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:9px 16px 9px 12px; border:0; background:none; color:var(--ig-text); text-align:left; cursor:pointer; font:600 16px/1.2 var(--ig-font); letter-spacing:-.015em; text-decoration:none; }
+.ig-row + .ig-row { border-top:1px solid var(--ig-line); }
+.ig-row .ig-grow { flex:1; min-width:0; display:flex; flex-direction:column; }
+.ig-row small { font-size:13px; font-weight:500; color:var(--ig-text2); }
+.ig-row::after { content:''; width:8px; height:8px; flex:none; border-right:2px solid var(--ig-text3); border-top:2px solid var(--ig-text3); transform:rotate(45deg); margin-right:4px; }
+.ig-row.nochev::after { display:none; }
+
+/* card + settings rows */
+.ig-card { border-radius:22px; padding:14px 16px; background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ig-prow { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ig-prow + .ig-prow { margin-top:12px; }
+.ig-plabel { font-size:15px; font-weight:600; letter-spacing:-.01em; }
+.ig-eyebrow { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ig-text2); }
+
+/* segmented control */
+.ig-seg { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; padding:3px; border-radius:999px; background:rgba(118,118,128,.12); }
+.ig-seg button { height:32px; padding:0 10px; border:0; background:none; border-radius:999px; font:600 14px/1 var(--ig-font); color:var(--ig-text2); cursor:pointer; transition:background .2s, color .2s; }
+.ig-seg button.on { background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+
+/* buttons */
+.ig-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:50px; padding:0 22px; border-radius:999px; border:0; cursor:pointer; font:700 16px/1 var(--ig-font); letter-spacing:-.01em; text-decoration:none;
+  background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent); }
+.ig-btn.secondary { background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none; }
+.ig-btn.dark { background:var(--ig-solid); color:var(--ig-onsolid); box-shadow:none; }
+.ig-field { width:100%; height:52px; border-radius:16px; border:1px solid var(--ig-line); background:var(--ig-field); color:var(--ig-text); font:600 17px var(--ig-font); padding:0 16px; outline:none; }
+.ig-field:focus { border-color:color-mix(in srgb, var(--accent) 70%, transparent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+/* stats line */
+.ig-stats { display:flex; justify-content:space-around; text-align:center; padding:4px 0 8px; }
+.ig-stats b { display:block; font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--ig-text); }
+.ig-stats span { font-size:12px; font-weight:500; color:var(--ig-text2); }
+
+/* sheets / pop-ups */
+.ig-sheet { border-radius:28px; padding:22px; background:var(--ig-sheet); color:var(--ig-text); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:0 30px 80px rgba(20,20,50,.25), inset 0 1px 0 #fff; border:1px solid var(--ig-line); }
+
+/* =====================================================================================
+   SHARED OVERLAYS (auth.js · friends.js · announce.js · rec.js) — light "liquid glass"
+   These scripts inject their own dark <style> blocks (#igauth-css, #igf-css) and inline
+   styles. Everything below is scoped to html[data-theme] (set by theme.js) so it only
+   applies on pages that use the new theme, and uses !important where inline styles or
+   later-injected CSS would otherwise win. Do not edit the scripts for looks — edit here.
+   ===================================================================================== */
+html[data-theme] { --igo-blue:#0a84ff; --igo-fill:rgba(118,118,128,.12); --igo-fill2:rgba(118,118,128,.08); --igo-red:#ff3b30; --igo-green:#248a3d; }
+
+/* ---- scrims + sheets (auth + friends) ---- */
+html[data-theme] .iga-ov, html[data-theme] .igf-ov {
+  background:var(--ig-scrim) !important; -webkit-backdrop-filter:blur(14px) saturate(140%) !important; backdrop-filter:blur(14px) saturate(140%) !important;
+  font-family:var(--ig-font) !important; color:var(--ig-text); letter-spacing:-.01em; }
+html[data-theme] .iga-box, html[data-theme] .igf-box {
+  background:var(--ig-sheet) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; border-radius:28px !important;
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:0 30px 80px rgba(20,20,50,.25), inset 0 1px 0 #fff !important; padding:24px 20px 12px !important; font-family:var(--ig-font);
+  max-height:min(88vh,calc(100dvh - 36px)) !important; }
+html[data-theme] .iga-box { max-width:400px !important; }
+html[data-theme] .iga-box h2, html[data-theme] .igf-box h2 { font:800 22px/1.2 var(--ig-font) !important; letter-spacing:-.025em; color:var(--ig-text) !important; margin:0 0 6px !important; }
+html[data-theme] .iga-box p, html[data-theme] .igf-box .s { color:var(--ig-text2) !important; font-size:14px !important; line-height:1.45; }
+html[data-theme] .iga-box b, html[data-theme] .igf-box b { color:inherit; }
+
+/* inputs (look like .ig-field) — incl. the inline-styled ones in friends.js */
+html[data-theme] .iga-box input:not([type=file]):not([type=checkbox]),
+html[data-theme] .igf-box input:not([type=file]):not([type=checkbox]),
+html[data-theme] .igf-box textarea {
+  background:var(--ig-field) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line2) !important; border-radius:14px !important;
+  font:500 16px/1.3 var(--ig-font) !important; padding:13px 15px !important; outline:none !important; box-shadow:none !important; -webkit-appearance:none; appearance:none; }
+html[data-theme] .iga-box input::placeholder, html[data-theme] .igf-box input::placeholder, html[data-theme] .igf-box textarea::placeholder { color:var(--ig-text3) !important; }
+html[data-theme] .iga-box input:focus, html[data-theme] .igf-box input:focus, html[data-theme] .igf-box textarea:focus {
+  border-color:color-mix(in srgb, var(--igo-blue) 70%, transparent) !important; box-shadow:0 0 0 4px color-mix(in srgb, var(--igo-blue) 18%, transparent) !important; }
+html[data-theme] .igf-cin input { border-radius:999px !important; padding:10px 16px !important; }
+html[data-theme] .iga-box input:not([type=file]) { margin:5px 0 !important; }
+
+/* ---- auth.js buttons ---- */
+html[data-theme] .iga-btn { border-radius:999px !important; min-height:50px; padding:0 20px !important; font:700 16px/1 var(--ig-font) !important; letter-spacing:-.01em; margin:4px 0 !important; box-shadow:none !important; border:0 !important; }
+html[data-theme] .iga-p { background:var(--ig-solid) !important; color:var(--ig-onsolid) !important; margin-top:8px !important; }
+html[data-theme] .iga-g { background:var(--igo-fill) !important; color:var(--ig-text) !important; }
+html[data-theme] .iga-x { background:transparent !important; color:var(--igo-blue) !important; font-weight:600 !important; min-height:44px; }
+html[data-theme] .iga-btn:active { transform:scale(.97); }
+html[data-theme] .iga-btn:disabled { opacity:.5; }
+html[data-theme] .iga-msg { font-size:13px !important; }
+html[data-theme] .iga-err { color:#d70015 !important; } html[data-theme] .iga-ok { color:var(--igo-green) !important; }
+html[data-theme] .iga-link { color:var(--igo-blue) !important; text-decoration:none !important; font-weight:600; }
+
+/* segmented control (Log in / Create account) */
+html[data-theme] .iga-seg { background:var(--igo-fill) !important; border:0 !important; border-radius:999px !important; padding:3px !important; gap:0 !important; margin:6px 0 12px !important; }
+html[data-theme] .iga-seg button { font:600 14px/1 var(--ig-font) !important; color:var(--ig-text2) !important; padding:10px 6px !important; border-radius:999px !important; background:transparent !important; }
+html[data-theme] .iga-seg button.on { background:#fff !important; color:var(--ig-text) !important; box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04) !important; }
+
+/* profile fields: one grouped list with hairlines */
+html[data-theme] .iga-fld { background:var(--igo-fill2) !important; border-radius:0 !important; margin:0 !important; padding:13px 14px !important; }
+html[data-theme] .iga-fld + .iga-fld { box-shadow:inset 0 1px 0 var(--ig-line2); }
+html[data-theme] .iga-box :not(.iga-fld) + .iga-fld { border-top-left-radius:16px !important; border-top-right-radius:16px !important; margin-top:12px !important; }
+html[data-theme] .iga-fld:has(+ :not(.iga-fld)) { border-bottom-left-radius:16px !important; border-bottom-right-radius:16px !important; }
+html[data-theme] .iga-fld .k { color:var(--ig-text2) !important; font-weight:500 !important; font-size:14px !important; }
+html[data-theme] .iga-fld .v { color:var(--ig-text) !important; font-weight:600 !important; }
+html[data-theme] .iga-fld .v small { color:var(--ig-text2) !important; }
+html[data-theme] .iga-eye { background:#fff !important; color:var(--igo-blue) !important; border:1px solid var(--ig-line) !important; border-radius:999px !important; font:600 13px/1 var(--ig-font) !important; padding:7px 12px !important; }
+html[data-theme] .iga-warn { background:rgba(255,159,10,.12) !important; border:1px solid rgba(255,159,10,.28) !important; color:#7a4a00 !important; border-radius:14px !important; }
+
+/* leaderboards: tabs + one grouped list of rows */
+html[data-theme] .iga-tabs { gap:6px !important; padding:4px 0 12px !important; scrollbar-width:none; }
+html[data-theme] .iga-tabs::-webkit-scrollbar { display:none; }
+html[data-theme] .iga-tab { background:var(--igo-fill) !important; color:var(--ig-text) !important; border:0 !important; border-radius:999px !important; padding:8px 14px !important; font:600 13px/1 var(--ig-font) !important; }
+html[data-theme] .iga-tab.on { background:var(--ig-solid) !important; color:var(--ig-onsolid) !important; }
+html[data-theme] .iga-metric { color:var(--ig-text2) !important; font-size:13px !important; }
+html[data-theme] #iga-lb { border-radius:18px; overflow:hidden; background:var(--igo-fill2); text-align:left; }
+html[data-theme] #iga-lb:has(> p) { background:none; text-align:center; }
+html[data-theme] .iga-row { background:transparent !important; border-radius:0 !important; margin:0 !important; padding:12px 14px !important; font-size:15px !important; color:var(--ig-text) !important; }
+html[data-theme] .iga-row + .iga-row { box-shadow:inset 0 1px 0 var(--ig-line2); }
+html[data-theme] .iga-row.me { background:rgba(10,132,255,.1) !important; }
+html[data-theme] .iga-row .r { color:var(--ig-text2) !important; font-weight:700 !important; font-variant-numeric:tabular-nums; }
+html[data-theme] .iga-row:nth-child(1) .r { color:#c99400 !important; }
+html[data-theme] .iga-row:nth-child(2) .r { color:#8e8e93 !important; }
+html[data-theme] .iga-row:nth-child(3) .r { color:#b5651d !important; }
+html[data-theme] .iga-row .n { font-weight:600; }
+html[data-theme] .iga-row .n small { color:var(--ig-text2) !important; font-weight:500; }
+html[data-theme] .iga-row .sc { color:var(--ig-text) !important; font-weight:700 !important; font-variant-numeric:tabular-nums; }
+
+/* ---- friends.js ---- */
+html[data-theme] .igf-box h2 small { color:var(--ig-text2) !important; }
+html[data-theme] .igf-btn { border-radius:999px !important; padding:10px 16px !important; font:600 14px/1.1 var(--ig-font) !important; border:0 !important; box-shadow:none !important; }
+html[data-theme] .igf-btn:active { transform:scale(.96); }
+html[data-theme] .igf-btn:disabled { opacity:.5; }
+html[data-theme] .igf-p { background:var(--igo-blue) !important; color:#fff !important; }
+html[data-theme] .igf-b { background:rgba(10,132,255,.12) !important; color:#0066d6 !important; }
+html[data-theme] .igf-g { background:var(--igo-fill) !important; color:var(--ig-text) !important; }
+html[data-theme] .igf-d { background:rgba(255,59,48,.12) !important; color:#d70015 !important; }
+html[data-theme] .igf-box > .igf-btn[style*="width:100%"], html[data-theme] .igf-box [style*="width:100%"].igf-btn { min-height:48px; font-size:16px !important; font-weight:700 !important; }
+html[data-theme] .igf-x { color:var(--igo-blue) !important; font:600 16px/1 var(--ig-font) !important; padding:14px !important; margin-top:4px; }
+html[data-theme] .igf-sec { color:var(--ig-text2) !important; font:700 12px/1.2 var(--ig-font) !important; letter-spacing:.06em !important; margin:18px 0 6px !important; }
+html[data-theme] .igf-row { background:transparent !important; border-radius:0 !important; margin:0 !important; padding:10px 2px !important; color:var(--ig-text); }
+html[data-theme] .igf-row + .igf-row { box-shadow:inset 0 1px 0 var(--ig-line2); }
+html[data-theme] .igf-row .n { font-weight:600; color:var(--ig-text); }
+html[data-theme] .igf-row .n small { color:var(--ig-text2) !important; font-size:12.5px !important; font-weight:500; margin-top:1px; }
+html[data-theme] .igf-row.tap { border-radius:12px !important; }
+html[data-theme] .igf-row.tap:hover { background:rgba(0,0,0,.025) !important; }
+html[data-theme] .igf-row.tap:active { background:rgba(0,0,0,.05) !important; }
+html[data-theme] #igf-me .igf-row { padding:8px 14px 8px 8px !important; background:var(--igo-fill2) !important; border-radius:999px !important; margin:4px 0 12px !important; }
+html[data-theme] .igf-dot.on { background:#34c759 !important; box-shadow:0 0 0 2px rgba(52,199,89,.2) !important; }
+html[data-theme] .igf-dot.off { background:#c7c7cc !important; }
+html[data-theme] .igf-add { gap:8px !important; }
+html[data-theme] .igf-add .igf-btn { padding:0 20px !important; }
+html[data-theme] .igf-box span[style*="#7dc4ff"] { color:var(--igo-blue) !important; font-weight:600; font-size:14px; }
+html[data-theme] .igf-box small[style*="#8aa0c6"] { color:var(--ig-text2) !important; }
+html[data-theme] .igf-box [id$="-msg"][style*="#9fb3d8"], html[data-theme] .igf-box [id$="-msg"][style*="159, 179, 216"] { color:var(--ig-text2) !important; }
+html[data-theme] .igf-box [style*="124, 255, 178"] { color:var(--igo-green) !important; }
+html[data-theme] .igf-box [style*="255, 128, 136"] { color:#d70015 !important; }
+html[data-theme] #igf-chat-warn { color:#b25000 !important; }
+
+/* profile */
+html[data-theme] .igf-prof-top .nm { color:var(--ig-text); font-weight:800 !important; letter-spacing:-.025em; }
+html[data-theme] .igf-prof-top .st { color:var(--ig-text2) !important; }
+html[data-theme] .igf-bio { background:var(--igo-fill2) !important; border:0 !important; color:var(--ig-text) !important; border-radius:14px !important; }
+html[data-theme] .igf-score { background:transparent !important; border-radius:0 !important; margin:0 !important; padding:11px 2px !important; font-size:15px !important; color:var(--ig-text); }
+html[data-theme] .igf-score + .igf-score { box-shadow:inset 0 1px 0 var(--ig-line2); }
+html[data-theme] .igf-score .v { color:var(--ig-text) !important; font-variant-numeric:tabular-nums; }
+html[data-theme] .igf-score small { color:var(--ig-text2) !important; }
+html[data-theme] .igf-lead { background:rgba(255,204,0,.18) !important; color:#7a5800 !important; border-radius:999px !important; }
+html[data-theme] .igf-lead.zero { background:var(--igo-fill) !important; color:var(--ig-text2) !important; }
+html[data-theme] .igf-leadg { background:rgba(255,204,0,.14) !important; border:1px solid rgba(201,148,0,.25) !important; color:#7a5800 !important; border-radius:999px !important; }
+html[data-theme] .igf-emopick button { background:#fff !important; border:1px solid var(--ig-line) !important; border-radius:12px !important; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+html[data-theme] .igf-pick { background:transparent !important; border-radius:0 !important; margin:0 !important; padding:10px 2px !important; color:var(--ig-text); }
+html[data-theme] .igf-pick + .igf-pick { box-shadow:inset 0 1px 0 var(--ig-line2); }
+html[data-theme] .igf-pick .ck { border:2px solid #c7c7cc !important; border-radius:50% !important; }
+html[data-theme] .igf-pick.on .ck { background:var(--igo-blue) !important; border-color:var(--igo-blue) !important; }
+
+/* chat */
+html[data-theme] .igf-chat { height:min(70vh,calc(100dvh - 190px)) !important; }
+html[data-theme] .igf-msgs { gap:4px !important; padding:8px 2px !important; }
+html[data-theme] .igf-bub { border-radius:20px !important; padding:9px 14px !important; font:400 15px/1.35 var(--ig-font) !important; }
+html[data-theme] .igf-bub.me { background:var(--igo-blue) !important; color:#fff !important; border-bottom-right-radius:6px !important; }
+html[data-theme] .igf-bub.them { background:#e9e9eb !important; color:var(--ig-text) !important; border-bottom-left-radius:6px !important; }
+html[data-theme] .igf-bub small { opacity:.6; }
+html[data-theme] .igf-bub .rt { color:var(--ig-text3) !important; }
+html[data-theme] .igf-quote { border-left:3px solid rgba(0,0,0,.25) !important; background:rgba(0,0,0,.05) !important; border-radius:8px !important; }
+html[data-theme] .igf-bub.me .igf-quote { border-left-color:rgba(255,255,255,.7) !important; background:rgba(255,255,255,.18) !important; }
+html[data-theme] .igf-sender { color:var(--igo-blue) !important; font-weight:700 !important; }
+html[data-theme] .igf-replybar { background:var(--igo-fill2) !important; border-left:3px solid var(--igo-blue) !important; border-radius:10px !important; }
+html[data-theme] .igf-replybar .rb { color:var(--ig-text2) !important; } html[data-theme] .igf-replybar .rb b { color:var(--igo-blue) !important; }
+html[data-theme] .igf-replybar .rx { color:var(--ig-text3) !important; }
+html[data-theme] .igf-typing { color:var(--ig-text2) !important; }
+html[data-theme] .igf-cin { gap:8px !important; align-items:center; }
+html[data-theme] .igf-cin .igf-btn { padding:10px 16px !important; }
+html[data-theme] .igf-att { background:var(--igo-fill) !important; color:var(--ig-text) !important; }
+html[data-theme] .igf-att.rec { background:var(--igo-red) !important; color:#fff !important; }
+
+/* chat button (bell): glass circle with a line chat icon instead of the emoji */
+html[data-theme] .igf-bell { background:var(--ig-glass2) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; font-size:0 !important;
+  -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow) !important; }
+html[data-theme] .igf-bell::before { content:''; width:22px; height:22px; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.6-.7L3 21l1.8-4.6A8 8 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-3.6-.7L3 21l1.8-4.6A8 8 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z'/%3E%3C/svg%3E") center/contain no-repeat; }
+html[data-theme] .igf-bell .cnt { font-family:var(--ig-font) !important; box-shadow:0 0 0 2px #fff !important; background:var(--igo-red) !important; }
+
+/* "Friends are live" banner (home) */
+html[data-theme] .igf-banner { background:var(--ig-glass2) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line); border-radius:18px !important; padding:12px 16px !important;
+  font:500 14px/1.35 var(--ig-font) !important; -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow) !important; }
+html[data-theme] .igf-banner b { color:var(--ig-text) !important; font-weight:700; }
+html[data-theme] .igf-banner .x { color:var(--ig-text3) !important; padding:2px 4px; }
+
+/* avatar zoom + "game paused" resume screen */
+html[data-theme] .igf-zoom { background:rgba(20,20,40,.35) !important; -webkit-backdrop-filter:blur(24px) saturate(150%); backdrop-filter:blur(24px) saturate(150%); font-family:var(--ig-font); }
+html[data-theme] .igf-zoom img { border-radius:28px !important; box-shadow:0 30px 80px rgba(20,20,50,.3) !important; }
+html[data-theme] .igf-zoom .zn { color:var(--ig-text) !important; background:var(--ig-sheet); padding:8px 18px; border-radius:999px; font-size:17px !important; box-shadow:var(--ig-shadow); }
+html[data-theme] .igf-resume { background:rgba(242,242,247,.72) !important; color:var(--ig-text) !important; font-family:var(--ig-font) !important; -webkit-backdrop-filter:blur(20px) saturate(150%); backdrop-filter:blur(20px) saturate(150%); }
+html[data-theme] .igf-resume .rb2 { font-weight:800 !important; letter-spacing:-.025em; }
+html[data-theme] .igf-resume > div[style] { color:var(--ig-text2) !important; font-size:15px !important; line-height:1.4; }
+html[data-theme] .igf-resume button { background:var(--ig-solid) !important; color:var(--ig-onsolid) !important; font:700 17px/1 var(--ig-font) !important; padding:17px 40px !important; border-radius:999px !important; box-shadow:0 12px 28px -10px rgba(0,0,0,.45) !important; }
+
+/* User of the Week pop-up (all inline styles) */
+html[data-theme] #ig-uotw-pop { background:var(--ig-scrim) !important; -webkit-backdrop-filter:blur(14px) saturate(140%) !important; backdrop-filter:blur(14px) saturate(140%) !important; font-family:var(--ig-font); }
+html[data-theme] #ig-uotw-pop > div { background:var(--ig-sheet) !important; border:1px solid var(--ig-line) !important; border-radius:28px !important; box-shadow:0 30px 80px rgba(20,20,50,.25), inset 0 1px 0 #fff !important;
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); }
+html[data-theme] #ig-uotw-pop > div > div:nth-of-type(2) { color:var(--ig-text) !important; font-weight:800 !important; letter-spacing:-.025em; }
+html[data-theme] #ig-uotw-pop > div > div:nth-of-type(3) { color:var(--ig-text2) !important; line-height:1.45; }
+html[data-theme] #ig-uotw-ok { background:var(--ig-solid) !important; color:var(--ig-onsolid) !important; border-radius:999px !important; min-height:50px; font:700 16px/1 var(--ig-font) !important; }
+
+/* small toast from friends.js ("Request sent", "New message"…) */
+html[data-theme] body > div[style*="z-index: 9600"] { background:var(--ig-glass2) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; border-radius:999px !important;
+  font:600 14px/1.3 var(--ig-font) !important; padding:12px 20px !important; -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow2) !important; bottom:calc(env(safe-area-inset-bottom,0px) + 20px) !important; }
+
+/* ---- announce.js banner (inline styles; role=status, z-index 99999) ---- */
+html[data-theme] div[role="status"][style*="99999"] {
+  background:var(--ig-sheet) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; border-radius:24px !important;
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:0 20px 50px rgba(20,20,50,.2), inset 0 1px 0 #fff !important; font-family:var(--ig-font) !important; letter-spacing:-.01em;
+  padding:16px 14px 16px 18px !important; bottom:calc(env(safe-area-inset-bottom,0px) + 12px) !important; align-items:flex-start !important; }
+html[data-theme] div[role="status"][style*="99999"] > div > div:first-child { font-size:16px !important; font-weight:700 !important; letter-spacing:-.02em; color:var(--ig-text) !important; }
+html[data-theme] div[role="status"][style*="99999"] > div > div:nth-child(2) { color:var(--ig-text2) !important; font-size:14px !important; }
+html[data-theme] div[role="status"][style*="99999"] a { background:var(--ig-solid) !important; color:var(--ig-onsolid) !important; border-radius:999px !important; padding:10px 18px !important; margin-top:12px !important; font:600 14px/1 var(--ig-font) !important; }
+html[data-theme] div[role="status"][style*="99999"] button[aria-label="Dismiss"] { width:30px; height:30px; flex:none; border-radius:999px !important; background:var(--igo-fill) !important; color:var(--ig-text2) !important; font-size:13px !important; font-weight:700; padding:0 !important; display:grid; place-items:center; }
+
+/* ---- rec.js "Best on…" chip: small light glass pill at the bottom centre ---- */
+html[data-theme] #igRecChip { top:auto !important; bottom:calc(env(safe-area-inset-bottom,0px) + 16px) !important;
+  background:var(--ig-glass2) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; border-radius:999px !important;
+  font:600 12px/1 var(--ig-font) !important; letter-spacing:-.005em; padding:8px 14px !important;
+  -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow) !important; }
+/* if the announcement banner is showing at the bottom, lift the chip above it */
+html[data-theme] body:has(> div[role="status"][style*="99999"]) #igRecChip { bottom:calc(env(safe-area-inset-bottom,0px) + 186px) !important; }
+html[data-theme] .igf-box { text-align:left !important; }
+html[data-theme] .igf-cin input { min-width:0 !important; width:auto !important; }
+html[data-theme] .igf-cin .igf-btn { flex:none; }
+html[data-theme] div[role="status"][style*="99999"] { text-align:left !important; }
+/* keep the announcement under the sign-in / friends sheets (they use z-index 9000) */
+html[data-theme] div[role="status"][style*="99999"] { z-index:8990 !important; }

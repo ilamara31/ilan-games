@@ -158,6 +158,15 @@
               headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
               body: JSON.stringify({ p_game: GAME_ID })
             }).catch(function () {});
+            // remember WHO played (different players keep a new game's hanging sign up — see newgame-players-setup.sql)
+            var who = '';
+            try { var pl = JSON.parse(localStorage.getItem('ig_player') || 'null'); if (pl && pl.name) who = 'u:' + String(pl.name).toLowerCase(); } catch (e) {}
+            if (!who) { try { who = localStorage.getItem('ig_devid') || ''; if (!who) { who = 'd:' + Math.random().toString(36).slice(2, 12); localStorage.setItem('ig_devid', who); } } catch (e) {} }
+            if (who) fetch(url + '/rest/v1/rpc/mark_player', {
+              method: 'POST',
+              headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ p_game: GAME_ID, p_player: who })
+            }).catch(function () {});
           } catch (e) {}
         }, 1000);
         document.addEventListener('visibilitychange', function () { last = Date.now(); });

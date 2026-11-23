@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <title>Puzzle Pad</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#5b21b6" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Puzzle Pad — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   :root{ --bg:#15102a; --card:#241a44; --card2:#2e2153; --line:#473a78; --txt:#f0ecff; --mut:#b6abe0;
     --grn:#22c55e; --ylw:#eab308; --gry:#3a3360; --acc:#a855f7; --acc2:#7c3aed; }
@@ -102,20 +103,86 @@
   .opt{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;font-weight:bold;}
   .opt.good{background:var(--grn);} .opt.bad{background:#7f1d1d;}
   .big{font-size:40px;font-weight:900;} .sub2{color:var(--mut);font-size:14px;margin:6px 0;}
+
+  /* ===== ilan Games shared theme (light) ===== */
+  html[data-theme]:root{ --accent:#8e2de2; --accent2:#4a00e0; --icon1:#8e2de2; --icon2:#4a00e0;
+    --bg:#f2f2f7; --card:rgba(255,255,255,.78); --card2:#fff; --line:rgba(0,0,0,.1); --txt:#1d1d1f; --mut:rgba(0,0,0,.56); --gry:#787c7e; --acc:#8e2de2; --acc2:#4a00e0; }
+  html{ background:var(--ig-bg); }
+  body{ background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; }
+  #app{ max-width:460px; padding:12px 16px 32px; display:flex; flex-direction:column; gap:16px; }
+  #app:has(#hub.hidden) #menuTop{ display:none; }
+  #menuTop{ display:flex; flex-direction:column; gap:16px; }
+  #hub{ display:flex; flex-direction:column; gap:16px; }
+  #iga_bar{ margin:0 !important; }
+  .ig-mode small{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .ig-modes{ grid-template-columns:repeat(2,1fr); }
+  .ig-mode{ flex-direction:row; align-items:center; gap:12px; padding:12px; }
+  .ig-mode .ig-tile{ margin:0; }
+  .ig-mode > span:last-child{ display:flex; flex-direction:column; min-width:0; }
+  .listhead{ margin:2px 0 -8px 16px; }
+  #who{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #IGA_login{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* puzzle screens */
+  .gametop{ min-height:46px; margin-bottom:12px; }
+  .gametop .t{ font-size:17px; font-weight:700; letter-spacing:-.02em; }
+  .ico{ width:44px; height:44px; border-radius:999px; background:var(--ig-glass); border:1px solid var(--ig-line); color:var(--ig-text);
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow); }
+  .ico svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #screen > div:last-child{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:24px; padding:14px 12px 18px;
+    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow); }
+  .btn{ border-radius:999px; font:700 16px/1 var(--ig-font); letter-spacing:-.01em; min-height:46px; padding:0 22px;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 60%,transparent); }
+  .btn.alt{ background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none; }
+  .btn.grn{ background:linear-gradient(160deg,#34c759,#11998e); box-shadow:0 10px 24px -8px rgba(17,153,142,.55); }
+  .sub2{ color:var(--ig-text2); font-size:15px; }
+  .sub2 b{ color:var(--ig-text); }
+  .big{ letter-spacing:-.03em; font-weight:800; }
+  .toast{ background:var(--ig-sheet); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:var(--ig-shadow2); font-weight:600; -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
+  /* word guess */
+  .wt{ border:2px solid rgba(0,0,0,.14); background:#fff; color:var(--ig-text); border-radius:10px; }
+  .wt.g, .wt.x{ color:#fff; } .wt.g{ background:#34c759; border-color:#34c759; } .wt.y{ background:#ffcc00; border-color:#ffcc00; color:#3a2a00; } .wt.x{ background:#8e8e93; border-color:#8e8e93; }
+  .key{ background:#dcdce2; color:var(--ig-text); border-radius:8px; font-family:var(--ig-font); font-weight:700; }
+  .key.g{ background:#34c759; color:#fff; } .key.y{ background:#ffcc00; color:#3a2a00; } .key.x{ background:#8e8e93; color:#fff; }
+  /* connections */
+  .cw{ background:#fff; border:1px solid var(--ig-line); border-radius:12px; color:var(--ig-text); font-family:var(--ig-font); font-weight:700; letter-spacing:0; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .cw.sel{ background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; border-color:transparent; }
+  .csolved{ border-radius:12px; }
+  /* 2048 keeps its board colours */
+  .board2{ background:#3a2f63; border-radius:16px; }
+  .cell2{ color:#fff; border-radius:10px; }
+  /* word search / sudoku / scramble / emoji */
+  .wscell{ background:#fff; color:var(--ig-text); box-shadow:inset 0 0 0 1px var(--ig-line); }
+  .wscell.sel{ background:#ffcc00; color:#3a2a00; } .wscell.found{ background:#34c759; color:#fff; }
+  .scell{ background:#fff; color:var(--accent2); border-color:var(--ig-line); }
+  .scell.fixed{ background:rgba(118,118,128,.12); color:var(--ig-text); }
+  .scell.box{ border-color:rgba(0,0,0,.28); }
+  .scell.bad{ color:#ff3b30; }
+  .numpad button{ background:#fff; border:1px solid var(--ig-line); color:var(--ig-text); border-radius:12px; font-family:var(--ig-font); }
+  .tile{ background:#fff; border:1px solid var(--ig-line); color:var(--ig-text); border-radius:12px; font-family:var(--ig-font); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .opt{ background:#fff; border:1px solid var(--ig-line); border-radius:999px; color:var(--ig-text); font-family:var(--ig-font); font-weight:600; }
+  .opt.good{ background:#34c759; color:#fff; border-color:transparent; } .opt.bad{ background:#ff3b30; color:#fff; border-color:transparent; }
+  @media (max-width:370px){ .ig-mode{ padding:10px; gap:10px; } .ig-mode .ig-tile{ width:34px; height:34px; } }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <h1>🧩 Puzzle Pad</h1>
-    <a href="../" class="ico" style="text-decoration:none">🏠</a>
-  </header>
-  <div class="who" id="who"></div>
-  <div class="row" id="iga_bar" style="gap:8px;margin-bottom:12px;">
-    <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('puzzles','Puzzle Pad')">🏆 Leaderboard</button>
+<div id="app" class="ig-page">
+  <div id="menuTop">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+    </div>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="8" y="8" width="40" height="40" rx="6" fill="#22c55e"/><text x="28.0" y="35.92" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#fff">W</text><rect class="o" x="52" y="8" width="40" height="40" rx="6" fill="#f59e0b"/><text x="72.0" y="31.96" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="11" text-anchor="middle" fill="#fff">2048</text><rect class="o" x="8" y="52" width="40" height="40" rx="6" fill="#fff"/><text x="28.0" y="79.92" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#6d28d9">7</text>
+<path class="o" d="M54 56 L66 56 Q64 48 71 48 Q78 48 76 56 L88 56 L88 68 Q96 66 96 73 Q96 80 88 78 L88 92 L54 92 L54 79 Q62 81 62 74 Q62 67 54 69Z" fill="#ec4899"/>
+<path d="M14 60 V84 M22 60 V84 M8 70 H48" stroke="#ddd6fe" stroke-width="1.5" opacity="0"/></svg></div>
+      <div class="ig-title">Puzzle Pad</div>
+      <div class="ig-tagline">Eight quick brain games in one place.</div>
+    </div>
   </div>
   <div id="hub"></div>
+  <div class="ig-list" id="iga_bar">
+    <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('puzzles','Puzzle Pad')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>All puzzles combined</small></span></button>
+    <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.9 3.8-6 7.5-6s6.6 2.1 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small id="who"></small></span></button>
+  </div>
   <div id="screen" class="hidden"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -126,7 +193,7 @@ const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!==u
 const todayIdx=()=>Math.floor(Date.now()/86400000);
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 let toastT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1700);}
-function copy(t){ try{ navigator.clipboard.writeText(t); toast('Copied! Share it 📋'); }catch(e){ toast('Copy not supported'); } }
+function copy(t){ try{ navigator.clipboard.writeText(t); toast('Copied! Share it'); }catch(e){ toast('Copy not supported'); } }
 
 /* ---- shared account ---- */
 const STORE='soc_store_v1';
@@ -189,40 +256,58 @@ const EMOJI=[
 </script>
 <script>
 /* ======================= SHELL ======================= */
-$('who').textContent = acct ? ('Playing as '+acct.name) : 'Not signed in — log in to save your scores';
+$('who').textContent = acct ? ('Playing as '+acct.name) : 'Log in to save your scores';
 /* ---- online leaderboard: one combined "overall progress" metric for key 'puzzles' ---- */
 function igaTotal(){ const p=(acct&&acct.puz)||{};
   return (p.wordleStreak||0)+(p.connWins||0)+(p.searchWins||0)+(p.scrambleBest||0)+(p.best2048||0)+(p.simonBest||0)+(p.emojiBest||0)+(p.sudokuWins||0); }
 function igaSubmit(){ if(window.IGAuth) IGAuth.submitScore('puzzles', igaTotal()); }
 if(window.IGAuth) IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b) b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in'; });
 const GAMES=[
-  {id:'wordle', e:'🟩', n:'Word Guess', d:'Guess the 5-letter word in 6 tries. Daily + share!', bestKey:'wordleStreak', bestLabel:s=>s?('🔥 streak '+s):'' },
-  {id:'conn',   e:'🟪', n:'Connections', d:'Group 16 words into 4 hidden sets.', bestKey:'connWins', bestLabel:s=>s?(s+' solved'):'' },
-  {id:'search', e:'🔎', n:'Word Search', d:'Find the hidden words in the grid.', bestKey:'searchWins', bestLabel:s=>s?(s+' cleared'):'' },
-  {id:'scramble',e:'🔤', n:'Word Scramble', d:'Unscramble the jumbled letters, fast!', bestKey:'scrambleBest', bestLabel:s=>s?('best '+s):'' },
-  {id:'g2048',  e:'🔢', n:'2048', d:'Slide & merge tiles up to 2048.', bestKey:'best2048', bestLabel:s=>s?('best '+s):'' },
-  {id:'simon',  e:'🎨', n:'Memory (Simon)', d:'Repeat the glowing colour sequence.', bestKey:'simonBest', bestLabel:s=>s?('best '+s):'' },
-  {id:'emoji',  e:'😀', n:'Guess the Emoji', d:'Name the movie from the emojis.', bestKey:'emojiBest', bestLabel:s=>s?('best '+s):'' },
-  {id:'sudoku', e:'🧮', n:'Mini Sudoku', d:'6×6 number logic for beginners.', bestKey:'sudokuWins', bestLabel:s=>s?(s+' solved'):'' },
+  {id:'wordle', e:'🟩', n:'Word Guess', d:'Guess the 5-letter word in 6 tries. Daily + share!', s:'5 letters, 6 tries', col:'#5ee28a,#11998e', ic:'<rect x="2.5" y="8.5" width="5.5" height="7" rx="1.2"/><rect x="9.25" y="8.5" width="5.5" height="7" rx="1.2"/><rect x="16" y="8.5" width="5.5" height="7" rx="1.2"/>', bestKey:'wordleStreak', bestLabel:s=>s?('Streak '+s):'' },
+  {id:'conn',   e:'🟪', n:'Connections', d:'Group 16 words into 4 hidden sets.', s:'Find 4 groups', col:'#c084fc,#7c3aed', ic:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>', bestKey:'connWins', bestLabel:s=>s?(s+' solved'):'' },
+  {id:'search', e:'🔎', n:'Word Search', d:'Find the hidden words in the grid.', s:'Hidden words', col:'#5ac8fa,#0a60ff', ic:'<circle cx="10.5" cy="10.5" r="6"/><path d="M20 20l-5-5"/>', bestKey:'searchWins', bestLabel:s=>s?(s+' cleared'):'' },
+  {id:'scramble',e:'🔤', n:'Word Scramble', d:'Unscramble the jumbled letters, fast!', s:'Unjumble, fast', col:'#ffb35c,#ff6a00', ic:'<path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/>', bestKey:'scrambleBest', bestLabel:s=>s?('Best '+s):'' },
+  {id:'g2048',  e:'🔢', n:'2048', d:'Slide & merge tiles up to 2048.', s:'Merge the tiles', col:'#ffcf4a,#ff9500', ic:'<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M12 3.5v17M3.5 12h17"/>', bestKey:'best2048', bestLabel:s=>s?('Best '+s):'' },
+  {id:'simon',  e:'🎨', n:'Memory', d:'Repeat the glowing colour sequence.', s:'Repeat the colours', col:'#ff6fae,#d6246e', ic:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>', bestKey:'simonBest', bestLabel:s=>s?('Best '+s):'' },
+  {id:'emoji',  e:'😀', n:'Guess the Emoji', d:'Name the movie from the emojis.', s:'Movies in emoji', col:'#ffd84d,#f5a300', ic:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5c1 1.3 2.1 2 3.5 2s2.5-.7 3.5-2M9 9.5h.01M15 9.5h.01"/>', bestKey:'emojiBest', bestLabel:s=>s?('Best '+s):'' },
+  {id:'sudoku', e:'🧮', n:'Mini Sudoku', d:'6×6 number logic for beginners.', s:'6×6 number logic', col:'#4fd1c5,#0f8f86', ic:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/>', bestKey:'sudokuWins', bestLabel:s=>s?(s+' solved'):'' },
 ];
+const gIcon=G=>`<span class="ig-tile" style="--tile:linear-gradient(160deg,${G.col})"><svg viewBox="0 0 24 24" aria-hidden="true">${G.ic}</svg></span>`;
+const byId=id=>GAMES.find(g=>g.id===id);
+// menu: Play = Word Guess; 4 favourite puzzles as tiles; the rest in one list
 function renderHub(){
   $('screen').classList.add('hidden'); $('hub').classList.remove('hidden');
   { const bar=$('iga_bar'); if(bar) bar.classList.remove('hidden'); }
-  const g=el('div','grid');
-  GAMES.forEach(G=>{ const c=el('button','gcard');
-    c.innerHTML=`<div class="e">${G.e}</div><div class="n">${G.n}</div><div class="d">${G.d}</div><div class="best">${G.bestLabel(best(G.bestKey))||'&nbsp;'}</div>`;
-    c.onclick=()=>openGame(G); g.appendChild(c); });
-  $('hub').innerHTML=''; $('hub').appendChild(g);
+  const h=$('hub'); h.innerHTML='';
+  const W=byId('wordle');
+  const pr=el('div','ig-playrow'); const cta=el('button','ig-cta');
+  cta.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Word Guess${best(W.bestKey)?' · '+W.bestLabel(best(W.bestKey)):''}</small></span>`;
+  cta.onclick=()=>openGame(W); pr.appendChild(cta); h.appendChild(pr);
+  const m=el('div','ig-modes');
+  ['conn','search','g2048','sudoku'].forEach(id=>{ const G=byId(id); const c=el('button','ig-mode');
+    c.innerHTML=`${gIcon(G)}<span><b>${G.n}</b><small>${G.bestLabel(best(G.bestKey))||G.s}</small></span>`;
+    c.onclick=()=>openGame(G); m.appendChild(c); });
+  h.appendChild(m);
+  h.appendChild(el('div','ig-eyebrow listhead','More puzzles'));
+  const l=el('div','ig-list');
+  ['scramble','simon','emoji'].forEach(id=>{ const G=byId(id); const r=el('button','ig-row');
+    r.innerHTML=`${gIcon(G)}<span class="ig-grow">${G.n}<small>${G.bestLabel(best(G.bestKey))||G.d}</small></span>`;
+    r.onclick=()=>openGame(G); l.appendChild(r); });
+  h.appendChild(l);
 }
 function openGame(G){
   $('hub').classList.add('hidden'); { const bar=$('iga_bar'); if(bar) bar.classList.add('hidden'); }
   const s=$('screen'); s.classList.remove('hidden'); s.innerHTML='';
-  const top=el('div','gametop'); top.innerHTML=`<button class="ico" id="bk">‹</button><div class="t">${G.e} ${G.n}</div><div style="width:42px"></div>`;
+  const top=el('div','gametop'); top.innerHTML=`<button class="ico" id="bk" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="t">${G.n}</div><div style="width:44px"></div>`;
   s.appendChild(top); $('bk').onclick=()=>{ if(window._cleanup){window._cleanup();window._cleanup=null;} renderHub(); };
   const root=el('div'); s.appendChild(root);
   GAMEFN[G.id](root, G);
 }
 const GAMEFN={};
+(function(){ const e=document.getElementById('IGA_login'); if(!e) return;
+  const fix=()=>{ const t=e.textContent; if(/^👤\s*/.test(t)) e.textContent=t.replace(/^👤\s*/,''); };
+  try{ new MutationObserver(fix).observe(e,{childList:true,characterData:true,subtree:true}); }catch(x){}
+  fix(); })();
 
 /* ======================= WORDLE ======================= */
 GAMEFN.wordle=function(root,G){
@@ -262,8 +347,8 @@ GAMEFN.wordle=function(root,G){
     igaSubmit();
     const sq={g:'🟩',y:'🟨',x:'⬛'};
     const share='🧩 Puzzle Pad Word Guess '+(win?tries+'/6':'X/6')+'\n'+guesses.map(r=>r.map(x=>sq[x]).join('')).join('\n');
-    const sb=el('button','btn grn','📋 Share result'); sb.onclick=()=>copy(share);
-    const np=el('button','btn','🔁 New word'); np.onclick=()=>{ if(window._cleanup){window._cleanup();window._cleanup=null;} root.innerHTML=''; GAMEFN.wordle(root,G); };
+    const sb=el('button','btn grn','Share result'); sb.onclick=()=>copy(share);
+    const np=el('button','btn','New word'); np.onclick=()=>{ if(window._cleanup){window._cleanup();window._cleanup=null;} root.innerHTML=''; GAMEFN.wordle(root,G); };
     const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr);
   }
   const keyh=e=>{ if(done)return; if(e.key==='Enter')press('⏎'); else if(e.key==='Backspace')press('⌫'); else if(/^[a-zA-Z]$/.test(e.key))press(e.key.toLowerCase()); };
@@ -297,8 +382,8 @@ GAMEFN.conn=function(root,G){
       const g=puz.groups[gi]; const bar=el('div','csolved'); bar.style.background=cols[solved.length]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar);
       solved.push(gi); words=words.filter(o=>o.gi!==gi); sel=[]; render();
       if(solved.length===4){ info.innerHTML='🎉 Solved! Nice grouping.'; sub.disabled=true; setBest('connWins',best('connWins')+1); igaSubmit();
-        const sb=el('button','btn grn','📋 Share'); sb.onclick=()=>copy('🧩 Puzzle Pad Connections — solved with '+mistakes+' mistakes!');
-        const np=el('button','btn','🔁 New puzzle'); np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); };
+        const sb=el('button','btn grn','Share'); sb.onclick=()=>copy('🧩 Puzzle Pad Connections — solved with '+mistakes+' mistakes!');
+        const np=el('button','btn','New puzzle'); np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); };
         const rr=el('div','row'); rr.style.cssText='justify-content:center;margin-top:10px'; rr.append(sb,np); wrap.appendChild(rr); }
     } else {
       mistakes++; sel=[]; render();
@@ -306,7 +391,7 @@ GAMEFN.conn=function(root,G){
     }
   }
   function revealAll(){ solvedBox.innerHTML=''; puz.groups.forEach((g,i)=>{ const bar=el('div','csolved'); bar.style.background=cols[i]; bar.textContent=g[0]+': '+g.slice(1).join(', '); solvedBox.appendChild(bar); }); gridEl.innerHTML=''; sub.disabled=true;
-    const np=el('button','btn','🔁 New puzzle'); np.style.marginTop='10px'; np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); }; wrap.appendChild(np); }
+    const np=el('button','btn','New puzzle'); np.style.marginTop='10px'; np.onclick=()=>{ root.innerHTML=''; GAMEFN.conn(root,G); }; wrap.appendChild(np); }
   render();
   GAMEFN.conn._check=(arr)=>arr.every(o=>o.gi===arr[0].gi);
 };
@@ -354,7 +439,7 @@ GAMEFN.scramble=function(root,G){
   const ansEl=el('div','answer'); wrap.appendChild(ansEl);
   const tilesEl=el('div','tiles'); wrap.appendChild(tilesEl);
   const ctrls=el('div','row'); ctrls.style.justifyContent='center';
-  const bksp=el('button','btn alt','⌫'); const clr=el('button','btn alt','Clear'); const ok=el('button','btn grn','✓ Check');
+  const bksp=el('button','btn alt','⌫'); const clr=el('button','btn alt','Clear'); const ok=el('button','btn grn','Check');
   ctrls.append(bksp,clr,ok); wrap.appendChild(ctrls); root.appendChild(wrap);
   function pickWord(){ let len=Math.min(8, 3+Math.floor(score/2)), pool=SCRAMBLE[len];   // longer words as score rises
     while((!pool||!pool.length)&&len>3){ len--; pool=SCRAMBLE[len]; } if(!pool||!pool.length) pool=SCRAMBLE[3];
@@ -417,7 +502,7 @@ GAMEFN.simon=function(root,G){
   const sub=el('div','sub2','Repeat the colours. Best: '+best('simonBest')); wrap.appendChild(sub);
   const board=el('div','simon'); const pads=cols.map((c,i)=>{ const p=el('div','pad'); p.style.background=c; p.onclick=()=>click(i); board.appendChild(p); return p; });
   wrap.appendChild(board);
-  const startBtn=el('button','btn','▶ Start'); startBtn.style.marginTop='10px'; startBtn.onclick=start; wrap.appendChild(startBtn);
+  const startBtn=el('button','btn','Start'); startBtn.style.marginTop='10px'; startBtn.onclick=start; wrap.appendChild(startBtn);
   root.appendChild(wrap);
   function beep(i){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const o=AC.createOscillator(),g=AC.createGain(); o.frequency.value=freq[i]; o.connect(g); g.connect(AC.destination); g.gain.value=.2; o.start(); o.stop(AC.currentTime+.25); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.25);}catch(e){} }
   function flash(i){ pads[i].classList.add('lit'); beep(i); setTimeout(()=>pads[i].classList.remove('lit'),300); }

@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Archer Duel</title>
-<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#13243b" />
+<link rel="manifest" href="../manifest.webmanifest" /><meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Archer Duel" />
 <link rel="apple-touch-icon" href="../icon-180.png?v=2" /><link rel="icon" href="../icon-192.png?v=2" />
@@ -20,31 +20,98 @@
 <meta name="twitter:title" content="Archer Duel — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
+  :root, html[data-theme]{ --accent:#9b7cf6; --accent2:#4d6bf0; --icon1:#e0c3fc; --icon2:#8ec5fc; }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-  html,body{height:100%;overflow:hidden;background:#13243b;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff}
+  html,body{height:100%;overflow:hidden}
+  body{background:transparent;font-family:var(--ig-font);color:var(--ig-text)}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
-  #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:5;padding:20px;background:rgba(8,16,30,.55)}
-  #ov.hidden{display:none}
-  h1{font-size:clamp(34px,9vw,58px);background:linear-gradient(90deg,#ffd54a,#ff8c5a);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{color:#c7d6f0;margin:8px 0 16px;font-size:15px;line-height:1.5;max-width:440px}
-  .big{font-size:46px;font-weight:900;color:#ffd54a}
-  .btn{background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#2a1500;border:none;padding:15px 44px;font-size:20px;font-weight:900;border-radius:30px;cursor:pointer;box-shadow:0 6px 18px rgba(255,160,40,.4)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
-  .ghost{background:rgba(255,255,255,.08);border:1px solid rgba(180,200,255,.3);color:#dfe6ff;border-radius:24px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
+  /* the menu sits on the light page — hide the duel scene behind it */
+  body:has(#ov:not(.hidden)) canvas{visibility:hidden}
+  .hidden{display:none !important}
+
+  /* ===== ilan Games theme — game-local layout (menu + light sheets) ===== */
+  .ag-screen{position:fixed;inset:0;z-index:20;display:block;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);
+    font-family:var(--ig-font);color:var(--ig-text);text-align:left;letter-spacing:-.01em;background:transparent}
+  .ag-screen .ig-col{gap:16px}
+  .ag-spacer{width:44px;height:44px;flex:none}
+  .ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px}
+  .ag-head h2{font:700 17px/1.2 var(--ig-font);letter-spacing:-.02em;color:var(--ig-text);margin:0}
+  .ag-note{font-size:14px;line-height:1.45;color:var(--ig-text2);text-align:center;font-weight:500}
+  .ag-note b{color:var(--ig-text)}
+  .ig-iconbtn{border:1px solid var(--ig-line);padding:0;font-family:var(--ig-font)}
+  .ig-mode,.ig-row,.ig-cta,.ig-sq,.ig-btn{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  .ig-btn svg,.ig-row > svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ig-row .ig-val{font-size:15px;font-weight:600;color:var(--ig-text2);margin-left:auto}
+  .ig-modes{grid-template-columns:repeat(var(--n,3),1fr)}
+  .ag-tips{display:flex;flex-direction:column;gap:12px}
+  .ag-tip{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--ig-text2);font-weight:500}
+  .ag-tip b{color:var(--ig-text);font-weight:700}
+  .ag-tip .ig-tile{width:32px;height:32px;border-radius:9px}
+  .ag-tip .ig-tile svg{width:18px;height:18px}
+  /* light sheet pop-ups (pause, game over…) over the game */
+  .ag-scrim{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px 16px;overflow-y:auto;
+    background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);font-family:var(--ig-font);color:var(--ig-text)}
+  .ag-sheet{width:min(380px,100%);display:flex;flex-direction:column;align-items:stretch;gap:12px;text-align:center;margin:auto}
+  .ag-sheet .ig-eyebrow{margin-bottom:-4px}
+  .ag-sheet h2{font:800 28px/1.1 var(--ig-font);letter-spacing:-.035em;color:var(--ig-text);margin:0}
+  .ag-big{font:900 64px/1 var(--ig-font);letter-spacing:-.03em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding:2px 0}
+  .ag-badge{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font:700 13px/1 var(--ig-font);color:#fff;background:linear-gradient(160deg,#34c759,#1f9d48)}
+  .ag-btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .ag-btns .ig-btn{width:100%}
+  .ag-btnrow{display:flex;gap:10px}.ag-btnrow .ig-btn{flex:1;padding:0 12px}
+  .ig-sheet .ig-stats{background:rgba(118,118,128,.08);border-radius:18px;padding:12px 4px}
+  @media (max-width:370px){ .ig-mode small{display:none} }
 </style></head>
 <body>
 <canvas id="g"></canvas>
-<div id="ov">
-  <h1>🏹 ARCHER DUEL</h1>
-  <div class="sub">Drag back from your archer to aim &amp; power, release to fire — mind the gravity arc.<br>You &amp; your rival both fire freely. Hit the <b>head</b> for double damage, and shoot the falling <b>❤️ hearts</b> to heal. Survive level after level!</div>
-  <button class="btn" id="start">DUEL ▶</button>
-  <div class="sub" id="best"></div>
-  <div class="row">
-    <a class="ghost" id="tutBtn">📖 Tutorial</a>
-    <a class="ghost" id="IGA_login" onclick="window.IGAuth&&IGAuth.openAuth()">👤 Log in</a>
-    <a class="ghost" onclick="window.IGAuth&&IGAuth.showLeaderboard('archer','Archer Duel')">🏆 Leaderboard</a>
-    <a class="ghost" href="../">🏠 All Games</a>
+<div id="ov" class="ag-screen">
+  <div class="ig-col">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <span class="ag-spacer"></span>
+    </div>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="o" cx="70" cy="50" r="27" fill="#fff"/><circle cx="70" cy="50" r="21" fill="#b3122f"/><circle cx="70" cy="50" r="14" fill="#fff"/><circle cx="70" cy="50" r="7" fill="#b3122f"/>
+<path class="o" d="M58 76 L52 94 M82 76 L88 94" stroke="#22120a" stroke-width="4"/>
+<path d="M30 50 L68 50" stroke="#22120a" stroke-width="5" stroke-linecap="round"/><path d="M30 50 L68 50" stroke="#a8692f" stroke-width="2.5" stroke-linecap="round"/>
+<path class="o" d="M22 44 L34 50 L22 56 L26 50Z" fill="#169b62"/>
+<path class="o" d="M14 10 Q36 40 14 90" fill="none" stroke="#22120a" stroke-width="8"/><path d="M14 10 Q36 40 14 90" fill="none" stroke="#a8692f" stroke-width="4"/>
+<path d="M14 10 L14 90" stroke="#fff" stroke-width="1.5"/>
+<path d="M8 28 L2 26 M8 70 L2 74" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+<path class="o" d="M70 50 l-6 -4 M70 50 l-6 4" stroke="#22120a" stroke-width="2"/></svg></div>
+      <div class="ig-title">Archer Duel</div>
+      <div class="ig-tagline" id="ovTag">Draw back, aim the arc, outlast every rival.</div>
+    </div>
+    <div class="ig-playrow">
+      <button class="ig-cta" id="start"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="best">Level 1 · vs rivals</small></span></button>
+    </div>
+    <div class="ig-modes" style="--n:2">
+      <button class="ig-mode" id="tutBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4"/><path d="M12 17.2h.01"/></svg></span><b>Tutorial</b><small>Learn with the coach</small></button>
+      <button class="ig-mode" id="lbBtn" onclick="window.IGAuth&&IGAuth.showLeaderboard('archer','Archer Duel')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/></svg></span><b>Leaderboard</b><small>Top archers</small></button>
+    </div>
+    <div class="ig-card ag-tips">
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,var(--accent),var(--accent2))"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5"/><path d="M19 5h-5M19 5v5"/><path d="M5 19v-4M5 19h4M8 16v-3.5M8 16h3.5"/></svg></span><span><b>Drag back</b> from your archer, then let go to fire.</span></div>
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span><b>Headshots</b> do double damage.</span></div>
+      <div class="ag-tip"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg></span><span>Shoot the <b>falling hearts</b> to heal.</span></div>
+    </div>
+    <div class="ig-list">
+      <button class="ig-row" id="agLogin" onclick="window.IGAuth&&IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4.2 4-6.2 7.5-6.2s6.5 2 7.5 6.2"/></svg></span><span class="ig-grow"><span id="agLoginTxt">Log in</span><small id="agLoginSub">Put your best level on the leaderboard</small></span></button>
+    </div>
+  </div>
+</div>
+<div id="over" class="ag-scrim hidden">
+  <div class="ig-sheet ag-sheet">
+    <div class="ig-eyebrow">Defeated</div>
+    <div class="ag-big" id="overLv">Lv 1</div>
+    <div class="ag-note" id="overSub">A rival got you.</div>
+    <div class="ig-stats"><div><b id="overBest">0</b><span>Best level</span></div></div>
+    <div class="ag-btns">
+      <button class="ig-btn" id="again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v4.5h-4.5"/></svg>Duel again</button>
+      <button class="ig-btn secondary" id="overMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6.5 9.5V20h11V9.5"/></svg>Menu</button>
+    </div>
   </div>
 </div>
 <script>
@@ -72,12 +139,12 @@ let tutMode=false,tutStep=0,tutPhase='brief',coachMsg='',tut={};
 
 /* ---------- tutorial ---------- */
 const TSTEPS=[
-  { brief:"👋 Hi! I'm your coach. Drag BACK from your archer and release to fire an arrow. Try to hit the rival!", act:true, hint:"fire & hit the rival", done:()=>tut.hit },
-  { brief:"💥 Nice! Hit the rival's BODY for damage — but hit the HEAD for a HEADSHOT (double damage!)." },
-  { brief:"❤️ Hearts fall from the sky — shoot one with an arrow to heal up. Try it!", act:true, hint:"shoot the falling heart", done:()=>tut.heart, enter:()=>{ hearts.push({x:rand(X0+PW*0.4,X0+PW*0.7),y:-20,vy:34,r:16}); } },
-  { brief:"⚔️ In the real duel you AND your rival fire freely — after your arrow lands you can shoot again. Land more good shots to win each level. Tap to start!", end:true },
+  { brief:"Hi! I'm your coach. Drag BACK from your archer and release to fire an arrow. Try to hit the rival!", act:true, hint:"fire & hit the rival", done:()=>tut.hit },
+  { brief:"Nice! Hit the rival's BODY for damage — but hit the HEAD for a HEADSHOT (double damage!)." },
+  { brief:"Hearts fall from the sky — shoot one with an arrow to heal up. Try it!", act:true, hint:"shoot the falling heart", done:()=>tut.heart, enter:()=>{ hearts.push({x:rand(X0+PW*0.4,X0+PW*0.7),y:-20,vy:34,r:16}); } },
+  { brief:"In the real duel you AND your rival fire freely — after your arrow lands you can shoot again. Land more good shots to win each level. Tap to start!", end:true },
 ];
-function startTut(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=true;tutStep=0;tutPhase='brief';tut={};coachMsg='';
+function startTut(){document.getElementById('ov').classList.add('hidden');document.getElementById('over').classList.add('hidden');state='play';tutMode=true;tutStep=0;tutPhase='brief';tut={};coachMsg='';
   level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};foes=[{x:X0+PW*0.66,y:groundY,hp:100,maxhp:100,arrow:null,reload:0,acc:60,invuln:true}];
   pArrow=null;pReload=0;hearts=[];heartT=99;aim=null;parts=[];floats=[];shake=0;msg='';msgT=0;tutBrief();wakeLoop();}
 function tutBrief(){tutPhase='brief';coachMsg=TSTEPS[tutStep].brief;}
@@ -85,7 +152,10 @@ function tutContinue(){if(tutPhase!=='brief')return;const s=TSTEPS[tutStep];if(s
 function tutAdvance(){tutStep++;if(tutStep>=TSTEPS.length){tutFinish();return;}tutBrief();}
 function tutTick(){if(tutPhase==='act'){const s=TSTEPS[tutStep];if(s.done&&s.done())tutAdvance();}}
 function tutFinish(){tutMode=false;coachMsg='';state='menu';try{localStorage.setItem('archerTut','1');}catch(e){}
-  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='🏹 ARCHER DUEL';ov.querySelector('.sub').innerHTML="You're ready! Hit DUEL to play.";ov.querySelector('#start').textContent='DUEL ▶';ov.querySelector('#best').innerHTML=best?('Best: level '+best):'';ov.classList.remove('hidden');}
+  document.getElementById('ovTag').textContent="You're ready. Tap Play to duel!";showMenu();}
+function showMenu(){state='menu';document.getElementById('over').classList.add('hidden');
+  document.getElementById('best').textContent=best?('Best: Level '+best):'Level 1 · vs rivals';
+  document.getElementById('ov').classList.remove('hidden');}
 
 /* ---------- levels ---------- */
 function setupLevel(n){
@@ -98,13 +168,13 @@ function setupLevel(n){
   pArrow=null;pReload=0;hearts=[];heartT=rand(3,6);
   banner('LEVEL '+n+(two?'  •  2 RIVALS!':''));
 }
-function start(){document.getElementById('ov').classList.add('hidden');state='play';tutMode=false;
+function start(){document.getElementById('ov').classList.add('hidden');document.getElementById('over').classList.add('hidden');state='play';tutMode=false;
   level=1;me={x:X0+PW*0.12,y:groundY,hp:100,maxhp:100};parts=[];floats=[];shake=0;msg='';msgT=0;aim=null;leveling=false;setupLevel(1);wakeLoop();}
 function gameOver(){state='over';if(level>best){best=level;saveBest();}
   try{if(window.IGAuth)IGAuth.submitScore('archer',best);}catch(e){}
-  const ov=document.getElementById('ov');ov.querySelector('h1').textContent='💀 DEFEATED';ov.querySelector('.sub').innerHTML='A rival got you on level '+level+'.';
-  ov.querySelector('#start').textContent='DUEL AGAIN ▶';ov.querySelector('#best').innerHTML='<div class="big">Lv '+level+'</div>reached • Best: Lv '+best;
-  setTimeout(()=>ov.classList.remove('hidden'),600);}
+  document.getElementById('overLv').textContent='Lv '+level;document.getElementById('overSub').textContent='A rival got you on level '+level+'.';
+  document.getElementById('overBest').textContent=best;
+  setTimeout(()=>{ if(state==='over')document.getElementById('over').classList.remove('hidden'); },600);}
 function banner(t){msg=t;msgT=1.4;}
 function flt(x,y,t,c){floats.push({x,y,t,c,life:1});}
 
@@ -169,12 +239,12 @@ function loop(now){rafId=null;const dt=Math.min(.04,(now-last)/1000||0);last=now
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=700*dt;p.life-=dt*1.5;}parts=parts.filter(p=>p.life>0);
   for(const p of parts){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,3,3);}ctx.globalAlpha=1;
   for(const f of floats){f.y-=40*dt;f.life-=dt;}floats=floats.filter(f=>f.life>0);
-  for(const f of floats){ctx.globalAlpha=Math.max(0,f.life);ctx.fillStyle=f.c;ctx.font='900 20px Trebuchet MS';ctx.textAlign='center';ctx.fillText(f.t,f.x,f.y);ctx.globalAlpha=1;}
+  for(const f of floats){ctx.globalAlpha=Math.max(0,f.life);ctx.fillStyle=f.c;ctx.font='900 20px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(f.t,f.x,f.y);ctx.globalAlpha=1;}
   // HUD
   if(state!=='menu'){ hpBar(X0+20,16,me.hp,me.maxhp,'#3a86ff','YOU');
     let fx=X0+PW-180; for(const f of foes){ if(f.hp>0){ hpBar(fx,16,f.hp,f.maxhp,'#e0503a','RIVAL'); fx-=Math.min(170,PW*0.42); } }
-    ctx.fillStyle='#fff';ctx.font='700 14px Trebuchet MS';ctx.textAlign='center';ctx.fillText((tutMode?'Tutorial':'Level '+level)+'   •   best Lv '+best,W/2,20);}
-  if(msgT>0){msgT-=dt;ctx.globalAlpha=Math.min(1,msgT);ctx.fillStyle='#ffd54a';ctx.font='900 30px Trebuchet MS';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.34);ctx.globalAlpha=1;}
+    ctx.fillStyle='#fff';ctx.font='700 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='center';ctx.fillText((tutMode?'Tutorial':'Level '+level)+'   •   best Lv '+best,W/2,20);}
+  if(msgT>0){msgT-=dt;ctx.globalAlpha=Math.min(1,msgT);ctx.fillStyle='#ffd54a';ctx.font='900 30px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(msg,W/2,H*0.34);ctx.globalAlpha=1;}
   if(tutMode)drawCoach();
   ctx.setTransform(DPR,0,0,DPR,0,0);
   /* park the loop while the scene is static (menu; settled game-over) to save battery */
@@ -188,17 +258,19 @@ function drawArcher(s,col,face){const x=s.x,y=s.y;
   ctx.fillStyle='#1a1a1a';ctx.fillRect(x-5,y-47,10,4);                                // hair
   ctx.strokeStyle='#6b4226';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+face*13,y-26,15,-1.1,1.1);ctx.stroke(); }
 function drawArrow(a){const ang=Math.atan2(a.vy,a.vx);ctx.save();ctx.translate(a.x,a.y);ctx.rotate(ang);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-16,0);ctx.lineTo(10,0);ctx.stroke();ctx.fillStyle='#ffd54a';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(2,-4);ctx.lineTo(2,4);ctx.fill();ctx.restore();}
-function hpBar(x,y,hp,mx,col,lbl){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x,y,160,16);ctx.fillStyle=col;ctx.fillRect(x,y,160*Math.max(0,hp)/mx,16);ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.strokeRect(x,y,160,16);ctx.fillStyle='#fff';ctx.font='700 11px Trebuchet MS';ctx.textAlign='left';ctx.fillText(lbl,x+2,y+27);}
+function hpBar(x,y,hp,mx,col,lbl){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x,y,160,16);ctx.fillStyle=col;ctx.fillRect(x,y,160*Math.max(0,hp)/mx,16);ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.strokeRect(x,y,160,16);ctx.fillStyle='#fff';ctx.font='700 11px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='left';ctx.fillText(lbl,x+2,y+27);}
 function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function drawCoach(){if(!coachMsg)return;const maxw=Math.min(W*0.92,520),pad=14,x=W/2,tx0=x-maxw/2+pad+40;
-  ctx.font='600 17px Trebuchet MS';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.font='600 17px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.textAlign='left';ctx.textBaseline='top';
   const words=coachMsg.split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxw-pad*2-44&&line){lines.push(line);line=w;}else line=t;}if(line)lines.push(line);
-  const extra=tutPhase==='brief'?'👉 Tap / press any key to continue':('▶ '+(TSTEPS[tutStep].hint||'...'));
+  const extra=tutPhase==='brief'?'Tap or press any key to continue':('Your turn: '+(TSTEPS[tutStep].hint||'...'));
   const lh=23,bh=(lines.length+1)*lh+pad*2,by=Math.max(12,H*0.05),bx=x-maxw/2;
-  ctx.fillStyle='rgba(8,16,30,.92)';rrect(bx,by,maxw,bh,14);ctx.fill();ctx.strokeStyle='rgba(255,213,74,.75)';ctx.lineWidth=2;rrect(bx,by,maxw,bh,14);ctx.stroke();
-  ctx.font='26px serif';ctx.fillText('🧑',bx+10,by+pad+4);
-  ctx.fillStyle='#fff';ctx.font='600 17px Trebuchet MS';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);
-  ctx.fillStyle='#ffd54a';ctx.font='700 14px Trebuchet MS';ctx.fillText(extra,tx0,by+pad+lines.length*lh+2);}
+  ctx.save();ctx.shadowColor='rgba(20,20,60,.28)';ctx.shadowBlur=26;ctx.shadowOffsetY=8;ctx.fillStyle='rgba(255,255,255,.94)';rrect(bx,by,maxw,bh,20);ctx.fill();ctx.restore();
+  ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=1;rrect(bx,by,maxw,bh,20);ctx.stroke();
+  {const ax=bx+26,ay=by+pad+13,g=ctx.createLinearGradient(ax-14,ay-14,ax+14,ay+14);g.addColorStop(0,'#9b7cf6');g.addColorStop(1,'#4d6bf0');ctx.fillStyle=g;ctx.beginPath();ctx.arc(ax,ay,14,0,6.28);ctx.fill();
+   ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ax,ay,8,0,6.28);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ax,ay,2.5,0,6.28);ctx.fill();}
+  ctx.fillStyle='#1d1d1f';ctx.font='600 17px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],tx0,by+pad+i*lh);
+  ctx.fillStyle='#4d6bf0';ctx.font='700 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif';ctx.fillText(extra,tx0,by+pad+lines.length*lh+2);}
 let AC=null;function sfx(f,d,t){try{if(!AC)AC=new(AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.2;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d+.02);}catch(e){}}
 cv.addEventListener('pointerdown',e=>{ if(tutMode&&tutPhase==='brief')return; if(state==='play'&&!pArrow&&pReload<=0)aim={x:e.clientX,y:e.clientY}; });
 addEventListener('pointermove',e=>{if(aim)aim={x:e.clientX,y:e.clientY};});
@@ -206,14 +278,17 @@ addEventListener('pointerup',e=>{ if(tutMode&&tutPhase==='brief'){tutContinue();
 addEventListener('keydown',e=>{ if(tutMode&&tutPhase==='brief'){e.preventDefault();tutContinue();} });
 document.getElementById('start').onclick=start;
 document.getElementById('tutBtn').onclick=startTut;
-document.getElementById('best').innerHTML=best?('Best: level '+best):'';
+document.getElementById('best').textContent=best?('Best: Level '+best):'Level 1 · vs rivals';
+document.getElementById('again').onclick=start;
+document.getElementById('overMenu').onclick=showMenu;
 wakeLoop();
 try{ if(!localStorage.getItem('archerTut')) startTut(); }catch(e){}
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth)return;
-  IGAuth.onChange(function(p){ var b=document.getElementById('IGA_login'); if(b)b.textContent=p?('👤 '+IGAuth.displayName()):'👤 Log in';
+  IGAuth.onChange(function(p){ var b=document.getElementById('agLoginTxt'); if(b)b.textContent=p?IGAuth.displayName():'Log in';
+    var sb=document.getElementById('agLoginSub'); if(sb)sb.textContent=p?'Signed in · tap to switch account':'Put your best level on the leaderboard';
     try{ var s=JSON.parse(localStorage.getItem(SKEY)); if(s&&+s.best>0) IGAuth.submitScore('archer',+s.best); }catch(e){} }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>Grand Prix 3D</title>
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -24,7 +24,9 @@
 <meta name="twitter:title" content="Grand Prix 3D — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
+  :root, html:root[data-theme]{ --accent:#ff2a1a; --accent2:#5c0000; --icon1:#ff2a1a; --icon2:#5c0000; }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#0a0e1a; overflow:hidden; color:#fff;
     font-family:'Trebuchet MS','Segoe UI',sans-serif; user-select:none; -webkit-user-select:none; }
@@ -159,14 +161,6 @@
   .pv-nose { position:absolute; top:-12px; left:27px; width:20px; height:26px; border-radius:8px 8px 3px 3px; }
   .pv-stripe { position:absolute; top:6px; left:31px; width:12px; height:120px; border-radius:6px; opacity:.92; }
   .pv-cockpit { position:absolute; top:44px; left:24px; width:26px; height:34px; border-radius:12px; background:#0d1116; }
-  /* ---- big highlighted multiplayer button (it's the new thing) ---- */
-  #mpBtn{ position:relative; font-size:clamp(18px,5vw,22px); padding:17px 46px; margin:10px 6px 4px;
-    background:linear-gradient(135deg,#39ff88,#12b76a); color:#04220f; border-radius:34px;
-    box-shadow:0 10px 30px rgba(40,220,120,.45); animation:mpPulse 1.9s ease-in-out infinite; }
-  @keyframes mpPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
-  #mpBtn .newb{ position:absolute; top:-11px; right:-10px; font-size:11px; font-weight:900; padding:4px 10px;
-    border-radius:13px; background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#3a0010;
-    box-shadow:0 3px 10px rgba(0,0,0,.4); letter-spacing:1px; }
   /* ---- multiplayer ---- */
   .rooms { max-width:480px; width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0; }
   .room { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:11px 14px; text-align:left; }
@@ -198,6 +192,112 @@
   body:has(#hud.on) div[role="status"] { display:none !important; }
   #mpRoomMaps.guestview .mapcard { pointer-events:none; opacity:.75; }
   #mpRoomMaps.guestview .mapcard.sel { opacity:1; }
+
+  /* ===== ilan Games light theme (menus only — the race keeps its own look) ===== */
+  html, body { background:var(--ig-bg); font-family:var(--ig-font); letter-spacing:-.01em; }
+  .screen { color:var(--ig-text); text-align:left; align-items:stretch; gap:0;
+    padding:max(14px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+    background:
+      radial-gradient(60vmax 50vmax at 12% 6%, rgba(94,92,230,.16), transparent 60%),
+      radial-gradient(55vmax 45vmax at 92% 14%, rgba(255,55,60,.16), transparent 60%),
+      radial-gradient(60vmax 50vmax at 70% 96%, rgba(255,149,0,.12), transparent 60%),
+      radial-gradient(60vmax 50vmax at 4% 86%, rgba(10,132,255,.13), transparent 60%), var(--ig-bg); }
+  .screen > .ig-col { gap:16px; flex:none; }
+  .screen b { color:inherit; }
+  .ig-topbar .ig-navtitle { flex:1; text-align:center; }
+  .ig-btn svg.f1-bi { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ig-mode, .ig-row, .ig-cta, .ig-sq, .ig-iconbtn, .ig-btn { -webkit-tap-highlight-color:transparent; }
+  .ig-row { font-family:var(--ig-font); }
+  html.f1-muted .snd-on, html:not(.f1-muted) .snd-off { display:none; }
+  .f1-note { color:var(--ig-text2); font-size:15px; line-height:1.45; text-align:center; }
+  .f1-note b { color:var(--ig-text); }
+  .f1-chip { align-self:center; text-align:center; }
+  .f1-chip, #wallet3d { align-self:center; display:inline-flex; align-items:center; gap:10px; padding:8px 14px; border-radius:999px; font-size:14px; font-weight:500; color:var(--ig-text2);
+    background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  .f1-chip { display:block; max-width:100%; }
+  #wallet3d { margin:14px 0 0; max-width:100%; }
+  .screen .sub { color:var(--ig-text2); font-size:14px; text-align:center; margin:4px auto; }
+  #wallet3d b, .f1-chip b { color:var(--ig-text); font-weight:700; }
+  #wallet3d i { width:1px; height:14px; background:var(--ig-line2); }
+  .f1-warn { color:#d70015; font-weight:600; }
+  .f1-sect { margin:6px 2px -6px; }
+  .ig-hero .ig-title { font-size:clamp(40px,11vw,52px); }
+  /* circuits */
+  .maps { max-width:none; margin:0; gap:10px; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); }
+  .mapcard { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:18px; padding:12px 8px 11px; text-align:center; color:var(--ig-text);
+    box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); transition:transform .2s var(--ig-ease), box-shadow .2s; }
+  .mapcard.sel { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), 0 10px 24px -10px color-mix(in srgb, var(--accent) 60%, transparent); }
+  .mapcard .fl { font-size:30px; height:32px; display:grid; place-items:center; }
+  .mapcard .mn { font-weight:700; font-size:14px; letter-spacing:-.02em; }
+  .mapcard .md { color:var(--ig-text2); font-size:11.5px; }
+  .mapcard .fee { color:var(--ig-text2); font-weight:600; font-size:11px; }
+  .mapcard.locked { opacity:.55; }
+  .mapcard.master { background:linear-gradient(160deg, rgba(175,82,222,.14), var(--ig-glass) 70%); border-color:rgba(175,82,222,.28); }
+  .mapcard.master.sel { border-color:#af52de; box-shadow:0 0 0 2px #af52de; }
+  .mapcard .mt { color:#8e3fc4; font-size:10px; font-weight:700; letter-spacing:0; }
+  .f1-lock { width:24px; height:24px; fill:none; stroke:var(--ig-text3); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .masterlock { max-width:none; margin:0; color:var(--ig-text2); font-size:13.5px; line-height:1.45; background:var(--ig-glass); border:1.5px dashed var(--ig-line2); border-radius:18px; }
+  .masterlock b { color:var(--ig-text); }
+  /* how to play */
+  .f1-how .ig-row { align-items:flex-start; cursor:default; padding-top:12px; padding-bottom:12px; }
+  .f1-how .ig-row small { margin-top:3px; line-height:1.4; }
+  /* garage + paint */
+  .cars { max-width:none; margin:0; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); }
+  .carcard { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:20px; padding:12px; text-align:left; color:var(--ig-text); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  .carcard.sel { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), var(--ig-shadow); }
+  .carcard.locked { opacity:1; }
+  .carcard .swatch { height:44px; border-radius:12px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08), inset 0 -8px 14px rgba(0,0,0,.12); }
+  .carcard .cn { font-weight:700; font-size:15px; letter-spacing:-.02em; }
+  .carcard .cs { color:var(--ig-text2); }
+  .carcard .price { font-size:12.5px; font-weight:700; }
+  .carcard .price.own { color:#248a3d; } .carcard .price.buy { color:#c93400; }
+  .palette { max-width:none; justify-content:flex-start; margin:8px 0 14px; }
+  .sw { width:34px; height:34px; border-radius:50%; border:0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.12); }
+  .sw.sel { border:0; box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--ig-text); }
+  .striperow { justify-content:space-between; margin:0; font-size:15px; }
+  .striperow input { accent-color:var(--accent); width:22px; height:22px; }
+  #paintPreview { margin:4px auto; }
+  /* online */
+  .rooms { max-width:none; margin:0; }
+  .room { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:18px; box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); color:var(--ig-text); }
+  .room .rcode { color:var(--ig-text); letter-spacing:.14em; }
+  .room .rmeta { color:var(--ig-text2); }
+  .pill { font-size:12px; font-weight:700; padding:6px 12px; border-radius:999px; background:rgba(118,118,128,.14); color:var(--ig-text2); }
+  .codein { margin:8px 0 0; justify-content:stretch; }
+  .codein input.ig-field { flex:1; width:auto; min-width:0; text-align:center; letter-spacing:.3em; text-transform:uppercase; font-weight:800; font-size:20px; padding:0 12px; border-radius:999px; color:var(--ig-text); background:var(--ig-field); border:1px solid var(--ig-line); }
+  .codein .ig-btn { min-height:52px; }
+  #mpMsg { color:#d70015; font-size:14px; font-weight:600; min-height:0; margin:8px 0 0; text-align:center; }
+  #mpMsg:empty { display:none; }
+  .f1-codecard { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #mpRoomCode { font-size:clamp(38px,11vw,52px); letter-spacing:.22em; padding:0 0 0 .22em; margin:0; background:none; border:0;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:900; }
+  .plist { max-width:none; margin:0; }
+  .plist .prow { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:14px; color:var(--ig-text); }
+  .plist .prow .ph { color:var(--accent); font-weight:700; }
+  .hintbar { max-width:none; color:var(--ig-text2); font-size:13px; text-align:center; }
+  .hintbar b { color:var(--ig-text); }
+  /* finish: frosted scrim over the last race frame + a light sheet */
+  #scr-finish { background:rgba(20,20,40,.25); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); justify-content:center; align-items:center; }
+  .f1-finish { width:100%; max-width:440px; display:flex; flex-direction:column; gap:12px; text-align:center; margin:auto 0; }
+  #finTitle { font:900 44px/1.05 var(--ig-font); letter-spacing:-.04em; margin:0; color:var(--ig-text) !important;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  #finBoard { max-width:none; margin:0; border-radius:16px; overflow:hidden; background:rgba(118,118,128,.08); }
+  .brow { background:none; border-radius:0; margin:0; padding:9px 14px; font-size:15px; color:var(--ig-text); }
+  .brow + .brow { border-top:1px solid var(--ig-line); }
+  .brow.me { background:color-mix(in srgb, var(--accent) 12%, transparent); font-weight:700; }
+  .brow .pos { color:var(--ig-text2); font-weight:700; }
+  .brow span[style] { color:var(--ig-text2) !important; }
+  .f1-btns { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  /* race HUD: same look, just the round buttons and SVG icons tidied */
+  #muteBtn, .home { display:grid; place-items:center; font-family:var(--ig-font); }
+  #muteBtn svg, .home svg, .tbtn svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .home { color:#1d1d1f; }
+  #brakeBtn svg { width:28px; height:28px; fill:currentColor; }
+  #boostBtn { flex-direction:column; gap:1px; font-family:var(--ig-font); font-size:13px; letter-spacing:.02em; }
+  #boostBtn svg { width:30px; height:30px; fill:currentColor; stroke-width:1.5; }
+  .box, #boostLbl, #speedo, #countdown, #crashMsg { font-family:var(--ig-font); }
+  @media (max-width:370px) { .ig-mode small { display:none; } }
+  @media (min-width:700px) { .screen { padding-top:28px; } }
 </style>
 </head>
 <body>
@@ -209,123 +309,168 @@
     <div class="box" id="hudLeft"></div>
     <div class="box" id="speedo"><span class="kmh">0</span><br><span class="unit">km/h</span></div>
     <div id="boostWrap">
-      <div id="boostLbl">⚡ BOOST</div>
+      <div id="boostLbl">BOOST</div>
       <div id="boostBar"><div id="boostFill"></div></div>
     </div>
     <div id="touchCtl">
       <button class="tbtn" id="steerL">◀</button>
       <button class="tbtn" id="steerR">▶</button>
-      <button class="tbtn" id="brakeBtn">🛑</button>
-      <button class="tbtn" id="boostBtn">⚡<br>BOOST</button>
+      <button class="tbtn" id="brakeBtn" aria-label="Brake"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
+      <button class="tbtn" id="boostBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>BOOST</button>
     </div>
     <div id="vignette"></div>
     <div id="crashMsg"></div>
-    <button id="muteBtn" title="Sound on/off">🔊</button>
+    <button id="muteBtn" title="Sound on/off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="snd-on" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/><path class="snd-off" d="M17 9.5l5 5M22 9.5l-5 5"/></svg></button>
   </div>
   <div id="countdown"></div>
   <div class="lamps" id="lamps"><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div><div class="lamp"></div></div>
-  <a class="home hidden" id="homeBtn" href="../" title="All games">🏠</a>
+  <a class="home hidden" id="homeBtn" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 
   <!-- MENU -->
   <div id="scr-menu" class="screen">
-    <div class="tag">🏁 WORLD TOUR · 🌐 ONLINE MULTIPLAYER</div>
-    <h1>🏁 GRAND PRIX 3D</h1>
-    <div class="sub">Race the world, win prize money, buy faster cars — or race your friends live!</div>
-    <div id="wallet3d"></div>
-    <button class="btn" id="mpBtn">🌐 MULTIPLAYER<span class="newb">NEW!</span></button>
-    <div class="secttl" style="margin-top:14px">🌍 CHOOSE CIRCUIT · unlock in order</div>
-    <div class="maps" id="mapList"></div>
-    <div class="secttl master" style="margin-top:6px">🏆 MASTER MODE · broken bridges &amp; hairpins</div>
-    <div id="masterLock" class="masterlock hidden"></div>
-    <div class="maps" id="masterList"></div>
-    <div class="row">
-      <button class="btn green" id="startBtn">🏁 START RACE</button>
-      <button class="btn alt" id="garageBtn">🛒 GARAGE</button>
+    <div class="ig-col">
+      <div class="ig-topbar">
+        <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+        <button class="ig-iconbtn" id="menuMute" title="Sound on/off" aria-label="Sound on/off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="snd-on" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/><path class="snd-off" d="M17 9.5l5 5M22 9.5l-5 5"/></svg></button>
+      </div>
+      <div class="ig-hero">
+        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M2 50 H22 M6 60 H20 M0 70 H18" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+<path class="o" d="M20 62 L30 50 L48 48 L56 38 L66 38 L70 48 L92 52 L94 64 L20 66Z" fill="#e10600"/>
+<path class="o" d="M16 40 L28 40 L30 58 L22 58Z" fill="#7a0400"/>
+<path class="o" d="M84 56 L98 56 L98 66 L84 66Z" fill="#7a0400"/>
+<path d="M34 58 H82" stroke="#fff" stroke-width="3"/>
+<circle class="o" cx="60" cy="40" r="7" fill="#ffcc00"/><path d="M57 38 H67" stroke="#22120a" stroke-width="3"/>
+<circle class="o" cx="32" cy="68" r="12" fill="#222"/><circle class="o" cx="32" cy="68" r="5" fill="#bbb"/>
+<circle class="o" cx="80" cy="68" r="12" fill="#222"/><circle class="o" cx="80" cy="68" r="5" fill="#bbb"/>
+<path d="M22 84 H92" stroke="#fff" stroke-width="2" stroke-dasharray="8 6" opacity=".6"/></svg></div>
+        <div class="ig-title">Grand Prix 3D</div>
+        <div class="ig-tagline">Race the world. Buy faster cars.</div>
+        <div id="wallet3d"></div>
+      </div>
+      <div class="ig-playrow">
+        <button class="ig-cta" id="startBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small id="circuitSub">World Tour</small></span></button>
+        <button class="ig-sq" id="circuitsBtn" title="Choose circuit" aria-label="Choose circuit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg></button>
+      </div>
+      <div class="ig-modes">
+        <button class="ig-mode" id="mpBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Race friends</small></button>
+        <button class="ig-mode" id="masterBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c77dff,#5b2bd6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4"/></svg></span><b>Master</b><small id="masterSub">Hard circuits</small></button>
+        <button class="ig-mode" id="garageBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-6 9 6"/><path d="M5 10v10h14V10"/><path d="M8 20v-5h8v5"/></svg></span><b>Garage</b><small id="garageSub">Cars &amp; paint</small></button>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row" id="circuitsRow"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff5a4a,#c2000b)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg></span><span class="ig-grow">Choose circuit<small>Unlock them in order</small></span></button>
+        <button class="ig-row" id="howBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.4"/><path d="M12 17h.01"/></svg></span><span class="ig-grow">How to play<small>Steer, boost and brake</small></span></button>
+        <button class="ig-row" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')" id="IGA_lb"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffd60a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg></span><span class="ig-grow">Leaderboard<small>Lifetime prize money</small></span></button>
+        <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#8e8e93,#48484a)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg></span><span class="ig-grow"><span id="f1LoginTxt">Log in</span><small>Save your progress</small></span><span id="IGA_login" hidden>Log in</span></button>
+      </div>
     </div>
-    <div class="row">
-      <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-      <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('f1','Grand Prix')">🏆 Leaderboard</button>
-      <a class="btn alt" href="../">🏠 ALL GAMES</a>
+  </div>
+
+  <!-- CIRCUITS -->
+  <div id="scr-circuits" class="screen hidden">
+    <div class="ig-col">
+      <div class="ig-topbar"><button class="ig-iconbtn" id="circuitsBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Circuits</div><button class="ig-btn" id="circuitsDone" style="min-height:40px;padding:0 18px;font-size:15px">Done</button></div>
+      <div class="f1-note" id="circMsg"></div>
+      <div class="ig-eyebrow f1-sect">World Tour · unlock in order</div>
+      <div class="maps" id="mapList"></div>
+      <div class="ig-eyebrow f1-sect" id="masterHead">Master Mode · broken bridges &amp; hairpins</div>
+      <div id="masterLock" class="masterlock hidden"></div>
+      <div class="maps" id="masterList"></div>
     </div>
-    <div class="hintbar">
-      <b>Steer:</b> ← → or A / D (mobile ◀ ▶) — <b>steer into the corners</b> or you run wide onto the grass and slow down. &nbsp;<b>Boost:</b> Space / Shift or ⚡ — one burst, then wait for the gauge to refill. &nbsp;<b>Brake:</b> ↓ / S or 🛑.<br>
-      You auto-accelerate. Win prize money to buy faster cars; finishing high also earns championship points.
+  </div>
+
+  <!-- HOW TO PLAY -->
+  <div id="scr-how" class="screen hidden">
+    <div class="ig-col">
+      <div class="ig-topbar"><button class="ig-iconbtn" id="howBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">How to Play</div><div style="width:44px"></div></div>
+      <div class="ig-list f1-how">
+        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span><span class="ig-grow">Steer<small>Left / Right arrows or A / D. On a phone, the two arrow buttons. Steer into the corners or you run wide onto the grass and slow down.</small></span></div>
+        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg></span><span class="ig-grow">Boost<small>Space / Shift or the Boost button. One burst, then wait for the gauge to refill.</small></span></div>
+        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff5a4a,#c2000b)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg></span><span class="ig-grow">Brake<small>Down arrow / S or the Brake button.</small></span></div>
+        <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M14.5 9.2c-.5-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.8-2.5 2s1.1 1.6 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2-.4-2.5-1.2"/></svg></span><span class="ig-grow">Win prize money<small>You speed up on your own. Win prize money to buy faster cars. Finishing high also earns championship points.</small></span></div>
+      </div>
     </div>
   </div>
 
   <!-- GARAGE -->
   <div id="scr-garage" class="screen hidden">
-    <h1>🛒 GARAGE</h1>
-    <div class="sub">Buy &amp; pick your car, then paint it your way. Your wallet and cars carry across every race.</div>
-    <div id="walletGarage" class="sub" style="color:#ffd54a;font-weight:bold"></div>
-    <div class="cars" id="carList"></div>
-    <div class="row">
-      <button class="btn alt" id="customBtn">🎨 CUSTOMIZE CAR</button>
-      <button class="btn green" id="garageBack">✔ DONE</button>
+    <div class="ig-col">
+      <div class="ig-topbar"><div style="width:44px"></div><div class="ig-navtitle">Garage</div><button class="ig-btn" id="garageBack" style="min-height:40px;padding:0 18px;font-size:15px">Done</button></div>
+      <div class="f1-note">Buy and pick your car, then paint it your way. Your money and cars carry across every race.</div>
+      <div id="walletGarage" class="f1-chip"></div>
+      <div class="cars" id="carList"></div>
+      <button class="ig-btn secondary" id="customBtn"><svg viewBox="0 0 24 24" aria-hidden="true" class="f1-bi"><path d="M12 3a9 9 0 0 0 0 18c1.2 0 1.6-.8 1.6-1.6 0-1.2-1-1.4-1-2.5 0-.9.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4c0-4.7-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg>Customize car</button>
     </div>
   </div>
 
   <!-- CUSTOMIZE -->
   <div id="scr-custom" class="screen hidden">
-    <h1>🎨 CUSTOMIZE</h1>
-    <div class="sub" id="customSub"></div>
-    <div id="paintPreview"></div>
-    <div class="secttl">BODY COLOUR</div>
-    <div class="palette" id="bodyPalette"></div>
-    <div class="secttl">ACCENT · nose &amp; stripe</div>
-    <div class="palette" id="accentPalette"></div>
-    <label class="striperow"><input type="checkbox" id="stripeChk"> 🏁 Racing stripe</label>
-    <div class="row">
-      <button class="btn green" id="customSave">✔ SAVE PAINT</button>
-      <button class="btn alt" id="customBack">⬅ BACK</button>
+    <div class="ig-col">
+      <div class="ig-topbar"><button class="ig-iconbtn" id="customBack" title="Back (discard)" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Paint</div><button class="ig-btn" id="customSave" style="min-height:40px;padding:0 18px;font-size:15px">Save</button></div>
+      <div class="f1-note" id="customSub"></div>
+      <div id="paintPreview"></div>
+      <div class="ig-card">
+        <div class="ig-eyebrow f1-sect" style="margin-top:0">Body colour</div>
+        <div class="palette" id="bodyPalette"></div>
+        <div class="ig-eyebrow f1-sect">Accent · nose &amp; stripe</div>
+        <div class="palette" id="accentPalette"></div>
+        <label class="striperow"><span class="ig-plabel">Racing stripe</span><input type="checkbox" id="stripeChk"></label>
+      </div>
     </div>
   </div>
 
   <!-- MULTIPLAYER LOBBY -->
   <div id="scr-mplobby" class="screen hidden">
-    <div class="tag">🌐 ONLINE MULTIPLAYER</div>
-    <h1>🏁 RACE ROOMS</h1>
-    <div class="sub">Join a room to race real people, or create your own and share the code with friends. Empty seats are filled with 🤖 bots — up to <b>7 racers</b> per room.</div>
-    <div id="mpWho" class="sub" style="color:#ffd54a;margin-top:-6px"></div>
-    <button class="btn green" id="mpCreateBtn">➕ CREATE A ROOM</button>
-    <div class="secttl">🔑 HAVE A CODE?</div>
-    <div class="codein">
-      <input id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
-      <button class="btn" id="mpJoinCodeBtn" style="margin:0">JOIN</button>
+    <div class="ig-col">
+      <div class="ig-topbar"><button class="ig-iconbtn" id="mpLobbyBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Race Rooms</div><div style="width:44px"></div></div>
+      <div class="f1-note">Join a room to race real people, or make your own and share the code. Empty seats are filled with bots, up to <b>7 racers</b> per room.</div>
+      <div id="mpWho" class="f1-chip"></div>
+      <button class="ig-cta" id="mpCreateBtn"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"><path d="M12 5v14M5 12h14"/></svg><span><b>Create a Room</b><small>Invite your friends</small></span></button>
+      <div class="ig-card">
+        <div class="ig-eyebrow f1-sect" style="margin-top:0">Have a code?</div>
+        <div class="codein">
+          <input id="mpCodeIn" class="ig-field" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="ig-btn" id="mpJoinCodeBtn">Join</button>
+        </div>
+        <div id="mpMsg"></div>
+      </div>
+      <div class="ig-eyebrow f1-sect">Open rooms · tap to join</div>
+      <div class="rooms" id="mpRoomList"><div class="f1-note">Looking for rooms…</div></div>
     </div>
-    <div id="mpMsg"></div>
-    <div class="secttl">🚪 OPEN ROOMS · tap to join</div>
-    <div class="rooms" id="mpRoomList"><div class="sub">Looking for rooms…</div></div>
-    <button class="btn alt" id="mpLobbyBack" style="margin-top:10px">⬅ BACK</button>
   </div>
 
   <!-- MULTIPLAYER ROOM -->
   <div id="scr-mproom" class="screen hidden">
-    <div class="tag">🌐 RACE ROOM</div>
-    <div class="sub" style="margin:2px 0 0">Friends join with this code (or the invite link):</div>
-    <div id="mpRoomCode">----</div>
-    <button class="btn alt" id="mpShareBtn" style="padding:10px 20px;font-size:14px">📋 COPY INVITE</button>
-    <div class="secttl">🌍 CIRCUIT · <span id="mpMapWho"></span></div>
-    <div class="maps" id="mpRoomMaps"></div>
-    <div class="secttl">🏎️ RACERS · <span id="mpSeats"></span></div>
-    <div class="plist" id="mpPlayers"></div>
-    <div class="row">
-      <button class="btn green hidden" id="mpStartBtn">🏁 START RACE</button>
-      <button class="btn alt" id="mpLeaveBtn">🚪 LEAVE ROOM</button>
+    <div class="ig-col">
+      <div class="ig-topbar"><div style="width:44px"></div><div class="ig-navtitle">Race Room</div><div style="width:44px"></div></div>
+      <div class="ig-card f1-codecard">
+        <div class="f1-note" style="margin:0">Friends join with this code or the invite link</div>
+        <div id="mpRoomCode">----</div>
+        <button class="ig-btn secondary" id="mpShareBtn" style="min-height:40px;font-size:15px">Copy invite</button>
+      </div>
+      <div class="ig-eyebrow f1-sect">Circuit · <span id="mpMapWho"></span></div>
+      <div class="maps" id="mpRoomMaps"></div>
+      <div class="ig-eyebrow f1-sect">Racers · <span id="mpSeats"></span></div>
+      <div class="plist" id="mpPlayers"></div>
+      <button class="ig-btn hidden" id="mpStartBtn">Start Race</button>
+      <button class="ig-btn secondary" id="mpLeaveBtn">Leave room</button>
+      <div class="hintbar" id="mpRoomHint"></div>
     </div>
-    <div class="hintbar" id="mpRoomHint"></div>
   </div>
 
   <!-- FINISH -->
   <div id="scr-finish" class="screen hidden">
-    <h1 id="finTitle">FINISH</h1>
-    <div class="sub" id="finSub"></div>
-    <div id="finBoard"></div>
-    <button class="btn" id="againBtn">🔁 RACE AGAIN</button>
-    <button class="btn green" id="menuBtn">🏠 MENU</button>
-    <button class="btn hidden" id="mpAgainBtn">🔁 REMATCH — SAME ROOM</button>
-    <button class="btn green hidden" id="mpFinLeaveBtn">🌐 LEAVE ROOM</button>
-    <a class="btn alt" href="../">ALL GAMES</a>
+    <div class="ig-sheet f1-finish">
+      <h1 id="finTitle">Finish</h1>
+      <div class="f1-note" id="finSub"></div>
+      <div id="finBoard"></div>
+      <div class="f1-btns">
+        <button class="ig-btn" id="againBtn">Race again</button>
+        <button class="ig-btn hidden" id="mpAgainBtn">Rematch · same room</button>
+        <button class="ig-btn secondary" id="menuBtn">Menu</button>
+        <button class="ig-btn secondary hidden" id="mpFinLeaveBtn">Leave room</button>
+        <a class="ig-btn secondary" href="../">All games</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1254,10 +1399,9 @@ function finishRace(){
   }
   saveF1();
   if (window.IGAuth) IGAuth.submitScore('f1', c.earned);   // lifetime prize money (matches the wallet progression players see)
-  const medal = myPos===1?'🥇':myPos===2?'🥈':myPos===3?'🥉':'🏁';
-  $('finTitle').textContent = myPos===1 ? '🏆 YOU WON!' : (medal+' P'+myPos);
-  const earned = `💰 Prize <b>+₹${prize}</b>` + (chosenCountry.free ? '' : ` · entry <b>−₹${chosenCountry.fee}</b>`) + ` · balance <b>₹${c.money}</b> · <b>+${pts}</b> pts`
-    + (unlockedNew ? `<br>🔓 New circuit unlocked: <b>${unlockedNew.flag} ${unlockedNew.name}</b>!` : '');
+  $('finTitle').textContent = myPos===1 ? 'You Won!' : ('P'+myPos);
+  const earned = `Prize <b>+₹${prize}</b>` + (chosenCountry.free ? '' : ` · entry <b>−₹${chosenCountry.fee}</b>`) + ` · balance <b>₹${c.money}</b> · <b>+${pts}</b> pts`
+    + (unlockedNew ? `<br>New circuit unlocked: <b>${unlockedNew.flag} ${unlockedNew.name}</b>!` : '');
   $('finSub').innerHTML = (myPos===1
     ? `Fantastic driving — you won ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`
     : `P${myPos} of ${all.length} at ${chosenCountry.flag} ${chosenCountry.name} in ${fmt(player.finishTime||raceTime)}.`) + `<br>${earned}`;
@@ -1689,7 +1833,7 @@ function updateHud(){
   const fill = $('boostFill');
   fill.style.width = boostE + '%';
   fill.classList.toggle('low', boostLock || boostE < 25);
-  $('boostLbl').textContent = boostLock ? '⚡ BOOST · recharging…' : '⚡ BOOST';
+  $('boostLbl').textContent = boostLock ? 'BOOST · recharging…' : 'BOOST';
   dashBtn.classList.toggle('dim', boostLock || boostE <= BOOST_MIN);
 }
 
@@ -1755,15 +1899,27 @@ function prizeFor(pos,total,L){
 }
 function refreshWallet(){
   const f = career();
-  $('wallet3d').innerHTML = `💰 Balance <b>₹${f.money}</b> &nbsp;•&nbsp; 🏎️ <b>${chosenCar.name}</b> (${Math.round(chosenCar.top*3.4)} km/h)`;
-  $('walletGarage').textContent = `💰 ₹${f.money} · driving the ${chosenCar.name}`;
+  $('wallet3d').innerHTML = `<span>Balance <b>₹${f.money}</b></span><i></i><span><b>${chosenCar.name}</b> · ${Math.round(chosenCar.top*3.4)} km/h</span>`;
+  $('walletGarage').innerHTML = `Balance <b>₹${f.money}</b> · driving the ${chosenCar.name}`;
+  if ($('circMsg')) $('circMsg').innerHTML = `Balance <b>₹${f.money}</b> · pick where you race next`;
+  if ($('garageSub')) $('garageSub').textContent = chosenCar.name;
+  f1CircuitSub();
 }
 function flashWallet(msg){
-  $('wallet3d').innerHTML = `<span style="color:#ff7b7b">${msg}</span>`;
-  setTimeout(refreshWallet, 1800);
+  msg = String(msg).replace(/^(🔒|💸|✅)\s*/u,'');
+  ['wallet3d','walletGarage','circMsg'].forEach(id=>{ const el=$(id); if(el) el.innerHTML = `<span class="f1-warn">${msg}</span>`; });
+  clearTimeout(flashWallet._t); flashWallet._t = setTimeout(refreshWallet, 1800);
 }
 
 /* ---------------- menu UI ---------------- */
+// Play button sub-line + mode tile sub-lines (new menu layout)
+const F1LOCK = '<svg class="f1-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function f1CircuitSub(){
+  const c = chosenCountry, el = $('circuitSub'); if (!el || !c) return;
+  el.textContent = c.name + ' · ' + (c.laps||3) + ' laps' + (c.master ? ' · Master' : c.free ? ' · Free' : ' · Entry ₹' + c.fee.toLocaleString());
+  const ms = $('masterSub'); if (ms) ms.textContent = masterOpen() ? 'Open now' : 'From ₹' + MASTER_MIN.toLocaleString();
+}
+function f1Show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); $(id).scrollTop = 0; }
 function buildMenu(){
   const f = career();
   refreshWallet();
@@ -1773,12 +1929,12 @@ function buildMenu(){
   maps.innerHTML = ordered.map(c=>{
     const unlocked = isUnlocked(c);
     const info = !unlocked
-      ? `🔒 win ${COUNTRIES[c.idx-1].name}`
+      ? `Win ${COUNTRIES[c.idx-1].name}`
       : c.free ? `FREE · win ₹${c.win}` : `Entry ₹${c.fee} · win ₹${c.win}`;
     return `<div class="mapcard ${c.id===chosenCountry.id?'sel':''} ${unlocked?'':'locked'}" data-id="${c.id}">
-      <div class="fl">${unlocked?c.flag:'🔒'}</div>
+      <div class="fl">${unlocked?c.flag:F1LOCK}</div>
       <div class="mn">${c.name}</div>
-      <div class="md">${c.laps||3} laps${c.theme.night?' · 🌙':''}</div>
+      <div class="md">${c.laps||3} laps${c.theme.night?' · night':''}</div>
       <div class="fee">${info}</div>
     </div>`;
   }).join('');
@@ -1787,16 +1943,16 @@ function buildMenu(){
   const lock = $('masterLock'), mlist = $('masterList');
   lock.classList.toggle('hidden', open);
   if (!open){
-    lock.innerHTML = `🔒 <b>Master Mode locks until your balance passes ₹${MASTER_MIN.toLocaleString()}</b><br>`
+    lock.innerHTML = `<b>Master Mode locks until your balance passes ₹${MASTER_MIN.toLocaleString()}</b><br>`
       + `You have ₹${(f.money||0).toLocaleString()} — win ₹${Math.max(0, MASTER_MIN+1-(f.money||0)).toLocaleString()} more on the World Tour.`;
   }
   mlist.innerHTML = MASTERS.map(c=>{
     const afford = (f.money||0) >= c.fee;
     const pay = `P1 ₹${Math.round(c.fee*MASTER_PAY[0]).toLocaleString()} · P3 breaks even`;
     return `<div class="mapcard master ${c.id===chosenCountry.id?'sel':''} ${open&&afford?'':'locked'}" data-id="${c.id}">
-      <div class="fl">${open?c.flag:'🔒'}</div>
+      <div class="fl">${open?c.flag:F1LOCK}</div>
       <div class="mn">${c.name}</div>
-      <div class="md">${c.laps} laps · ${c.gaps.length} 🌉${c.theme.night?' · 🌙':''}</div>
+      <div class="md">${c.laps} laps · ${c.gaps.length} gaps${c.theme.night?' · night':''}</div>
       <div class="fee">Entry ₹${c.fee.toLocaleString()}${afford?'':' · need more'}</div>
       <div class="mt">${pay}</div>
     </div>`;
@@ -1811,6 +1967,7 @@ function buildMenu(){
       mlist.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
       buildTrack(chosenCountry);
       if (state==='menu') resetShowcase();
+      f1CircuitSub();
     };
   });
 
@@ -1823,6 +1980,7 @@ function buildMenu(){
       maps.querySelectorAll('.mapcard').forEach(x=>x.classList.toggle('sel', x===el));
       buildTrack(chosenCountry);              // refresh the menu backdrop to this country
       if (state==='menu') resetShowcase();    // re-seat the idling car on the new circuit
+      f1CircuitSub();
     };
   });
   // ---- garage: owned cars are selectable, the rest are buyable (shared with 2D) ----
@@ -1883,6 +2041,11 @@ function closeCustom(){ $('scr-custom').classList.add('hidden'); openGarage(); }
 
 $('startBtn').onclick = startRace;
 $('garageBtn').onclick = openGarage;
+$('circuitsBtn').onclick = $('circuitsRow').onclick = ()=>f1Show('scr-circuits');
+$('masterBtn').onclick = ()=>{ f1Show('scr-circuits'); const h=$('masterHead'); if (h) $('scr-circuits').scrollTop = h.offsetTop - 70; };
+$('circuitsBack').onclick = $('circuitsDone').onclick = ()=>f1Show('scr-menu');
+$('howBtn').onclick = ()=>f1Show('scr-how');
+$('howBack').onclick = ()=>f1Show('scr-menu');
 $('garageBack').onclick = toMenu;
 $('againBtn').onclick = ()=>{
   const f = career();
@@ -1900,7 +2063,8 @@ $('customBack').onclick = ()=>{                       // discard edits made this
 };
 // sound on/off
 let soundOff = false;
-$('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); $('muteBtn').textContent = soundOff?'🔇':'🔊'; };
+$('muteBtn').onclick = ()=>{ soundOff = !soundOff; Engine.setMuted(soundOff); document.documentElement.classList.toggle('f1-muted', soundOff); };
+$('menuMute').onclick = ()=>$('muteBtn').click();
 
 /* ============================================================
    MULTIPLAYER — rooms over Supabase Realtime (presence + broadcast).
@@ -2008,10 +2172,11 @@ function mpOnClockMsg(ev, p){
   }
 }
 function mpToast(msg){
+  msg=String(msg).replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u,'');
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#0f1d36;'
-    +'border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:bold;'
-    +'box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center';
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:rgba(255,255,255,.92);'
+    +'-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,.07);color:#1d1d1f;padding:12px 18px;border-radius:999px;font:600 14px/1.3 var(--ig-font);'
+    +'box-shadow:0 12px 30px rgba(40,40,80,.18);max-width:92vw;text-align:center';
   t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 4000);
 }
 function showScreenMp(id){
@@ -2023,7 +2188,7 @@ function showScreenMp(id){
 async function mpOpenLobby(){
   document.body.classList.add('mpui');
   state='mplobby'; showScreenMp('scr-mplobby');
-  $('mpWho').textContent='👤 Racing as '+mpName();
+  $('mpWho').textContent='Racing as '+mpName();
   $('mpMsg').textContent='';
   try{
     const sb=await mpEnsure();
@@ -2038,7 +2203,7 @@ async function mpOpenLobby(){
       MP.lobbyCh.subscribe(st=>{ if (st==='SUBSCRIBED'){ mpAdvertise(); mpRenderRooms(); } });
     } else mpRenderRooms();
     mpLobbyKeepalive();
-  }catch(e){ $('mpRoomList').innerHTML='<div class="sub">⚠️ Couldn’t connect — check your internet and try again.</div>'; }
+  }catch(e){ $('mpRoomList').innerHTML='<div class="sub">Couldn’t connect — check your internet and try again.</div>'; }
 }
 // hosts advertise their room on the lobby channel; the ad dies with the host's connection.
 // `hb` is a freshness beat — viewers hide ads whose beat stops (ghost rooms from a host
@@ -2097,16 +2262,16 @@ function mpRenderRooms(){
     return (nowT-e.at)<30000;
   });
   rooms.sort((a,b)=>(a.t||0)-(b.t||0));
-  if (!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite your friends! 🏎️</div>'; return; }
+  if (!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite your friends!</div>'; return; }
   el.innerHTML=rooms.map(r=>{
     const c=COUNTRIES.find(x=>x.id===r.circuit)||COUNTRIES[0];
     const full=(r.n|0)>=MP_MAXN, racing=!!r.started;
-    const act = racing ? '<span class="pill lock">🏁 RACING</span>'
+    const act = racing ? '<span class="pill lock">Racing</span>'
              : full   ? '<span class="pill lock">FULL</span>'
-             : `<button class="btn green" data-join="${esc(r.room)}" style="padding:9px 18px;font-size:14px;margin:0">JOIN</button>`;
+             : `<button class="ig-btn" data-join="${esc(r.room)}" style="min-height:38px;padding:0 18px;font-size:14px">Join</button>`;
     return `<div class="room ${racing?'racing':''}"><div class="rfl">${c.flag}</div>
       <div class="rinfo"><div class="rcode">${esc(r.room)}</div>
-      <div class="rmeta">👑 ${esc(r.host||'?')} · ${Math.min(r.n|0,MP_MAXN)}/${MP_MAXN} racers · ${c.name}${racing?' · race in progress':''}</div></div>${act}</div>`;
+      <div class="rmeta">${esc(r.host||'?')} · ${Math.min(r.n|0,MP_MAXN)}/${MP_MAXN} racers · ${c.name}${racing?' · race in progress':''}</div></div>${act}</div>`;
   }).join('');
   el.querySelectorAll('[data-join]').forEach(b=> b.onclick=()=>mpJoin(b.dataset.join));
 }
@@ -2128,7 +2293,7 @@ async function mpCreate(){
          let n=0; while (ads[code] && n++<20) code=genCode(); }catch(e){}
     await mpOpenRoom(code, true);
     try{ if (window.track) window.track('mp_room_create',{ code:code }); }catch(e){}
-  }catch(e){ $('mpMsg').textContent='⚠️ Couldn’t create the room — try again.'; }
+  }catch(e){ $('mpMsg').textContent='Couldn’t create the room — try again.'; }
 }
 async function mpJoin(code){
   code=cleanCode(code);
@@ -2136,13 +2301,13 @@ async function mpJoin(code){
   try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{};   // pre-checks when the ad is visible
        for (const k in st){ const p=st[k]&&st[k][0];
          if (p && p.room===code){
-           if (p.started){ $('mpMsg').textContent='🏁 That race has already started — join another room.'; return; }
+           if (p.started){ $('mpMsg').textContent='That race has already started — join another room.'; return; }
            if ((p.n|0)>=MP_MAXN){ $('mpMsg').textContent='That room is full ('+MP_MAXN+'/'+MP_MAXN+').'; return; }
          } } }catch(e){}
   $('mpMsg').textContent='Joining '+code+'…';
   try{ await mpEnsure(); await mpOpenRoom(code, false);
        try{ if (window.track) window.track('mp_room_join',{ code:code }); }catch(e){} }
-  catch(e){ $('mpMsg').textContent='⚠️ Couldn’t join '+code+' — try again.'; }
+  catch(e){ $('mpMsg').textContent='Couldn’t join '+code+' — try again.'; }
 }
 
 /* ---- the room channel ---- */
@@ -2274,29 +2439,29 @@ function mpRoomWatch(){
 function mpRenderRoom(){
   $('mpRoomCode').textContent=MP.code||'----';
   const n=MP.members.length, botsN=Math.max(0,MP_MAXN-n);
-  $('mpSeats').textContent=n+'/'+MP_MAXN+' player'+(n===1?'':'s')+(botsN?' · '+botsN+' 🤖 bot'+(botsN===1?'':'s')+' will fill in':'');
+  $('mpSeats').textContent=n+'/'+MP_MAXN+' player'+(n===1?'':'s')+(botsN?' · '+botsN+' bot'+(botsN===1?'':'s')+' will fill in':'');
   $('mpPlayers').innerHTML=
     MP.members.map(m=>`<div class="prow"><span class="pc" style="background:#${((m.body!=null?m.body:0xe10600)>>>0).toString(16).padStart(6,'0')}"></span>
-      <span class="pn">${esc(m.name||'Racer')}${m.id===myId?' (you)':''}</span>${m.host?'<span class="ph">👑 HOST</span>':''}</div>`).join('')
-    + Array.from({length:botsN},()=>'<div class="prow bot"><span class="pc" style="background:#666"></span><span class="pn">🤖 Bot</span></div>').join('');
+      <span class="pn">${esc(m.name||'Racer')}${m.id===myId?' (you)':''}</span>${m.host?'<span class="ph">Host</span>':''}</div>`).join('')
+    + Array.from({length:botsN},()=>'<div class="prow bot"><span class="pc" style="background:#666"></span><span class="pn">Bot</span></div>').join('');
   const maps=$('mpRoomMaps');
   maps.classList.toggle('guestview', !MP.isHost);
   $('mpMapWho').textContent=MP.isHost?'you pick — everyone races it':'the host picks';
   maps.innerHTML=COUNTRIES.filter(c=>!c.free).map(c=>
     `<div class="mapcard ${c.id===MP.circuit?'sel':''}" data-id="${c.id}">
       <div class="fl">${c.flag}</div><div class="mn">${c.name}</div>
-      <div class="md">${c.laps||3} laps${c.theme.night?' · 🌙':''}</div></div>`).join('');
+      <div class="md">${c.laps||3} laps${c.theme.night?' · night':''}</div></div>`).join('');
   if (MP.isHost) maps.querySelectorAll('.mapcard').forEach(el=>
     el.onclick=()=>{ MP.circuit=el.dataset.id; mpTrackSelf(); mpAdvertise(); mpRenderRoom(); });
   const b=$('mpStartBtn');
   b.classList.toggle('hidden', !MP.isHost);
   b.disabled = n<2;
-  b.textContent = n<2 ? '🏁 START — waiting for 1 more player' : '🏁 START RACE';
-  $('mpRoomHint').innerHTML=((MP.started && !MP.on) ? '🏁 <b>A race is in progress</b> — you’ll be on the grid for the next one!<br>' : '')
+  b.textContent = n<2 ? 'Start · waiting for 1 more player' : 'Start Race';
+  $('mpRoomHint').innerHTML=((MP.started && !MP.on) ? '<b>A race is in progress</b> — you’ll be on the grid for the next one!<br>' : '')
     + (MP.isHost
-    ? 'You are the host 👑 — pick the circuit and start when your friends are in.'
-    : 'Waiting for the host 👑 to start the race…')
-    + ' Empty seats become 🤖 bots. <b>Everyone drives an equal car</b> — pure racing skill.';
+    ? 'You are the host — pick the circuit and start when your friends are in.'
+    : 'Waiting for the host to start the race…')
+    + ' Empty seats become bots. <b>Everyone drives an equal car</b> — pure racing skill.';
 }
 function mpLeaveRoom(){
   mpCloseRoom();
@@ -2570,13 +2735,13 @@ function mpEndRaceSim(){
 function mpRenderBoard(final){
   const order=rankings();
   const myPos=order.findIndex(r=>r.isPlayer)+1;
-  const medal=myPos===1?'🏆 YOU WON!':(myPos===2?'🥈 P2':myPos===3?'🥉 P3':'🏁 P'+myPos);
+  const medal=myPos===1?'You Won!':'P'+myPos;
   $('finTitle').textContent=medal;
   $('finTitle').style.color=myPos===1?'#ffd54a':myPos<=3?'#39ff88':'#fff';
   $('finSub').innerHTML=`${MP.country.flag} ${MP.country.name} — online race · ${all.length} racers · your time ${fmt(player.finished?finShow(player):raceTime)}`
     + (final?'':'<br><span style="color:#9fb3d8">Waiting for everyone to finish…</span>');
   $('finBoard').innerHTML=order.map((r,i)=>{
-    const t=r.finished?fmt(finShow(r)):(r.gone?'❌ left':(final?'DNF':'racing…'));
+    const t=r.finished?fmt(finShow(r)):(r.gone?'left':(final?'DNF':'racing…'));
     return `<div class="brow ${r.isPlayer?'me':''}"><span class="pos">${i+1}</span>
       <span class="nm">${esc(r.name)}${r.isPlayer?' (you)':''}</span><span style="color:#9fb3d8">${t}</span></div>`;
   }).join('');
@@ -2663,8 +2828,8 @@ try{ if (location.search.indexOf('mptest')>=0){
   document.addEventListener('DOMContentLoaded', function(){
     if (!window.IGAuth) return;
     IGAuth.onChange(function(p){
-      var b = document.getElementById('IGA_login');
-      if (b) b.textContent = p ? ('👤 ' + IGAuth.displayName()) : '👤 Log in';
+      var t = document.getElementById('f1LoginTxt');
+      if (t) t.textContent = p ? IGAuth.displayName() : 'Log in';
     });
   });
 </script>

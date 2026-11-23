@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Penalty Kings</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Penalty Kings — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <script type="importmap">{ "imports": { "three": "./libs/three.module.js" } }</script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -115,12 +116,110 @@
   .tcard .st{ font-size:10px; color:#9fc3b0; }
   #bracket { font-size:13px; color:#cfe8da; line-height:1.9; }
   #bracket .on { color:#ffd54a; font-weight:900; }
+
+  /* ===== ilan Games light theme (menus only — the 3D match keeps its own look) ===== */
+  :root, html[data-theme]{ --accent:#22c55e; --accent2:#12917f; --icon1:#43e97b; --icon2:#1aa89a; }
+  html,body { background:var(--ig-bg); font-family:var(--ig-font); letter-spacing:-.01em; }
+  button { font-family:inherit; }
+  #scoreboard, #prompt, #roundTag, #present, #powerWrap .lbl, #replayTag { font-family:var(--ig-font); }
+  #homeBtn { position:absolute; top:max(12px,env(safe-area-inset-top)); left:12px; z-index:30; width:44px; height:44px; border-radius:999px; display:grid; place-items:center; color:#fff; text-decoration:none;
+    background:rgba(20,20,40,.38); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); }
+  #homeBtn svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  #wrap:has(#menu:not(.hidden)) #homeBtn, #wrap:has(#teamselect:not(.hidden)) #homeBtn, #wrap:has(#settings:not(.hidden)) #homeBtn,
+  #wrap:has(#shop:not(.hidden)) #homeBtn, #wrap:has(#matchover:not(.hidden)) #homeBtn, #wrap:has(#loading:not(.hidden)) #homeBtn { display:none; }
+
+  .screen { justify-content:flex-start; align-items:stretch; gap:0; text-align:left; color:var(--ig-text);
+    padding:max(14px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
+    background:rgba(242,242,247,.8); -webkit-backdrop-filter:blur(22px) saturate(160%); backdrop-filter:blur(22px) saturate(160%); }
+  .screen .ig-col { gap:16px; }
+  .screen .ig-col.wide { max-width:620px; }
+  .screen p b { color:var(--ig-text); font-weight:700; }
+  .screen p { color:var(--ig-text2); font-size:15px; line-height:1.5; }
+  .screen h1 { font-style:normal; letter-spacing:-.04em; }
+  @media (min-height:760px){ #menu .ig-col { margin-top:3vh; } }
+  .tb-spacer { width:88px; display:flex; justify-content:flex-end; }
+  .ig-topbar .ig-navtitle { flex:1; text-align:center; }
+  .ig-topbar > .ig-navback { min-width:88px; }
+  .coinchip { position:static; display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px 0 9px; border-radius:999px; font:700 15px/1 var(--ig-font); color:var(--ig-text);
+    background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  #coinHud, #shopCoinHud { position:static; top:auto; right:auto; z-index:auto; color:var(--ig-text); background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:999px; padding:0 14px 0 9px; font-size:15px; }
+  #wrap:has(#tutorial:not(.hidden)) #homeBtn { color:var(--ig-text); background:var(--ig-glass); border-color:var(--ig-line); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  #shopCoinHud { min-width:88px; justify-content:center; }
+  svg.coin { width:20px; height:20px; flex:none; }
+  #loading { align-items:center; justify-content:center; }
+  #loading h1 { font:700 22px var(--ig-font); color:var(--ig-text2); background:none; -webkit-text-fill-color:currentColor; }
+
+  /* team select */
+  .teamGrid { width:100%; max-height:none; overflow:visible; padding:0; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:10px; }
+  .tcard { text-align:center; padding:14px 6px 12px; border-radius:20px; border:1px solid var(--ig-line); background:var(--ig-glass);
+    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); transition:transform .2s var(--ig-ease), box-shadow .2s; }
+  .tcard:hover { border-color:var(--ig-line); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow2); transform:translateY(-2px); }
+  .tcard:active { transform:scale(.96); }
+  .tcard .fl { font-size:34px; line-height:1.1; }
+  .tcard .cn { font-size:15px; font-weight:700; margin-top:4px; letter-spacing:-.01em; }
+  .tcard .st { font-size:12px; color:var(--ig-text2); font-weight:500; }
+
+  /* tutorial */
+  #tutorial { justify-content:center; }
+  #tutorial .ig-col { margin:auto; }
+  #tutCard { width:100%; text-align:center; background:var(--ig-sheet); }
+  #tutVis { margin:2px 0 12px; display:flex; justify-content:center; }
+  #tutVis .tv { width:72px; height:72px; border-radius:20px; }
+  #tutVis .tv svg { width:38px; height:38px; }
+  #tutTitle { font:800 24px/1.15 var(--ig-font); letter-spacing:-.03em; color:var(--ig-text); margin-bottom:8px; }
+  #tutText { margin:0 auto; font-size:15.5px; }
+  #tutDots { margin-top:16px; }
+  #tutDots span { width:8px; height:8px; background:var(--ig-line2); transition:width .2s; }
+  #tutDots span.on { width:22px; background:var(--accent); }
+  .screen .row { display:flex; gap:10px; justify-content:center; }
+  .screen .row .ig-btn { flex:1; max-width:200px; }
+
+  /* settings */
+  .toggle { width:51px; height:31px; border-radius:999px; background:rgba(120,120,128,.24); transition:background .2s; }
+  .toggle.on { background:#34c759; }
+  .toggle .k { top:2px; left:2px; width:27px; height:27px; box-shadow:0 3px 8px rgba(0,0,0,.18); transition:left .2s var(--ig-ease); }
+  .toggle.on .k { left:22px; }
+  #rgSens { width:130px; accent-color:var(--accent2); }
+
+  /* rewards */
+  #shop .ig-seg.tabs { display:grid; flex-wrap:nowrap; gap:0; }
+  #shop .tab { font:600 14px/1 var(--ig-font); padding:0 6px; height:32px; background:none; color:var(--ig-text2); border-radius:999px; }
+  #shop .tab.on { background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+  .grid { width:100%; max-height:none; overflow:visible; padding:0; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
+  .item { text-align:center; padding:16px 10px 12px; border-radius:20px; border:1px solid var(--ig-line); background:var(--ig-glass);
+    -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+  .item.eq { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent), var(--ig-shadow); }
+  .item .sw { width:52px; height:52px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08), 0 6px 14px -6px rgba(0,0,0,.4); }
+  .item .nm { font-size:14px; font-weight:700; letter-spacing:-.01em; margin-bottom:10px; }
+  .item button { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-width:84px; height:32px; padding:0 14px; border-radius:999px; font:700 13px/1 var(--ig-font);
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; }
+  .item button svg.coin { width:16px; height:16px; }
+  .item button.own { background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line2); }
+  .item button.eq { background:rgba(52,199,89,.14); color:#1f8a3e; opacity:1; }
+  .ig-cta b { color:#fff; }
+  .item button:disabled:not(.eq) { opacity:1; background:rgba(120,120,128,.14); color:var(--ig-text2); }
+
+  /* match over */
+  #matchover { justify-content:center; background:rgba(20,20,40,.25); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+  #matchover .ig-col { margin:auto; }
+  .ig-sheet.mo { text-align:center; display:flex; flex-direction:column; gap:12px; }
+  #moTitle { font:900 clamp(34px,9vw,46px)/1.05 var(--ig-font); letter-spacing:-.045em; background:none; -webkit-text-fill-color:currentColor; }
+  #moText { margin:0 auto; font-size:16px; color:var(--ig-text); }
+  #bracket { display:flex; flex-direction:column; gap:2px; margin:2px auto; text-align:left; color:var(--ig-text2); font-size:14px; font-weight:600; line-height:1.9; }
+  #bracket .on { color:var(--ig-text); font-weight:800; }
+  #bracket .bk { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:10px; border:2px solid var(--ig-line2); vertical-align:0; }
+  #bracket .bk.done { background:var(--accent); border-color:var(--accent); }
+  #bracket .on .bk { border-color:var(--accent2); }
+  .ig-sheet .pill { align-self:center; background:rgba(255,200,61,.18); color:#8a5a00; border-radius:999px; padding:7px 14px; font-size:14px; font-weight:700; }
+  .ig-sheet .pill:empty { display:none; }
+  .ig-sheet .row { margin-top:4px; }
+  @media (max-width:370px){ .ig-row small { display:none; } }
 </style>
 </head>
 <body>
 <div id="wrap">
   <canvas id="game"></canvas>
-  <a id="homeBtn" href="./" title="Back to Penalty Kings menu" style="position:absolute;top:12px;left:12px;z-index:30;width:44px;height:44px;border-radius:50%;background:rgba(8,18,12,.72);border:1px solid rgba(120,255,200,.25);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;text-decoration:none">🏠</a>
+  <a id="homeBtn" href="./" title="Back to Penalty Kings menu" aria-label="Back to menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
 
   <div id="scoreboard" class="hidden"><span class="t" id="sbYouName" style="color:#5fb4ff">YOU</span><span class="sc" id="sbScore">0 - 0</span><span class="t" id="sbOppName" style="color:#ff8a5a">CPU</span></div>
   <div id="roundTag" class="hidden"></div>
@@ -137,52 +236,80 @@
   <div id="replayTag" class="hidden">● REPLAY — tap to skip</div>
 
   <div id="menu" class="screen">
-    <div id="coinHud">🪙 <span id="menuCoins">0</span></div>
-    <h1>PENALTY KINGS</h1>
-    <p style="margin-top:-6px">Pick a country, play the World Cup of penalties — Round 1 to the Final!</p>
-    <div class="menu-btns">
-      <button class="btn" id="btnPlay">🏆 TOURNAMENT</button>
-      <button class="btn alt" id="btnTut">🎓 TUTORIAL</button>
-      <button class="btn alt" id="btnShop">🛍️ REWARDS</button>
-      <button class="btn gray" id="btnSet">⚙️ SETTINGS</button>
+   <div class="ig-col">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="./" title="Penalty Kings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></a>
+      <div id="coinHud" class="coinchip"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc83d" stroke="#d98a00" stroke-width="1.6"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#d98a00" stroke-width="1.4"/></svg><span id="menuCoins">0</span></div>
     </div>
-    <a href="../" style="color:#8fb0a0;font-size:13px;text-decoration:none">🏠 All Ilan Games</a>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M8 88 L8 22 L92 22 L92 88" fill="none" stroke="#fff" stroke-width="5"/>
+<path d="M8 88 L8 22 L92 22 L92 88" fill="none" stroke="#22120a" stroke-width="9" opacity=".35" transform="translate(0 2)"/>
+<path d="M8 22 L92 22 L92 88 L8 88Z" fill="#fff" opacity=".12"/>
+<g stroke="#fff" stroke-width="1.4" opacity=".55"><path d="M20 22V88M32 22V88M44 22V88M56 22V88M68 22V88M80 22V88M8 34H92M8 46H92M8 58H92M8 70H92M8 82H92"/></g>
+<path d="M8 22 L92 22" stroke="#fff" stroke-width="5"/>
+<path d="M30 90 Q40 60 68 38" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/>
+<circle class="o" cx="72" cy="36" r="13" fill="#fff"/>
+<path class="o" d="M72 30 L78 34 L76 41 L68 41 L66 34Z" fill="#22120a" stroke-width="1.5"/>
+<path d="M72 30 V23 M78 34 L84 31 M76 41 L80 47 M68 41 L64 47 M66 34 L60 31" stroke="#22120a" stroke-width="2"/>
+<path class="o" d="M20 46 Q16 36 22 32 L32 30 Q38 32 36 40 L32 52 Z" fill="#ff8a1a"/><path d="M22 36 L30 34" stroke="#22120a" stroke-width="2"/></svg></div>
+      <div class="ig-title">Penalty Kings</div>
+      <div class="ig-tagline">Pick a country and win the World Cup of penalties.</div>
+    </div>
+    <div class="ig-playrow">
+      <button class="ig-cta" id="btnPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>3D World Cup tournament</small></span></button>
+      <button class="ig-sq" id="btnSet" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+    <div class="ig-list">
+      <button class="ig-row" id="btnTut"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11M21 9v5"/></svg></span><span class="ig-grow">How to Play<small>Shooting and saving, step by step</small></span></button>
+      <button class="ig-row" id="btnShop"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="17" height="12" rx="2"/><path d="M12 8v12M3.5 12.5h17M12 8c-1.5-3.5-5.5-4-5.5-1.5S10 8 12 8zm0 0c1.5-3.5 5.5-4 5.5-1.5S14 8 12 8z"/></svg></span><span class="ig-grow">Rewards<small>Balls, nets, stadiums, celebrations</small></span></button>
+      <a class="ig-row" href="2d.html"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b38cff,#6a3df0)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="ig-grow">Classic 2D<small>The original Penalty Kings</small></span></a>
+    </div>
+   </div>
   </div>
 
   <div id="teamselect" class="screen hidden">
-    <h1 style="font-size:38px">CHOOSE YOUR TEAM</h1>
+   <div class="ig-col wide">
+    <div class="ig-topbar"><button class="ig-navback" id="tsBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button><div class="ig-navtitle">Choose Your Team</div><div class="tb-spacer"></div></div>
     <div class="teamGrid" id="teamGrid"></div>
-    <button class="btn gray" id="tsBack">⬅ Back</button>
+   </div>
   </div>
 
   <div id="tutorial" class="screen hidden">
-    <div id="tutCard"><div id="tutVis">⚽</div><h2 id="tutTitle" style="font-size:24px;color:#39ff88"></h2><p id="tutText"></p></div>
-    <div id="tutDots"></div>
-    <div class="row"><button class="btn gray" id="tutBack" style="font-size:15px;padding:11px 20px">⬅</button><button class="btn" id="tutNext">NEXT ▶</button></div>
+   <div class="ig-col">
+    <div id="tutCard" class="ig-sheet"><div id="tutVis"></div><h2 id="tutTitle"></h2><p id="tutText"></p><div id="tutDots"></div></div>
+    <div class="row"><button class="ig-btn secondary" id="tutBack">Back</button><button class="ig-btn" id="tutNext">Next</button></div>
+   </div>
   </div>
 
   <div id="settings" class="screen hidden">
-    <h1 style="font-size:40px">⚙️ SETTINGS</h1>
-    <div class="setrow"><span>🎵 Music</span><div class="toggle" id="tgMusic"><div class="k"></div></div></div>
-    <div class="setrow"><span>🔊 Sound</span><div class="toggle" id="tgSound"><div class="k"></div></div></div>
-    <div class="setrow"><span>🎥 Camera</span><input type="range" id="rgSens" min="0.5" max="2" step="0.1"></div>
-    <button class="btn gray" id="setBack" style="margin-top:8px">⬅ Back</button>
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-navback" id="setBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button><div class="ig-navtitle">Settings</div><div class="tb-spacer"></div></div>
+    <div class="ig-list">
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff6ea8,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg></span><span class="ig-grow">Music</span><div class="toggle" id="tgMusic"><div class="k"></div></div></div>
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></span><span class="ig-grow">Sound</span><div class="toggle" id="tgSound"><div class="k"></div></div></div>
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 10.5l5-3v9l-5-3"/></svg></span><span class="ig-grow">Camera<small>Aim sensitivity</small></span><input type="range" id="rgSens" min="0.5" max="2" step="0.1"></div>
+    </div>
+   </div>
   </div>
 
   <div id="shop" class="screen hidden">
-    <div id="shopCoinHud">🪙 <span id="shopCoins">0</span></div>
-    <h1 style="font-size:42px">🛍️ REWARDS</h1>
-    <div class="tabs"><button class="tab on" data-cat="balls">⚽ Balls</button><button class="tab" data-cat="nets">🥅 Nets</button><button class="tab" data-cat="stadiums">🏟️ Stadiums</button><button class="tab" data-cat="celebs">🕺 Celebrations</button></div>
+   <div class="ig-col wide">
+    <div class="ig-topbar"><button class="ig-navback" id="shopBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button><div class="ig-navtitle">Rewards</div><div id="shopCoinHud" class="coinchip"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc83d" stroke="#d98a00" stroke-width="1.6"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#d98a00" stroke-width="1.4"/></svg><span id="shopCoins">0</span></div></div>
+    <div class="ig-seg tabs"><button class="tab on" data-cat="balls">Balls</button><button class="tab" data-cat="nets">Nets</button><button class="tab" data-cat="stadiums">Stadiums</button><button class="tab" data-cat="celebs">Celebrations</button></div>
     <div class="grid" id="shopGrid"></div>
-    <button class="btn gray" id="shopBack">⬅ Back</button>
+   </div>
   </div>
 
   <div id="matchover" class="screen hidden">
-    <h1 id="moTitle">VICTORY</h1>
-    <p id="moText"></p>
-    <div id="bracket"></div>
-    <div class="pill" id="moReward"></div>
-    <div class="row" style="margin-top:10px"><button class="btn" id="moMain">▶ CONTINUE</button><button class="btn gray" id="moMenu">🏠 MENU</button></div>
+   <div class="ig-col">
+    <div class="ig-sheet mo">
+      <h1 id="moTitle">Victory</h1>
+      <p id="moText"></p>
+      <div id="bracket"></div>
+      <div class="pill" id="moReward"></div>
+      <div class="row"><button class="ig-btn" id="moMain">Continue</button><button class="ig-btn secondary" id="moMenu">Menu</button></div>
+    </div>
+   </div>
   </div>
 
   <div id="loading" class="screen"><h1>Loading…</h1></div>
@@ -593,18 +720,18 @@ function matchOver(){ M.done=true; phase='over'; const win=M.you>M.opp;
   const isFinal = TOURNEY.round>=3;
   if(win){ TOURNEY.beaten.push(M.teamOpp.short);
     if(isFinal){ const reward=400; S.coins+=reward; S.cups++; save();
-      $('moTitle').textContent='🏆 CHAMPIONS!'; $('moTitle').style.color='#39ff88';
+      $('moTitle').textContent='Champions!'; $('moTitle').style.color='#12917f';
       $('moText').innerHTML=M.teamYou.flag+' <b>'+M.teamYou.name+'</b> win the tournament!<br>'+M.teamYou.short+' '+M.you+' - '+M.opp+' '+M.teamOpp.short;
-      $('moReward').textContent='🪙 +'+reward+' coins  •  🏆 Cups: '+S.cups; $('moMain').textContent='🏆 NEW TOURNAMENT'; moAction='newtour';
+      $('moReward').textContent='+'+reward+' coins  ·  Cups: '+S.cups; $('moMain').textContent='New Tournament'; moAction='newtour';
     } else { const reward=80; S.coins+=reward; save(); TOURNEY.round++;
-      $('moTitle').textContent='✅ ROUND WON!'; $('moTitle').style.color='#39ff88';
+      $('moTitle').textContent='Round Won!'; $('moTitle').style.color='#12917f';
       $('moText').innerHTML='You beat '+M.teamOpp.flag+' <b>'+M.teamOpp.name+'</b> '+M.you+'-'+M.opp+'!<br>Next up: <b>'+ROUND_NAMES[TOURNEY.round]+'</b>';
-      $('moReward').textContent='🪙 +'+reward+' coins'; $('moMain').textContent='▶ NEXT ROUND'; moAction='next'; }
+      $('moReward').textContent='+'+reward+' coins'; $('moMain').textContent='Next Round'; moAction='next'; }
   } else { save();
-    $('moTitle').textContent='😞 ELIMINATED'; $('moTitle').style.color='#ff6b6b';
+    $('moTitle').textContent='Eliminated'; $('moTitle').style.color='#e0364f';
     $('moText').innerHTML=M.teamOpp.flag+' <b>'+M.teamOpp.name+'</b> knocked you out '+M.opp+'-'+M.you+'.';
-    $('moReward').textContent=''; $('moMain').textContent='🏆 NEW TOURNAMENT'; moAction='newtour'; }
-  $('bracket').innerHTML=ROUND_NAMES.map((r,i)=>'<div'+(i===TOURNEY.round&&!isFinal&&win?' class="on"':(i===TOURNEY.round?' class="on"':''))+'>'+(i<TOURNEY.round?'✔ ':'• ')+r+'</div>').join('');
+    $('moReward').textContent=''; $('moMain').textContent='New Tournament'; moAction='newtour'; }
+  $('bracket').innerHTML=ROUND_NAMES.map((r,i)=>'<div'+(i===TOURNEY.round&&!isFinal&&win?' class="on"':(i===TOURNEY.round?' class="on"':''))+'>'+(i<TOURNEY.round?'<i class="bk done"></i>':'<i class="bk"></i>')+r+'</div>').join('');
   showScreen('matchover'); }
 let moAction='next';
 
@@ -620,16 +747,16 @@ $('teamGrid').addEventListener('click',e=>{ const c=e.target.closest('[data-team
 $('tsBack').onclick=()=>{ showScreen('menu'); refreshMenu(); };
 
 const TUT=[
-  { v:'⚽', t:'Welcome to Penalty Kings', b:'Pick a country and play a knockout tournament: Round 1 → Quarter → Semi → Final. Win it all!' },
-  { v:'🎯', t:'How to Shoot', b:'<b>Press &amp; drag</b> to move the green <b>aim ring</b>. It starts in the <b>centre, behind the kicker</b> — drag your cursor to a <b>side or top corner</b> to bring it out. Aim near the keeper and he <b>saves it</b>! <b>Hold</b> to build power, <b>release</b> to shoot.' },
-  { v:'🧤', t:'How to Save', b:'When you keep, a <b>red ✗ races around the goal</b> — that’s where the striker will shoot. You get <b>3 seconds</b>: <b>tap right on the ✗</b> before it shrinks &amp; vanishes to dive there and save. It moves fast — be quick!' },
-  { v:'🏆', t:'Tournament', b:'Each match: <b>5 penalties</b> each, <b>Sudden Death</b> if level. Win to advance. Lose and you’re out.' },
-  { v:'🎉', t:'Celebrations & Rewards', b:'Score to see the star’s signature celebration. Win the cup to earn coins and unlock <b>balls, stadiums & celebrations</b>!' },
+  { v:'<span class="tv ig-tile" style="--tile:linear-gradient(160deg,#43e97b,#12917f)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l4 3-1.5 4.5h-5L8 10.5z"/></svg></span>', t:'Welcome to Penalty Kings', b:'Pick a country and play a knockout tournament: Round 1 → Quarter → Semi → Final. Win it all!' },
+  { v:'<span class="tv ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg></span>', t:'How to Shoot', b:'<b>Press &amp; drag</b> to move the green <b>aim ring</b>. It starts in the <b>centre, behind the kicker</b> — drag your cursor to a <b>side or top corner</b> to bring it out. Aim near the keeper and he <b>saves it</b>! <b>Hold</b> to build power, <b>release</b> to shoot.' },
+  { v:'<span class="tv ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24"><path d="M7 20v-7.5L5 9.5a1.6 1.6 0 0 1 2.6-1.8L9 9.5V5a1.5 1.5 0 0 1 3 0v4V3.5a1.5 1.5 0 0 1 3 0V9V5a1.5 1.5 0 0 1 3 0v8.5c0 3.6-2.4 6.5-6 6.5H7"/></svg></span>', t:'How to Save', b:'When you keep, a <b>red ✗ races around the goal</b> — that’s where the striker will shoot. You get <b>3 seconds</b>: <b>tap right on the ✗</b> before it shrinks &amp; vanishes to dive there and save. It moves fast — be quick!' },
+  { v:'<span class="tv ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg></span>', t:'Tournament', b:'Each match: <b>5 penalties</b> each, <b>Sudden Death</b> if level. Win to advance. Lose and you’re out.' },
+  { v:'<span class="tv ig-tile" style="--tile:linear-gradient(160deg,#b38cff,#6a3df0)"><svg viewBox="0 0 24 24"><path d="M4 20l4.5-12 7.5 7.5z"/><path d="M13 4v2M18 6l-1.5 1.5M20 11h-2M15 9c1-1 1.5-2.5 1-4"/></svg></span>', t:'Celebrations & Rewards', b:'Score to see the star’s signature celebration. Win the cup to earn coins and unlock <b>balls, stadiums & celebrations</b>!' },
 ];
 let tutI=0;
 function openTut(){ tutI=0; renderTut(); showScreen('tutorial'); }
-function renderTut(){ const s=TUT[tutI]; $('tutVis').textContent=s.v; $('tutTitle').textContent=s.t; $('tutText').innerHTML=s.b;
-  $('tutBack').style.visibility=tutI>0?'visible':'hidden'; $('tutNext').textContent=tutI<TUT.length-1?'NEXT ▶':'⚽ CHOOSE TEAM';
+function renderTut(){ const s=TUT[tutI]; $('tutVis').innerHTML=s.v; $('tutTitle').textContent=s.t; $('tutText').innerHTML=s.b;
+  $('tutBack').style.visibility=tutI>0?'visible':'hidden'; $('tutNext').textContent=tutI<TUT.length-1?'Next':'Choose Team';
   $('tutDots').innerHTML=TUT.map((_,i)=>'<span class="'+(i===tutI?'on':'')+'"></span>').join(''); }
 $('tutNext').onclick=()=>{ if(tutI<TUT.length-1){ tutI++; renderTut(); } else { S.seenTut=true; save(); openTeamSelect(); } };
 $('tutBack').onclick=()=>{ if(tutI>0){ tutI--; renderTut(); } };
@@ -650,9 +777,9 @@ function renderShop(){ $('shopCoins').textContent=S.coins;
   let h=''; for(const it of CATS[shopCat]){ const owned=S[OWN[shopCat]].includes(it.id), eq=S[EQ[shopCat]]===it.id;
     let sw,inner=''; if(shopCat==='balls'||shopCat==='nets') sw='background:#'+new THREE.Color(it.color).getHexString();
     else if(shopCat==='stadiums') sw='background:linear-gradient(135deg,'+it.sky[0]+','+it.sky[1]+')';
-    else { sw='background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:24px'; inner='🕺'; }
-    let btn; if(eq) btn='<button class="eq" disabled>EQUIPPED</button>'; else if(owned) btn='<button class="own" data-eq="'+it.id+'">EQUIP</button>';
-      else btn='<button data-buy="'+it.id+'" '+(S.coins>=it.cost?'':'disabled')+'>🪙 '+it.cost+'</button>';
+    else { sw='background:linear-gradient(160deg,#ff6ea8,#e0364f);display:flex;align-items:center;justify-content:center;font-size:24px'; inner='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M5 8l4 2h6l4-3M9 10l-1 5-3 5M15 10l1 5 3 5M8 15h8"/></svg>'; }
+    let btn; if(eq) btn='<button class="eq" disabled>Equipped</button>'; else if(owned) btn='<button class="own" data-eq="'+it.id+'">Equip</button>';
+      else btn='<button data-buy="'+it.id+'" '+(S.coins>=it.cost?'':'disabled')+'><svg class=\"coin\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"#ffc83d\" stroke=\"#d98a00\" stroke-width=\"1.6\"/><circle cx=\"12\" cy=\"12\" r=\"5.6\" fill=\"none\" stroke=\"#d98a00\" stroke-width=\"1.4\"/></svg>'+it.cost+'</button>';
     h+='<div class="item'+(eq?' eq':'')+'"><div class="sw" style="'+sw+'">'+inner+'</div><div class="nm">'+it.name+'</div>'+btn+'</div>'; }
   $('shopGrid').innerHTML=h; }
 $('shopGrid').addEventListener('click',e=>{ const buy=e.target.closest('[data-buy]'), eq=e.target.closest('[data-eq]');

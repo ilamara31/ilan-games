@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Air Hockey Arena — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; overflow:hidden; background:#070b16; color:#fff;
@@ -96,85 +97,165 @@
   #resultBtns{ position:absolute; left:0; right:0; bottom:26px; z-index:12; display:none; flex-direction:column; align-items:center; gap:2px; }
   #resultBtns.on{ display:flex; }
 </style>
+<style>
+/* ===== ilan Games shared theme (light) — menus and pop-ups; the table canvas keeps its own look ===== */
+:root, html[data-theme]{ --accent:#1fc2b5; --accent2:#0a6f7c; --icon1:#30d5c8; --icon2:#0a6f7c; }
+html[data-theme] body{ background:transparent; color:var(--ig-text); font-family:var(--ig-font); letter-spacing:-.01em; }
+html[data-theme] .screen{ z-index:10; padding:max(12px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom)); color:var(--ig-text); text-align:left;
+  background:radial-gradient(60vmax 40vmax at 20% 0%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 60%),
+             radial-gradient(50vmax 40vmax at 100% 100%, rgba(94,92,230,.14), transparent 60%), var(--ig-bg); }
+.amenu{ gap:14px; }
+.amenu .ig-hero, .amenu .ig-stats{ text-align:center; }
+.ig-modes{ grid-template-columns:repeat(3,1fr); }
+html[data-theme] .sub{ color:var(--ig-text2); margin:0; font-size:15px; text-align:center; max-width:none; }
+.achip{ height:44px; display:inline-flex; align-items:center; padding:0 14px; border-radius:999px; font-size:14px; font-weight:600; color:var(--ig-text2);
+  background:var(--ig-glass); border:1px solid var(--ig-line); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.achip b{ color:var(--ig-text); font-weight:800; }
+/* lists (difficulty, career) */
+html[data-theme] .list{ max-width:none; gap:0; margin:0; }
+html[data-theme] .card2{ background:none; border:0; border-radius:0; padding:10px 14px 10px 12px; min-height:62px; }
+html[data-theme] .card2 + .card2{ border-top:1px solid var(--ig-line); }
+html[data-theme] .card2 .ic{ width:36px; height:36px; font-size:0; }
+html[data-theme] .card2 .ic.anum{ border-radius:10px; display:grid; place-items:center; font:800 16px var(--ig-font); color:#fff; background:linear-gradient(160deg,var(--accent),var(--accent2)); }
+html[data-theme] .card2.locked .ic.anum{ background:rgba(118,118,128,.35); }
+html[data-theme] .card2 .info .t{ font-weight:700; letter-spacing:-.02em; } html[data-theme] .card2 .info .d{ color:var(--ig-text2); font-size:13px; }
+html[data-theme] .pill{ font:700 14px var(--ig-font); border-radius:999px; padding:8px 16px; }
+html[data-theme] .pill.use{ background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; }
+html[data-theme] .pill.buy{ background:linear-gradient(160deg,#ffcf4a,#ff9500); color:#2a1600; }
+html[data-theme] .pill.on{ background:rgba(48,209,88,.16); color:#1f8f3a; } html[data-theme] .pill.lock{ background:rgba(118,118,128,.14); color:var(--ig-text3); }
+/* shop */
+html[data-theme] .tabs.ig-seg{ display:grid; margin:0 auto; width:240px; }
+html[data-theme] .tab{ background:none; border:0; color:var(--ig-text2); border-radius:999px; padding:8px 0; text-align:center; font:600 14px var(--ig-font); }
+html[data-theme] .tab.on{ background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12); }
+html[data-theme] .grid{ max-width:none; margin:0; grid-template-columns:repeat(2,1fr); }
+html[data-theme] .tile{ background:var(--ig-glass); border:1.5px solid var(--ig-line); border-radius:20px; box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); text-align:center; color:var(--ig-text); }
+html[data-theme] .tile.sel{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%, transparent); }
+html[data-theme] .tile.locked{ opacity:1; }
+html[data-theme] .tile .nm{ font-weight:700; margin-bottom:6px; } html[data-theme] .tile .px{ color:var(--accent2); font-weight:700; font-size:13px; }
+/* stats */
+html[data-theme] .statgrid{ max-width:none; margin:0; }
+html[data-theme] .stat{ background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:20px; box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+html[data-theme] .stat .v{ color:var(--ig-text); font-weight:800; letter-spacing:-.03em; } html[data-theme] .stat .k{ color:var(--ig-text2); }
+/* settings */
+.asettings{ padding:4px 16px; }
+html[data-theme] .toggle{ max-width:none; background:none; border:0; border-radius:0; padding:12px 0; margin:0; font-weight:600; }
+html[data-theme] .toggle + .toggle{ border-top:1px solid var(--ig-line); }
+html[data-theme] .sw{ background:rgba(120,120,128,.24); } html[data-theme] .sw.on{ background:#34c759; }
+html[data-theme] .sw i{ box-shadow:0 2px 6px rgba(0,0,0,.2); }
+.adanger{ color:#e0302a !important; }
+/* pause + result buttons over the table */
+html[data-theme] #pauseOv{ background:var(--ig-scrim); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.apause{ width:min(320px,88vw); display:flex; flex-direction:column; gap:10px; text-align:center; }
+.apause h2{ font:800 26px var(--ig-font); letter-spacing:-.03em; margin:0 0 6px; }
+html[data-theme] #pauseBtn{ border-radius:50%; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); display:grid; place-items:center; }
+#pauseBtn svg{ width:20px; height:20px; fill:none; stroke:#fff; stroke-width:2.4; stroke-linecap:round; }
+html[data-theme] #resultBtns .row{ gap:10px; }
+html[data-theme] #resultBtns .chip{ background:rgba(255,255,255,.9); color:var(--ig-text); border:0; border-radius:999px; font:700 15px var(--ig-font); padding:8px 16px; }
+#matchHud, #lockHint, #matchInfo{ font-family:var(--ig-font); }
+@media (max-width:370px){ .ig-mode small{ display:none; } }
+</style>
 </head>
 <body>
 <div id="app">
   <canvas id="game"></canvas>
 
   <!-- MAIN MENU -->
-  <div id="s-menu" class="screen">
-    <h1>🏒 AIR HOCKEY ARENA</h1>
-    <div class="sub">Fast, clean, physics-driven air hockey. First to 7 goals wins.</div>
-    <div class="wallet">
-      <span class="chip">🪙 <b id="w-coins">0</b></span>
-      <span class="chip">🏆 Wins <b id="w-wins">0</b></span>
-      <span class="chip">💔 Losses <b id="w-losses">0</b></span>
+  <div id="s-menu" class="screen ig-page">
+   <div class="ig-col amenu">
+    <div class="ig-topbar">
+      <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <button class="ig-iconbtn" data-go="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
-    <div class="menu-btns">
-      <button class="btn" data-go="play">▶ PLAY</button>
-      <button class="btn green" data-go="career">🏅 CAREER MODE</button>
-      <button class="btn gold" data-go="shop">🛒 SHOP</button>
-      <button class="btn sec" data-go="stats">📊 STATISTICS</button>
-      <button class="btn sec" data-go="settings">⚙️ SETTINGS</button>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="12" y="6" width="76" height="88" rx="14" fill="#e0f2fe"/>
+<rect x="36" y="6" width="28" height="5" fill="#22120a"/><rect x="36" y="89" width="28" height="5" fill="#22120a"/>
+<path d="M12 50 H88" stroke="#b3122f" stroke-width="2.5"/><circle cx="50" cy="50" r="12" fill="none" stroke="#b3122f" stroke-width="2.5"/>
+<path d="M30 6 A20 20 0 0 0 70 6 M30 94 A20 20 0 0 1 70 94" fill="none" stroke="#1d46a8" stroke-width="2.5"/>
+<path d="M52 66 L64 40 M46 64 L58 38" stroke="#7dd3fc" stroke-width="3" stroke-linecap="round"/>
+<ellipse class="o" cx="62" cy="34" rx="9" ry="7" fill="#22120a"/><ellipse cx="60" cy="32" rx="3" ry="1.5" fill="#fff" opacity=".5"/>
+<circle class="o" cx="44" cy="74" r="15" fill="#b3122f"/><circle class="o" cx="44" cy="74" r="7" fill="#ff8a8a"/><ellipse cx="38" cy="68" rx="4" ry="2.5" fill="#fff" opacity=".5"/></svg></div>
+      <div class="ig-title">Air Hockey Arena</div>
+      <div class="ig-tagline">Fast physics air hockey. First to 7 wins.</div>
     </div>
-    <div class="foot">
-      <button id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-      <button id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('airhockey','Air Hockey Arena')">🏆 Leaderboard</button>
-      <a href="../">🏠 All Games</a>
+    <div class="ig-playrow">
+      <button class="ig-cta" data-go="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Quick match &middot; pick a level</small></span></button>
     </div>
+    <div class="ig-modes">
+      <button class="ig-mode" data-go="career"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5.5"/><path d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/></svg></span><b>Career</b><small>Beat every bot</small></button>
+      <button class="ig-mode" data-go="shop"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a65,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><b>Shop</b><small>New paddles</small></button>
+      <button class="ig-mode" data-go="stats"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c48bff,#7a3ff0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20V11M12 20V4M18 20v-6"/></svg></span><b>Statistics</b><small>Your record</small></button>
+    </div>
+    <div class="ig-stats">
+      <div><b id="w-coins">0</b><span>Coins</span></div>
+      <div><b id="w-wins">0</b><span>Wins</span></div>
+      <div><b id="w-losses">0</b><span>Losses</span></div>
+    </div>
+    <div class="ig-list">
+      <button class="ig-row" onclick="window.IGAuth && IGAuth.showLeaderboard('airhockey','Air Hockey Arena')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#4aa8ff,#5e5ce6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><span class="ig-grow"><span id="IGA_lb">Leaderboard</span><small>Most wins</small></span></button>
+      <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.8 3.9-6 7.5-6s6.6 2.2 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Keep your wins and coins</small></span></button>
+    </div>
+   </div>
   </div>
 
   <!-- PLAY (difficulty) -->
-  <div id="s-play" class="screen hidden">
-    <h1>▶ QUICK PLAY</h1>
+  <div id="s-play" class="screen ig-page hidden">
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-iconbtn" data-go="menu" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Quick Play</div><div style="width:44px"></div></div>
     <div class="sub">Choose a difficulty. Score 7 to win.</div>
-    <div class="list" id="diffList"></div>
-    <button class="btn sec" data-go="menu">⬅ Back</button>
+    <div class="list ig-list" id="diffList"></div>
+   </div>
   </div>
 
   <!-- CAREER -->
-  <div id="s-career" class="screen hidden">
-    <h1>🏅 CAREER MODE</h1>
+  <div id="s-career" class="screen ig-page hidden">
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-iconbtn" data-go="menu" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Career</div><div style="width:44px"></div></div>
     <div class="sub">Beat each opponent to unlock the next. You start as a Rookie.</div>
-    <div class="list" id="careerList"></div>
-    <button class="btn sec" data-go="menu">⬅ Back</button>
+    <div class="list ig-list" id="careerList"></div>
+   </div>
   </div>
 
   <!-- SHOP -->
-  <div id="s-shop" class="screen hidden">
-    <h1>🛒 SHOP</h1>
-    <div class="wallet"><span class="chip">🪙 <b id="shop-coins">0</b></span></div>
-    <div class="tabs"><div class="tab on" data-tab="paddles">Paddles</div><div class="tab" data-tab="arenas">Arenas</div></div>
+  <div id="s-shop" class="screen ig-page hidden">
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-iconbtn" data-go="menu" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Shop</div><div class="achip"><b id="shop-coins">0</b>&nbsp;coins</div></div>
+    <div class="tabs ig-seg"><div class="tab on" data-tab="paddles">Paddles</div><div class="tab" data-tab="arenas">Arenas</div></div>
     <div class="grid" id="shopGrid"></div>
-    <button class="btn sec" data-go="menu">⬅ Back</button>
+   </div>
   </div>
 
   <!-- STATS -->
-  <div id="s-stats" class="screen hidden">
-    <h1>📊 STATISTICS</h1>
+  <div id="s-stats" class="screen ig-page hidden">
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-iconbtn" data-go="menu" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Statistics</div><div style="width:44px"></div></div>
     <div class="statgrid" id="statGrid"></div>
-    <button class="btn sec" data-go="menu">⬅ Back</button>
+   </div>
   </div>
 
   <!-- SETTINGS -->
-  <div id="s-settings" class="screen hidden">
-    <h1>⚙️ SETTINGS</h1>
-    <div class="toggle">🎵 Music <div class="sw" id="sw-music"><i></i></div></div>
-    <div class="toggle">🔊 Sound effects <div class="sw" id="sw-sfx"><i></i></div></div>
-    <div class="row" style="margin-top:12px"><button class="btn sec" id="resetBtn">♻️ Reset progress</button></div>
-    <button class="btn sec" data-go="menu" style="margin-top:8px">⬅ Back</button>
+  <div id="s-settings" class="screen ig-page hidden">
+   <div class="ig-col">
+    <div class="ig-topbar"><button class="ig-iconbtn" data-go="menu" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Settings</div><div style="width:44px"></div></div>
+    <div class="ig-card asettings">
+      <div class="toggle">Music <div class="sw" id="sw-music"><i></i></div></div>
+      <div class="toggle">Sound effects <div class="sw" id="sw-sfx"><i></i></div></div>
+    </div>
+    <button class="ig-btn secondary adanger" id="resetBtn">Reset progress</button>
+   </div>
   </div>
 
   <!-- MATCH HUD -->
   <div id="matchHud">
     <div id="matchInfo"></div>
-    <button id="pauseBtn">⏸</button>
-    <div id="lockHint">🖱️ Click the table to lock the cursor to your paddle · Esc to release</div>
+    <button id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button>
+    <div id="lockHint">Click the table to lock the cursor to your paddle · Esc to release</div>
   </div>
   <div id="pauseOv">
+   <div class="ig-sheet apause">
     <h2>Paused</h2>
-    <button class="btn" id="resumeBtn">▶ Resume</button>
-    <button class="btn sec" id="quitBtn">🏳️ Quit match</button>
+    <button class="ig-btn" id="resumeBtn">Resume</button>
+    <button class="ig-btn secondary" id="quitBtn">Quit match</button>
+   </div>
   </div>
   <div id="resultBtns">
     <div class="row" id="resultRow"></div>
@@ -766,18 +847,18 @@ function refreshWallet(){ $('w-coins').textContent=save.coins; $('w-wins').textC
 function buildDiff(){
   const el=$('diffList');
   el.innerHTML=Object.keys(DIFFS).map(k=>`
-    <div class="card2"><div class="ic">${k==='champion'?'👑':k==='hard'?'🔥':k==='medium'?'⚡':'🌱'}</div>
+    <div class="card2"><div class="ic ig-tile" style="--tile:${k==='champion'?'linear-gradient(160deg,#c48bff,#7a3ff0)':k==='hard'?'linear-gradient(160deg,#ff8a65,#e0364f)':k==='medium'?'linear-gradient(160deg,#ffcf4a,#ff8a00)':'linear-gradient(160deg,#5ee28a,#11998e)'}"><svg viewBox="0 0 24 24" aria-hidden="true">${k==='champion'?'<path d="M4 18h16M5 18 3.5 8l5 3.5L12 5l3.5 6.5 5-3.5L19 18"/>':k==='hard'?'<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.3 1.6 1 2.6 2 3.1C11 8.6 11 6 12 3z"/>':k==='medium'?'<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>':'<path d="M12 21v-8M12 13c0-4 3-7 7-7 0 4-3 7-7 7zM12 15c0-3-2.5-5.5-6-5.5 0 3 2.5 5.5 6 5.5z"/>'}</svg></div>
       <div class="info"><div class="t">${DIFFS[k].name}</div><div class="d">${DIFF_DESC[k]}</div></div>
-      <button class="pill use" data-diff="${k}">PLAY</button></div>`).join('');
+      <button class="pill use" data-diff="${k}">Play</button></div>`).join('');
   el.querySelectorAll('[data-diff]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); startMatch(b.dataset.diff,'quick',null); });
 }
 function buildCareer(){
   const el=$('careerList');
   el.innerHTML=CAREER.map((c,i)=>{
     const done=i<save.careerLevel, open=i<=save.careerLevel, locked=!open;
-    const badge = done?`<span class="pill on">✓ Beaten</span>` : locked?`<span class="pill lock">🔒 Locked</span>` : `<button class="pill use" data-bot="${c.id}">FIGHT</button>`;
-    return `<div class="card2 ${locked?'locked':''}"><div class="ic">${c.ic}</div>
-      <div class="info"><div class="t">${c.name}</div><div class="d">${DIFFS[c.diff].name} · reward 🪙 ${c.reward}</div></div>${badge}</div>`;
+    const badge = done?`<span class="pill on">Beaten</span>` : locked?`<span class="pill lock">Locked</span>` : `<button class="pill use" data-bot="${c.id}">Play</button>`;
+    return `<div class="card2 ${locked?'locked':''}"><div class="ic anum">${i+1}</div>
+      <div class="info"><div class="t">${c.name}</div><div class="d">${DIFFS[c.diff].name} · ${c.reward} coins</div></div>${badge}</div>`;
   }).join('');
   el.querySelectorAll('[data-bot]').forEach(b=> b.onclick=()=>{ Sound.click(); Sound.resume(); const bot=CAREER.find(c=>c.id===b.dataset.bot); startMatch(bot.diff,'career',bot); });
 }
@@ -788,11 +869,11 @@ function buildShop(){
   const grid=$('shopGrid');
   if(shopTab==='paddles'){
     grid.innerHTML=Object.keys(PADDLES).map(k=>{ const p=PADDLES[k], owned=save.ownedPaddles.includes(k), sel=save.paddle===k;
-      const btn= sel?`<span class="px">✓ Equipped</span>`: owned?`<button class="pill use" data-use-pad="${k}">USE</button>`:`<button class="pill buy" data-buy-pad="${k}">🪙 ${p.price}</button>`;
+      const btn= sel?`<span class="px">Equipped</span>`: owned?`<button class="pill use" data-use-pad="${k}">Use</button>`:`<button class="pill buy" data-buy-pad="${k}">${p.price} coins</button>`;
       return `<div class="tile ${sel?'sel':''} ${owned?'':'locked'}"><div class="prev" style="background:radial-gradient(circle at 40% 35%, ${lighten(p.face,40)}, ${p.face})"><div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.3)"></div></div><div class="nm">${p.name}</div>${btn}</div>`; }).join('');
   } else {
     grid.innerHTML=Object.keys(ARENAS).map(k=>{ const a=ARENAS[k], owned=save.ownedArenas.includes(k), sel=save.arena===k;
-      const btn= sel?`<span class="px">✓ Selected</span>`: owned?`<button class="pill use" data-use-arena="${k}">USE</button>`:`<button class="pill buy" data-buy-arena="${k}">🪙 ${a.price}</button>`;
+      const btn= sel?`<span class="px">Selected</span>`: owned?`<button class="pill use" data-use-arena="${k}">Use</button>`:`<button class="pill buy" data-buy-arena="${k}">${a.price} coins</button>`;
       return `<div class="tile ${sel?'sel':''} ${owned?'':'locked'}"><div class="prev" style="background:linear-gradient(135deg,${a.felt},${a.bg})"><span style="color:${a.line};font-weight:900">${a.name}</span></div><div class="nm">${a.name}</div>${btn}</div>`; }).join('');
   }
   grid.querySelectorAll('[data-buy-pad]').forEach(b=> b.onclick=()=>buy('pad',b.dataset.buyPad));
@@ -831,10 +912,10 @@ $('resetBtn').onclick=()=>{ if(confirm('Reset all progress, coins and unlocks?')
 function showResult(won, coins){
   $('matchHud').classList.remove('on');   // hide the ⏸ button on the result screen
   const row=$('resultRow');
-  const nextBtn = (won && match.mode==='career') ? `<button class="btn green" id="r-next">Next ▶</button>` : '';
-  row.innerHTML = `${won?`<span class="chip" style="align-self:center">+🪙 ${coins}</span>`:''}
-    <button class="btn" id="r-again">🔁 Rematch</button>${nextBtn}
-    <button class="btn sec" id="r-menu">🏠 Menu</button>`;
+  const nextBtn = (won && match.mode==='career') ? `<button class="ig-btn" id="r-next">Next</button>` : '';
+  row.innerHTML = `${won?`<span class="chip" style="align-self:center">+${coins} coins</span>`:''}
+    <button class="ig-btn${nextBtn?' secondary':''}" id="r-again">Rematch</button>${nextBtn}
+    <button class="ig-btn secondary" id="r-menu">Menu</button>`;
   $('resultBtns').classList.add('on');
   const mode=match.mode, bot=match.bot, dk=match.diffKey;
   $('r-again').onclick=()=>{ Sound.click(); startMatch(dk,mode,bot); };
@@ -848,6 +929,12 @@ showScreen('menu');
 wakeLoop();
 </script>
 
+<script>
+/* auth.js writes "👤 name" into #IGA_login; keep the label plain (the row already has an icon) */
+(function(){ var el=document.getElementById('IGA_login'); if(!el||!window.MutationObserver) return;
+  var fix=function(){ var t=el.textContent, c=t.replace(/^\s*👤\s*/,''); if(c!==t) el.textContent=c; };
+  new MutationObserver(fix).observe(el,{childList:true,characterData:true,subtree:true}); fix(); })();
+</script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
 <script src="../friends.js" defer></script>
@@ -856,7 +943,7 @@ wakeLoop();
     if(!window.IGAuth) return;
     IGAuth.onChange(function(p){
       var b=document.getElementById('IGA_login');
-      if(b) b.textContent = p ? ('👤 '+IGAuth.displayName()) : '👤 Log in';
+      if(b) b.textContent = p ? IGAuth.displayName() : 'Log in';
       try{ var s=JSON.parse(localStorage.getItem('airHockeyArena_v1')); if(s&&+s.wins>0) IGAuth.submitScore('airhockey', +s.wins); }catch(e){}
     });
   });

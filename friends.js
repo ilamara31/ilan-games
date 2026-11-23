@@ -26,25 +26,24 @@
 
   const GN = { home: "the menu", stack: "Stack Tower", archer: "Archer Duel", paper: "Paper Territory", cricket: "Super Over Cricket",
     catch: "Basket Catch", f1: "Grand Prix", football: "Penalty Kings", obby: "Rainbow Obby", puzzles: "Puzzle Pad",
-    try: "One More Try", "anime-tycoon": "Anime Tycoon", tennis: "Tennis Tour", pptour: "Ping Pong Tour", karate: "Karate",
+    try: "One More Try", tennis: "Tennis Tour", pptour: "Ping Pong Tour",
     "fruit-arena": "Fruit Arena", airhockey: "Air Hockey Arena", codebreaker: "Codebreaker", thisorthat: "This or That",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush", carrom: "Carrom Clash",
-    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", chess: "Fun Chess" };
+    speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", chess: "Fun Chess", mafia: "Mafia" };
   // maps used to show a player's scores on their profile (mirrors auth.js)
   const GAME_TITLES = { catch: "Basket Catch", cricket: "Super Over Cricket", f1: "Grand Prix", football: "Penalty Kings",
-    try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby", "anime-tycoon": "Anime Tycoon",
-    tennis: "Tennis Tour", karate: "Karate", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
+    try: "One More Try", puzzles: "Puzzle Pad", obby: "Rainbow Obby",
+    tennis: "Tennis Tour", "fruit-arena": "Fruit Arena", pptour: "Ping Pong Tour",
     paper: "Paper Territory", stack: "Stack Tower", archer: "Archer Duel", airhockey: "Air Hockey Arena",
     scoop: "Basket Scoop", meme: "Meme Studio", drawrush: "Draw Rush",
     speedclicker: "Speed Clicker", rps: "Rock Paper Scissors", sumo: "Speed Sumo", chess: "Fun Chess", stars: "Stars" };
   const GAME_METRIC = { catch: "Best score", cricket: "Career runs", f1: "Points", football: "Matches won",
-    try: "Best level", puzzles: "Puzzles solved", obby: "Best stage", "anime-tycoon": "Net worth",
-    tennis: "Trophies", karate: "Wins", "fruit-arena": "Best score", pptour: "Matches won",
+    try: "Best level", puzzles: "Puzzles solved", obby: "Best stage",
+    tennis: "Trophies", "fruit-arena": "Best score", pptour: "Matches won",
     paper: "Territory %", stack: "Tallest stack", archer: "Best level", airhockey: "Matches won",
     scoop: "Best in 60s", meme: "Memes published", drawrush: "Drawings published",
     speedclicker: "Best taps in 15s", rps: "Trophies", sumo: "Points", chess: "Best rating", stars: "Stars earned" };
-  const GAME_EMOJI = { catch: "🧺", cricket: "🏏", f1: "🏎️", football: "⚽", try: "🎯", puzzles: "🧩", obby: "🌈",
-    "anime-tycoon": "💴", tennis: "🎾", karate: "🥋", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
+  const GAME_EMOJI = { catch: "🧺", cricket: "🏏", f1: "🏎️", football: "⚽", try: "🎯", puzzles: "🧩", obby: "🌈", tennis: "🎾", "fruit-arena": "🍉", pptour: "🏓", paper: "🟦",
     stack: "🧱", archer: "🏹", airhockey: "🏒", scoop: "🏀", meme: "😂", drawrush: "🎨",
     speedclicker: "⚡", rps: "✂️", sumo: "🥋", chess: "♟️", stars: "⭐" };
   const HIDDEN_GAMES = { cricket2bowl: 1, cricket2bat: 1 };

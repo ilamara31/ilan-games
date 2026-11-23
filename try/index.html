@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>One More Try</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="One More Try — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
   html,body { height:100%; overflow:hidden; font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; background:#0a0e1a; color:#fff; }
@@ -87,6 +88,67 @@
 
   #back { position:absolute; left:14px; bottom:calc(env(safe-area-inset-bottom) + 12px); pointer-events:auto;
     background:rgba(8,12,26,.5); color:#9fb3d8; border:none; border-radius:24px; padding:9px 18px; font-size:14px; font-weight:800; cursor:pointer; z-index:5; }
+
+  /* ===== ilan Games shared theme (light). The level canvas keeps its own look. ===== */
+  html[data-theme]:root{ --accent:#4ca1af; --accent2:#2c3e50; --icon1:#4ca1af; --icon2:#2c3e50; }
+  html{ background:var(--ig-bg); }
+  body{ background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; }
+  #wrap:has(#home.show) canvas{ visibility:hidden; }
+  #wrap:has(#home.show) #back{ display:none; }
+  .coin{ display:inline-block; width:.9em; height:.9em; border-radius:50%; vertical-align:-.1em; margin-right:5px;
+    background:radial-gradient(circle at 35% 30%,#fff3b0,#ffcc00 45%,#d98e00); box-shadow:inset 0 0 0 1.5px rgba(150,90,0,.45); }
+  /* main menu */
+  #home{ background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; justify-content:flex-start; align-items:stretch; text-align:left;
+    overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:calc(12px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom)); color:var(--ig-text); }
+  #home .ig-col{ flex:none; }
+  #home .ig-tagline{ max-width:340px; }
+  #contBtn{ display:none !important; }
+  #daily{ display:none; background:none; color:var(--ig-text); box-shadow:none; border-radius:0; padding:9px 16px 9px 12px; font:600 16px/1.2 var(--ig-font); }
+  #daily .ig-grow small{ color:#c27400; }
+  .ig-stats b span{ font:inherit; color:inherit; }
+  .ig-row .ig-val{ font-size:15px; font-weight:500; color:var(--ig-text2); }
+  .ig-row.danger{ color:#d70015; justify-content:center; }
+  #IGA_login{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .foot{ text-align:center; color:var(--ig-text3); font-size:13px; font-weight:500; }
+  /* achievements sheet */
+  #achSheet{ position:fixed; inset:0; z-index:20; display:none; align-items:flex-end; justify-content:center; padding:16px; background:var(--ig-scrim); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+  #achSheet.show{ display:flex; animation:fade .2s ease; }
+  #achSheet .ig-sheet{ width:100%; max-width:460px; max-height:86vh; overflow-y:auto; margin-bottom:env(safe-area-inset-bottom); }
+  @media (min-width:600px){ #achSheet{ align-items:center; } }
+  .sheethead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .sheethead b{ font-size:22px; font-weight:800; letter-spacing:-.03em; }
+  #ach{ display:block; max-width:none; }
+  .badge{ display:flex; align-items:center; gap:12px; padding:9px 2px; border:0; border-radius:0; background:none; color:var(--ig-text2); font-size:16px; font-weight:600; }
+  .badge + .badge{ border-top:1px solid var(--ig-line); }
+  .badge .be{ width:38px; height:38px; flex:none; display:grid; place-items:center; border-radius:11px; background:rgba(118,118,128,.12); font-size:20px; filter:grayscale(1); opacity:.6; }
+  .badge .bn{ flex:1; }
+  .badge.on{ background:none; color:var(--ig-text); }
+  .badge.on .be{ filter:none; opacity:1; background:color-mix(in srgb,var(--accent) 16%,transparent); }
+  .badge .bk{ width:22px; height:22px; flex:none; border-radius:50%; display:grid; place-items:center; background:rgba(118,118,128,.16); color:transparent; }
+  .badge.on .bk{ background:#34c759; color:#fff; }
+  .badge .bk svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+  /* dead / win sheets over the level */
+  #dead, #win{ background:var(--ig-scrim); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  .ovcard{ width:100%; max-width:380px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; background:rgba(255,255,255,.94); }
+  .ovcard .title{ font:900 44px/1 var(--ig-font); letter-spacing:-.04em; }
+  .deadtitle{ background:linear-gradient(160deg,#ff6b5e,#d70015); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .wintitle{ background:linear-gradient(160deg,#34c759,#11998e); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .ovcard .lvltxt{ font-size:17px; font-weight:600; color:var(--ig-text); letter-spacing:-.02em; }
+  .ovcard .stat{ font-size:15px; font-weight:500; color:var(--ig-text2); }
+  .ovcard .stat b{ color:var(--ig-text); }
+  .ovcard .coinline{ font-size:17px; font-weight:700; color:var(--ig-text); }
+  .ovcard .hint{ color:var(--ig-text3); font-size:13px; }
+  .ovbtns{ display:flex; gap:10px; width:100%; margin-top:6px; }
+  .ovbtns .ig-btn{ flex:1; }
+  .ovbtns .ig-btn.secondary{ flex:0 0 auto; }
+  /* in-level HUD: same look, system font + pills */
+  #hud{ font-family:var(--ig-font); letter-spacing:-.01em; }
+  #hud .chip{ border-radius:999px; }
+  #twistTag{ font-family:var(--ig-font); border-radius:999px; }
+  #back{ display:inline-flex; align-items:center; gap:2px; height:40px; padding:0 14px 0 8px; border-radius:999px; font:600 15px/1 var(--ig-font);
+    color:#fff; background:rgba(8,12,26,.45); border:1px solid rgba(255,255,255,.14); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
+  #back svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  #toast{ background:var(--ig-sheet); color:var(--ig-text); font-weight:600; font-family:var(--ig-font); border:1px solid var(--ig-line); box-shadow:var(--ig-shadow2); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
 </style>
 </head>
 <body>
@@ -95,7 +157,7 @@
 
   <div id="hud" style="display:none">
     <div class="chip">LEVEL <span id="hLvl">1</span></div>
-    <div class="chip coins">🪙 <span id="hCoins">0</span></div>
+    <div class="chip coins"><i class="coin"></i><span id="hCoins">0</span></div>
   </div>
   <div id="twistTag" style="display:none"></div>
 
@@ -103,43 +165,73 @@
 
   <!-- HOME -->
   <div id="home" class="ov">
-    <div class="mascot">🟡</div>
-    <div class="title">ONE MORE<br>TRY</div>
-    <div class="lvltxt">Simple to learn. Brutal to master.<br>The rules keep changing. 😈</div>
-    <div class="coinline">🪙 <span id="homeCoins">0</span></div>
-    <button id="daily">🎁 Claim daily reward +25</button>
-    <button class="btn" id="playBtn">▶ PLAY</button>
-    <div class="row">
-      <button class="btn sm" id="contBtn" style="display:none"></button>
-      <button class="btn sm" id="resetBtn">Reset progress</button>
+    <div class="ig-col ig-page">
+      <div class="ig-topbar">
+        <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      </div>
+      <div class="ig-hero">
+        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M4 80 L96 80 L96 92 L4 92Z" fill="#3a1d6e"/>
+<path class="o" d="M40 80 L46 66 L52 80 L58 66 L64 80Z" fill="#ff4d4d"/>
+<path class="o" d="M40 12 L46 26 L52 12 L58 26 L64 12Z" fill="#ff4d4d"/><path class="o" d="M4 4 L96 4 L96 12 L4 12Z" fill="#3a1d6e"/>
+<path d="M20 70 Q48 28 80 60" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 4" stroke-linecap="round"/>
+<g transform="rotate(-18 50 42)"><rect class="o" x="38" y="30" width="24" height="24" rx="5" fill="#ffcc00"/><circle cx="46" cy="40" r="3" fill="#22120a"/><circle cx="55" cy="40" r="3" fill="#22120a"/><path d="M45 47 Q50 51 56 47" fill="none" stroke="#22120a" stroke-width="2.5" stroke-linecap="round"/></g>
+<path d="M18 54 L10 54 M18 62 L8 62" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+<path class="o" d="M84 22 L84 44 L78 38 M84 44 L90 38" fill="none" stroke="#7dd3fc" stroke-width="4"/></svg></div>
+        <div class="ig-title">One More Try</div>
+        <div class="ig-tagline">Simple to learn. Brutal to master. The rules keep changing.</div>
+      </div>
+      <div class="ig-playrow">
+        <button class="ig-cta" id="playBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small id="playSub">Level 1</small></span></button>
+        <button class="ig-sq" id="achSq" title="Achievements" aria-label="Achievements"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M8.5 10L6 3h4l2 5M15.5 10L18 3h-4l-2 5"/></svg></button>
+      </div>
+      <div class="ig-stats">
+        <div><b id="stBest">1</b><span>Best level</span></div>
+        <div><b><i class="coin"></i><span id="homeCoins">0</span></b><span>Coins</span></div>
+        <div><b id="stTries">0</b><span>Tries</span></div>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row" id="daily"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="17" height="5" rx="1"/><path d="M5 13v7h14v-7M12 8v12M12 8c-1.5-3.5-5.5-4-5.5-1.5S10 8 12 8zM12 8c1.5-3.5 5.5-4 5.5-1.5S14 8 12 8z"/></svg></span><span class="ig-grow">Daily reward<small>Claim +25 coins today</small></span></button>
+        <button class="ig-row" id="achRow"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c084fc,#7c3aed)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M8.5 10L6 3h4l2 5M15.5 10L18 3h-4l-2 5"/></svg></span><span class="ig-grow">Achievements<small id="achSub">0 of 10 unlocked</small></span></button>
+        <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('try','One More Try')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Highest levels reached</small></span></button>
+        <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.9 3.8-6 7.5-6s6.6 2.1 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Save your progress</small></span></button>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row nochev danger" id="resetBtn">Reset progress</button>
+      </div>
+      <button id="contBtn" hidden></button>
+      <div class="foot">Tap or press Space to jump · one mistake = restart</div>
     </div>
-    <div class="row">
-      <button class="btn sm" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-      <button class="btn sm" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('try','One More Try')">🏆 Leaderboard</button>
-    </div>
-    <div id="ach"></div>
-    <div class="hint">Tap / Space to act • one mistake = restart</div>
   </div>
+
+  <!-- ACHIEVEMENTS -->
+  <div id="achSheet"><div class="ig-sheet ig-page">
+    <div class="sheethead"><b>Achievements</b><button class="ig-btn secondary" id="achClose" style="min-height:40px;padding:0 18px">Done</button></div>
+    <div id="ach"></div>
+  </div></div>
 
   <!-- DEAD -->
   <div id="dead" class="ov">
-    <div class="title deadtitle">OOPS!</div>
-    <div class="lvltxt" id="deadLvl">Level 1</div>
-    <div class="stat" id="deadStat"></div>
-    <button class="btn retry" id="retryBtn">🔁 ONE MORE TRY</button>
-    <div class="hint">tap anywhere to retry instantly</div>
+    <div class="ig-sheet ovcard ig-page">
+      <div class="title deadtitle">Oops!</div>
+      <div class="lvltxt" id="deadLvl">Level 1</div>
+      <div class="stat" id="deadStat"></div>
+      <div class="ovbtns"><button class="ig-btn secondary ovmenu">Menu</button><button class="ig-btn" id="retryBtn">One More Try</button></div>
+      <div class="hint">Tap outside to retry instantly</div>
+    </div>
   </div>
 
   <!-- WIN -->
   <div id="win" class="ov">
-    <div class="title wintitle">CLEARED!</div>
-    <div class="lvltxt" id="winLvl">Level 1 done</div>
-    <div class="coinline" id="winCoins">+5 🪙</div>
-    <div class="stat" id="winStat"></div>
-    <button class="btn" id="nextBtn">NEXT ➜</button>
+    <div class="ig-sheet ovcard ig-page">
+      <div class="title wintitle">Cleared!</div>
+      <div class="lvltxt" id="winLvl">Level 1 done</div>
+      <div class="coinline"><i class="coin"></i><span id="winCoins">+5</span></div>
+      <div class="stat" id="winStat"></div>
+      <div class="ovbtns"><button class="ig-btn secondary ovmenu">Menu</button><button class="ig-btn" id="nextBtn">Next</button></div>
+    </div>
   </div>
 
-  <button id="back" onclick="location.href='../'">← Arcade</button>
+  <button id="back" onclick="showHome()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button>
   <div id="toast"></div>
 </div>
 
@@ -193,8 +285,11 @@ function checkAch(){
   renderBadges();
 }
 function renderBadges(){
-  document.getElementById('ach').innerHTML = ACH.map(a=>
-    `<span class="badge ${SV.ach[a.id]?'on':''}">${a.name}</span>`).join('');
+  // name = "<emoji> <words>": the emoji goes in a little tile, the words beside it
+  document.getElementById('ach').innerHTML = ACH.map(a=>{ const i=a.name.indexOf(' ');
+    return `<div class="badge ${SV.ach[a.id]?'on':''}"><span class="be">${a.name.slice(0,i)}</span><span class="bn">${a.name.slice(i+1)}</span><span class="bk"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>`; }).join('');
+  const n = ACH.filter(a=>SV.ach[a.id]).length, sub=document.getElementById('achSub');
+  if(sub) sub.textContent = n+' of '+ACH.length+' unlocked';
 }
 
 /* ---------- tiny seeded RNG (so each level is identical every retry = fair) ---------- */
@@ -872,9 +967,9 @@ function showDeadOverlay(){
 }
 function showWinOverlay(bonus){
   document.getElementById('winLvl').textContent = 'Level '+L.n+' cleared!';
-  document.getElementById('winCoins').textContent = '+'+bonus+' 🪙  (total '+SV.coins+')';
+  document.getElementById('winCoins').textContent = '+'+bonus+' coins · total '+SV.coins;
   document.getElementById('winStat').innerHTML = winMessage();
-  document.getElementById('nextBtn').textContent = 'LEVEL '+(L.n+1)+' ➜';
+  document.getElementById('nextBtn').textContent = 'Next: Level '+(L.n+1);
   showOnly('win');
 }
 
@@ -898,7 +993,10 @@ function showHome(){
   // daily reward
   const today = new Date().toISOString().slice(0,10);
   const d = document.getElementById('daily');
-  d.style.display = (SV.daily!==today) ? 'inline-block':'none';
+  d.style.display = (SV.daily!==today) ? 'flex':'none';
+  document.getElementById('playSub').textContent = 'Level '+(SV.best>1?SV.best:1);
+  document.getElementById('stBest').textContent = SV.best;
+  document.getElementById('stTries').textContent = SV.tries;
   renderBadges();
   if(window.IGAuth) IGAuth.submitScore('try', SV.best);
 }
@@ -914,7 +1012,7 @@ function onTap(e){
 cv.addEventListener('pointerdown', onTap, {passive:false});
 addEventListener('keydown', e=>{
   if(e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault();
-    if(state==='home') document.getElementById('playBtn').click(); else jump();
+    if(state==='home'){ if(!document.getElementById('achSheet').classList.contains('show')) document.getElementById('playBtn').click(); } else jump();
   }
 });
 // also allow tapping the dead/win overlays (not the buttons) to advance fast
@@ -932,9 +1030,22 @@ document.getElementById('daily').onclick = ()=>{
   SV.daily=today; SV.coins+=25; save();
   document.getElementById('homeCoins').textContent=SV.coins;
   document.getElementById('daily').style.display='none';
-  toast('🎁 +25 coins! Come back tomorrow.');
+  toast('+25 coins! Come back tomorrow.');
   checkAch();
 };
+
+// menu extras: achievements sheet, "Menu" buttons on the result cards, plain-name login label
+function openAch(){ renderBadges(); document.getElementById('achSheet').classList.add('show'); }
+function closeAch(){ document.getElementById('achSheet').classList.remove('show'); }
+document.getElementById('achSq').onclick = openAch;
+document.getElementById('achRow').onclick = openAch;
+document.getElementById('achClose').onclick = closeAch;
+document.getElementById('achSheet').addEventListener('pointerdown', e=>{ if(e.target.id==='achSheet') closeAch(); });
+document.querySelectorAll('.ovmenu').forEach(b=>b.onclick = showHome);
+(function(){ const el=document.getElementById('IGA_login'); if(!el) return;
+  const fix=()=>{ const t=el.textContent; if(/^👤\s*/.test(t)) el.textContent=t.replace(/^👤\s*/,''); };
+  try{ new MutationObserver(fix).observe(el,{childList:true,characterData:true,subtree:true}); }catch(e){}
+  fix(); })();
 
 // little ambient sparkle on the home screen
 setInterval(()=>{ if(state==='home' && !document.hidden && parts.length<400){ parts.push({x:Math.random()*cv.width, y:cv.height, vx:(Math.random()-.5)*30, vy:-60-Math.random()*60, life:2, t:0, color:['#ffd54a','#ff7b3d','#39ff88','#7cc0ff'][Math.floor(Math.random()*4)], r:2+Math.random()*2}); } }, 180);

@@ -20,106 +20,98 @@
 <meta name="twitter:title" content="Meme Studio — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
-<meta name="theme-color" content="#0a0e1a">
+<meta name="theme-color" content="#f2f2f7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="../theme.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root, html[data-theme]{ --accent:#ffb020; --accent2:#ff7a00; --icon1:#ffe14d; --icon2:#ff9f0a; }
   :root{
-    --bg:#0a0e1a; --bg2:#141a30; --panel:#16203a; --panel2:#1d2a49; --line:rgba(255,255,255,.10);
-    --ink:#eef3ff; --muted:#9fb0d0;
-    --accent:#ff5b8d; --accent2:#ff9b3d; --accentInk:#2a0012;
-    --good:#39d98a; --grad:linear-gradient(135deg,#ff5b8d,#ff9b3d);
-    --grad2:linear-gradient(135deg,#7c5cff,#3aa0ff);
+    --bg:transparent; --bg2:var(--ig-field); --panel:var(--ig-glass); --panel2:rgba(118,118,128,.12); --line:var(--ig-line);
+    --ink:var(--ig-text); --muted:var(--ig-text2); --accentInk:#fff;
+    --good:#28b14c; --grad:linear-gradient(160deg,#ffb020,#ff7a00);
+    --grad2:linear-gradient(160deg,#5ac8fa,#0a60ff);
   }
   html,body{height:100%}
-  body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;color:var(--ink);
-    background:radial-gradient(circle at 50% -10%, #23305a, #0a0e1a 70%);min-height:100vh;overflow-x:hidden}
-  #app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;
-    padding:max(10px,env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom))}
-  /* header */
-  .top{display:flex;align-items:center;gap:10px;padding:6px 0 12px;min-height:48px}
-  .top .ttl{font-weight:900;font-size:20px;flex:1;letter-spacing:.3px}
-  .iconbtn{border:none;background:var(--panel);color:var(--ink);width:42px;height:42px;border-radius:14px;
-    font-size:18px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-weight:800}
-  .iconbtn:active{transform:scale(.94)}
-  .userchip{background:var(--panel);border-radius:20px;padding:7px 12px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer}
+  body{font-family:var(--ig-font);color:var(--ink);letter-spacing:-.01em;background:transparent;min-height:100vh;overflow-x:hidden}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;
+    padding:calc(12px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom))}
+  /* header: "‹ Games" on the menu, "‹ Back" on sub-screens, account chip right */
+  .top{display:flex;align-items:center;gap:10px;padding:0 0 14px;min-height:46px}
+  .top .ttl{font-weight:700;font-size:17px;flex:1;letter-spacing:-.02em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app:not(.sub) .ttl{visibility:hidden}
+  #app.sub #homeLink{display:none}
+  #backBtn{border:1px solid var(--ig-line)}
+  .userchip{display:inline-flex;align-items:center;gap:6px;height:44px;max-width:44vw;padding:0 14px 0 10px;border-radius:999px;font-size:14px;font-weight:600;color:var(--ig-text);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    background:var(--ig-glass);border:1px solid var(--ig-line);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+  .userchip svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   #screen{flex:1;display:flex;flex-direction:column;gap:14px;animation:fade .22s ease}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  /* shared components */
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
-  .label{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
-  .btn{border:none;border-radius:16px;font-weight:900;cursor:pointer;font-size:16px;padding:15px 18px;color:#fff;background:var(--panel2);width:100%}
-  .btn:active{transform:scale(.98)}
-  .btn.grad{background:var(--grad);color:var(--accentInk)}
-  .btn.grad2{background:var(--grad2)}
-  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink)}
-  .btn.sm{padding:10px 14px;font-size:14px;border-radius:12px;width:auto}
+  /* shared components (light glass) */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+  .label{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .btn{border:none;border-radius:999px;font-weight:700;letter-spacing:-.01em;cursor:pointer;font-size:16px;min-height:50px;padding:0 20px;color:var(--ig-text);background:var(--ig-glass2);border:1px solid var(--ig-line);width:100%;font-family:inherit;transition:transform .15s var(--ig-ease)}
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.45;pointer-events:none}
+  .btn.grad{background:var(--grad);color:#fff;border:0;box-shadow:0 10px 24px -8px rgba(255,122,0,.6)}
+  .btn.grad2{background:var(--grad2);color:#fff;border:0;box-shadow:0 10px 24px -8px rgba(10,96,255,.5)}
+  .btn.ghost{background:var(--ig-glass2);border:1px solid var(--ig-line);color:var(--ink)}
+  .btn.sm{min-height:40px;padding:0 16px;font-size:14px;width:auto}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  input,textarea,select{width:100%;background:var(--bg2);border:2px solid var(--line);border-radius:14px;
+  input,textarea,select{width:100%;background:var(--ig-field);border:1px solid var(--ig-line);border-radius:16px;
     color:var(--ink);font-size:16px;padding:13px 14px;font-family:inherit;outline:none}
-  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
-  .chip{border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;
-    padding:12px 10px;font-weight:800;cursor:pointer;text-align:center;font-size:14px}
-  .chip.on{border-color:var(--accent);background:linear-gradient(150deg,rgba(255,91,141,.25),rgba(255,155,61,.18));box-shadow:0 0 14px rgba(255,91,141,.25)}
+  input:focus,textarea:focus,select:focus{border-color:color-mix(in srgb, var(--accent) 70%, transparent);box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)}
+  .chip{border:1.5px solid var(--line);background:var(--ig-glass);color:var(--ink);border-radius:18px;font-family:inherit;
+    padding:12px 10px;font-weight:600;cursor:pointer;text-align:center;font-size:14px;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+  .chip.on{border-color:var(--accent);background:linear-gradient(150deg,rgba(255,176,32,.22),var(--ig-glass) 70%)}
   .chip .em{font-size:26px;display:block;margin-bottom:4px}
   .muted{color:var(--muted);font-size:13px;line-height:1.5}
-  /* main menu */
-  .hero{text-align:center;padding:14px 0 4px}
-  .hero h1{font-size:clamp(30px,9vw,46px);font-weight:900;letter-spacing:.5px;
-    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero p{color:var(--muted);margin-top:4px;font-size:14px}
-  .menu{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
-  .mtile{border:none;cursor:pointer;border-radius:22px;padding:22px 14px;color:#fff;text-align:left;
-    display:flex;flex-direction:column;gap:6px;min-height:120px;justify-content:flex-end;box-shadow:0 10px 26px rgba(0,0,0,.35)}
-  .mtile:active{transform:scale(.97)}
-  .mtile .mi{font-size:34px}
-  .mtile .mn{font-weight:900;font-size:18px}
-  .mtile .md{font-size:12px;opacity:.85;font-weight:600}
-  .mtile.big{grid-column:1/3;min-height:96px;flex-direction:row;align-items:center;gap:16px}
-  .mtile.big .mi{font-size:40px}
-  .t-create{background:linear-gradient(135deg,#ff5b8d,#ff9b3d)}
-  .t-gallery{background:linear-gradient(135deg,#7c5cff,#3aa0ff)}
-  .t-profile{background:linear-gradient(135deg,#12c2a0,#0a6e8a)}
-  .t-stats{background:linear-gradient(135deg,#ffb13d,#e0552b)}
-  .t-settings{background:linear-gradient(135deg,#465a86,#2a3350)}
+  /* main menu (Speed Sumo layout) */
+  .ig-row .ig-tile{width:32px;height:32px;border-radius:9px}
+  .ig-row .ig-tile svg{width:18px;height:18px}
+  #screen .ig-modes{grid-template-columns:repeat(3,1fr)}
+  .ic{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   /* meme cards (gallery) */
   .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .memecard{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+  .memecard{background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;box-shadow:var(--ig-shadow)}
   .memecard:active{transform:scale(.98)}
   .memecard .thumb{position:relative}
   .memecard .meta{padding:9px 11px}
-  .memecard .mt{font-weight:800;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .memecard .mt{font-weight:700;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .memecard .ms{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:10px}
+  .memecard .ms{gap:8px;overflow:hidden} .memecard .ms span{white-space:nowrap;flex:none} .memecard .ms span:last-child{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
-  .tab{border:none;background:var(--panel);color:var(--muted);border-radius:20px;padding:9px 15px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
-  .tab.on{background:var(--grad);color:var(--accentInk)}
+  .tab{border:1px solid var(--line);background:var(--ig-glass);color:var(--ig-text);border-radius:999px;padding:8px 15px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;flex:0 0 auto;font-family:inherit}
+  .tab.on{background:var(--ig-solid);color:#fff;border-color:transparent}
   .center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:36px 10px;color:var(--muted)}
-  .spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite}
+  .bigic{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 50%),var(--grad);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 14px 28px -12px rgba(0,0,0,.4)}
+  .bigic svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--ig-line2);border-top-color:var(--accent);animation:sp 1s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center}
-  .stat .n{font-size:28px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .stat .l{font-size:12px;color:var(--muted);margin-top:2px;font-weight:700}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;text-align:center;box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+  .stat .n{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--ig-text)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
   .steps{display:flex;gap:6px;justify-content:center;margin-bottom:4px}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ig-line2)}
   .dot.on{background:var(--accent);width:22px;border-radius:5px}
   /* toast */
   #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;
-    background:#0b1122;border:1px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:24px;
-    font-weight:800;z-index:9999;transition:.25s;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+    background:var(--ig-sheet);border:1px solid var(--line);color:var(--ink);padding:12px 20px;border-radius:999px;
+    font-weight:600;z-index:9999;transition:.25s;max-width:90vw;text-align:center;box-shadow:0 14px 34px rgba(20,20,50,.2);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
   <div id="app">
     <div class="top">
-      <a class="iconbtn" href="../" title="All games" aria-label="Back to Ilan Games" style="text-decoration:none">🏠</a>
-      <button class="iconbtn" id="backBtn" style="display:none">←</button>
+      <a class="ig-navback" id="homeLink" href="../" title="All games" aria-label="Back to Ilan Games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <button class="ig-navback" id="backBtn" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
       <div class="ttl" id="topTitle">Meme Studio</div>
-      <div class="userchip" id="userChip">👤 …</div>
+      <div class="userchip" id="userChip">…</div>
     </div>
     <main id="screen"></main>
   </div>

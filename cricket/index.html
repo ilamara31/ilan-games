@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Super Over Cricket — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#0a0e1a; font-family:'Trebuchet MS','Segoe UI',sans-serif; overflow:hidden; color:#fff; }
@@ -51,7 +52,8 @@
   .teamcard { padding:14px 8px; border-radius:14px; cursor:pointer; font-weight:bold; border:3px solid transparent;
               transition:transform .12s, border-color .12s; font-size:15px; }
   .teamcard:active { transform:scale(.95); }
-  .teamcard.sel { border-color:#fff; box-shadow:0 0 22px rgba(255,255,255,.5); }
+  .teamcard { border:0; padding:16px 8px; }
+.teamcard.sel { border-color:#fff; box-shadow:0 0 22px rgba(255,255,255,.5); }
   .bracket { display:flex; flex-direction:column; gap:12px; margin:18px 0; width:100%; max-width:420px; }
   .match-row { display:flex; align-items:center; justify-content:space-between; background:#16243f; padding:12px 16px; border-radius:12px;
                border-left:5px solid #444; font-size:15px; }
@@ -113,6 +115,103 @@
   @keyframes tutpulse { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.05) } }
   #tutCoach.ducked #tutBubble { opacity:0; transform:translateY(8px); animation:none; }
   #tutCoach.ducked { transform:translateY(48px); opacity:.6; }
+
+/* ===== ilan Games shared theme (light, Apple style) — menus only; the match itself keeps its own look ===== */
+:root, html[data-theme]{ --accent:#6cc63c; --accent2:#1e5e20; --icon1:#6cc63c; --icon2:#1e5e20; }
+html[data-theme] { background:var(--ig-bg); }
+:root{ --cr-gold:#b86e00; --cr-green:#1f9d4c; --cr-red:#e0364f; }
+html[data-theme] body { background:transparent; font-family:var(--ig-font); color:var(--ig-text); letter-spacing:-.01em; }
+#wrap { background:#0a0e1a; }
+#wrap:has(> .screen:not(.hidden)) { background:transparent; }
+#wrap:has(> .screen:not(.hidden)) > canvas, #wrap:has(> .screen:not(.hidden)) > #voiceTag { visibility:hidden; }
+.screen { background:transparent; color:var(--ig-text); font-family:var(--ig-font);
+  padding:max(14px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); }
+.screen:not([style*="flex-start"]) { justify-content:flex-start; }
+.screen:not([style*="flex-start"]) > :first-child { margin-top:auto; }
+.screen:not([style*="flex-start"]) > :last-child { margin-bottom:auto; }
+.screen .ig-col { gap:16px; }
+.screen .ig-col.cr-narrow { gap:14px; }
+.screen .ig-hero .ig-tagline b { color:var(--ig-text); font-weight:700; }
+.cr-modes { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.cr-tabs { display:grid !important; }
+.screen .ig-mode, .screen .ig-row { font-family:var(--ig-font); }
+.screen .ig-row .ig-grow { gap:2px; }
+.cr-explain .ig-row { align-items:flex-start; padding-top:12px; padding-bottom:12px; }
+.cr-explain .ig-row small { line-height:1.4; }
+.cr-explain { max-width:500px; width:100%; text-align:left; margin-bottom:6px; }
+.cr-num { font-size:14px; font-weight:800; letter-spacing:-.02em; }
+.ig-cta > svg:not([fill]) { fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.ig-btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.cr-top { max-width:540px; margin-bottom:6px; }
+.ig-navback { font-family:var(--ig-font); }
+button.ig-navback { -webkit-appearance:none; appearance:none; }
+#homeBtn.ig-navback { position:static; background:var(--ig-glass); border:1px solid var(--ig-line); color:var(--ig-text); padding:0 14px 0 8px; font:600 16px/1 var(--ig-font); border-radius:999px; }
+@media (max-width:370px) { .cr-modes .ig-mode small { display:none; } }
+
+/* headings + text on every menu / results screen */
+.screen h1 { font:800 clamp(28px,7.5vw,36px)/1.08 var(--ig-font); letter-spacing:-.035em; margin:2px 0 6px; color:var(--ig-text);
+  background:none; -webkit-background-clip:border-box; background-clip:border-box; -webkit-text-fill-color:currentColor; }
+.screen .ig-col > h1 { text-align:center; margin:6px 0 -6px; }
+.screen h1[style*="rgb(57, 255, 136)"] { color:var(--cr-green) !important; }
+.screen h1[style*="rgb(255, 213, 74)"] { color:var(--cr-gold) !important; }
+.screen h1[style*="rgb(255, 107, 107)"] { color:var(--cr-red) !important; }
+.screen .sub { color:var(--ig-text2); font-size:16px; font-weight:500; letter-spacing:-.015em; line-height:1.4; margin-bottom:18px; max-width:460px; }
+.screen .ig-col > .sub { text-align:center; margin:0 auto 4px; }
+.screen .sub b, .chnote b { color:var(--ig-text); }
+
+/* capsule buttons (accent = primary, .alt = secondary) */
+.screen .btn { font:700 16px/1.15 var(--ig-font); letter-spacing:-.01em; min-height:50px; padding:0 26px; border-radius:999px; margin:6px;
+  background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff;
+  box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent), inset 0 1px 0 rgba(255,255,255,.3); }
+.screen .btn.alt { background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none;
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
+.screen .btn:active { transform:scale(.96); }
+#scr-league > .btn.alt, #scr-playoffs > .btn.alt { min-height:40px; padding:0 16px !important; font-size:14px !important; top:max(12px, env(safe-area-inset-top)) !important; right:16px !important; }
+
+/* segmented tabs (browse targets, profile) */
+.ig-seg.cr-tabs { width:100%; max-width:420px; margin:4px 0 12px; }
+.cr-tabs .btn, .cr-tabs .chtab { margin:0 !important; min-height:34px; height:34px; padding:0 10px !important; font:600 14px/1 var(--ig-font) !important; border:0;
+  background:none; color:var(--ig-text2); box-shadow:none; border-radius:999px; cursor:pointer; }
+.cr-tabs .btn:not(.alt), .cr-tabs .chtab.on { background:#fff; color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+
+/* cards built by the game's own code: dark navy tiles -> light glass */
+.screen [style*="background:#16243f"], .screen [style*="background:#0c1426"], .screen [style*="background: rgb(22, 36, 63)"],
+.match-row, .namerow, .chcard {
+  background:var(--ig-glass) !important; border:1px solid var(--ig-line) !important; color:var(--ig-text);
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), 0 4px 14px rgba(40,40,80,.06); }
+.screen [style*="background:#16243f"][style*="border-left:5px"], .chcard { border-left-width:5px !important; }
+.chcard { border-left-color:var(--cr-green) !important; border-radius:18px; }
+.screen [style*="background:rgba(255,213,74,.16)"] { background:color-mix(in srgb, var(--accent) 16%, white) !important; border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.screen [style*="border-left:4px solid #39ff88"] { border-left-color:var(--cr-green) !important; }
+.screen [style*="color:#9fb3d8"], .screen [style*="color:#7e90b5"], .screen [style*="color:#cdd9f0"],
+.chcard .chstats, .chcard .chov, .chcard .chdim, .match-row .vs, .chnote { color:var(--ig-text2) !important; }
+.chcard .chby { color:var(--ig-text); } .chcard .chstats b { color:var(--ig-text); }
+.screen [style*="color:#ffd54a"], .chcard .chtgt, .namerow span { color:var(--cr-gold) !important; }
+.screen [style*="color:#39ff88"] { color:var(--cr-green) !important; }
+.screen [style*="color:#ff6b6b"] { color:var(--cr-red) !important; }
+.screen [style*="color:#ff8c3d"] { color:#d9620b !important; }
+.screen div[style*="background:linear-gradient(135deg,"] { color:#fff; }
+.screen div[style*="background:linear-gradient(135deg,"] > .btn { background:#fff; color:#1d1d1f; box-shadow:0 4px 12px rgba(0,0,0,.22); }
+.screen .btn[style*="padding"] { min-height:0; }
+.screen [style*="background:linear-gradient(135deg,#39ff88,#1ea85a)"] { background:linear-gradient(160deg,#5ee28a,#11998e) !important; color:#fff !important; }
+.chcard .chgo { background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; min-height:46px; margin:10px 0 0; width:100%; }
+.screen [style*="border-left:4px solid #39ff88"] { border-left:4px solid var(--cr-green) !important; }
+#leagueTable, #playoffBracket, #hubBody, #profileBody, #tendBody, #mgrEndBody, #mgrPlayBody, #mgrPool, #mgrSquadBar, #mgrNegBody, #auctionBody, #scBody, #chEndBody, #chPubCard { text-align:left; }
+.match-row { border-radius:16px; border-left:5px solid var(--ig-line2) !important; }
+.match-row.current { border-left-color:var(--accent) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent), var(--ig-shadow); }
+.namerow { border-radius:16px; padding:6px 8px 6px 14px; }
+.namerow input { background:var(--ig-field); border:1px solid var(--ig-line); color:var(--ig-text); border-radius:12px; height:40px; font:600 15px var(--ig-font); outline:none; }
+.namerow input:focus { border-color:color-mix(in srgb, var(--accent) 70%, transparent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.teamcard { border-radius:18px; font-family:var(--ig-font); font-weight:700; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.35);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), 0 8px 18px -8px rgba(0,0,0,.45); }
+.teamcard { border:0; padding:16px 8px; }
+.teamcard.sel { border-color:#fff; box-shadow:0 0 0 3px var(--accent), 0 10px 22px -8px rgba(0,0,0,.45); }
+.chnote .btn { min-height:40px; padding:0 18px; font-size:14px; }
+
+/* in-match HUD: same look, just the system font + pill chips */
+#hud, #help, #msg, #goBtn, #tutBubble { font-family:var(--ig-font); }
+.hud-box { border-radius:14px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
+#help { border-radius:999px; }
 </style>
 </head>
 <body>
@@ -120,196 +219,254 @@
   <canvas id="game"></canvas>
 
   <!-- ACCOUNT — handled by the shared Ilan Games login (auth.js) -->
-  <div id="scr-accounts" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
-    <h1 style="font-size:30px">SIGN IN</h1>
-    <div class="sub">Your cricket career is saved to your Ilan Games account — sign in with your username &amp; password to play it.</div>
-    <div id="accountList" style="max-width:460px;width:100%"></div>
-    <button class="btn" onclick="showAccounts()" style="margin-top:8px">👤 SIGN IN</button>
+  <div id="scr-accounts" class="screen hidden">
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a></div>
+      <div class="ig-hero"><div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="90" rx="40" ry="7" fill="#000" opacity=".2"/>
+<g><rect class="o" x="14" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="23" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="32" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/>
+<rect class="o" x="13" y="40" width="12" height="4" rx="2" fill="#e8b04a"/><rect class="o" x="26" y="40" width="12" height="4" rx="2" fill="#e8b04a"/></g>
+<g transform="rotate(-38 58 64)"><rect class="o" x="52" y="44" width="15" height="42" rx="5" fill="#f2c46d"/><rect class="o" x="56" y="22" width="7" height="24" rx="3" fill="#1d46a8"/><path d="M57 27 h5 M57 32 h5 M57 37 h5" stroke="#22120a" stroke-width="1.5"/><rect x="55" y="50" width="4" height="30" rx="2" fill="#fff" opacity=".5"/></g>
+<path d="M60 38 L78 22 M64 44 L84 30" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+<circle class="o" cx="84" cy="16" r="9" fill="#d61f2c"/><path d="M78 10 Q84 16 90 22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="2 2"/><ellipse cx="81" cy="12" rx="2.5" ry="1.5" fill="#fff" opacity=".5"/>
+<path class="o" d="M62 58 l3 -6 2 5 5 -2 -2 5 5 3 -6 1 0 5 -4 -3 -4 3 0 -5 -5 -2 5 -2Z" fill="#ffcc00"/></svg></div><div class="ig-title">Super Over</div>
+        <div class="ig-tagline">Your cricket career is saved to your ilan Games account. Sign in with your username and password to play.</div></div>
+      <div id="accountList"></div>
+      <button class="ig-btn" onclick="showAccounts()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.9-3.8 3.9-6 7.5-6s6.6 2.2 7.5 6"/></svg>Sign In</button>
+    </div>
   </div>
 
   <!-- TITLE -->
   <div id="scr-title" class="screen hidden">
-    <h1>SUPER OVER</h1>
-    <div class="sub" id="titleSub">Timing-based cricket</div>
-    <button class="btn" onclick="show('scr-play')">🏏 PLAY<br><span style="font-size:12px;font-weight:normal">quick match • IPL • ODI</span></button>
-    <button class="btn" onclick="show('scr-modes')" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 CAREER &amp; MANAGER<br><span style="font-size:12px;font-weight:normal">be a player or a manager</span></button>
-    <button class="btn" onclick="chubEnter()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🎯 CHALLENGE HUB<br><span style="font-size:12px;font-weight:normal">set a target • chase other players</span></button>
-    <button class="btn alt" onclick="startTutorial()">🎓 HOW TO PLAY</button>
-    <button class="btn alt" onclick="showProfile()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">👤 PROFILE</button>
-    <button class="btn alt" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('cricket','Super Over Cricket')">🏆 Leaderboard</button>
-    <!-- home lives in the corner, not in the stack — see #homeBtn -->
-    <a href="../" id="homeBtn" title="All games">🏠 Home</a>
+    <div class="ig-col">
+      <div class="ig-topbar">
+        <a href="../" id="homeBtn" class="ig-navback" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+        <button class="ig-iconbtn" onclick="openMyAccount()" title="Account" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.9-3.8 3.9-6 7.5-6s6.6 2.2 7.5 6"/></svg></button>
+      </div>
+      <div class="ig-hero">
+        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="90" rx="40" ry="7" fill="#000" opacity=".2"/>
+<g><rect class="o" x="14" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="23" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="32" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/>
+<rect class="o" x="13" y="40" width="12" height="4" rx="2" fill="#e8b04a"/><rect class="o" x="26" y="40" width="12" height="4" rx="2" fill="#e8b04a"/></g>
+<g transform="rotate(-38 58 64)"><rect class="o" x="52" y="44" width="15" height="42" rx="5" fill="#f2c46d"/><rect class="o" x="56" y="22" width="7" height="24" rx="3" fill="#1d46a8"/><path d="M57 27 h5 M57 32 h5 M57 37 h5" stroke="#22120a" stroke-width="1.5"/><rect x="55" y="50" width="4" height="30" rx="2" fill="#fff" opacity=".5"/></g>
+<path d="M60 38 L78 22 M64 44 L84 30" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+<circle class="o" cx="84" cy="16" r="9" fill="#d61f2c"/><path d="M78 10 Q84 16 90 22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="2 2"/><ellipse cx="81" cy="12" rx="2.5" ry="1.5" fill="#fff" opacity=".5"/>
+<path class="o" d="M62 58 l3 -6 2 5 5 -2 -2 5 5 3 -6 1 0 5 -4 -3 -4 3 0 -5 -5 -2 5 -2Z" fill="#ffcc00"/></svg></div>
+        <div class="ig-title">Super Over</div>
+        <div class="ig-tagline" id="titleSub">Timing-based cricket</div>
+      </div>
+      <div class="ig-playrow">
+        <button class="ig-cta" onclick="chooseFormat('quick')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Quick match · 5 overs</small></span></button>
+      </div>
+      <div class="ig-modes cr-modes">
+        <button class="ig-mode" onclick="show('scr-play')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.7 3.6M16 6h2.5a2.5 2.5 0 0 1-2.7 3.6M12 13v4M8.5 20h7M10 17h4"/></svg></span><b>Leagues</b><small>IPL · ODI</small></button>
+        <button class="ig-mode" onclick="show('scr-modes')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/></svg></span><b>Career</b><small>Bat or manage</small></button>
+        <button class="ig-mode" onclick="chubEnter()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a9b,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/></svg></span><b>Challenges</b><small>Chase targets</small></button>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="startTutorial()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><path d="M12 16.8v.1"/></svg></span><span class="ig-grow">How to Play<small>A one-minute batting lesson</small></span></button>
+        <button class="ig-row" onclick="showProfile()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b38cff,#6e3df0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></span><span class="ig-grow">Profile &amp; Stats<small>Runs, cups and career</small></span></button>
+        <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('cricket','Super Over Cricket')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff9500)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20v-6h5v6M8.5 20V9h7v11M15.5 20v-8h5v8M3 20h18"/></svg></span><span class="ig-grow">Leaderboard<small>Top run scorers</small></span></button>
+      </div>
+    </div>
   </div>
 
   <!-- WELCOME (first launch) -->
   <div id="scr-welcome" class="screen hidden">
-    <h1 style="font-size:34px">👋 WELCOME!</h1>
-    <div class="sub" style="max-width:420px">New to cricket? Learn by playing — it only takes a minute. We'll bowl you a few balls and coach you through it.</div>
-    <button class="btn" onclick="startTutorial()" style="font-size:20px;padding:16px 40px">🎓 TUTORIAL</button>
-    <button class="btn alt" onclick="skipWelcome()">No thanks</button>
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a></div>
+      <div class="ig-hero"><div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="90" rx="40" ry="7" fill="#000" opacity=".2"/>
+<g><rect class="o" x="14" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="23" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/><rect class="o" x="32" y="44" width="5" height="44" rx="1.5" fill="#f3e2c0"/>
+<rect class="o" x="13" y="40" width="12" height="4" rx="2" fill="#e8b04a"/><rect class="o" x="26" y="40" width="12" height="4" rx="2" fill="#e8b04a"/></g>
+<g transform="rotate(-38 58 64)"><rect class="o" x="52" y="44" width="15" height="42" rx="5" fill="#f2c46d"/><rect class="o" x="56" y="22" width="7" height="24" rx="3" fill="#1d46a8"/><path d="M57 27 h5 M57 32 h5 M57 37 h5" stroke="#22120a" stroke-width="1.5"/><rect x="55" y="50" width="4" height="30" rx="2" fill="#fff" opacity=".5"/></g>
+<path d="M60 38 L78 22 M64 44 L84 30" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+<circle class="o" cx="84" cy="16" r="9" fill="#d61f2c"/><path d="M78 10 Q84 16 90 22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="2 2"/><ellipse cx="81" cy="12" rx="2.5" ry="1.5" fill="#fff" opacity=".5"/>
+<path class="o" d="M62 58 l3 -6 2 5 5 -2 -2 5 5 3 -6 1 0 5 -4 -3 -4 3 0 -5 -5 -2 5 -2Z" fill="#ffcc00"/></svg></div><div class="ig-title">Welcome</div>
+        <div class="ig-tagline">New to cricket? Learn by playing — it only takes a minute. We'll bowl you a few balls and coach you through it.</div></div>
+      <button class="ig-cta" onclick="startTutorial()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><path d="M12 16.8v.1"/></svg><span><b>Start Tutorial</b><small>About one minute</small></span></button>
+      <button class="ig-btn secondary" onclick="skipWelcome()">No Thanks</button>
+    </div>
   </div>
 
   <!-- PLAY submenu -->
   <div id="scr-play" class="screen hidden">
-    <h1 style="font-size:34px">🏏 PLAY</h1>
-    <button class="btn alt" onclick="chooseFormat('quick')">QUICK MATCH<br><span style="font-size:12px;font-weight:normal">single game • 5 overs</span></button>
-    <button class="btn" onclick="startTournamentFlow('ipl')">IPL TOURNAMENT<br><span style="font-size:12px;font-weight:normal">10 teams • league + playoffs</span></button>
-    <button class="btn" onclick="startTournamentFlow('odi')">ODI WORLD CUP<br><span style="font-size:12px;font-weight:normal">12 teams • league + playoffs</span></button>
-    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><button class="ig-navback" onclick="show('scr-title')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button></div>
+      <h1>Play</h1>
+      <div class="sub">Pick a format.</div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="chooseFormat('quick')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 3 5.5 13.5h6L10.5 21l8-10.5h-6z"/></svg></span><span class="ig-grow">Quick Match<small>Single game · 5 overs</small></span></button>
+        <button class="ig-row" onclick="startTournamentFlow('ipl')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.7 3.6M16 6h2.5a2.5 2.5 0 0 1-2.7 3.6M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">IPL Tournament<small>10 teams · league + playoffs</small></span></button>
+        <button class="ig-row" onclick="startTournamentFlow('odi')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><span class="ig-grow">ODI World Cup<small>12 teams · league + playoffs</small></span></button>
+      </div>
+    </div>
   </div>
 
   <!-- CAREER & MANAGER submenu -->
   <div id="scr-modes" class="screen hidden">
-    <h1 style="font-size:28px">🏆 CAREER &amp; MANAGER</h1>
-    <button class="btn" onclick="careerEnter()" style="background:linear-gradient(135deg,#ffd54a,#ff8c3d)">🏆 IPL CAREER<br><span style="font-size:12px;font-weight:normal" id="careerSubLbl">be a player • auctions • seasons</span></button>
-    <button class="btn" onclick="managerEnter()" style="background:linear-gradient(135deg,#3a9bdc,#1e63a8);color:#fff">🧑‍💼 MANAGER MODE<br><span style="font-size:12px;font-weight:normal">buy a squad • auto-play • win the cup</span></button>
-    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><button class="ig-navback" onclick="show('scr-title')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button></div>
+      <h1>Career &amp; Manager</h1>
+      <div class="sub">Be a player, or run the team.</div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="careerEnter()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5-8.5 8.5a2 2 0 0 1-2.8 0l-2.2-2.2a2 2 0 0 1 0-2.8z"/><path d="M7 17l-3 3"/><circle cx="18" cy="18" r="2"/></svg></span><span class="ig-grow">IPL Career<small id="careerSubLbl">be a player • auctions • seasons</small></span></button>
+        <button class="ig-row" onclick="managerEnter()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/></svg></span><span class="ig-grow">Manager Mode<small>Buy a squad · auto-play · win the cup</small></span></button>
+      </div>
+    </div>
   </div>
 
   <!-- ============ CHALLENGE HUB ============ -->
   <div id="scr-chub" class="screen hidden">
-    <h1 style="font-size:28px">🎯 CHALLENGE HUB</h1>
-    <div class="sub">Set a target — then watch the world try to chase it.</div>
-    <button class="btn" onclick="chSetStart()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🏏 SET TARGET<br><span style="font-size:12px;font-weight:normal">bat an innings • publish your score</span></button>
-    <button class="btn" onclick="chBrowse('trending')">🌍 BROWSE TARGETS<br><span style="font-size:12px;font-weight:normal">chase what other players set</span></button>
-    <div id="chubPending"></div>
-    <button class="btn alt" onclick="show('scr-title')">⬅ BACK</button>
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><button class="ig-navback" onclick="show('scr-title')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Menu</span></button></div>
+      <h1>Challenge Hub</h1>
+      <div class="sub">Set a target — then watch the world try to chase it.</div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="chSetStart()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5-8.5 8.5a2 2 0 0 1-2.8 0l-2.2-2.2a2 2 0 0 1 0-2.8z"/><path d="M7 17l-3 3"/><circle cx="18" cy="18" r="2"/></svg></span><span class="ig-grow">Set a Target<small>Bat an innings · publish your score</small></span></button>
+        <button class="ig-row" onclick="chBrowse('trending')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><span class="ig-grow">Browse Targets<small>Chase what other players set</small></span></button>
+      </div>
+      <div id="chubPending"></div>
+    </div>
   </div>
 
   <!-- SET TARGET: how long an innings -->
   <div id="scr-chovers" class="screen hidden">
-    <h1 style="font-size:26px">🏏 SET TARGET</h1>
-    <div class="sub">Bat with no target — whatever you score becomes the challenge.</div>
-    <button class="btn alt" onclick="chSetOvers(5)">5 OVERS<br><span style="font-size:12px;font-weight:normal">5 wickets • quick one</span></button>
-    <button class="btn" onclick="chSetOvers(10)">10 OVERS<br><span style="font-size:12px;font-weight:normal">7 wickets • the classic</span></button>
-    <button class="btn alt" onclick="chSetOvers(15)">15 OVERS<br><span style="font-size:12px;font-weight:normal">10 wickets • the long haul</span></button>
-    <button class="btn alt" onclick="show('scr-chub')">⬅ BACK</button>
+    <div class="ig-col cr-narrow">
+      <div class="ig-topbar"><button class="ig-navback" onclick="show('scr-chub')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button></div>
+      <h1>Set a Target</h1>
+      <div class="sub">Bat with no target — whatever you score becomes the challenge.</div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="chSetOvers(5)"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><b class="cr-num">5</b></span><span class="ig-grow">5 Overs<small>5 wickets · a quick one</small></span></button>
+        <button class="ig-row" onclick="chSetOvers(10)"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><b class="cr-num">10</b></span><span class="ig-grow">10 Overs<small>7 wickets · the classic</small></span></button>
+        <button class="ig-row" onclick="chSetOvers(15)"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a9b,#e0364f)"><b class="cr-num">15</b></span><span class="ig-grow">15 Overs<small>10 wickets · the long haul</small></span></button>
+      </div>
+    </div>
   </div>
 
   <!-- PUBLISH the innings you just batted -->
   <div id="scr-chpub" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 id="chPubTitle" style="font-size:28px">🎯 TARGET SET!</h1>
+    <h1 id="chPubTitle">Target Set!</h1>
     <div class="sub" id="chPubSub" style="margin-bottom:8px"></div>
     <div id="chPubCard" style="max-width:540px;width:100%"></div>
-    <button class="btn" id="chPubBtn" onclick="chPublish()">📢 PUBLISH CHALLENGE</button>
+    <button class="btn" id="chPubBtn" onclick="chPublish()">Publish Challenge</button>
     <div id="chPubNote" class="chnote"></div>
-    <button class="btn alt" onclick="chPubLater()">Not now</button>
+    <button class="btn alt" onclick="chPubLater()">Not Now</button>
   </div>
 
   <!-- BROWSE published targets -->
   <div id="scr-chlist" class="screen hidden" style="justify-content:flex-start;padding-top:20px;overflow-y:auto">
-    <h1 style="font-size:24px">🌍 BROWSE TARGETS</h1>
-    <div class="row" style="gap:6px;margin-bottom:6px">
-      <button class="btn alt chtab" id="chTab-trending" onclick="chBrowse('trending')">🔥 Trending</button>
-      <button class="btn alt chtab" id="chTab-newest"   onclick="chBrowse('newest')">🆕 Newest</button>
-      <button class="btn alt chtab" id="chTab-hardest"  onclick="chBrowse('hardest')">💀 Hardest</button>
+    <div class="ig-topbar cr-top"><button class="ig-navback" onclick="show('scr-chub')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button></div>
+    <h1>Browse Targets</h1>
+    <div class="ig-seg cr-tabs">
+      <button class="chtab" id="chTab-trending" onclick="chBrowse('trending')">Trending</button>
+      <button class="chtab" id="chTab-newest"   onclick="chBrowse('newest')">Newest</button>
+      <button class="chtab" id="chTab-hardest"  onclick="chBrowse('hardest')">Hardest</button>
     </div>
     <div id="chList" style="max-width:540px;width:100%"></div>
-    <button class="btn alt" id="chMore" onclick="chLoadMore()" style="display:none">LOAD MORE</button>
-    <button class="btn alt" onclick="show('scr-chub')">⬅ BACK</button>
+    <button class="btn alt" id="chMore" onclick="chLoadMore()" style="display:none">Load More</button>
   </div>
 
   <!-- result of chasing someone's target -->
   <div id="scr-chend" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 id="chEndTitle" style="font-size:28px"></h1>
+    <h1 id="chEndTitle"></h1>
     <div class="sub" id="chEndSub" style="margin-bottom:8px"></div>
     <div id="chEndBody" style="max-width:540px;width:100%"></div>
     <div id="chEndNote" class="chnote"></div>
-    <button class="btn" onclick="chBrowse(chTab)">🌍 MORE TARGETS</button>
-    <button class="btn alt" onclick="show('scr-title')">🏠 MENU</button>
+    <div class="row">
+      <button class="btn" onclick="chBrowse(chTab)">More Targets</button>
+      <button class="btn alt" onclick="show('scr-title')">Menu</button>
+    </div>
   </div>
 
   <!-- TUTORIAL DONE / EXPLAINER -->
   <div id="scr-tutdone" class="screen hidden" style="justify-content:flex-start;padding-top:24px;overflow-y:auto">
-    <h1 style="font-size:28px">🎉 GREAT BATTING!</h1>
+    <h1>Great Batting!</h1>
     <div class="sub">You've got the timing. Here's everything else:</div>
-    <div style="max-width:500px;width:100%;text-align:left;font-size:14px;line-height:1.6;color:#cdd9f0">
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🎯 Aim</b><br>Swipe or press <b>←</b> leg, <b>↑</b> straight, <b>→</b> off side just before you hit, to place the ball.</div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏏 Play</b><br>Quick Match, IPL Tournament or ODI World Cup — chase the target before you lose your wickets.</div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🏆 Career</b><br>Play 5 IPL matches to unlock IPL Career — get auctioned, play full seasons, earn ₹ crores.</div>
-      <div style="background:#16243f;border-radius:12px;padding:12px 16px;margin:6px 0"><b style="color:#ffd54a">🧑‍💼 Manager</b><br>Don't want to bat? Manage a team — sign players and auto-play to the title.</div>
+    <div class="ig-list cr-explain">
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff8a9b,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/></svg></span><span class="ig-grow">Aim<small>Swipe or press <b>←</b> leg, <b>↑</b> straight, <b>→</b> off side just before you hit, to place the ball.</small></span></div>
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5-8.5 8.5a2 2 0 0 1-2.8 0l-2.2-2.2a2 2 0 0 1 0-2.8z"/><path d="M7 17l-3 3"/><circle cx="18" cy="18" r="2"/></svg></span><span class="ig-grow">Play<small>Quick Match, IPL Tournament or ODI World Cup — chase the target before you lose your wickets.</small></span></div>
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.7 3.6M16 6h2.5a2.5 2.5 0 0 1-2.7 3.6M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Career<small>Play 5 IPL matches to unlock IPL Career — get auctioned, play full seasons, earn ₹ crores.</small></span></div>
+      <div class="ig-row nochev"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/></svg></span><span class="ig-grow">Manager<small>Don't want to bat? Manage a team — sign players and auto-play to the title.</small></span></div>
     </div>
-    <button class="btn" onclick="finishTutorial()" style="margin-top:10px">START PLAYING ▶</button>
+    <button class="btn" onclick="finishTutorial()" style="margin-top:10px">Start Playing</button>
   </div>
 
   <!-- AUCTION -->
   <div id="scr-auction" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 style="font-size:30px">🔨 THE AUCTION</h1>
+    <h1>The Auction</h1>
     <div class="sub" id="auctionSub" style="margin-bottom:8px"></div>
     <div id="auctionBody" style="max-width:480px;width:100%"></div>
-    <button class="btn alt" onclick="exitCareer()" style="margin-top:8px">BACK TO MENU</button>
+    <button class="btn alt" onclick="exitCareer()" style="margin-top:8px">Back to Menu</button>
   </div>
 
   <!-- CAREER HUB -->
   <div id="scr-hub" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 id="hubTitle" style="font-size:28px">MY CAREER</h1>
+    <h1 id="hubTitle">My Career</h1>
     <div class="sub" id="hubSub" style="margin-bottom:8px"></div>
     <div id="hubBody" style="max-width:460px;width:100%"></div>
-    <button class="btn" onclick="startSeason()" style="margin-top:10px">▶ PLAY THE SEASON</button>
+    <button class="btn" onclick="startSeason()" style="margin-top:10px">Play the Season</button>
     <div class="row" style="margin-top:6px">
-      <button class="btn alt" onclick="exitCareer()">MENU</button>
+      <button class="btn alt" onclick="exitCareer()">Menu</button>
     </div>
   </div>
 
   <!-- MANAGER: CHOOSE TEAM -->
   <div id="scr-mgr-team" class="screen hidden" style="justify-content:flex-start;padding-top:22px;overflow-y:auto">
-    <h1 style="font-size:28px">🧑‍💼 MANAGER MODE</h1>
+    <h1>Manager Mode</h1>
     <div class="sub">Pick a team to manage. You won't bat — you build the squad and watch them play.</div>
     <div id="mgrTeamGrid" class="teamgrid"></div>
-    <button class="btn alt" onclick="show('scr-title')">BACK</button>
+    <button class="btn alt" onclick="show('scr-title')">Back</button>
   </div>
 
   <!-- MANAGER: AUCTION -->
   <div id="scr-mgr-auction" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 id="mgrAucTitle" style="font-size:24px">🔨 SQUAD AUCTION</h1>
+    <h1 id="mgrAucTitle">Squad Auction</h1>
     <div class="sub" id="mgrAucSub" style="margin-bottom:6px"></div>
     <div id="mgrSquadBar" style="max-width:520px;width:100%;margin-bottom:6px"></div>
     <div id="mgrPlayChoice" class="hidden" style="margin:4px 0">
-      <button class="btn" onclick="mgrPlaySeason()">⚡ AUTO-PLAY (watch)</button>
-      <button class="btn" onclick="mgrPlayManual()" style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f">🎮 PLAY MANUALLY</button>
+      <button class="btn" onclick="mgrPlaySeason()">Auto-Play (Watch)</button>
+      <button class="btn" onclick="mgrPlayManual()" >Play Manually</button>
     </div>
     <div id="mgrPool" style="max-width:520px;width:100%"></div>
-    <button class="btn alt" onclick="exitManager()" style="margin-top:8px">QUIT TO MENU</button>
+    <button class="btn alt" onclick="exitManager()" style="margin-top:8px">Quit to Menu</button>
   </div>
 
   <!-- MANAGER: NEGOTIATE -->
   <div id="scr-mgr-neg" class="screen hidden">
-    <h1 style="font-size:26px">💬 NEGOTIATE</h1>
+    <h1>Negotiate</h1>
     <div id="mgrNegBody" style="max-width:420px;width:100%"></div>
   </div>
 
   <!-- MANAGER: AUTO-PLAY -->
   <div id="scr-mgr-play" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 style="font-size:24px" id="mgrPlayTitle">⚡ SEASON — AUTO PLAY</h1>
+    <h1 id="mgrPlayTitle">Season — Auto Play</h1>
     <div class="sub" id="mgrPlaySub" style="margin-bottom:6px"></div>
     <div id="mgrPlayBody" style="max-width:520px;width:100%"></div>
-    <button class="btn hidden" id="mgrPlayNext" onclick="mgrSeasonEnd()" style="margin-top:8px">SEE RESULTS</button>
+    <button class="btn hidden" id="mgrPlayNext" onclick="mgrSeasonEnd()" style="margin-top:8px">See Results</button>
   </div>
 
   <!-- MANAGER: SEASON END -->
   <div id="scr-mgr-end" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 id="mgrEndTitle" style="font-size:28px">SEASON OVER</h1>
+    <h1 id="mgrEndTitle">Season Over</h1>
     <div class="sub" id="mgrEndSub" style="margin-bottom:6px"></div>
     <div id="mgrEndBody" style="max-width:520px;width:100%"></div>
     <div class="row" style="margin-top:8px">
-      <button class="btn" onclick="mgrNextSeason()">➡ NEXT SEASON</button>
-      <button class="btn alt" onclick="exitManager()">MENU</button>
+      <button class="btn" onclick="mgrNextSeason()">Next Season</button>
+      <button class="btn alt" onclick="exitManager()">Menu</button>
     </div>
   </div>
 
   <!-- LEAGUE TABLE -->
   <div id="scr-league" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">✕ EXIT</button>
-    <h1 id="leagueTitle" style="font-size:28px">POINTS TABLE</h1>
+    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">Exit</button>
+    <h1 id="leagueTitle">Points Table</h1>
     <div class="sub" id="leagueSub" style="margin-bottom:6px"></div>
     <div id="leagueTable" style="max-width:520px;width:100%"></div>
-    <button class="btn" id="leagueBtn" onclick="playLeagueRound()" style="margin-top:8px">PLAY MY MATCH</button>
+    <button class="btn" id="leagueBtn" onclick="playLeagueRound()" style="margin-top:8px">Play My Match</button>
   </div>
 
   <!-- PLAYOFFS -->
   <div id="scr-playoffs" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">✕ EXIT</button>
-    <h1 style="font-size:28px">🏆 PLAYOFFS</h1>
+    <button class="btn alt" onclick="exitTournament()" style="position:absolute;top:12px;right:12px;margin:0;padding:8px 14px;font-size:13px;z-index:6">Exit</button>
+    <h1>Playoffs</h1>
     <div class="sub" id="playoffSub" style="margin-bottom:6px"></div>
     <div id="playoffBracket" style="max-width:480px;width:100%"></div>
     <button class="btn" id="playoffBtn" onclick="playNextPlayoff()" style="margin-top:8px">PLAY</button>
@@ -317,54 +474,54 @@
 
   <!-- TOURNAMENT END / AWARDS -->
   <div id="scr-tend" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 id="tendTitle" style="font-size:30px">TOURNAMENT OVER</h1>
+    <h1 id="tendTitle">Tournament Over</h1>
     <div class="sub" id="tendSub" style="margin-bottom:6px"></div>
     <div id="tendBody" style="max-width:520px;width:100%"></div>
-    <button class="btn" id="tendBtn" onclick="show('scr-title')" style="margin-top:8px">BACK TO MENU</button>
+    <button class="btn" id="tendBtn" onclick="show('scr-title')" style="margin-top:8px">Back to Menu</button>
   </div>
 
   <!-- PROFILE -->
   <div id="scr-profile" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 id="profileName" style="font-size:30px">PROFILE</h1>
-    <div class="row" style="margin:6px 0">
+    <h1 id="profileName">Profile</h1>
+    <div class="row cr-tabs ig-seg" style="margin:6px 0 10px">
       <button class="btn" id="tabIpl" onclick="setProfileTab('ipl')">IPL</button>
       <button class="btn alt" id="tabOdi" onclick="setProfileTab('odi')">ODI</button>
-      <button class="btn alt" id="tabCareer" onclick="setProfileTab('career')">🏆 CAREER</button>
+      <button class="btn alt" id="tabCareer" onclick="setProfileTab('career')">Career</button>
     </div>
     <div id="profileBody" style="max-width:480px;width:100%"></div>
     <div class="row" style="margin-top:8px">
-      <button class="btn alt" onclick="show('scr-title')">BACK</button>
-      <button class="btn" onclick="openMyAccount()">👤 MY ACCOUNT</button>
+      <button class="btn alt" onclick="show('scr-title')">Back</button>
+      <button class="btn" onclick="openMyAccount()">My Account</button>
     </div>
   </div>
 
   <!-- TEAM SELECT -->
   <div id="scr-team" class="screen hidden">
-    <h1 style="font-size:34px">CHOOSE YOUR TEAM</h1>
+    <h1>Choose Your Team</h1>
     <div class="sub">10 teams. Pick your side.</div>
     <div id="teamgrid" class="teamgrid"></div>
-    <button class="btn" id="teamNext" onclick="teamChosen()" disabled style="opacity:.4">NEXT</button>
-    <button class="btn alt" onclick="show('scr-title')">BACK</button>
+    <button class="btn" id="teamNext" onclick="teamChosen()" disabled style="opacity:.4">Next</button>
+    <button class="btn alt" onclick="show('scr-title')">Back</button>
   </div>
 
   <!-- NAME EDIT -->
   <div id="scr-names" class="screen hidden">
-    <h1 style="font-size:30px">YOUR BATTING LINE-UP</h1>
+    <h1>Your Batting Line-Up</h1>
     <div class="sub">Edit names if you like, then start.</div>
     <div id="namelist" class="namelist"></div>
     <div class="row" style="margin-top:14px">
-      <button class="btn" onclick="startSingle()">START</button>
-      <button class="btn alt" onclick="goTeamSelect()">BACK</button>
+      <button class="btn" onclick="startSingle()">Start</button>
+      <button class="btn alt" onclick="goTeamSelect()">Back</button>
     </div>
   </div>
 
   <!-- SCORECARD -->
   <div id="scr-scorecard" class="screen hidden" style="justify-content:flex-start;padding-top:18px;overflow-y:auto">
-    <h1 id="scTitle" style="font-size:30px">SCORECARD</h1>
+    <h1 id="scTitle">Scorecard</h1>
     <div class="sub" id="scSub" style="margin-bottom:8px"></div>
     <div id="scMom"></div>
     <div id="scBody" style="max-width:540px;width:100%"></div>
-    <button class="btn" id="scBtn" onclick="afterResult()" style="margin-top:6px">CONTINUE</button>
+    <button class="btn" id="scBtn" onclick="afterResult()" style="margin-top:6px">Continue</button>
   </div>
 
   <!-- IN-GAME HUD -->
@@ -567,7 +724,7 @@ function setActive(id){ const a=store.accounts.find(x=>x.id===id); if(!a) return
 
 function refreshTitle(){
   document.getElementById('titleSub').innerHTML =
-    `Welcome, <b style="color:#ffd54a">${profile?profile.name:'Skipper'}</b> • Pick your mode`;
+    `Welcome back, <b>${profile?profile.name:'Skipper'}</b>`;
   const lbl=document.getElementById('careerSubLbl');
   if(lbl){ if(profile) ensureCareer(profile);
     lbl.textContent = (profile&&careerUnlocked())
@@ -687,7 +844,7 @@ function standings(){
 function showLeague(){
   show('scr-league');
   if(careerMode && CS) saveSeason(); else if(!managerManual) saveTour();   // remember progress so it resumes after closing
-  document.getElementById('leagueTitle').textContent = T.fmt.label.replace('TOURNAMENT','').trim()+' — POINTS TABLE';
+  document.getElementById('leagueTitle').textContent = T.fmt.label.replace('TOURNAMENT','').trim()+' — Points Table';
   const done=T.roundIdx, total=T.schedule.length;
   document.getElementById('leagueSub').innerHTML =
     `Round <b>${Math.min(done+1,total)}</b> of ${total} • top 4 reach the playoffs`;
@@ -706,10 +863,10 @@ function showLeague(){
     const round=T.schedule[T.roundIdx];
     const mine=round.find(p=>p.includes(T.myId));
     const oppId=mine[0]===T.myId?mine[1]:mine[0];
-    btn.textContent=`PLAY MY MATCH  (vs ${byId(oppId).name})`;
+    btn.textContent=`Play My Match (vs ${byId(oppId).name})`;
     btn.onclick=playLeagueRound;
   } else {
-    btn.textContent='➡ GO TO PLAYOFFS'; btn.onclick=startPlayoffs;
+    btn.textContent='Go to Playoffs'; btn.onclick=startPlayoffs;
   }
 }
 function playLeagueRound(){
@@ -766,7 +923,7 @@ function showPlayoffs(){
   h+=line('FINAL', P.final);
   document.getElementById('playoffBracket').innerHTML=h;
   const btn=document.getElementById('playoffBtn');
-  if(P.step==='done'){ btn.textContent='🏆 SEE AWARDS'; btn.onclick=showTournamentEnd; return; }
+  if(P.step==='done'){ btn.textContent='See Awards'; btn.onclick=showTournamentEnd; return; }
   const [a,b]=poTeams(P.step);
   const names={q1:'Qualifier 1',elim:'Eliminator',q2:'Qualifier 2',final:'Final'}[P.step];
   const involves=(a===T.myId||b===T.myId);
@@ -803,7 +960,7 @@ function showTournamentEnd(){
   // profile rewards
   const st=profile[chosenFormat.key];
   if(st && !managerManual){ st.tours++; if(iWon) st.cups++; if(motm && motm.name===profile.name) st.awards++; if(orange && orange.name===profile.name) st.awards++; saveProfile(); }
-  document.getElementById('tendTitle').innerHTML = champ?`🏆 ${champ.name} are CHAMPIONS!`:'TOURNAMENT OVER';
+  document.getElementById('tendTitle').innerHTML = champ?`${champ.name} Are Champions!`:'Tournament Over';
   document.getElementById('tendTitle').style.color = iWon?'#39ff88':'#ffd54a';
   document.getElementById('tendSub').innerHTML = iWon?'You lifted the cup! 🥳':(champ?`Better luck next time, ${profile.name}.`:'');
   const card=(emoji,title,o,suffix)=> o?`<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:10px 14px;margin:6px 0;font-weight:bold">
@@ -826,7 +983,7 @@ function showTournamentEnd(){
     MGR.money=+(MGR.money+earn).toFixed(1); MGR.history.push({season:MGR.season,pos,champ:iWon,earn,wins:w});
     h+=`<div style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border-radius:12px;padding:12px 14px;margin:10px 0;font-weight:bold">
         🧑‍💼 Manager: finished <b>P${pos}/10</b> (${w} wins) • earned 💰 <b>${fmtCr(earn)}</b> → now ${fmtCr(MGR.money)}</div>`;
-    tbtn.textContent='➡ BACK TO MANAGER'; tbtn.onclick=function(){ managerManual=false; mgrNextSeason(); };
+    tbtn.textContent='Back to Manager'; tbtn.onclick=function(){ managerManual=false; mgrNextSeason(); };
   } else if(careerMode && CS){
     CS.cup=iWon;
     if(motm && motm.name===profile.name) CS.awards++;
@@ -840,8 +997,8 @@ function showTournamentEnd(){
     h+=`<div style="background:linear-gradient(135deg,#39ff88,#1ea85a);color:#04220f;border-radius:12px;padding:12px 14px;margin:10px 0;font-weight:bold">
         📊 Your season: <b>${CS.runs}</b> runs in ${CS.matches} (avg ${avg.toFixed(1)}) • ${CS.sixes} sixes${CS.awards?` • ${CS.awards} award(s)`:''}${iWon?' • 🏆 CHAMPION':''}<br>
         💰 Earned <b>${fmtCr(earn)}</b> • New form <b>${form}/100</b></div>`;
-    tbtn.textContent='➡ NEXT SEASON'; tbtn.onclick=careerContinue;
-  } else { tbtn.textContent='BACK TO MENU'; tbtn.onclick=function(){ show('scr-title'); }; }
+    tbtn.textContent='Next Season'; tbtn.onclick=careerContinue;
+  } else { tbtn.textContent='Back to Menu'; tbtn.onclick=function(){ show('scr-title'); }; }
   // final standings
   h+=`<div style="margin-top:10px;color:#9fb3d8;font-size:13px">Final standings</div>`;
   standings().forEach((id,i)=>{ const t=byId(id), r=T.table[id];
@@ -856,7 +1013,7 @@ let profileTab='ipl';
 function showProfile(){ profileTab='ipl'; renderProfile(); show('scr-profile'); }
 function setProfileTab(tab){ profileTab=tab; renderProfile(); }
 function renderProfile(){
-  document.getElementById('profileName').textContent='👤 '+(profile.name||'PLAYER');
+  document.getElementById('profileName').textContent=(profile.name||'Player');
   document.getElementById('tabIpl').className='btn'+(profileTab==='ipl'?'':' alt');
   document.getElementById('tabOdi').className='btn'+(profileTab==='odi'?'':' alt');
   const tc=document.getElementById('tabCareer'); if(tc) tc.className='btn'+(profileTab==='career'?'':' alt');
@@ -876,8 +1033,8 @@ function renderProfile(){
     + stat('Hundreds (100s)', s.hundreds||0)
     + stat('Batting average', avg)
     + stat('Strike rate', sr)
-    + stat('🏆 Cups won', s.cups)
-    + stat('🏅 Awards', s.awards);
+    + stat('Cups won', s.cups)
+    + stat('Awards', s.awards);
 }
 
 function renderCareerProfile(){
@@ -885,9 +1042,9 @@ function renderCareerProfile(){
   const stat=(label,val)=>`<div style="display:flex;justify-content:space-between;background:#16243f;padding:9px 14px;border-radius:8px;margin:4px 0"><span style="color:#9fb3d8">${label}</span><b style="color:#ffd54a">${val}</b></div>`;
   let h=`<div class="sub" style="margin:2px 0 8px">IPL CAREER</div>`;
   if(!careerUnlocked()) h+=`<div style="background:#16243f;border-radius:10px;padding:12px 14px;color:#9fb3d8;margin-bottom:4px">🔒 Play ${5-(profile.ipl?profile.ipl.matches:0)} more IPL match(es) to unlock career mode.</div>`;
-  h+=stat('💰 Money', fmtCr(c.money)) + stat('📈 Form', c.form+'/100') + stat('📅 Seasons played', c.seasons.length);
+  h+=stat('Money', fmtCr(c.money)) + stat('Form', c.form+'/100') + stat('Seasons played', c.seasons.length);
   const cups=c.seasons.filter(s=>s.cup).length, awards=c.seasons.reduce((a,s)=>a+s.awards,0), sixes=c.seasons.reduce((a,s)=>a+s.sixes,0);
-  h+=stat('🏆 Cups', cups)+stat('🏅 Awards', awards)+stat('💥 Sixes (career)', sixes);
+  h+=stat('Cups', cups)+stat('Awards', awards)+stat('Sixes (career)', sixes);
   if(c.seasons.length){ h+=`<div class="sub" style="margin:10px 0 4px">Season history</div>`;
     c.seasons.slice().reverse().forEach(s=>{ const t=teamObjById(s.team);
       h+=`<div style="background:#16243f;border-radius:10px;padding:9px 12px;margin:4px 0;font-size:13px">
@@ -1013,7 +1170,7 @@ function showAuction(){
   offers.forEach(o=>{ h+=`<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,${o.t.c1},${o.t.c2});border-radius:12px;padding:9px 12px;margin:6px 0">
       <b style="flex:1;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.5)">${o.t.id} · ${o.t.name}</b>
       <span style="font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,.5)">${fmtCr(o.off)}${o.off===best?' ⭐':''}</span>
-      <button class="btn" style="margin:0;padding:7px 14px;font-size:14px" onclick="acceptOffer('${o.t.id}',${o.off})">SIGN</button></div>`; });
+      <button class="btn" style="margin:0;padding:7px 14px;font-size:14px" onclick="acceptOffer('${o.t.id}',${o.off})">Sign</button></div>`; });
   document.getElementById('auctionBody').innerHTML=h;
   show('scr-auction');
 }
@@ -1069,7 +1226,7 @@ function mgrSquadHtml(){ const m=MGR;
   if(m.squad.length) h+='<br><span style="color:#9fb3d8;font-size:12px">'+m.squad.map(p=>p.name+' ('+p.r+')').join(', ')+'</span>';
   return h+'</div>'; }
 function openAuction(){ const m=MGR, t=TEAMS.find(x=>x.id===m.teamId), need=11-m.squad.length;
-  document.getElementById('mgrAucTitle').innerHTML=`🔨 ${t.name} — Season ${m.season}`;
+  document.getElementById('mgrAucTitle').innerHTML=`${t.name} — Season ${m.season}`;
   document.getElementById('mgrAucSub').innerHTML=`💰 Budget <b style="color:#ffd54a">${fmtCr(m.money)}</b> • sign <b>11</b> players (10 bat • 15 overs)`;
   document.getElementById('mgrSquadBar').innerHTML=mgrSquadHtml();
   document.getElementById('mgrPlayChoice').classList.toggle('hidden', need>0);
@@ -1079,7 +1236,7 @@ function openAuction(){ const m=MGR, t=TEAMS.find(x=>x.id===m.teamId), need=11-m
       <b style="width:30px;color:${p.r>=85?'#39ff88':p.r>=75?'#ffd54a':'#cdd9f0'}">${p.r}</b>
       <span style="flex:1;font-size:14px">${p.name} <span style="color:#7e90b5;font-size:12px">(${p.fromName})</span></span>
       <span style="color:#9fb3d8;font-size:12px">${fmtCr(p.ask)}</span>
-      <button class="btn" style="margin:0;padding:6px 12px;font-size:13px" onclick="openNeg('${p.name.replace(/'/g,"\\'")}')">BID</button></div>`; });
+      <button class="btn" style="margin:0;padding:6px 12px;font-size:13px" onclick="openNeg('${p.name.replace(/'/g,"\\'")}')">Bid</button></div>`; });
   document.getElementById('mgrPool').innerHTML=h;
   show('scr-mgr-auction');
 }
@@ -1098,8 +1255,8 @@ function renderNeg(){ const p=buildPool().find(x=>x.name===negName), m=MGR, ch=M
        <div style="text-align:center;color:${ch>=66?'#39ff88':ch>=33?'#ffd54a':'#ff8c3d'};font-weight:bold">Accept chance: ${ch}%</div>
        <div style="color:#9fb3d8;font-size:12px;text-align:center;margin-top:4px">Budget: ${fmtCr(m.money)}</div></div>
      <div class="row" style="margin-top:12px">
-       <button class="btn" onclick="makeOffer()">MAKE OFFER</button>
-       <button class="btn alt" onclick="openAuction()">CANCEL</button></div>`;
+       <button class="btn" onclick="makeOffer()">Make Offer</button>
+       <button class="btn alt" onclick="openAuction()">Cancel</button></div>`;
 }
 function negAdj(d){ negOffer=Math.max(0.5,Math.min(MGR.money,+(negOffer+d).toFixed(1))); renderNeg(); }
 function makeOffer(){ const p=buildPool().find(x=>x.name===negName), m=MGR;
@@ -1131,7 +1288,7 @@ function mgrPlaySeason(){ const m=MGR; if(m.squad.length<11){ alert('Sign 11 pla
   const champId=Object.keys(table).sort((x,y)=>table[y].pts-table[x].pts)[0];
   const champStar=(champId===m.teamId?myStars[0].name:TEAMS.find(t=>t.id===champId).players[0]); tally[champStar]=(tally[champStar]||0)+90;
   m._table=table; m._yourMatches=yourMatches; m._tally=tally;
-  document.getElementById('mgrPlayTitle').textContent=`⚡ ${teamName(m.teamId)} — Season ${m.season}`;
+  document.getElementById('mgrPlayTitle').textContent=`${teamName(m.teamId)} — Season ${m.season}`;
   document.getElementById('mgrPlaySub').innerHTML=`Squad strength <b>${Math.round(you)}</b> • auto-playing your 9 matches…`;
   document.getElementById('mgrPlayBody').innerHTML=''; document.getElementById('mgrPlayNext').classList.add('hidden');
   show('scr-mgr-play'); mgrReveal(0);
@@ -1155,7 +1312,7 @@ function mgrSeasonEnd(){ const m=MGR, table=m._table, ms=m._yourMatches;
   const earn=+(wins*10 + (11-pos)*6 + (champ?40:0)).toFixed(1);
   m.money=+(m.money+earn).toFixed(1); m.history.push({season:m.season,wins,losses,pos,champ,earn});
   let motm=null,bv=-1; for(const k in m._tally){ if(m._tally[k]>bv){ bv=m._tally[k]; motm=k; } }
-  document.getElementById('mgrEndTitle').textContent=champ?`🏆 ${teamName(m.teamId)} — CHAMPIONS!`:`Season ${m.season}: finished P${pos}`;
+  document.getElementById('mgrEndTitle').textContent=champ?`${teamName(m.teamId)} — Champions!`:`Season ${m.season}: finished P${pos}`;
   document.getElementById('mgrEndTitle').style.color=champ?'#39ff88':'#ffd54a';
   document.getElementById('mgrEndSub').innerHTML=`${wins}W ${losses}L • <b>${pos}/10</b> • earned 💰 <b>${fmtCr(earn)}</b> → now ${fmtCr(m.money)}`;
   let h=`<div style="background:linear-gradient(135deg,#ffd54a,#ff8c3d);color:#1a1300;border-radius:12px;padding:10px 14px;margin:4px 0;font-weight:bold">🏆 Champions: ${teamName(order[0])}<br>🥇 Man of the Tournament — ${motm} (~${bv} runs)</div>`;
@@ -1592,7 +1749,7 @@ function endMatch(won){
   const mom = winnerRows.reduce((a,b)=> b.runs>a.runs?b:a, winnerRows[0]);
 
   const need=M.target-M.score, wktsLeft=M.maxWkts-M.wkts;
-  document.getElementById('scTitle').textContent = won ? '🎉 '+myTeam.name+' WON!' : '😞 '+myTeam.name+' LOST';
+  document.getElementById('scTitle').textContent = won ? myTeam.name+' Won!' : myTeam.name+' Lost';
   document.getElementById('scTitle').style.color = won?'#39ff88':'#ff6b6b';
   document.getElementById('scSub').innerHTML =
      `<b>${M.label}</b> &nbsp;•&nbsp; ${won?`won by ${wktsLeft} wkt${wktsLeft!==1?'s':''} (${M.balls} ball${M.balls!==1?'s':''} left)`
@@ -1604,7 +1761,7 @@ function endMatch(won){
   document.getElementById('scBody').innerHTML =
        cardTable(`${myTeam.name} (you)`, myTeam.c1, myRows, M.score, M.wkts)
      + cardTable(`${M.opp.name}`, M.opp.c1, oppRows, M.target-1, oppWkts);
-  document.getElementById('scBtn').textContent = 'CONTINUE';
+  document.getElementById('scBtn').textContent = 'Continue';
   show('scr-scorecard');
 }
 function afterResult(){
@@ -2282,7 +2439,7 @@ function chPaintPending(){
   if(!chPending){ el.innerHTML=''; return; }
   el.innerHTML='<div class="chnote">📢 You have an unpublished innings — <b>'
     +(chPending.target|0)+'/'+(chPending.wkts|0)+'</b> in '+(chPending.overs|0)+' overs.'
-    +'<br><button class="btn" onclick="chShowPublish()">PUBLISH IT</button>'
+    +'<br><button class="btn" onclick="chShowPublish()">Publish It</button>'
     +'<button class="btn alt" onclick="chDropPending()">Discard</button></div>';
 }
 function chDropPending(){
@@ -2330,7 +2487,7 @@ function chEndMatch(won){
     const score=M.score, wkts=M.wkts, overs=CH.overs;
     if(score < 10){
       // 9 all out is not a challenge anybody wants to chase
-      document.getElementById('chPubTitle').textContent='😅 TOO FEW';
+      document.getElementById('chPubTitle').textContent='Too Few Runs';
       document.getElementById('chPubTitle').style.color='#ff6b6b';
       document.getElementById('chPubSub').innerHTML='You made <b>'+score+'/'+wkts+'</b> — a target needs at least <b>10</b> runs to be worth chasing. Have another go!';
       document.getElementById('chPubCard').innerHTML=card;
@@ -2356,7 +2513,7 @@ function chEndMatch(won){
   speak(won ? 'They have chased it down! What a knock! Take a bow!'
             : 'Not enough! The target holds, heartbreak here, my friend.');
   const need = Math.max(0, r.target - M.score);
-  document.getElementById('chEndTitle').textContent = won ? '🎉 TARGET CHASED!' : '😞 CAME UP SHORT';
+  document.getElementById('chEndTitle').textContent = won ? 'Target Chased!' : 'Came Up Short';
   document.getElementById('chEndTitle').style.color = won ? '#39ff88' : '#ff6b6b';
   document.getElementById('chEndSub').innerHTML =
       '<b>'+r.target+'</b> needed off <b>'+r.overs+'</b> overs — set by <b>'+chEsc(r.username)+'</b><br>'
@@ -2384,13 +2541,13 @@ function chLoadPending(){
 function chShowPublish(){
   const p=chPending;
   if(!p){ show('scr-chub'); return; }
-  document.getElementById('chPubTitle').textContent='🎯 TARGET SET!';
+  document.getElementById('chPubTitle').textContent='Target Set!';
   document.getElementById('chPubTitle').style.color='#39ff88';
   document.getElementById('chPubSub').innerHTML=
     'You scored <b>'+p.target+'/'+p.wkts+'</b> in <b>'+p.overs+' overs</b>.<br>Publish it and let everyone try to beat it.';
   document.getElementById('chPubCard').innerHTML=p.card||'';
   const b=document.getElementById('chPubBtn');
-  b.style.display=''; b.disabled=false; b.style.opacity=1; b.textContent='📢 PUBLISH CHALLENGE';
+  b.style.display=''; b.disabled=false; b.style.opacity=1; b.textContent='Publish Challenge';
   document.getElementById('chPubNote').textContent='';
   show('scr-chpub');
 }
@@ -2399,7 +2556,7 @@ async function chPublish(){
   if(!p || chBusy) return;
   chBusy=true;
   const b=document.getElementById('chPubBtn'), note=document.getElementById('chPubNote');
-  b.disabled=true; b.style.opacity=.5; b.textContent='PUBLISHING…';
+  b.disabled=true; b.style.opacity=.5; b.textContent='Publishing…';
   note.style.color='#9fb3d8'; note.textContent='Uploading your challenge…';
   try{
     const d=await chRpc('cric_publish', { p_token:p.token, p_key:chKey(), p_name:chUser(),
@@ -2409,13 +2566,13 @@ async function chPublish(){
     note.style.color='#39ff88';
     note.textContent = d.dup ? '✅ Already up there — your challenge is live.'
                              : '✅ Published! Other players can chase it now.';
-    b.textContent='✅ PUBLISHED'; b.disabled=true; b.style.opacity=.6;
+    b.textContent='Published'; b.disabled=true; b.style.opacity=.6;
     setTimeout(function(){ chBrowse('newest'); }, 1300);
   }catch(e){
     // the innings itself is still saved — the player loses nothing by retrying
     note.style.color='#ff6b6b';
     note.textContent='Unable to publish challenge. Please try again.';
-    b.disabled=false; b.style.opacity=1; b.textContent='🔄 TRY AGAIN';
+    b.disabled=false; b.style.opacity=1; b.textContent='Try Again';
   }finally{ chBusy=false; }
 }
 function chPubLater(){ chPaintPending(); show('scr-chub'); }   // the innings stays saved
@@ -2442,7 +2599,7 @@ async function chSendAttempt(){
     chAttemptPayload=pay;
     note.style.color='#ff6b6b';
     note.innerHTML='Could not save your attempt — it is saved on this device and will go up later. '
-                  +'<button class="btn alt" onclick="chSendAttempt()">🔄 RETRY NOW</button>';
+                  +'<button class="btn alt" onclick="chSendAttempt()">Retry Now</button>';
   }
 }
 function chOutbox(){ try{ const a=JSON.parse(localStorage.getItem(CH_OUTBOX_KEY)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
@@ -2487,7 +2644,7 @@ async function chFetch(reset){
   if(chBusy) return;
   chBusy=true;
   const more=document.getElementById('chMore');
-  more.disabled=true; more.style.opacity=.5; more.textContent='LOADING…';
+  more.disabled=true; more.style.opacity=.5; more.textContent='Loading…';
   try{
     const d=await chRpc('cric_browse', { p_tab:chTab, p_limit:CH_PAGE, p_offset:chPage*CH_PAGE });
     const rows = Array.isArray(d) ? d : [];
@@ -2499,13 +2656,13 @@ async function chFetch(reset){
       chRows=[];
       document.getElementById('chList').innerHTML=
         '<div class="chnote">Could not load challenges — check your internet.<br>'
-       +'<button class="btn alt" onclick="chBrowse(chTab)">🔄 RETRY</button></div>';
+       +'<button class="btn alt" onclick="chBrowse(chTab)">Retry</button></div>';
     } else {
       chPage--;                                   // that page never arrived; ask for it again next tap
       more.style.display='inline-block';
     }
   }finally{
-    chBusy=false; more.disabled=false; more.style.opacity=1; more.textContent='LOAD MORE';
+    chBusy=false; more.disabled=false; more.style.opacity=1; more.textContent='Load More';
   }
 }
 function chPaint(){
@@ -2527,7 +2684,7 @@ function chPaint(){
       +' &nbsp;•&nbsp; Success rate <b>'+rate+'</b>'
       +' <span class="chdim">('+tried+' tried)</span></div>'
       // id is forced through Number() so nothing from the server can ever reach this attribute as code
-      +'<button class="btn chgo" onclick="chChase('+(Number(r.id)||0)+')">🏏 CHASE IT</button>'
+      +'<button class="btn chgo" onclick="chChase('+(Number(r.id)||0)+')">Chase It</button>'
       +'</div>';
   }).join('');
 }
@@ -2536,7 +2693,7 @@ function chChase(id){
   const r=chRows.find(function(x){ return String(x.id)===String(id); });
   if(!r || !(r.target>0) || !(r.overs>0)){    // a card that arrived broken must not start a match
     document.getElementById('chList').innerHTML=
-      '<div class="chnote">That target could not be loaded. <button class="btn alt" onclick="chBrowse(chTab)">🔄 REFRESH</button></div>';
+      '<div class="chnote">That target could not be loaded. <button class="btn alt" onclick="chBrowse(chTab)">Refresh</button></div>';
     return;
   }
   chStartInnings(chFormat(r.overs),

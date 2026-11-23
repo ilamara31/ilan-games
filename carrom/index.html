@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Carrom Clash</title>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,6 +26,7 @@
 <meta name="twitter:title" content="Carrom Clash — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; overflow:hidden; background:#0a0e1a; color:#fff;
@@ -79,79 +80,105 @@
     cursor:pointer; background:rgba(8,14,28,.85); color:#9fb3d8; font-family:inherit; }
   #moveBtn.hidden, #ctl.hidden { display:none; }
 
-  /* ---- screens ---- */
-  .screen { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
-    justify-content:flex-start; text-align:center; padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 26px);
-    overflow-y:auto; background:radial-gradient(circle at 50% 18%, #1b3566, #0a0e1a 76%); }
+  /* ===== ilan Games theme (light glass) ===== */
+  :root,html[data-theme]{ --accent:#c08060; --accent2:#6d3b2f; --icon1:#d0a08f; --icon2:#6d3b2f; }
+  html,body { background:transparent; color:var(--ig-text); font-family:var(--ig-font); letter-spacing:-.01em; }
+  .screen { position:absolute; inset:0; z-index:10; overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 26px); }
+  body:not(:has(#hud.on)) canvas#game { visibility:hidden; }
   .screen.hidden { display:none !important; }
-  h1 { font-size:clamp(28px,8vw,50px); letter-spacing:1px; margin:4px 0 2px; font-weight:800;
-    background:linear-gradient(90deg,#ffb347,#ffe27a 50%,#ff8c3d); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .tag { font-size:12px; font-weight:900; letter-spacing:2px; color:#7cf; background:rgba(120,200,255,.12);
-    border:1px solid rgba(120,200,255,.4); border-radius:20px; padding:3px 12px; margin-bottom:6px; }
-  .sub { color:#9fb3d8; font-size:clamp(13px,3vw,16px); margin-bottom:10px; max-width:540px; line-height:1.5; }
-  .btn { background:linear-gradient(135deg,#ffd54a,#ff8c3d); color:#1a1300; border:none; padding:14px 30px; font-size:17px;
-    font-weight:800; border-radius:28px; cursor:pointer; margin:6px; box-shadow:0 6px 18px rgba(255,160,50,.35);
-    text-decoration:none; display:inline-block; }
-  .btn.alt { background:linear-gradient(135deg,#3a5fcd,#28408f); color:#fff; }
-  .btn.green { background:linear-gradient(135deg,#39ff88,#1ea85a); color:#04220f; }
-  .btn:disabled { opacity:.45; cursor:not-allowed; }
-  .secttl { font-size:13px; font-weight:900; letter-spacing:1px; color:#cfe0ff; margin:10px 0 4px; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:4px 0; }
-  .cardbox { background:linear-gradient(180deg,#1a2a55,#0c1430); border:1px solid rgba(130,170,255,.2); border-radius:20px;
-    padding:16px; max-width:460px; width:100%; margin-bottom:10px; }
-  .modes { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:460px; width:100%; margin:4px 0 8px; }
-  .modecard { background:#16243f; border:2px solid #213254; border-radius:14px; padding:12px 6px; cursor:pointer; }
-  .modecard.sel { border-color:#ffd54a; box-shadow:0 0 0 2px rgba(255,213,74,.35); }
-  .modecard .mi { font-size:26px; line-height:1; }
-  .modecard .mn { font-weight:800; font-size:13px; margin-top:5px; }
-  .modecard .md { font-size:10.5px; color:#9fb3d8; margin-top:3px; line-height:1.3; }
-  .lvls { display:flex; gap:8px; justify-content:center; margin:4px 0 8px; }
-  .lvl { background:#16243f; border:2px solid #213254; border-radius:12px; padding:9px 16px; cursor:pointer; font-weight:800; font-size:14px; }
-  .lvl.sel { border-color:#39ff88; box-shadow:0 0 0 2px rgba(57,255,136,.3); }
-  .lvl small { display:block; font-size:10px; color:#9fb3d8; font-weight:400; }
-  #mpBtn { position:relative; font-size:clamp(17px,5vw,20px); padding:16px 42px; margin:8px 6px 2px;
-    background:linear-gradient(135deg,#39ff88,#12b76a); color:#04220f; border-radius:32px;
-    box-shadow:0 10px 30px rgba(40,220,120,.45); animation:mpPulse 1.9s ease-in-out infinite; }
-  @keyframes mpPulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
-  #mpBtn .newb { position:absolute; top:-11px; right:-10px; font-size:11px; font-weight:900; padding:4px 10px;
-    border-radius:13px; background:linear-gradient(135deg,#ffd54a,#ff9b3d); color:#3a0010;
-    box-shadow:0 3px 10px rgba(0,0,0,.4); letter-spacing:1px; }
-  .lnk { color:#8fb6ff; font-size:13px; margin-top:8px; text-decoration:none; display:inline-block; }
-
-  /* result */
-  #resTitle { font-size:clamp(30px,9vw,52px); font-weight:900; margin:8vh 0 4px; }
-  #resBoard { max-width:380px; width:100%; }
-  .rrow { display:flex; align-items:center; justify-content:space-between; background:#16243f; border-radius:12px;
-    padding:11px 16px; margin:4px 0; font-size:16px; }
-  .rrow.me { background:rgba(255,213,74,.18); }
-  .rrow b { color:#ffd54a; font-size:20px; }
-
-  /* multiplayer (same look as Grand Prix) */
-  .rooms { max-width:480px; width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0; }
-  .room { display:flex; align-items:center; gap:12px; background:#16243f; border:1px solid #213254; border-radius:14px; padding:11px 14px; text-align:left; }
-  .room.racing { opacity:.55; }
-  .room .rfl { font-size:26px; }
-  .room .rinfo { flex:1; min-width:0; }
-  .room .rcode { font-weight:900; font-size:17px; letter-spacing:3px; color:#ffd54a; }
-  .room .rmeta { font-size:12.5px; color:#9fb3d8; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pill { font-size:12px; color:#04220f; background:#39ff88; border-radius:20px; padding:3px 10px; font-weight:bold; }
-  .pill.lock { background:#3a4566; color:#cdd9f0; }
-  .codein { display:flex; gap:8px; justify-content:center; margin:6px 0 2px; }
-  .codein input { width:150px; text-align:center; background:#0c1426; border:2px solid #2a3c63; color:#ffd54a; padding:12px;
-    border-radius:12px; font-size:20px; font-weight:900; letter-spacing:5px; text-transform:uppercase; font-family:inherit; outline:none; }
-  .codein input:focus { border-color:#ffd54a; }
-  #mpRoomCode { font-size:clamp(34px,10vw,52px); font-weight:900; letter-spacing:10px; color:#ffd54a;
-    background:rgba(255,213,74,.1); border:2px dashed rgba(255,213,74,.5); border-radius:18px; padding:8px 22px; margin:4px 0 2px; }
-  .plist { max-width:420px; width:100%; display:flex; flex-direction:column; gap:7px; margin:8px 0; }
-  .prow { display:flex; align-items:center; gap:10px; background:#16243f; border-radius:12px; padding:10px 13px; font-size:15px; text-align:left; }
-  .prow .pn { flex:1; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .prow .ph { font-size:12px; color:#ffd54a; }
-  .prow.empty { opacity:.55; }
-  #mpMsg { min-height:20px; font-size:14px; color:#ff9b9b; font-weight:bold; margin:4px 0; }
-  #mpRoomModes.guestview .modecard { pointer-events:none; opacity:.75; }
+  .screen .ig-col { padding-bottom:8px; }
+  .hidden { display:none !important; }
+  .ig-cta, .ig-row { border:0; }
+  .ig-modes.two { grid-template-columns:1fr 1fr; }
+  .ig-topbar .ig-navtitle { flex:1; text-align:center; }
+  .ig-topbar .sp { width:44px; flex:none; }
+  .ig-card .ig-seg { margin-top:8px; }
+  .optdesc { font-size:13px; font-weight:500; color:var(--ig-text2); margin-top:8px; line-height:1.35; }
+  .muted { font-size:14px; font-weight:500; color:var(--ig-text2); line-height:1.45; text-align:center; }
+  .muted:empty { display:none; }
+  .muted b { color:var(--ig-text); }
+  .ig-btn { width:100%; font-family:var(--ig-font); }
+  .ig-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .ig-btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  /* how-to sheet */
+  .scrim { position:fixed; inset:0; z-index:40; display:flex; align-items:flex-end; justify-content:center; padding:16px;
+    background:var(--ig-scrim); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  .scrim.hidden { display:none !important; }
+  .scrim .ig-sheet { width:100%; max-width:460px; display:flex; flex-direction:column; gap:16px; font-family:var(--ig-font); text-align:left; }
+  @media (min-width:700px){ .scrim { align-items:center; } }
+  .ig-sheet h2 { font-size:22px; font-weight:800; letter-spacing:-.03em; }
+  .steps { display:flex; flex-direction:column; gap:14px; }
+  .step { display:flex; gap:12px; align-items:flex-start; font-size:15px; font-weight:500; line-height:1.4; color:var(--ig-text2); }
+  .step b { color:var(--ig-text); }
+  .step .ig-tile { width:32px; height:32px; border-radius:9px; }
+  .step .ig-tile svg { width:18px; height:18px; }
+  /* rule tiles in the room */
+  .modes { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; }
+  .modecard { padding:12px 10px; border-radius:18px; cursor:pointer; text-align:left; background:var(--ig-glass); border:1.5px solid var(--ig-line);
+    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); transition:border-color .2s, box-shadow .2s; }
+  .modecard.sel { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .modecard .mn { font-weight:700; font-size:14px; letter-spacing:-.02em; }
+  .modecard .md { font-size:11.5px; font-weight:500; color:var(--ig-text2); margin-top:3px; line-height:1.3; }
+  #mpRoomModes.guestview .modecard { pointer-events:none; opacity:.6; }
   #mpRoomModes.guestview .modecard.sel { opacity:1; }
-  .hintbar { font-size:12.5px; color:#9fb3d8; max-width:520px; line-height:1.6; margin-top:6px; }
-  .hintbar b { color:#cfe0ff; }
+  /* result */
+  #scr-result .ig-col { justify-content:center; min-height:100%; }
+  #resTitle { font:900 clamp(40px,11vw,56px)/1 var(--ig-font); letter-spacing:-.045em; text-align:center; }
+  #resBoard { display:flex; flex-direction:column; }
+  .rrow { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; font-size:17px; font-weight:600; }
+  .rrow + .rrow { border-top:1px solid var(--ig-line); }
+  .rrow.me { background:color-mix(in srgb, var(--accent) 12%, transparent); }
+  .rrow b { font-size:24px; font-weight:800; letter-spacing:-.03em; }
+  /* lobby / room */
+  .rooms, .plist { display:flex; flex-direction:column; }
+  .rooms .muted { padding:18px 12px; }
+  .room { display:flex; align-items:center; gap:12px; padding:12px 14px; text-align:left; }
+  .room + .room, .prow + .prow { border-top:1px solid var(--ig-line); }
+  .room.racing { opacity:.55; }
+  .room .rfl { width:36px; height:36px; border-radius:10px; flex:none; display:grid; place-items:center; color:#fff; font-weight:800; font-size:15px;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:inset 0 0 0 1px rgba(255,255,255,.28); }
+  .room .rinfo { flex:1; min-width:0; }
+  .room .rcode { font-weight:800; font-size:17px; letter-spacing:.14em; }
+  .room .rmeta { font-size:13px; font-weight:500; color:var(--ig-text2); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .room .ig-btn { width:auto; min-height:38px; padding:0 18px; font-size:15px; }
+  .pill { font-size:12px; font-weight:700; border-radius:999px; padding:5px 10px; background:rgba(118,118,128,.14); color:var(--ig-text2); }
+  .codein { display:flex; gap:10px; }
+  .codein .ig-field { text-align:center; letter-spacing:.3em; text-transform:uppercase; font-weight:800; -webkit-user-select:text; user-select:text; }
+  .codein .ig-btn { width:110px; flex:none; }
+  #mpMsg { min-height:18px; font-size:14px; color:#d1373f; font-weight:600; text-align:center; }
+  #mpMsg:empty { display:none; }
+  #mpRoomCode { font:800 clamp(40px,12vw,54px)/1.1 var(--ig-font); letter-spacing:.2em; text-align:center; padding:6px 0 2px .2em;
+    background:linear-gradient(160deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .prow { display:flex; align-items:center; gap:12px; padding:12px 14px; font-size:16px; text-align:left; }
+  .prow .av { width:34px; height:34px; border-radius:50%; flex:none; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px;
+    background:linear-gradient(160deg,#5ac8fa,#0a60ff); }
+  .prow .av.host { background:linear-gradient(160deg,#ffcf4a,#ff8a00); }
+  .prow .pn { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prow .ph { font-size:12px; font-weight:700; color:var(--ig-text2); }
+  .prow.empty { color:var(--ig-text2); }
+  .prow.empty .av { background:rgba(118,118,128,.18); }
+  .hintbar { font-size:13.5px; font-weight:500; color:var(--ig-text2); line-height:1.5; text-align:center; }
+  .hintbar b { color:var(--ig-text); }
+  /* HUD over the board: light glass pills (the board itself keeps its look) */
+  .pbar, #modeChip, #quitBtn, #hint, #ctl, #moveBtn { background:var(--ig-glass2) !important; border:1px solid var(--ig-line) !important; color:var(--ig-text) !important;
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:var(--ig-shadow); font-family:var(--ig-font) !important; }
+  .pbar { border-radius:999px !important; }
+  .pbar .sc { color:var(--accent2) !important; font-weight:800 !important; }
+  .pbar .tn { background:#30d158 !important; box-shadow:0 0 6px #30d158 !important; }
+  #modeChip { border-radius:999px !important; font-weight:600 !important; color:var(--ig-text2) !important; padding:8px 13px !important; }
+  #quitBtn { place-items:center; width:44px !important; height:44px !important; }
+  #quitBtn svg, #setBtn svg, #moveBtn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  #quitBtn svg { display:block; margin:auto; }
+  #hint { border-radius:999px !important; font-weight:600 !important; }
+  #ctl { border-radius:999px !important; padding:8px 8px 8px 16px !important; }
+  #posSlider { background:rgba(118,118,128,.22) !important; height:8px !important; }
+  #setBtn { display:inline-flex; align-items:center; gap:6px; border-radius:999px !important; background:linear-gradient(160deg,#5ee28a,#1ea85a) !important; color:#fff !important; font:700 16px var(--ig-font) !important; }
+  #moveBtn { display:inline-flex; align-items:center; gap:6px; border-radius:999px !important; font-weight:600 !important; font-size:14px !important; }
+  #moveBtn.hidden, #ctl.hidden, #hint.hidden { display:none !important; }
+  #toast { background:var(--ig-sheet) !important; color:var(--ig-text) !important; border:1px solid var(--ig-line) !important; border-radius:999px !important; font-family:var(--ig-font); font-weight:700 !important;
+    box-shadow:var(--ig-shadow2); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
+  canvas#game { box-shadow:0 30px 60px -20px rgba(40,30,20,.45); }
   /* keep announce.js banners off every screen except the menu (buttons live at the bottom) */
   body.mpui div[role="status"] { display:none !important; }
   body:has(.screen:not(.hidden):not(#scr-menu)) div[role="status"],
@@ -166,83 +193,132 @@
     <div class="pbar" id="barTop"><span class="tn"></span><span class="nm" id="nmTop">—</span><span class="sc" id="scTop">0</span></div>
     <div class="pbar" id="barBot"><span class="tn"></span><span class="nm" id="nmBot">You</span><span class="sc" id="scBot">0</span></div>
     <div id="modeChip"></div>
-    <button id="quitBtn" title="Exit match">🚪</button>
+    <button id="quitBtn" title="Exit match" aria-label="Exit match"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div id="toast"></div>
     <div id="hint" class="hidden"></div>
     <div id="ctl" class="hidden">
       <input type="range" id="posSlider" min="265" max="735" step="1" value="500">
-      <button id="setBtn">✔ SET</button>
+      <button id="setBtn"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>Set</button>
     </div>
-    <button id="moveBtn" class="hidden">↔️ MOVE STRIKER</button>
+    <button id="moveBtn" class="hidden"><svg viewBox="0 0 24 24"><path d="M5 12h14M8 9l-3 3 3 3M16 9l3 3-3 3"/></svg>Move striker</button>
   </div>
 
   <!-- MENU -->
-  <div class="screen" id="scr-menu">
-    <div class="tag">🥇 THE CLASSIC BOARD GAME</div>
-    <h1>🪙 CARROM CLASH</h1>
-    <div class="sub">Flick the striker, pocket the coins, grab the red queen. Play the computer — or your friends live!</div>
-    <button class="btn" id="mpBtn">🌐 MULTIPLAYER<span class="newb">NEW!</span></button>
-    <div class="secttl">🎯 MODE</div>
-    <div class="modes" id="modeList"></div>
-    <div class="secttl">🤖 COMPUTER LEVEL</div>
-    <div class="lvls" id="lvlList"></div>
-    <button class="btn green" id="playBtn">🪙 PLAY vs COMPUTER</button>
-    <div class="row">
-      <button class="btn alt" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button>
-      <a class="btn alt" href="../">🏠 ALL GAMES</a>
+  <div class="screen ig-page" id="scr-menu">
+    <div class="ig-col">
+      <div class="ig-topbar">
+        <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      </div>
+      <div class="ig-hero">
+        <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="6" y="6" width="88" height="88" rx="6" fill="#5d3a1e"/>
+<rect class="o" x="14" y="14" width="72" height="72" rx="2" fill="#f2d39b"/>
+<circle class="o" cx="20" cy="20" r="9" fill="#22120a"/>
+<path d="M30 74 L70 74 M30 70 L70 70" stroke="#c0392b" stroke-width="1.8"/>
+<circle cx="50" cy="50" r="12" fill="none" stroke="#c0392b" stroke-width="1.8"/>
+<circle class="o" cx="46" cy="46" r="6.5" fill="#d61f2c"/><circle cx="44" cy="44" r="2" fill="#fff" opacity=".5"/>
+<circle class="o" cx="34" cy="38" r="6.5" fill="#fff"/><circle class="o" cx="58" cy="40" r="6.5" fill="#2a1a10"/>
+<circle class="o" cx="54" cy="56" r="6.5" fill="#fff"/><circle class="o" cx="27" cy="27" r="6.5" fill="#2a1a10"/>
+<circle class="o" cx="66" cy="72" r="9" fill="#e8f4ff"/><circle cx="66" cy="72" r="5" fill="none" stroke="#1d46a8" stroke-width="2"/>
+<path d="M72 80 L84 90 M76 76 L88 86" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+<path d="M60 66 L34 34" stroke="#fff" stroke-width="2" stroke-dasharray="3 4" opacity=".8"/></svg></div>
+        <h1 class="ig-title">Carrom Clash</h1>
+        <div class="ig-tagline">Flick the striker, pocket the coins, grab the red queen.</div>
+      </div>
+      <div class="ig-playrow">
+        <button class="ig-cta" id="playBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="playSub">vs Computer</small></span></button>
+      </div>
+      <div class="ig-modes two">
+        <button class="ig-mode" id="mpBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Play a friend live</small></button>
+        <button class="ig-mode" id="howBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span><b>How to Play</b><small>Aim like a slingshot</small></button>
+      </div>
+      <div class="ig-card">
+        <div class="ig-plabel">Rules</div>
+        <div class="ig-seg" id="modeList"></div>
+        <div class="optdesc" id="modeDesc"></div>
+        <div class="ig-plabel" style="margin-top:16px">Computer</div>
+        <div class="ig-seg" id="lvlList"></div>
+      </div>
+      <div class="ig-list">
+        <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6.5 8-6.5s7.2 2.5 8 6.5"/></svg></span><span class="ig-grow"><span id="igaName">Log in</span><small>Play online under your name</small></span></button>
+      </div>
     </div>
-    <div class="hintbar">
-      <b>How to play:</b> drag the striker left/right on your line to position it. Then press anywhere and <b>drag backwards</b> —
-      like a slingshot — and release to shoot. Pocket a coin and you <b>shoot again</b>. Pocket the striker and it's a <b>foul</b>!
+  </div>
+
+  <!-- HOW TO PLAY -->
+  <div class="scrim hidden" id="howSheet">
+    <div class="ig-sheet" role="dialog" aria-label="How to play">
+      <h2>How to Play</h2>
+      <div class="steps">
+        <div class="step"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24"><path d="M5 12h14M8 9l-3 3 3 3M16 9l3 3-3 3"/></svg></span><span><b>Place.</b> Slide the striker left or right along your line, then press Set.</span></div>
+        <div class="step"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M12 10v10M8 16l4 4 4-4"/></svg></span><span><b>Shoot.</b> Press anywhere and drag backwards like a slingshot, then let go.</span></div>
+        <div class="step"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><span><b>Pocket a coin</b> and you shoot again. The red queen is worth 50, but you must cover her with another coin.</span></div>
+        <div class="step"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ff7a59,#e0364f)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg></span><span><b>Pocket the striker</b> and it's a foul.</span></div>
+      </div>
+      <button class="ig-btn" id="howClose">Got it</button>
     </div>
   </div>
 
   <!-- RESULT -->
-  <div class="screen hidden" id="scr-result">
-    <div id="resTitle">🏆</div>
-    <div class="sub" id="resSub"></div>
-    <div id="resBoard"></div>
-    <div class="row" style="margin-top:12px">
-      <button class="btn" id="againBtn">🔁 PLAY AGAIN</button>
-      <button class="btn hidden" id="mpAgainBtn">🔁 REMATCH — SAME ROOM</button>
-      <button class="btn green hidden" id="mpResLeaveBtn">🌐 LEAVE ROOM</button>
-      <button class="btn green" id="menuBtn">🏠 MENU</button>
+  <div class="screen ig-page hidden" id="scr-result">
+    <div class="ig-col">
+      <div class="ig-hero"><div class="ig-appicon" style="width:96px;height:96px;border-radius:26px"><svg viewBox="0 0 100 100" aria-hidden="true"><rect class="o" x="6" y="6" width="88" height="88" rx="6" fill="#5d3a1e"/>
+<rect class="o" x="14" y="14" width="72" height="72" rx="2" fill="#f2d39b"/>
+<circle class="o" cx="20" cy="20" r="9" fill="#22120a"/>
+<path d="M30 74 L70 74 M30 70 L70 70" stroke="#c0392b" stroke-width="1.8"/>
+<circle cx="50" cy="50" r="12" fill="none" stroke="#c0392b" stroke-width="1.8"/>
+<circle class="o" cx="46" cy="46" r="6.5" fill="#d61f2c"/><circle cx="44" cy="44" r="2" fill="#fff" opacity=".5"/>
+<circle class="o" cx="34" cy="38" r="6.5" fill="#fff"/><circle class="o" cx="58" cy="40" r="6.5" fill="#2a1a10"/>
+<circle class="o" cx="54" cy="56" r="6.5" fill="#fff"/><circle class="o" cx="27" cy="27" r="6.5" fill="#2a1a10"/>
+<circle class="o" cx="66" cy="72" r="9" fill="#e8f4ff"/><circle cx="66" cy="72" r="5" fill="none" stroke="#1d46a8" stroke-width="2"/>
+<path d="M72 80 L84 90 M76 76 L88 86" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+<path d="M60 66 L34 34" stroke="#fff" stroke-width="2" stroke-dasharray="3 4" opacity=".8"/></svg></div></div>
+      <div id="resTitle">You win!</div>
+      <div class="muted" id="resSub"></div>
+      <div class="ig-list" id="resBoard"></div>
+      <button class="ig-btn" id="againBtn">Play again</button>
+      <button class="ig-btn hidden" id="mpAgainBtn">Rematch in same room</button>
+      <button class="ig-btn secondary hidden" id="mpResLeaveBtn">Leave room</button>
+      <button class="ig-btn secondary" id="menuBtn">Menu</button>
     </div>
   </div>
 
   <!-- MULTIPLAYER LOBBY -->
-  <div class="screen hidden" id="scr-mplobby">
-    <div class="tag">🌐 ONLINE MULTIPLAYER</div>
-    <h1>🪙 CARROM ROOMS</h1>
-    <div class="sub">Join a room to play a friend 1-vs-1 — or create your own and share the code.</div>
-    <div id="mpWho" class="sub" style="color:#ffd54a;margin-top:-6px"></div>
-    <button class="btn green" id="mpCreateBtn">➕ CREATE A ROOM</button>
-    <div class="secttl">🔑 HAVE A CODE?</div>
-    <div class="codein">
-      <input id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
-      <button class="btn" id="mpJoinCodeBtn" style="margin:0">JOIN</button>
+  <div class="screen ig-page hidden" id="scr-mplobby">
+    <div class="ig-col">
+      <div class="ig-topbar"><button class="ig-iconbtn" id="mpLobbyBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Online</div><div class="sp"></div></div>
+      <div class="muted">Play a friend 1-vs-1. Join a room, or create your own and share the code.</div>
+      <div class="muted" id="mpWho"></div>
+      <div class="ig-card" style="display:flex;flex-direction:column;gap:12px">
+        <button class="ig-btn" id="mpCreateBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Create a room</button>
+        <div class="ig-eyebrow">Have a code?</div>
+        <div class="codein">
+          <input class="ig-field" id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="ig-btn secondary" id="mpJoinCodeBtn">Join</button>
+        </div>
+        <div id="mpMsg"></div>
+      </div>
+      <div class="ig-eyebrow" style="margin:4px 4px -6px">Open rooms</div>
+      <div class="ig-list rooms" id="mpRoomList"><div class="muted">Looking for rooms…</div></div>
     </div>
-    <div id="mpMsg"></div>
-    <div class="secttl">🚪 OPEN ROOMS · tap to join</div>
-    <div class="rooms" id="mpRoomList"><div class="sub">Looking for rooms…</div></div>
-    <button class="btn alt" id="mpLobbyBack" style="margin-top:10px">⬅ BACK</button>
   </div>
 
   <!-- MULTIPLAYER ROOM -->
-  <div class="screen hidden" id="scr-mproom">
-    <div class="tag">🌐 CARROM ROOM</div>
-    <div class="sub" style="margin:2px 0 0">Your friend joins with this code:</div>
-    <div id="mpRoomCode">----</div>
-    <button class="btn alt" id="mpShareBtn" style="padding:10px 20px;font-size:14px">📋 COPY INVITE</button>
-    <div class="secttl">🎯 MODE · <span id="mpModeWho"></span></div>
-    <div class="modes" id="mpRoomModes" style="max-width:460px"></div>
-    <div class="secttl">👥 PLAYERS</div>
-    <div class="plist" id="mpPlayers"></div>
-    <div class="row">
-      <button class="btn green hidden" id="mpStartBtn">🪙 START MATCH</button>
-      <button class="btn alt" id="mpLeaveBtn">🚪 LEAVE ROOM</button>
+  <div class="screen ig-page hidden" id="scr-mproom">
+    <div class="ig-col">
+      <div class="ig-topbar"><div class="sp"></div><div class="ig-navtitle">Carrom Room</div><div class="sp"></div></div>
+      <div class="ig-card" style="text-align:center">
+        <div class="ig-eyebrow">Your friend joins with this code</div>
+        <div id="mpRoomCode">----</div>
+        <button class="ig-btn secondary" id="mpShareBtn" style="margin-top:8px"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy invite</button>
+      </div>
+      <div class="ig-eyebrow" style="margin:4px 4px -6px">Rules · <span id="mpModeWho"></span></div>
+      <div class="modes" id="mpRoomModes"></div>
+      <div class="ig-eyebrow" style="margin:4px 4px -6px">Players</div>
+      <div class="ig-list plist" id="mpPlayers"></div>
+      <button class="ig-btn hidden" id="mpStartBtn">Start match</button>
+      <button class="ig-btn secondary" id="mpLeaveBtn">Leave room</button>
+      <div class="hintbar" id="mpRoomHint"></div>
     </div>
-    <div class="hintbar" id="mpRoomHint"></div>
   </div>
 </div>
 
@@ -421,7 +497,7 @@ function startGame(mode, vsAi, aiLvl, names){
   resetStriker(G.turn);
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   $('hud').classList.add('on');
-  $('modeChip').textContent = modeOf(mode).icon+' '+modeOf(mode).name;
+  $('modeChip').textContent = modeOf(mode).name;
   // mid-match exit is a solo luxury — online you finish (or forfeit by leaving the page)
   $('quitBtn').style.display = MP.on ? 'none' : 'block';
   syncHud(); syncCtl(); wake();
@@ -600,10 +676,10 @@ function endGame(){
   const iWon = MP.on ? (MP.myIdx===0 ? s0>s1 : s1>s0) : s0>s1;
   const draw = s0===s1;
   if (draw) Snd.pocket(); else if (iWon) Snd.win(); else Snd.lose();
-  $('resTitle').textContent = draw ? '🤝 DRAW!' : iWon ? '🏆 YOU WIN!' : '💔 YOU LOSE';
-  $('resTitle').style.color = draw ? '#9fb3d8' : iWon ? '#ffd54a' : '#ff8f8f';
+  $('resTitle').textContent = draw ? 'Draw!' : iWon ? 'You win!' : 'You lose';
+  $('resTitle').style.color = draw ? '#6e6e80' : iWon ? '#1ea85a' : '#d1373f';
   const meIdx = MP.on ? MP.myIdx : 0;
-  $('resSub').textContent = modeOf(G.mode).icon+' '+modeOf(G.mode).name+' — final score';
+  $('resSub').textContent = modeOf(G.mode).name+' · final score';
   $('resBoard').innerHTML =
     `<div class="rrow ${meIdx===0?'me':''}"><span>${esc(G.names[0])}</span><b>${s0}</b></div>`+
     `<div class="rrow ${meIdx===1?'me':''}"><span>${esc(G.names[1])}</span><b>${s1}</b></div>`;
@@ -1026,8 +1102,8 @@ function syncCtl(){
   $('moveBtn').classList.toggle('hidden', !(mine && G.phase==='aim'));
   const h=$('hint');
   const cover = G.queenPending===G.turn;   // you owe the queen a cover coin
-  if (mine && G.phase==='place'){ h.classList.remove('hidden'); h.textContent=cover?'👑 Cover the queen! Slide the striker, then press ✔ SET':'↔️ Slide the striker into position, then press ✔ SET'; }
-  else if (mine && G.phase==='aim'){ h.classList.remove('hidden'); h.textContent=cover?'👑 Pocket a coin to KEEP the queen — or she goes back!':'🎯 Pull back and release to shoot!'; }
+  if (mine && G.phase==='place'){ h.classList.remove('hidden'); h.textContent=cover?'Cover the queen! Slide the striker, then press Set':'Slide the striker into position, then press Set'; }
+  else if (mine && G.phase==='aim'){ h.classList.remove('hidden'); h.textContent=cover?'Pocket a coin to keep the queen, or she goes back!':'Pull back and release to shoot!'; }
   else h.classList.add('hidden');
   if (mine) syncSlider();
 }
@@ -1040,14 +1116,16 @@ $('quitBtn').onclick=()=>{
 let selMode='free', selLvl=2;
 function buildMenu(){
   $('modeList').innerHTML=MODES.map(m=>
-    `<div class="modecard ${m.id===selMode?'sel':''}" data-id="${m.id}">
-      <div class="mi">${m.icon}</div><div class="mn">${m.name}</div><div class="md">${m.desc}</div></div>`).join('');
-  $('modeList').querySelectorAll('.modecard').forEach(el=>
+    `<button class="${m.id===selMode?'on':''}" data-id="${m.id}">${m.name}</button>`).join('');
+  $('modeList').querySelectorAll('button').forEach(el=>
     el.onclick=()=>{ selMode=el.dataset.id; buildMenu(); });
+  $('modeDesc').textContent=modeOf(selMode).desc;
+  const LN=['Chill','Smart','Sniper'];
   $('lvlList').innerHTML=[1,2,3].map(l=>
-    `<div class="lvl ${l===selLvl?'sel':''}" data-l="${l}">🤖 L${l}<small>${l===1?'Chill':l===2?'Smart':'Sniper'}</small></div>`).join('');
-  $('lvlList').querySelectorAll('.lvl').forEach(el=>
+    `<button class="${l===selLvl?'on':''}" data-l="${l}">${LN[l-1]}</button>`).join('');
+  $('lvlList').querySelectorAll('button').forEach(el=>
     el.onclick=()=>{ selLvl=+el.dataset.l; buildMenu(); });
+  $('playSub').textContent='vs Computer · '+LN[selLvl-1]+' · '+modeOf(selMode).name;
 }
 $('playBtn').onclick=()=>startGame(selMode,true,selLvl,[mpName(),'Computer L'+selLvl]);
 $('againBtn').onclick=()=>{ if (MP.on) return; startGame(G.mode,true,G.aiLvl,[mpName(),'Computer L'+G.aiLvl]); };
@@ -1094,9 +1172,9 @@ async function mpEnsure(){
 function mpSend(ev,payload){ if (MP.ch){ try{ MP.ch.send({ type:'broadcast', event:ev, payload:payload||{} }); }catch(e){} } }
 function mpToast(m){
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#0f1d36;'
-    +'border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:bold;'
-    +'box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center';
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);'
+    +'border:1px solid rgba(0,0,0,.07);color:#1d1d1f;padding:12px 18px;border-radius:999px;font:600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;'
+    +'box-shadow:0 22px 46px rgba(40,40,80,.18);max-width:92vw;text-align:center';
   t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),4000);
 }
 
@@ -1104,7 +1182,7 @@ function mpToast(m){
 async function mpOpenLobby(){
   document.body.classList.add('mpui');
   showScreen('scr-mplobby');
-  $('mpWho').textContent='👤 Playing as '+mpName();
+  $('mpWho').innerHTML='Playing as <b>'+esc(mpName())+'</b>';
   $('mpMsg').textContent='';
   try{
     const sb=await mpEnsure();
@@ -1117,7 +1195,7 @@ async function mpOpenLobby(){
       MP.lobbyCh.subscribe(st=>{ if (st==='SUBSCRIBED'){ mpAdvertise(); mpRenderRooms(); } });
     } else mpRenderRooms();
     mpLobbyKeepalive();
-  }catch(e){ $('mpRoomList').innerHTML='<div class="sub">⚠️ Couldn’t connect — check your internet and try again.</div>'; }
+  }catch(e){ $('mpRoomList').innerHTML='<div class="muted">Couldn’t connect. Check your internet and try again.</div>'; }
 }
 function mpAdvertise(){
   if (!MP.lobbyCh) return;
@@ -1168,16 +1246,16 @@ function mpRenderRooms(){
     return (nowT-e.at)<30000;
   });
   rooms.sort((a,b)=>(a.t||0)-(b.t||0));
-  if (!rooms.length){ el.innerHTML='<div class="sub">No open rooms right now — create one and invite a friend! 🪙</div>'; return; }
+  if (!rooms.length){ el.innerHTML='<div class="muted">No open rooms right now. Create one and invite a friend!</div>'; return; }
   el.innerHTML=rooms.map(r=>{
     const m=modeOf(r.mode);
     const full=(r.n|0)>=MP_MAXN, playing=!!r.started;
-    const act = playing ? '<span class="pill lock">🪙 PLAYING</span>'
-             : full    ? '<span class="pill lock">FULL</span>'
-             : `<button class="btn green" data-join="${esc(r.room)}" style="padding:9px 18px;font-size:14px;margin:0">JOIN</button>`;
-    return `<div class="room ${playing?'racing':''}"><div class="rfl">${m.icon}</div>
+    const act = playing ? '<span class="pill lock">Playing</span>'
+             : full    ? '<span class="pill lock">Full</span>'
+             : `<button class="ig-btn" data-join="${esc(r.room)}">Join</button>`;
+    return `<div class="room ${playing?'racing':''}"><div class="rfl">${esc(String(r.host||'?').charAt(0).toUpperCase())}</div>
       <div class="rinfo"><div class="rcode">${esc(r.room)}</div>
-      <div class="rmeta">👑 ${esc(r.host||'?')} · ${Math.min(r.n|0,MP_MAXN)}/${MP_MAXN} · ${m.name}${playing?' · match in progress':''}</div></div>${act}</div>`;
+      <div class="rmeta">${esc(r.host||'?')} · ${Math.min(r.n|0,MP_MAXN)}/${MP_MAXN} · ${m.name}${playing?' · match in progress':''}</div></div>${act}</div>`;
   }).join('');
   el.querySelectorAll('[data-join]').forEach(b=> b.onclick=()=>mpJoin(b.dataset.join));
 }
@@ -1199,7 +1277,7 @@ async function mpCreate(){
          let n=0; while (ads[code] && n++<20) code=genCode(); }catch(e){}
     await mpOpenRoom(code,true);
     try{ if (window.track) window.track('carrom_room_create',{code}); }catch(e){}
-  }catch(e){ $('mpMsg').textContent='⚠️ Couldn’t create the room — try again.'; }
+  }catch(e){ $('mpMsg').textContent='Couldn’t create the room. Try again.'; }
 }
 async function mpJoin(code){
   code=cleanCode(code);
@@ -1207,12 +1285,12 @@ async function mpJoin(code){
   try{ const st=MP.lobbyCh?MP.lobbyCh.presenceState():{};
        for (const k in st){ const p=st[k]&&st[k][0];
          if (p && p.room===code){
-           if (p.started){ $('mpMsg').textContent='🪙 That match has already started — join another room.'; return; }
+           if (p.started){ $('mpMsg').textContent='That match has already started. Join another room.'; return; }
            if ((p.n|0)>=MP_MAXN){ $('mpMsg').textContent='That room is full (2/2).'; return; }
          } } }catch(e){}
   $('mpMsg').textContent='Joining '+code+'…';
   try{ await mpEnsure(); await mpOpenRoom(code,false); }
-  catch(e){ $('mpMsg').textContent='⚠️ Couldn’t join '+code+' — try again.'; }
+  catch(e){ $('mpMsg').textContent='Couldn’t join '+code+'. Try again.'; }
 }
 
 /* ---- room channel ---- */
@@ -1331,24 +1409,24 @@ function mpRenderRoom(){
   $('mpRoomCode').textContent=MP.code||'----';
   const n=MP.members.length;
   $('mpPlayers').innerHTML=
-    MP.members.slice(0,2).map(m=>`<div class="prow"><span>${m.host?'👑':'🎮'}</span>
+    MP.members.slice(0,2).map(m=>`<div class="prow"><span class="av${m.host?' host':''}">${esc(String(m.name||'P').charAt(0).toUpperCase())}</span>
       <span class="pn">${esc(m.name||'Player')}${m.id===myId?' (you)':''}</span>${m.host?'<span class="ph">HOST</span>':''}</div>`).join('')
-    + (n<2 ? '<div class="prow empty"><span>💺</span><span class="pn">Waiting for a friend…</span></div>' : '');
+    + (n<2 ? '<div class="prow empty"><span class="av"></span><span class="pn">Waiting for a friend…</span></div>' : '');
   const modes=$('mpRoomModes');
   modes.classList.toggle('guestview',!MP.isHost);
   $('mpModeWho').textContent=MP.isHost?'you pick':'the host picks';
   modes.innerHTML=MODES.map(m=>
     `<div class="modecard ${m.id===MP.mode?'sel':''}" data-id="${m.id}">
-      <div class="mi">${m.icon}</div><div class="mn">${m.name}</div><div class="md">${m.desc}</div></div>`).join('');
+      <div class="mn">${m.name}</div><div class="md">${m.desc}</div></div>`).join('');
   if (MP.isHost) modes.querySelectorAll('.modecard').forEach(el=>
     el.onclick=()=>{ MP.mode=el.dataset.id; mpTrackSelf(); mpAdvertise(); mpRenderRoom(); });
   const b=$('mpStartBtn');
   b.classList.toggle('hidden',!MP.isHost);
   b.disabled=n<2;
-  b.textContent=n<2?'🪙 START — waiting for a friend':'🪙 START MATCH';
-  $('mpRoomHint').innerHTML=((MP.started && !MP.on)?'🪙 <b>A match is in progress</b> — you’ll play the next one!<br>':'')
-    + (MP.isHost ? 'You are the host 👑 — pick the mode and start when your friend is in.'
-                 : 'Waiting for the host 👑 to start the match…');
+  b.textContent=n<2?'Start · waiting for a friend':'Start match';
+  $('mpRoomHint').innerHTML=((MP.started && !MP.on)?'<b>A match is in progress.</b> You’ll play the next one!<br>':'')
+    + (MP.isHost ? 'You are the host. Pick the rules and start when your friend is in.'
+                 : 'Waiting for the host to start the match…');
 }
 function mpLeaveRoom(){
   mpCloseRoom();
@@ -1498,6 +1576,9 @@ function mpQuitMatch(){
 
 /* ---- wiring ---- */
 $('mpBtn').onclick=()=>mpOpenLobby();
+$('howBtn').onclick=()=>$('howSheet').classList.remove('hidden');
+$('howClose').onclick=()=>$('howSheet').classList.add('hidden');
+$('howSheet').onclick=e=>{ if (e.target===$('howSheet')) $('howSheet').classList.add('hidden'); };
 $('mpCreateBtn').onclick=mpCreate;
 $('mpJoinCodeBtn').onclick=()=>mpJoin($('mpCodeIn').value);
 $('mpCodeIn').addEventListener('input',()=>{ $('mpCodeIn').value=cleanCode($('mpCodeIn').value); });
@@ -1511,7 +1592,7 @@ $('mpShareBtn').onclick=()=>{
   const url=location.origin+location.pathname+'?room='+MP.code;
   const txt='🪙 Play carrom with me! Room '+MP.code+' → '+url;
   if (navigator.share) navigator.share({ text:txt }).catch(()=>{});
-  else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>mpToast('📋 Invite copied!')).catch(()=>{});
+  else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>mpToast('Invite copied!')).catch(()=>{});
 };
 function mpBye(){ try{ if (MP.ch) MP.sb.removeChannel(MP.ch); if (MP.lobbyCh) MP.sb.removeChannel(MP.lobbyCh); }catch(e){} }
 window.addEventListener('beforeunload',mpBye);
@@ -1537,6 +1618,8 @@ try{ if (MPDBG){
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(!window.IGAuth||!IGAuth.onChange)return;
+  IGAuth.onChange(function(p){ var b=document.getElementById('igaName'); if(b)b.textContent=p?IGAuth.displayName():'Log in'; }); });</script>
 <script src="../analytics.js" defer></script>
 <script src="../announce.js" defer></script>
 <script src="../friends.js" defer></script>

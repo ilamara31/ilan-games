@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="../theme.js"></script>
 <style>
 /* Layout: menus are one phone-width column; the bout screen is a full-height stage with the giant PUSH pad underneath. */
 :root{
@@ -180,6 +181,110 @@ input{font-family:inherit}
 #loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim);font-weight:800;z-index:2}
 #loading[hidden]{display:none}
 @media (min-width:700px) and (min-height:600px){ .push{height:170px} }
+
+/* ===== ilan Games shared theme (light / dark, synced with the home page via ../theme.js) ===== */
+html[data-theme] { --text:var(--ig-text); --dim:var(--ig-text2); --faint:var(--ig-text3); --glass:var(--ig-glass); --line:var(--ig-line);
+  --f-ui:var(--ig-font); --f-display:var(--ig-font); }
+html[data-theme] body { background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; }
+html[data-theme] .icon-btn { border-radius:999px; background:var(--ig-glass); border:1px solid var(--ig-line); color:var(--ig-text); width:44px; height:44px;
+  -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.icon-btn svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+html[data-theme] .h2 { font-weight:800; font-size:22px; letter-spacing:-.03em; }
+html[data-theme] .eyebrow { font-weight:700; letter-spacing:.08em; font-size:11.5px; }
+html[data-theme] .card { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:24px;
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+html[data-theme] .title { font-weight:900; letter-spacing:-.05em; font-size:clamp(48px,14vw,68px); line-height:.9; filter:none;
+  background:linear-gradient(160deg,#ff8a65,#e0364f 70%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+html[data-theme] .tag { font-weight:500; font-size:16px; }
+/* menu rows: glass list with a coloured icon tile, like iOS Settings */
+html[data-theme] .btn.big { min-height:72px; gap:14px; padding:0 18px 0 14px; border-radius:22px; color:var(--ig-text); font-weight:700; font-size:17px; letter-spacing:-.02em;
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); transition:transform .25s var(--ig-ease), box-shadow .25s; }
+html[data-theme] .btn.big::after { content:''; margin-left:auto; width:8px; height:8px; flex:none; border-right:2px solid var(--ig-text3); border-top:2px solid var(--ig-text3); transform:rotate(45deg); }
+html[data-theme] .btn.big:hover { box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow2); }
+html[data-theme] .btn.big .ico.ig-tile { font-size:0; width:44px; }
+html[data-theme] .btn .sub { color:var(--ig-text2); font-weight:500; font-size:13px; opacity:1; letter-spacing:-.01em; }
+/* main action buttons: solid capsules */
+html[data-theme] .btn:not(.big) { border-radius:999px; font-weight:700; letter-spacing:-.01em; }
+html[data-theme] .btn.red:not(.big) { background:linear-gradient(160deg,#ff7a59,#e0364f); box-shadow:0 10px 24px -8px rgba(224,54,79,.6); color:#fff; }
+html[data-theme] .btn.blue:not(.big) { background:linear-gradient(160deg,#4aa8ff,#0a60ff); box-shadow:0 10px 24px -8px rgba(10,96,255,.6); color:#fff; }
+html[data-theme] .btn.gold:not(.big) { background:linear-gradient(160deg,#ffcf4a,#ff9500); color:#2a1600; box-shadow:0 10px 24px -8px rgba(255,149,0,.6); }
+html[data-theme] .btn.ghost:not(.big) { background:var(--ig-glass2); border:1px solid var(--ig-line); color:var(--ig-text); box-shadow:none; }
+html[data-theme] .stats b, html[data-theme] .resStats b { font-weight:800; color:var(--ig-text); font-size:22px; letter-spacing:-.03em; }
+html[data-theme] .looks button { background:var(--ig-glass); border:1.5px solid var(--ig-line); border-radius:22px; color:var(--ig-text); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+html[data-theme] .looks button.on { border-color:#ff7a59; background:linear-gradient(135deg,rgba(255,122,89,.16),var(--ig-glass) 60%); }
+html[data-theme] .looks b { font-weight:800; letter-spacing:-.02em; }
+html[data-theme] .looks .lk-ico.ig-tile { font-size:0; width:44px; }
+html[data-theme] .looks button.on .tick { background:#ff7a59; border-color:#ff7a59; color:#fff; }
+html[data-theme] .belts button { border-color:var(--ig-line2); } html[data-theme] .belts button.on { border-color:var(--ig-text); }
+html[data-theme] .lv { background:var(--ig-glass); border:1px solid var(--ig-line); border-radius:20px; box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); color:var(--ig-text); }
+html[data-theme] .lv.boss { border-color:rgba(255,149,0,.55); background:linear-gradient(160deg,rgba(255,170,30,.2),var(--ig-glass) 70%); }
+html[data-theme] .lv.boss .num { color:#ff9500; }
+html[data-theme] .dots i { background:var(--ig-line2); } html[data-theme] .dots i.on { background:#ff9500; }
+html[data-theme] .field { background:var(--ig-field); border:1px solid var(--ig-line); color:var(--ig-text); border-radius:16px; }
+html[data-theme] .room, html[data-theme] .pl { background:var(--ig-glass); border:1px solid var(--ig-line); }
+html[data-theme] .code { color:var(--ig-text); letter-spacing:.14em; }
+html[data-theme] .net { background:rgba(255,149,0,.14); color:#ff9500; } html[data-theme] .net.ok { background:rgba(48,209,88,.14); color:#28b14c; }
+html[data-theme] .toast { background:var(--ig-sheet); color:var(--ig-text); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:999px; }
+html[data-theme] #speed::-webkit-slider-thumb { border-color:#fff; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+
+/* ===== menu layout (Apple Arcade style) ===== */
+.navback { display:inline-flex; align-items:center; gap:2px; height:44px; padding:0 14px 0 8px; border-radius:999px; text-decoration:none; color:var(--ig-text, #fff); font-weight:600; font-size:16px; letter-spacing:-.01em;
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.navback svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+#menu .col { gap:16px; }
+.hero { display:flex; flex-direction:column; align-items:center; margin-top:4px; }
+.hero #menuArt { height:190px; }
+html[data-theme] .hero .title { font-size:clamp(40px,11vw,56px); letter-spacing:-.045em; line-height:1; margin-top:6px; }
+html[data-theme] .hero .tag { margin-top:8px; color:var(--ig-text2); font-size:17px; letter-spacing:-.02em; }
+.playrow { display:flex; gap:10px; margin-top:4px; }
+.cta { flex:1; display:flex; align-items:center; justify-content:center; gap:12px; height:64px; border-radius:999px; color:#fff;
+  background:linear-gradient(160deg,#ff7a59,#e0364f); box-shadow:0 14px 30px -10px rgba(224,54,79,.7), inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .2s var(--ig-ease), box-shadow .2s; }
+.cta:hover { transform:translateY(-1px); box-shadow:0 18px 36px -10px rgba(224,54,79,.8), inset 0 1px 0 rgba(255,255,255,.35); }
+.cta:active, .sq:active, .mode:active { transform:scale(.96); }
+.cta svg { width:26px; height:26px; }
+.cta span { display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; text-align:left; }
+.cta b { font-size:20px; font-weight:700; letter-spacing:-.02em; }
+.cta small { font-size:13px; font-weight:500; opacity:.85; max-width:56vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sq { width:64px; height:64px; flex:none; border-radius:22px; display:grid; place-items:center; color:var(--ig-text);
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.sq svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linejoin:round; }
+.modes { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.mode { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:14px 12px 13px; border-radius:22px; text-align:left; color:var(--ig-text);
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); transition:transform .25s var(--ig-ease), box-shadow .25s; }
+.mode:hover { box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow2); transform:translateY(-2px); }
+.mode .ig-tile { width:40px; height:40px; border-radius:11px; margin-bottom:10px; }
+.mode .ig-tile svg { width:22px; height:22px; }
+.mode b { font-size:15px; font-weight:700; letter-spacing:-.02em; }
+.mode small { font-size:12px; font-weight:500; color:var(--ig-text2); }
+.prefs { display:flex; flex-direction:column; gap:12px; padding:14px 16px !important; }
+.prow { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.plabel { font-size:15px; font-weight:600; letter-spacing:-.01em; }
+.lookseg { display:grid; grid-template-columns:repeat(3,1fr); padding:3px; border-radius:999px; background:var(--ig-glass2); border:1px solid var(--ig-line); min-width:200px; }
+.lookseg button { height:32px; border-radius:999px; font-size:14px; font-weight:600; color:var(--ig-text2); transition:background .2s, color .2s; }
+.lookseg button.on { background:var(--ig-seg); color:var(--ig-text); box-shadow:0 2px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.12); }
+html[data-theme=light] .lookseg button.on { color:#1d1d1f; box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+html[data-theme=light] .lookseg { background:rgba(118,118,128,.12); }
+.hero { position:relative; }
+.hero::before { content:''; position:absolute; left:50%; top:20px; width:min(420px,110%); height:260px; transform:translateX(-50%); z-index:-1; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(255,106,77,.34), rgba(224,54,79,.12) 55%, transparent); filter:blur(10px); }
+html[data-theme=light] .hero::before { opacity:.55; }
+html[data-theme=dark] .cta { box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 14px 40px -10px rgba(255,80,70,.75), inset 0 1px 0 rgba(255,255,255,.35); }
+html[data-theme=dark] .title { background:linear-gradient(170deg,#ffb199,#ff6a4d 45%,#e0364f) !important; -webkit-background-clip:text !important; background-clip:text !important; }
+#beltsMenu { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+#beltsMenu button { width:26px; height:26px; border-radius:50%; border:2px solid var(--ig-line2); transition:transform .2s; }
+#beltsMenu button.on { border-color:var(--ig-text); transform:scale(1.15); }
+.statline { display:flex; justify-content:space-around; text-align:center; padding:4px 0 8px; }
+.statline b { display:block; font-size:22px; font-weight:800; letter-spacing:-.03em; }
+.statline span { font-size:12px; font-weight:500; color:var(--ig-text2); }
+html[data-theme] .topbar .h2 { font-size:17px; font-weight:700; letter-spacing:-.02em; }
+@media (max-width:370px) { .mode small { display:none; } .lookseg { min-width:170px; } }
+/* the bout keeps its arena look in both themes; only the panels on top follow the theme */
+html[data-theme] #game { background:#0d0806; color:#fff; --text:#fff; --dim:rgba(255,255,255,.65); }
+html[data-theme] #result .card { background:var(--ig-sheet); color:var(--ig-text); --dim:var(--ig-text2); }
+html[data-theme] #quit { background:rgba(0,0,0,.45); color:#fff; border-color:rgba(255,255,255,.15); }
 </style>
 </head>
 <body>
@@ -188,34 +293,45 @@ input{font-family:inherit}
 <section class="screen" id="menu">
   <div class="col">
     <div class="topbar">
-      <a class="icon-btn" id="homeBtn" href="../" title="All games">🏠</a>
-      <button class="icon-btn" id="muteBtn" title="Sound">🔊</button>
+      <a class="navback" id="homeBtn" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <button class="icon-btn" id="muteBtn" title="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg></button>
     </div>
-    <div class="title">SPEED<br>SUMO</div>
-    <div class="tag">Tap faster. Shove them out of the ring!</div>
-    <canvas id="menuArt"></canvas>
-    <button class="btn big red" id="goLevels"><span class="ico">🏆</span><span>Levels<span class="sub" id="lvSub">15 rivals and 3 bosses</span></span></button>
-    <button class="btn big gold" id="goPractice"><span class="ico">🎚️</span><span>Practice<span class="sub">Pick how fast the bot taps</span></span></button>
-    <button class="btn big blue" id="goOnline"><span class="ico">🌐</span><span>Online<span class="sub">Battle a friend or anyone</span></span></button>
-    <button class="btn big ghost" id="goLocal"><span class="ico">👥</span><span>2 Players<span class="sub">Same device, one button each</span></span></button>
-    <button class="btn big ghost" id="goLook"><span class="ico">🎨</span><span>Look<span class="sub" id="lookSub">2.5D</span></span></button>
-    <div class="card stats">
+    <div class="hero">
+      <canvas id="menuArt"></canvas>
+      <div class="title">Speed Sumo</div>
+      <div class="tag">Tap faster. Shove them out of the ring.</div>
+    </div>
+    <div class="playrow">
+      <button class="cta" id="playNext"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg><span><b>Play</b><small id="lvSub">Level 1</small></span></button>
+      <button class="sq" id="goLevels" title="All levels" aria-label="All levels"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
+    </div>
+    <div class="modes">
+      <button class="mode" id="goPractice"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span><b>Practice</b><small>Set bot speed</small></button>
+      <button class="mode" id="goOnline"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Play anyone</small></button>
+      <button class="mode" id="goLocal"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9" r="2.6"/><path d="M15.5 14.2c2.6-.3 4.4 1.3 5 4.3"/></svg></span><b>2 Players</b><small>One device</small></button>
+    </div>
+    <div class="card prefs">
+      <div class="prow"><span class="plabel">Look</span><div class="lookseg" id="lookSeg"><button data-l="2d">2D</button><button data-l="25d">2.5D</button><button data-l="3d">3D</button></div></div>
+      <div class="prow"><span class="plabel">Belt</span><div class="belts" id="beltsMenu"></div></div>
+    </div>
+    <div class="statline">
       <div><b id="stLv">0</b><span>Levels beaten</span></div>
-      <div><b id="stTps">0</b><span>Best taps/sec</span></div>
+      <div><b id="stTps">0</b><span>Best taps / sec</span></div>
       <div><b id="stOn">0</b><span>Online wins</span></div>
     </div>
+    <button id="goLook" hidden><span id="lookSub"></span></button>
   </div>
 </section>
 
 <!-- ============ LOOK ============ -->
 <section class="screen" id="look" hidden>
   <div class="col">
-    <div class="topbar"><button class="icon-btn back">←</button><div class="h2">Look</div><div style="width:46px"></div></div>
+    <div class="topbar"><button class="icon-btn back" title="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Look</div><div style="width:46px"></div></div>
     <div class="muted" style="text-align:center">Pick how the game looks for you. Online, everyone can use a different look.</div>
     <div class="looks" id="lookList">
-      <button data-l="2d"><span class="lk-ico">🎨</span><span class="grow"><b>2D</b><span>Flat cartoon, side view</span></span><span class="tick">✓</span></button>
-      <button data-l="25d"><span class="lk-ico">✨</span><span class="grow"><b>2.5D</b><span>Shaded ring with spotlight and crowd</span></span><span class="tick">✓</span></button>
-      <button data-l="3d"><span class="lk-ico">🧊</span><span class="grow"><b>3D</b><span>Real 3D wrestlers and arena</span></span><span class="tick">✓</span></button>
+      <button data-l="2d"><span class="lk-ico ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg></span><span class="grow"><b>2D</b><span>Flat cartoon, side view</span></span><span class="tick">✓</span></button>
+      <button data-l="25d"><span class="lk-ico ig-tile" style="--tile:linear-gradient(160deg,#ff8a65,#e0364f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 9l9 5 9-5z"/><path d="M3 14l9 5 9-5"/></svg></span><span class="grow"><b>2.5D</b><span>Shaded ring with spotlight and crowd</span></span><span class="tick">✓</span></button>
+      <button data-l="3d"><span class="lk-ico ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg></span><span class="grow"><b>3D</b><span>Real 3D wrestlers and arena</span></span><span class="tick">✓</span></button>
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="eyebrow">Your belt</div>
@@ -227,7 +343,7 @@ input{font-family:inherit}
 <!-- ============ LEVELS ============ -->
 <section class="screen" id="levels" hidden>
   <div class="col">
-    <div class="topbar"><button class="icon-btn back">←</button><div class="h2">Levels</div><div style="width:46px"></div></div>
+    <div class="topbar"><button class="icon-btn back" title="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Levels</div><div style="width:46px"></div></div>
     <div class="muted" style="text-align:center">Beat a rival to unlock the next one. Every 5th is a boss!</div>
     <div id="lvGrid"></div>
   </div>
@@ -236,12 +352,12 @@ input{font-family:inherit}
 <!-- ============ PRACTICE ============ -->
 <section class="screen" id="practice" hidden>
   <div class="col">
-    <div class="topbar"><button class="icon-btn back">←</button><div class="h2">Practice</div><div style="width:46px"></div></div>
+    <div class="topbar"><button class="icon-btn back" title="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Practice</div><div style="width:46px"></div></div>
     <div class="card">
       <div class="eyebrow" style="text-align:center">Bot speed</div>
       <div class="speedRead" style="margin-top:8px"><b id="spVal">5</b> <span style="display:inline;font-weight:800;color:var(--dim)">taps / sec</span><span id="spName">Medium</span></div>
       <input type="range" id="speed" min="1" max="20" step="0.5" value="3">
-      <div class="scale"><span>🐢 Slow</span><span>🔥 Super fast</span></div>
+      <div class="scale"><span>Slow</span><span>Super fast</span></div>
     </div>
     <div class="muted" style="text-align:center">Most people tap 3–6 times a second. 10 is super hard, 20 is impossible!</div>
     <button class="btn red" id="spGo">Start practice</button>
@@ -251,12 +367,12 @@ input{font-family:inherit}
 <!-- ============ ONLINE LOBBY ============ -->
 <section class="screen" id="online" hidden>
   <div class="col">
-    <div class="topbar"><button class="icon-btn back" id="onBack">←</button><div class="h2">Online</div><span class="net" id="lobNet">Connecting…</span></div>
+    <div class="topbar"><button class="icon-btn back" id="onBack" title="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Online</div><span class="net" id="lobNet">Connecting…</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="eyebrow">Your name</div>
       <input class="field" id="myName" maxlength="16" placeholder="Your name" autocomplete="off">
     </div>
-    <button class="btn red" id="mkRoom">➕ Create a room</button>
+    <button class="btn red" id="mkRoom">Create a room</button>
     <div class="row"><input class="field" id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:.2em;text-align:center"><button class="btn blue" id="joinBtn" style="width:120px;flex:none">Join</button></div>
     <div class="eyebrow" style="margin-top:6px">Open rooms</div>
     <div class="plist" id="rooms"><div class="empty">Looking for rooms…</div></div>
@@ -266,11 +382,11 @@ input{font-family:inherit}
 <!-- ============ ROOM ============ -->
 <section class="screen" id="room" hidden>
   <div class="col">
-    <div class="topbar"><button class="icon-btn" id="roomLeave">←</button><div class="h2">Room</div><span class="net" id="roomNet">Connecting…</span></div>
+    <div class="topbar"><button class="icon-btn" id="roomLeave" title="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="h2">Room</div><span class="net" id="roomNet">Connecting…</span></div>
     <div class="card" style="text-align:center">
       <div class="eyebrow">Room code</div>
       <div class="code" id="roomCode">----</div>
-      <button class="btn ghost" id="shareBtn" style="min-height:46px;margin-top:6px">🔗 Share invite link</button>
+      <button class="btn ghost" id="shareBtn" style="min-height:46px;margin-top:6px">Share invite link</button>
     </div>
     <div class="plist" id="roomPlayers"></div>
     <div class="muted" id="roomMsg" style="text-align:center"></div>
@@ -1035,9 +1151,12 @@ setInterval(() => { if (!$('menu').hidden){ menuT += 0.05; drawMenuArt(); } }, 5
 function openMenu(){
   show('menu');
   $('stLv').textContent = save.beaten.length; $('stTps').textContent = save.best; $('stOn').textContent = save.onlineWins;
-  $('lvSub').textContent = save.beaten.length >= LEVELS.length ? '👑 All beaten! Replay any rival' : `Level ${save.unlocked} of ${LEVELS.length} · 3 bosses`;
+  const nx = Math.min(save.unlocked, LEVELS.length) - 1;
+  $('lvSub').textContent = save.beaten.length >= LEVELS.length ? 'All beaten · replay any rival' : `Level ${nx + 1} · ${LEVELS[nx].name}`;
+  paintPrefs();
   $('lookSub').textContent = LOOK_NAMES[save.look] + ' · tap to change';
-  $('muteBtn').textContent = save.muted ? '🔇' : '🔊';
+const ICON_SND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>', ICON_MUTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
+  $('muteBtn').innerHTML = save.muted ? ICON_MUTE : ICON_SND;
   requestAnimationFrame(drawMenuArt);
 }
 const LOOK_NAMES = { '2d':'2D', '25d':'2.5D', '3d':'3D' };
@@ -1052,7 +1171,15 @@ document.querySelectorAll('#lookList button').forEach(b => b.onclick = () => {
   save.look = b.dataset.l; store(); openLook(); toast(LOOK_NAMES[save.look] + ' look selected');
 });
 $('goLook').onclick = openLook;
-$('muteBtn').onclick = () => { save.muted = !save.muted; store(); $('muteBtn').textContent = save.muted ? '🔇' : '🔊'; };
+function paintPrefs(){
+  document.querySelectorAll('#lookSeg button').forEach(b => b.classList.toggle('on', b.dataset.l === save.look));
+  const bw = $('beltsMenu'); bw.innerHTML = '';
+  BELTS.forEach((col, i) => { const b = document.createElement('button'); b.style.background = col; b.className = i === save.belt ? 'on' : ''; b.title = 'Belt colour';
+    b.onclick = () => { save.belt = i; store(); paintPrefs(); requestAnimationFrame(drawMenuArt); }; bw.appendChild(b); });
+}
+document.querySelectorAll('#lookSeg button').forEach(b => b.onclick = () => { save.look = b.dataset.l; store(); paintPrefs(); });
+$('playNext').onclick = () => save.beaten.length >= LEVELS.length ? openLevels() : startLevel(Math.min(save.unlocked, LEVELS.length) - 1);
+$('muteBtn').onclick = () => { save.muted = !save.muted; store(); $('muteBtn').innerHTML = save.muted ? ICON_MUTE : ICON_SND; };
 document.querySelectorAll('.back').forEach(b => { if (b.id !== 'onBack') b.onclick = openMenu; });
 
 function openLevels(){

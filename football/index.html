@@ -4,11 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Penalty Kings</title>
+<script src="../theme.js"></script>
 <link rel="manifest" href="../manifest.webmanifest" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#f2f2f7" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Penalty Kings" />
 <link rel="apple-touch-icon" href="../icon-180.png?v=2" />
 <link rel="icon" href="../icon-192.png?v=2" />
@@ -27,52 +28,52 @@
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#fff;
-    background:radial-gradient(circle at 50% 22%,#15463a,#070d14 78%);}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;user-select:none}
-  .ball{font-size:60px;margin-bottom:4px}
-  h1{font-size:clamp(34px,9vw,60px);letter-spacing:1px;margin-bottom:4px;
-    background:linear-gradient(90deg,#ffd54a,#39ff88 60%,#3aa0ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .sub{color:#9fd9c2;margin-bottom:30px;font-size:clamp(14px,3.5vw,18px)}
-  .choose{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:520px;width:100%}
-  @media(max-width:430px){ .choose{grid-template-columns:1fr} }
-  a.opt{display:block;text-decoration:none;color:#fff;border-radius:22px;padding:26px 18px;border:3px solid rgba(255,255,255,.14);
-    transition:transform .12s,border-color .12s,box-shadow .12s}
-  a.opt:hover{transform:translateY(-5px) scale(1.02);border-color:#fff;box-shadow:0 14px 34px rgba(0,0,0,.45)}
-  a.opt:active{transform:scale(.97)}
-  a.opt.d3{background:linear-gradient(135deg,#1ea85a,#0a5a2e)}
-  a.opt.d2{background:linear-gradient(135deg,#3a6cf0,#16306e)}
-  a.opt .tag{font-size:46px;font-weight:900;display:block;line-height:1}
-  a.opt h2{font-size:22px;margin:10px 0 6px}
-  a.opt p{color:#dfeee7;font-size:13px;line-height:1.4}
-  .exit{margin-top:30px;display:inline-block;text-decoration:none;color:#9fd9c2;font-size:15px;font-weight:bold;
-    background:rgba(8,18,12,.5);border:1px solid rgba(120,255,200,.22);border-radius:24px;padding:11px 24px}
-  .exit:active{transform:scale(.96)}
+:root, html[data-theme]{ --accent:#22c55e; --accent2:#12917f; --icon1:#43e97b; --icon2:#1aa89a; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{background:transparent;font-family:var(--ig-font);color:var(--ig-text);letter-spacing:-.01em;user-select:none;-webkit-user-select:none}
+.wrap{padding:max(14px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+.wrap .ig-col{gap:16px}
+button{font:inherit}
+.fb-mode{text-decoration:none}
+.foot{text-align:center;color:var(--ig-text3);font-size:12px;font-weight:500;margin-top:2px}
+@media (min-width:700px){ .wrap{padding-top:28px} }
+@media (max-width:370px){ .ig-mode small{display:none} }
 </style>
 </head>
-<body>
-  <div class="ball">⚽</div>
-  <h1>PENALTY KINGS</h1>
-  <div class="sub">Choose how you want to play the shootout tournament.</div>
-  <div class="choose">
-    <a class="opt d3" href="3d.html">
-      <span class="tag">3D</span>
-      <h2>3D Shootout</h2>
-      <p>New! Cinematic 3D penalties — aim the corners, beat the keeper, save with timing.</p>
-    </a>
-    <a class="opt d2" href="2d.html">
-      <span class="tag">2D</span>
-      <h2>Classic 2D</h2>
-      <p>The original fast-paced 2D Penalty Kings shootout.</p>
-    </a>
+<body class="ig-page">
+<div class="wrap"><div class="ig-col">
+  <div class="ig-topbar">
+    <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
   </div>
-  <div style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-    <a class="exit" id="IGA_login" style="margin-top:0;cursor:pointer" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</a>
-    <a class="exit" id="IGA_lb" style="margin-top:0;cursor:pointer" onclick="window.IGAuth && IGAuth.showLeaderboard('football','Penalty Kings')">🏆 Leaderboard</a>
+  <div class="ig-hero">
+    <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M8 88 L8 22 L92 22 L92 88" fill="none" stroke="#fff" stroke-width="5"/>
+<path d="M8 88 L8 22 L92 22 L92 88" fill="none" stroke="#22120a" stroke-width="9" opacity=".35" transform="translate(0 2)"/>
+<path d="M8 22 L92 22 L92 88 L8 88Z" fill="#fff" opacity=".12"/>
+<g stroke="#fff" stroke-width="1.4" opacity=".55"><path d="M20 22V88M32 22V88M44 22V88M56 22V88M68 22V88M80 22V88M8 34H92M8 46H92M8 58H92M8 70H92M8 82H92"/></g>
+<path d="M8 22 L92 22" stroke="#fff" stroke-width="5"/>
+<path d="M30 90 Q40 60 68 38" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/>
+<circle class="o" cx="72" cy="36" r="13" fill="#fff"/>
+<path class="o" d="M72 30 L78 34 L76 41 L68 41 L66 34Z" fill="#22120a" stroke-width="1.5"/>
+<path d="M72 30 V23 M78 34 L84 31 M76 41 L80 47 M68 41 L64 47 M66 34 L60 31" stroke="#22120a" stroke-width="2"/>
+<path class="o" d="M20 46 Q16 36 22 32 L32 30 Q38 32 36 40 L32 52 Z" fill="#ff8a1a"/><path d="M22 36 L30 34" stroke="#22120a" stroke-width="2"/></svg></div>
+    <div class="ig-title">Penalty Kings</div>
+    <div class="ig-tagline">Aim the corners. Beat the keeper.<br>Win the World Cup of penalties.</div>
   </div>
-  <a class="exit" href="../">🏠 All Ilan Games</a>
-
+  <div class="ig-playrow">
+    <a class="ig-cta" href="3d.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>3D Shootout</small></span></a>
+  </div>
+  <div class="ig-modes">
+    <a class="ig-mode fb-mode" href="3d.html"><span class="ig-tile" style="--tile:linear-gradient(160deg,#43e97b,#12917f)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></span><b>3D Shootout</b><small>Cinematic penalties</small></a>
+    <a class="ig-mode fb-mode" href="2d.html"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.5"/></svg></span><b>Classic 2D</b><small>The original</small></a>
+  </div>
+  <div class="ig-list">
+    <button class="ig-row" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('football','Penalty Kings')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg></span><span class="ig-grow">Leaderboard<small>Most tournament wins</small></span></button>
+    <button class="ig-row" id="fbLogin" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#b38cff,#6a3df0)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/></svg></span><span class="ig-grow"><span id="IGA_loginTxt">Log in</span><small id="IGA_loginSub">Save your wins to the leaderboard</small></span></button>
+  </div>
+  <div class="foot">ilan Games</div>
+  <span id="IGA_login" hidden></span><!-- auth.js writes its plain label here; the row above shows the name -->
+</div></div>
   <script src="../supabase-config.js"></script>
   <script src="../auth.js" defer></script>
   <script>
@@ -86,8 +87,9 @@
       }catch(e){ return 0; }
     }
     IGAuth.onChange(function(p){
-      var b=document.getElementById('IGA_login');
-      if(b) b.textContent = p?('👤 '+IGAuth.displayName()):'👤 Log in';
+      var b=document.getElementById('IGA_loginTxt'), s=document.getElementById('IGA_loginSub');
+      if(b) b.textContent = p?IGAuth.displayName():'Log in';
+      if(s) s.textContent = p?'Signed in · tap for account':'Save your wins to the leaderboard';
       IGAuth.submitScore('football', pkWins());
     });
   });

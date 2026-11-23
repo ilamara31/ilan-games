@@ -20,6 +20,7 @@
 <meta name="twitter:title" content="Ping Pong Tour — Ilan Games">
 <meta name="twitter:description" content="Free mini games by Ilan — cricket, racing, football, obby, puzzles and more. Play instantly in your browser.">
 <meta name="twitter:image" content="https://ilamara31.github.io/ilan-games/og-image.png?v=2">
+<script src="../theme.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
   html,body{height:100%;overflow:hidden;background:#05091c;font-family:'Segoe UI',Roboto,system-ui,Arial,sans-serif;color:#fff}
@@ -56,32 +57,94 @@
   .item .price{font-size:12px;color:#ffe27a;font-weight:800;margin-top:3px}
   .item .price.owned{color:#86ffc6}
 </style>
+<style>
+/* ===== ilan Games shared theme (light) — menus and pop-ups; the arena canvas keeps its own look ===== */
+:root, html[data-theme]{ --accent:#4568dc; --accent2:#b06ab3; --icon1:#4568dc; --icon2:#b06ab3; }
+html[data-theme] body{ background:transparent; font-family:var(--ig-font); letter-spacing:-.01em; }
+html[data-theme] .screen{ color:var(--ig-text); backdrop-filter:none; padding:max(12px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom)); overflow:auto;
+  background:radial-gradient(60vmax 40vmax at 20% 0%, color-mix(in srgb,var(--accent) 20%, transparent), transparent 60%),
+             radial-gradient(50vmax 40vmax at 100% 100%, color-mix(in srgb,var(--accent2) 16%, transparent), transparent 60%), rgba(242,242,247,.96); }
+html[data-theme] #home{ justify-content:flex-start; }
+html[data-theme] #home > .ig-col{ margin:0 auto; }
+.ppmenu{ gap:14px; }
+.ppcoins{ display:inline-flex; align-items:center; gap:7px; height:44px; padding:0 16px 0 12px; border-radius:999px; font:800 17px var(--ig-font); letter-spacing:-.02em; color:var(--ig-text);
+  background:var(--ig-glass); border:1px solid var(--ig-line); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); box-shadow:inset 0 1px 0 var(--ig-hl), var(--ig-shadow); }
+.ppcoin{ display:inline-block; width:18px; height:18px; border-radius:50%; vertical-align:-3px; margin-right:6px; flex:none;
+  background:radial-gradient(circle at 35% 30%,#fff3b0,#ffcc33 45%,#e09a00); box-shadow:inset 0 0 0 1.5px rgba(160,100,0,.45); }
+.ppcoins .ppcoin{ margin-right:0; }
+.ig-modes{ grid-template-columns:repeat(3,1fr); }
+.ppfoot{ margin:0 8px; font-size:12.5px; line-height:1.45; color:var(--ig-text2); text-align:center; }
+/* other screens: one glass sheet */
+html[data-theme] .card{ background:var(--ig-sheet); color:var(--ig-text); border:1px solid var(--ig-line); border-radius:28px; padding:22px;
+  -webkit-backdrop-filter:blur(30px) saturate(170%); backdrop-filter:blur(30px) saturate(170%); box-shadow:0 30px 80px rgba(20,20,50,.18), inset 0 1px 0 #fff; }
+html[data-theme] .card .card{ background:var(--ig-glass2); box-shadow:none; border-radius:20px; }
+html[data-theme] h1.logo{ font-family:var(--ig-font); font-weight:900; letter-spacing:-.04em; text-shadow:none; margin-bottom:6px;
+  background:linear-gradient(160deg,var(--accent),var(--accent2) 75%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+html[data-theme] #overTitle{ background:none; -webkit-text-fill-color:currentColor; }
+html[data-theme] .logo-sub{ color:var(--ig-text2); letter-spacing:.08em; font-size:12px; margin-bottom:6px; }
+html[data-theme] .sub{ color:var(--ig-text2); }
+html[data-theme] #cardVs{ color:var(--ig-text) !important; }
+html[data-theme] .coins{ background:rgba(118,118,128,.12); color:var(--ig-text); border-radius:999px; padding:7px 16px; font-size:16px; }
+html[data-theme] .btn{ font-family:var(--ig-font); border-radius:999px; min-height:50px; padding:14px 22px; font-size:16px; font-weight:700; letter-spacing:-.01em; color:#fff;
+  background:linear-gradient(160deg,var(--accent),var(--accent2)); box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent); }
+html[data-theme] .btn:active{ transform:scale(.97); box-shadow:none; }
+html[data-theme] .btn.green{ background:linear-gradient(160deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent2) 65%, transparent); }
+html[data-theme] .btn.alt{ background:linear-gradient(160deg,#ffcf4a,#ff9500); color:#2a1600; box-shadow:none; }
+html[data-theme] .btn.ghost{ background:var(--ig-glass2); color:var(--ig-text); border:1px solid var(--ig-line); box-shadow:none; }
+html[data-theme] .dots i{ background:var(--ig-line2); } html[data-theme] .dots i.done{ background:#34c759; } html[data-theme] .dots i.cur{ background:var(--accent); }
+html[data-theme] .item{ background:var(--ig-glass2); border:1.5px solid var(--ig-line); border-radius:18px; color:var(--ig-text); }
+html[data-theme] .item.equipped{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%, transparent); }
+html[data-theme] .item .price{ color:var(--ig-text2); font-weight:700; } html[data-theme] .item .price.owned{ color:var(--accent); }
+.ppcode{ text-align:center; font-size:22px; letter-spacing:.3em; font-weight:800; text-transform:uppercase; }
+.pptag{ font-size:12px; font-weight:700; color:var(--accent); }
+@media (max-width:370px){ .ig-mode small{ display:none; } }
+</style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <!-- HOME -->
-<div id="home" class="screen">
-  <div class="card">
-    <h1 class="logo">PING PONG TOUR</h1><div class="logo-sub">First-Person Arena</div>
-    <div class="coins">🪙 <b id="homeCoins">0</b></div>
-    <button class="btn green" id="btnTournament">🏆 Play Tournament</button>
-    <button class="btn" id="btnQuick">⚡ Quick Match</button>
-    <button class="btn green" id="btnOnline">🌐 Play Online</button>
-    <div class="row"><button class="btn alt" id="btnTutorial">🎓 Tutorial</button><button class="btn alt" id="btnShop">🛍️ Shop</button></div>
-    <div class="row"><button class="btn ghost" id="IGA_login" onclick="window.IGAuth && IGAuth.openAuth()">👤 Log in</button><button class="btn ghost" id="IGA_lb" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')">🏆 Leaderboard</button></div>
-    <a class="btn ghost" href="../" style="display:block;margin-top:10px;text-decoration:none">🚪 Exit to Ilan Games</a>
-    <div class="sub" style="margin-top:14px">Move the mouse to move your racket. A ring shrinks onto the incoming ball — <b>click as it reaches your bat (ring turns green) to SMASH 🔥</b>. Chain smashes for a combo &amp; go ON FIRE. Mistime it and you'll dink a weak floater the opponent will punish!</div>
+<div id="home" class="screen ig-page">
+ <div class="ig-col ppmenu">
+  <div class="ig-topbar">
+    <a class="ig-navback" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+    <div class="ppcoins" title="Coins"><span class="ppcoin"></span><b id="homeCoins">0</b></div>
   </div>
+  <div class="ig-hero">
+    <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M20 44 L80 44 L96 80 L4 80Z" fill="#1e5bd8"/>
+<path d="M50 44 L50 80 M20 44 L4 80 M80 44 L96 80" stroke="#fff" stroke-width="2.5"/>
+<path class="o" d="M10 62 L90 62 L90 68 L10 68Z" fill="#e8eef9"/><path d="M14 62 V68 M22 62 V68 M30 62 V68 M38 62 V68 M46 62 V68 M54 62 V68 M62 62 V68 M70 62 V68 M78 62 V68 M86 62 V68" stroke="#9fb3d8" stroke-width="1"/>
+<path class="o" d="M16 80 L16 92 M84 80 L84 92" stroke="#22120a" stroke-width="4"/>
+<path d="M28 40 Q44 8 62 30" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 4" stroke-linecap="round"/>
+<circle class="o" cx="26" cy="38" r="5" fill="#fff"/>
+<g transform="rotate(30 74 30)"><rect class="o" x="70" y="36" width="8" height="20" rx="3" fill="#a8692f"/><circle class="o" cx="74" cy="24" r="15" fill="#b3122f"/><ellipse cx="69" cy="19" rx="5" ry="3" fill="#fff" opacity=".5"/></g></svg></div>
+    <div class="ig-title">Ping Pong Tour</div>
+    <div class="ig-tagline">First-person table tennis. Time the smash.</div>
+  </div>
+  <div class="ig-playrow">
+    <button class="ig-cta" id="btnTournament"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small>Tournament &middot; 3 rounds</small></span></button>
+    <button class="ig-sq" id="btnShop" title="Racket shop" aria-label="Racket shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
+  </div>
+  <div class="ig-modes">
+    <button class="ig-mode" id="btnQuick"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg></span><b>Quick</b><small>One match</small></button>
+    <button class="ig-mode" id="btnOnline"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Play a friend</small></button>
+    <button class="ig-mode" id="btnTutorial"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9L12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v4.5c1.5 1.6 3.5 2.5 5.5 2.5s4-.9 5.5-2.5V11M21.5 9v5"/></svg></span><b>Tutorial</b><small>First steps</small></button>
+  </div>
+  <div class="ig-list">
+    <button class="ig-row" onclick="window.IGAuth && IGAuth.showLeaderboard('pptour','Ping Pong Tour')"><span class="ig-tile" style="--tile:linear-gradient(160deg,#4aa8ff,#5e5ce6)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20V11M12 20V4M18 20v-6"/></svg></span><span class="ig-grow"><span id="IGA_lb">Leaderboard</span><small>Top players</small></span></button>
+    <button class="ig-row" onclick="window.IGAuth && IGAuth.openAuth()"><span class="ig-tile" style="--tile:linear-gradient(160deg,#c48bff,#7a3ff0)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.8 3.9-6 7.5-6s6.6 2.2 7.5 6"/></svg></span><span class="ig-grow"><span id="IGA_login">Log in</span><small>Save your coins and rackets</small></span></button>
+  </div>
+  <div class="ppfoot">Move the mouse (or your finger) to move your racket. A ring shrinks onto the ball: <b>click as it reaches your bat</b> to smash. Chain smashes to go on fire.</div>
+ </div>
 </div>
 
 <!-- SHOP -->
 <div id="shop" class="screen hidden">
   <div class="card">
-    <h1 class="logo" style="font-size:26px">🛍️ RACKET SHOP</h1>
-    <div class="coins">🪙 <b id="shopCoins">0</b></div>
+    <h1 class="logo" style="font-size:26px">Racket Shop</h1>
+    <div class="coins"><span class="ppcoin"></span><b id="shopCoins">0</b></div>
     <div class="grid" id="shopGrid"></div>
-    <button class="btn ghost" id="shopBack" style="margin-top:12px">‹ Back</button>
+    <button class="btn ghost" id="shopBack" style="margin-top:12px">Back</button>
   </div>
 </div>
 
@@ -93,8 +156,8 @@
     <div class="sub" style="font-size:18px;color:#fff;font-weight:800" id="cardVs">YOU vs CPU</div>
     <div class="dots" id="cardDots"></div>
     <div class="sub">First to 5 points wins.</div>
-    <button class="btn green" id="cardPlay">PLAY ▶</button>
-    <button class="btn ghost" id="cardBack">‹ Home</button>
+    <button class="btn green" id="cardPlay">Play</button>
+    <button class="btn ghost" id="cardBack">Home</button>
   </div>
 </div>
 
@@ -103,8 +166,8 @@
   <div class="card">
     <h1 class="logo" id="overTitle" style="font-size:32px">VICTORY</h1>
     <div class="sub" id="overSub">You won!</div>
-    <div class="coins" id="overCoins">🪙 +0</div>
-    <button class="btn green" id="overBtn1">CONTINUE ▶</button>
+    <div class="coins" id="overCoins">+0</div>
+    <button class="btn green" id="overBtn1">Continue</button>
     <button class="btn ghost" id="overBtn2">Home</button>
   </div>
 </div>
@@ -235,9 +298,9 @@ $('cardPlay').onclick=()=>{ goPlay(); startServeMatch(); };
 
 function showCard(){ const tournament=(mode==='tournament');
   $('cardKind').textContent= tournament?'TOURNAMENT':'QUICK MATCH';
-  $('cardRound').textContent= tournament?ROUND_NAMES[roundIdx]:'EXHIBITION';
+  $('cardRound').textContent= tournament?ROUND_NAMES[roundIdx].toLowerCase().replace(/(^|-)([a-z])/g,(m,a,b)=>a+b.toUpperCase()):'Exhibition';
   if(tournament) curOpp=bracket[roundIdx];
-  $('cardVs').textContent='YOU  vs  '+curOpp;
+  $('cardVs').textContent='You  vs  '+curOpp;
   const dots=$('cardDots'); dots.innerHTML=''; if(tournament){ for(let i=0;i<3;i++){ const e=document.createElement('i'); e.className=i<roundIdx?'done':i===roundIdx?'cur':''; dots.appendChild(e); } }
   showScreen('card');
 }
@@ -245,7 +308,7 @@ function openShop(){ $('shopCoins').textContent=S.coins; const grid=$('shopGrid'
   RACKETS.forEach(it=>{ const owned=S.owned.includes(it.id), eq=S.equip===it.id; const d=document.createElement('div'); d.className='item'+(eq?' equipped':'');
     const c=document.createElement('canvas'); c.width=66; c.height=80; const g=c.getContext('2d'); g.translate(33,38);
     g.strokeStyle='#6b4226'; g.lineWidth=6; g.lineCap='round'; g.beginPath(); g.moveTo(0,24); g.lineTo(0,40); g.stroke(); drawBlade(g,26,it.design);
-    const lbl=document.createElement('b'); lbl.textContent=it.name; const pr=document.createElement('div'); pr.className='price'+(owned?' owned':''); pr.textContent= eq?'EQUIPPED':owned?'OWNED':'🪙 '+it.cost;
+    const lbl=document.createElement('b'); lbl.textContent=it.name; const pr=document.createElement('div'); pr.className='price'+(owned?' owned':''); pr.textContent= eq?'Equipped':owned?'Owned':it.cost+' coins';
     d.appendChild(c); d.appendChild(lbl); d.appendChild(pr);
     d.onclick=()=>{ if(eq)return; if(owned){ S.equip=it.id; save(); } else { if(S.coins>=it.cost){ S.coins-=it.cost; S.owned.push(it.id); S.equip=it.id; save(); snd('point'); } else { d.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:200}); return; } } $('shopCoins').textContent=S.coins; openShop(); };
     grid.appendChild(d); });
@@ -311,13 +374,13 @@ function matchEnd(won){ ball.active=false; coinsEarned=0;
 function banner(t){ msg=t; msgT=1.2; }
 
 function showOver(won,kind){ phase=''; let title,subt,b1,b2,b1act,b2act;
-  if(kind==='champion'){ title='🏆 CHAMPION!'; subt='You won the World Championship!'; }
-  else if(kind==='round'){ title='ROUND WON!'; subt='You beat '+curOpp+' — on to the '+ROUND_NAMES[roundIdx]+'!'; }
-  else if(kind==='out'){ title='ELIMINATED'; subt='You lost the '+ROUND_NAMES[roundIdx]+'. Better luck next time!'; }
-  else { title=won?'VICTORY!':'DEFEAT'; subt=won?('You beat '+curOpp+'!'):(curOpp+' won this one.'); }
-  $('overTitle').textContent=title; $('overTitle').style.color = (won||kind==='round'||kind==='champion')?'#ffd23f':'#ff9b9b';
-  $('overSub').textContent=subt; $('overCoins').innerHTML='🪙 +'+coinsEarned+' coins'; $('overCoins').style.display=coinsEarned>0?'inline-block':'none';
-  if(kind==='round'){ b1='PLAY '+ROUND_NAMES[roundIdx]+' ▶'; b1act=()=>showCard(); b2='Home'; b2act=()=>showHome(); }
+  if(kind==='champion'){ title='Champion!'; subt='You won the World Championship!'; }
+  else if(kind==='round'){ title='Round Won!'; subt='You beat '+curOpp+' — on to the '+ROUND_NAMES[roundIdx]+'!'; }
+  else if(kind==='out'){ title='Eliminated'; subt='You lost the '+ROUND_NAMES[roundIdx]+'. Better luck next time!'; }
+  else { title=won?'Victory!':'Defeat'; subt=won?('You beat '+curOpp+'!'):(curOpp+' won this one.'); }
+  $('overTitle').textContent=title; $('overTitle').style.color = (won||kind==='round'||kind==='champion')?'#2fae6a':'#e0364f';
+  $('overSub').textContent=subt; $('overCoins').innerHTML='<span class="ppcoin"></span>+'+coinsEarned+' coins'; $('overCoins').style.display=coinsEarned>0?'inline-block':'none';
+  if(kind==='round'){ b1='Play the '+ROUND_NAMES[roundIdx].charAt(0)+ROUND_NAMES[roundIdx].slice(1).toLowerCase(); b1act=()=>showCard(); b2='Home'; b2act=()=>showHome(); }
   else if(kind==='champion'||kind==='out'){ b1='Play Tournament Again'; b1act=()=>{ pickBracket(); roundIdx=0; showCard(); }; b2='Home'; b2act=()=>showHome(); }
   else { b1='Play Again'; b1act=()=>{ curOpp=NAMES[Math.floor(rand(0,NAMES.length))]; showCard(); }; b2='Home'; b2act=()=>showHome(); }
   $('overBtn1').textContent=b1; $('overBtn1').onclick=b1act; $('overBtn1').style.display='block';
@@ -582,16 +645,16 @@ const MP={ sb:null, ch:null, code:null, isHost:false,
 let RM=null;
 const mpCard=()=>$('mpCard');
 function esc(s){ return (''+s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
-function mpToast(t){ let el=$('mpToast'); if(!el){ el=document.createElement('div'); el.id='mpToast'; el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:#0f1d36;border:1px solid #2a3c63;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90vw;text-align:center;transition:opacity .3s'; document.body.appendChild(el); } el.textContent=t; el.style.opacity='1'; clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity='0'; },2600); }
+function mpToast(t){ let el=$('mpToast'); if(!el){ el=document.createElement('div'); el.id='mpToast'; el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.07);color:#1d1d1f;font-family:var(--ig-font);font-weight:600;border-radius:999px !important;padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90vw;text-align:center;transition:opacity .3s'; document.body.appendChild(el); } el.textContent=t; el.style.opacity='1'; clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity='0'; },2600); }
 function openRoom(){ refreshName(); RM=null; showScreen('mp'); showRoomChoice(); }
 function showRoomChoice(){ mpCard().innerHTML=
-  '<h1 class="logo" style="font-size:26px">🌐 PLAY ONLINE</h1>'+
+  '<h1 class="logo" style="font-size:26px">Play Online</h1>'+
   '<div class="sub">Quick match • 2 players. Create a room and share the code, or join a friend\'s.</div>'+
-  '<button class="btn green" id="mkRoom">➕ Create Room</button>'+
+  '<button class="btn green" id="mkRoom">Create Room</button>'+
   '<div class="card" style="margin-top:12px;padding:14px"><div class="sub" style="margin:0 0 8px">Have a code?</div>'+
-  '<input id="jCode" maxlength="4" placeholder="CODE" autocomplete="off" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px;font-weight:800;text-transform:uppercase;padding:10px;border-radius:12px;border:1px solid rgba(150,180,255,.3);background:rgba(0,0,0,.25);color:#fff" />'+
-  '<button class="btn" id="jRoom" style="margin-top:10px">🔑 Join</button></div>'+
-  '<button class="btn ghost" id="mpBack" style="margin-top:12px">‹ Home</button>';
+  '<input id="jCode" maxlength="4" placeholder="CODE" autocomplete="off" class="ig-field ppcode" />'+
+  '<button class="btn" id="jRoom" style="margin-top:10px">Join</button></div>'+
+  '<button class="btn ghost" id="mpBack" style="margin-top:12px">Home</button>';
   $('mkRoom').onclick=()=>createRoom();
   const jc=$('jCode'); jc.oninput=()=>{ jc.value=jc.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); };
   $('jRoom').onclick=()=>joinRoom((jc.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4));
@@ -604,22 +667,22 @@ async function joinRoom(code){ if(!code||code.length<4){ mpToast('Enter the 4-le
   try{ await MP.open(code,false); }catch(e){ mpToast('Connection failed'); leaveRoom(); return; }
   MP.send('hello',{name:PNAME}); roomTimer(()=>{ if(RM&&RM.phase==='joining')MP.send('hello',{name:PNAME}); },1200);
   roomTimer(()=>{ if(RM&&RM.phase==='joining')roomNotFound(code); },6000); }
-function roomNotFound(code){ mpCard().innerHTML='<h1 class="logo" style="font-size:24px">Room not found</h1><div class="sub">No room with code <b>'+esc(code)+'</b>. Check it and try again.</div><button class="btn" id="mpAgain">‹ Back</button>'; $('mpAgain').onclick=()=>{ try{MP.leave();}catch(e){} RM=null; showRoomChoice(); }; }
+function roomNotFound(code){ mpCard().innerHTML='<h1 class="logo" style="font-size:24px">Room not found</h1><div class="sub">No room with code <b>'+esc(code)+'</b>. Check it and try again.</div><button class="btn" id="mpAgain">Back</button>'; $('mpAgain').onclick=()=>{ try{MP.leave();}catch(e){} RM=null; showRoomChoice(); }; }
 function renderLobby(){ if(!RM||!RM.isHost)return; const guest=MP.presenceList().find(p=>!p.host); RM.guestName=guest?guest.name:''; const share=location.origin+location.pathname+'?room='+RM.code;
   mpCard().innerHTML='<div class="logo-sub">ROOM CODE</div><h1 class="logo" style="font-size:44px;letter-spacing:8px">'+esc(RM.code)+'</h1>'+
     '<div class="sub">Share this code with a friend to join.</div>'+
     '<div class="card" style="margin:10px 0;padding:12px;text-align:left">'+
-      '<div style="display:flex;justify-content:space-between;padding:6px 2px"><b>👤 '+esc(PNAME)+'</b><span style="color:#86ffc6">Host</span></div>'+
-      '<div style="display:flex;justify-content:space-between;padding:6px 2px">'+(guest?('<b>👤 '+esc(guest.name)+'</b><span style="color:#86ffc6">Ready</span>'):('<span style="color:#8fa8ff">Waiting for player…</span><span>⏳</span>'))+'</div>'+
+      '<div style="display:flex;justify-content:space-between;padding:6px 2px"><b>'+esc(PNAME)+'</b><span class="pptag">Host</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:6px 2px">'+(guest?('<b>'+esc(guest.name)+'</b><span class="pptag">Ready</span>'):('<span style="color:var(--ig-text2)">Waiting for player…</span><span></span>'))+'</div>'+
     '</div>'+
-    '<button class="btn green" id="mpStart"'+(guest?'':' disabled style="opacity:.5"')+'>▶ Start Match</button>'+
-    '<button class="btn ghost" id="mpCopy">📋 Copy invite link</button>'+
-    '<button class="btn ghost" id="mpBack">‹ Leave</button>';
+    '<button class="btn green" id="mpStart"'+(guest?'':' disabled style="opacity:.5"')+'>Start Match</button>'+
+    '<button class="btn ghost" id="mpCopy">Copy invite link</button>'+
+    '<button class="btn ghost" id="mpBack">Leave</button>';
   if(guest)$('mpStart').onclick=()=>hostBegin();
   $('mpCopy').onclick=()=>{ try{ navigator.clipboard.writeText(share); mpToast('Link copied!'); }catch(e){ mpToast(RM.code); } };
   $('mpBack').onclick=()=>leaveRoom();
 }
-function showJoinedWaiting(){ mpCard().innerHTML='<h1 class="logo" style="font-size:26px">Joined ✓</h1><div class="sub">Waiting for the host to start…</div><div class="sub" style="color:#8fa8ff">Room '+esc(RM&&RM.code)+'</div><button class="btn ghost" id="mpBack">‹ Leave</button>'; $('mpBack').onclick=()=>leaveRoom(); }
+function showJoinedWaiting(){ mpCard().innerHTML='<h1 class="logo" style="font-size:26px">Joined</h1><div class="sub">Waiting for the host to start…</div><div class="sub">Room '+esc(RM&&RM.code)+'</div><button class="btn ghost" id="mpBack">Leave</button>'; $('mpBack').onclick=()=>leaveRoom(); }
 
 /* ---------- start / end ---------- */
 function hostBegin(){ if(!RM||!RM.isHost)return; RGEN++; RM.phase='playing'; NET.mg=(NET.mg||0)+1; NET.on=true; NET.role='host'; NET.started=true; NET.binit=false; mode='online';
@@ -631,11 +694,11 @@ function guestBegin(payload){ const g=(payload&&payload.g)||0; if(g&&g===NET.mgS
   curOpp=(payload&&payload.opp)||NET.hostName||'Opponent'; pPts=0; aPts=0; server='ai'; phase='serve'; ball.active=false;
   goPlay(); banner('GET READY'); }
 function showOverOnline(won){ phase=''; ball.active=false; hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
-  $('overTitle').textContent=won?'VICTORY!':'DEFEAT'; $('overTitle').style.color=won?'#ffd23f':'#ff9b9b';
+  $('overTitle').textContent=won?'Victory!':'Defeat'; $('overTitle').style.color=won?'#2fae6a':'#e0364f';
   $('overSub').textContent=won?('You beat '+(curOpp||'your opponent')+'!'):((curOpp||'Your opponent')+' won this one.');
-  $('overCoins').innerHTML='🪙 +'+coinsEarned+' coins'; $('overCoins').style.display=coinsEarned>0?'inline-block':'none';
+  $('overCoins').innerHTML='<span class="ppcoin"></span>+'+coinsEarned+' coins'; $('overCoins').style.display=coinsEarned>0?'inline-block':'none';
   const b1=$('overBtn1'), b2=$('overBtn2'); b1.style.display='block'; b2.style.display='block';
-  if(NET.role==='host'){ b1.textContent='🔁 Rematch'; b1.onclick=()=>{ if(MP.presenceList().some(p=>!p.host)) hostBegin(); else mpToast('Opponent left the room'); }; }
+  if(NET.role==='host'){ b1.textContent='Rematch'; b1.onclick=()=>{ if(MP.presenceList().some(p=>!p.host)) hostBegin(); else mpToast('Opponent left the room'); }; }
   else { b1.textContent='⏳ Waiting for host…'; b1.onclick=()=>{}; }
   b2.textContent='🚪 Leave'; b2.onclick=()=>leaveRoom();
   snd(won?'win':'lose'); }
@@ -645,7 +708,7 @@ function guestGameOver(p){ const g=(p&&p.g)||0; if(g!==NET.mgSeen || g===NET.goS
   if(window.IGAuth) IGAuth.submitScore('pptour', S.wins||0); showOverOnline(won); }
 function opponentLeft(){ coinsEarned=0; ball.active=false; phase=''; NET.on=false; NET.started=false; NET.role=null;
   hideScreens(); $('over').classList.remove('hidden'); screen='over'; document.body.classList.remove('playing'); releaseLock();
-  $('overTitle').textContent='Opponent left'; $('overTitle').style.color='#ff9b9b'; $('overSub').textContent='Your opponent disconnected.'; $('overCoins').style.display='none';
+  $('overTitle').textContent='Opponent left'; $('overTitle').style.color='#e0364f'; $('overSub').textContent='Your opponent disconnected.'; $('overCoins').style.display='none';
   const b1=$('overBtn1'), b2=$('overBtn2'); b1.textContent='🏠 Home'; b1.style.display='block'; b1.onclick=()=>leaveRoom(); b2.style.display='none'; }
 function leaveRoom(){ RGEN++; NET.on=false; NET.role=null; NET.started=false; netResetSession(); RM=null; mode='quick'; ball.active=false; phase=''; try{ MP.leave(); }catch(e){} try{ history.replaceState(null,'',location.pathname); }catch(e){} showHome(); }
 
@@ -718,6 +781,12 @@ function loop(t){ rafId=null; const dt=Math.min(.05,(t-last)/1000||0); last=t; u
 function wakeLoop(){ if(rafId==null){ last=performance.now(); rafId=requestAnimationFrame(loop); } }
 window.addEventListener('resize',()=>wakeLoop());   // re-render once after a resize while parked
 showHome(); wakeLoop();
+</script>
+<script>
+/* auth.js writes "👤 name" into #IGA_login; keep the label plain (the row already has an icon) */
+(function(){ var el=document.getElementById('IGA_login'); if(!el||!window.MutationObserver) return;
+  var fix=function(){ var t=el.textContent, c=t.replace(/^\s*👤\s*/,''); if(c!==t) el.textContent=c; };
+  new MutationObserver(fix).observe(el,{childList:true,characterData:true,subtree:true}); fix(); })();
 </script>
 <script src="../supabase-config.js"></script>
 <script src="../auth.js" defer></script>

@@ -3,14 +3,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pen Fight</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0e1320">
+<meta name="theme-color" content="#f2f2f7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="../theme.js"></script>
 <style>
 /* Layout: full-bleed 3D desk, with notebook-page panels floating over it for menus and a thin HUD during play. */
 :root{
-  color-scheme: dark;
+  color-scheme: light;
   --night:#0e1320;        /* deep ink-navy ground */
   --panel:#f4efe2;        /* notebook paper */
   --rule:#a9c3e6;         /* ruled blue line */
@@ -27,7 +28,8 @@
   --f-ui:'Barlow Condensed', 'Avenir Next Condensed', 'Arial Narrow', system-ui, sans-serif;
   --f-serif:'Cormorant Garamond', 'Hoefler Text', Georgia, serif;
 }
-html,body{height:100%;overflow:hidden;background:var(--night);color:#fff}
+html,body{height:100%;overflow:hidden;color:#fff}
+body{background:transparent}
 body{position:fixed;inset:0;font-family:var(--f-ui);user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 button{font-family:var(--f-ui);cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -148,53 +150,149 @@ input{font-family:var(--f-ui);user-select:text;-webkit-user-select:text}
 .unlock{border:2px dashed var(--gold);background:#fff8e6}
 .unlock .lbl{color:#9a7426}
 @media (prefers-reduced-motion:reduce){ #banner{transition:none} }
+
+/* ===== ilan Games shared theme (light) — menus follow ../theme.css; the 3D desk + HUD keep their own look ===== */
+html[data-theme], :root{ --accent:#6e6cf0; --accent2:#2b2ab8; --icon1:#6e6cf0; --icon2:#2b2ab8; }
+/* light menu pages: hide the desk behind them so the soft shared background shows */
+body:has(.screen.lightpg:not([hidden])) #c{visibility:hidden}
+.screen.lightpg{background:transparent;align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;color:var(--ig-text);font-family:var(--ig-font);letter-spacing:-.01em;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 28px) calc(env(safe-area-inset-left,0px) + 16px)}
+.screen.scrim{background:rgba(20,20,40,.25);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:var(--ig-font);letter-spacing:-.01em}
+.pcol{margin:0 auto;padding-bottom:8px}
+.screen *,.screen *::before,.screen *::after{box-sizing:border-box}
+.screen .field input.ig-field{border:1px solid var(--ig-line);background:var(--ig-field);border-radius:16px;font-size:17px;padding:0 16px;color:var(--ig-text);height:52px}
+.screen button,.screen input{font-family:var(--ig-font)}
+.screen button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:2px}
+.ig-hero .ig-title{margin-bottom:0}
+.subtag{color:var(--ig-text2);font:500 16px/1.4 var(--ig-font);text-align:center;margin-top:-6px}
+.subtag:empty{display:none}
+.nextcard{display:flex;flex-direction:column;gap:4px;padding:16px 18px}
+.nx-opp{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.nx-taunt{color:var(--ig-text2);font-size:15px;font-weight:500;line-height:1.35}
+.nx-taunt:empty{display:none}
+.nx-pen{display:flex;align-items:center;gap:12px;border-top:1px solid var(--ig-line);margin-top:12px;padding-top:12px}
+.nx-pentxt{flex:1;min-width:0}
+.nx-penname{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
+.nx-pensub{font-size:13px;font-weight:500;color:var(--ig-text2)}
+.nx-penimg{flex:0 1 160px;min-width:0}
+.nx-penimg .penimg,.nx-penimg svg{width:100%;height:auto;display:block}
+.statcard{padding:12px 18px 16px}
+.statcard .ig-stats{padding:2px 0 10px}
+.nx-prog{display:flex;flex-direction:column;gap:7px}
+.nx-proglbl{font-size:13px;font-weight:600;color:var(--ig-text2)}
+.screen .progress{height:8px;border-radius:99px;background:rgba(118,118,128,.16)}
+.screen .progress i{border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.screen .how{font-family:var(--ig-font);font-size:16px;line-height:1.5;color:var(--ig-text);padding-left:20px;margin:0;display:flex;flex-direction:column;gap:6px}
+.screen .how li::marker{color:var(--accent);font-weight:700}
+.fcard{display:flex;flex-direction:column;gap:10px}
+.bigbtn{min-height:56px;font-size:17px}
+.screen .field{display:flex;gap:8px;align-items:center}
+.screen .field .ig-field{flex:1}
+.screen .field input.code-in{flex:1 1 auto;text-transform:uppercase;letter-spacing:.3em;font-weight:700;text-align:center;padding:0 10px}
+.screen .field .ig-btn{flex:none;min-height:52px}
+.screen .errmsg{color:#d70015;font:600 15px/1.35 var(--ig-font);text-align:center}
+.screen .netline{font:600 12px/1 var(--ig-font);letter-spacing:.02em;text-transform:none;color:#c77700;background:rgba(255,149,0,.14);padding:5px 9px;border-radius:99px}
+.screen .netline.ok{color:#1f9d43;background:rgba(48,209,88,.15)}
+.screen .rooms{gap:0}
+.screen .roomrow{background:none;border:0;border-radius:0;padding:10px 0}
+.screen .roomrow + .roomrow{border-top:1px solid var(--ig-line)}
+.screen .roomrow .nm,.screen .plrow .nm{font-size:16px;font-weight:700;color:var(--ig-text);letter-spacing:-.015em}
+.screen .roomrow .sub,.screen .plrow .sub{font-size:13px;color:var(--ig-text2);font-weight:500}
+.screen .empty{font-family:var(--ig-font);font-size:15px;color:var(--ig-text2);line-height:1.4}
+.screen .plrow{border-bottom:1px solid var(--ig-line);padding:10px 0}
+.screen .plrow:last-child{border-bottom:0}
+.codecard{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px}
+.rmcode{font:800 54px/1 var(--ig-font);letter-spacing:.14em;margin-right:-.14em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.screen .btns{display:flex;gap:10px}
+.screen .btns > *{flex:1}
+/* capsule buttons used by the result sheet and JS-built rows */
+.screen .btn{border-radius:999px;min-height:50px;padding:0 20px;font:700 16px/1 var(--ig-font);letter-spacing:-.01em;text-transform:none;color:#fff;
+  background:linear-gradient(160deg,var(--accent),var(--accent2));box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 65%,transparent);transition:transform .15s}
+.screen .btn:active{transform:scale(.96);box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent2) 65%,transparent)}
+.screen .btn.ghost{background:var(--ig-glass2);color:var(--ig-text);border:1px solid var(--ig-line);box-shadow:none}
+.screen .btn.small{min-height:36px;padding:0 16px;font-size:14px}
+.screen .btn:disabled{opacity:.45}
+/* pencil box */
+.screen .penlist{gap:12px}
+.screen .pencard{background:var(--ig-glass);border:1px solid var(--ig-line);border-radius:22px;padding:14px 16px;gap:8px 12px;-webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);box-shadow:inset 0 1px 0 var(--ig-hl),var(--ig-shadow)}
+.screen .pencard.sel{border-color:color-mix(in srgb,var(--accent) 60%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent),var(--ig-shadow)}
+.screen .pencard.locked{opacity:1}
+.screen .pencard.locked > :not(.lockmsg){opacity:.55}
+.screen .pencard .nm{font-size:18px;font-weight:700;color:var(--ig-text);letter-spacing:-.02em}
+.screen .pencard .sub{font-size:13px;color:var(--ig-text2);font-weight:500;letter-spacing:0}
+.screen .stats{font:600 12px var(--ig-font);letter-spacing:.02em;text-transform:none;color:var(--ig-text2)}
+.screen .bar{height:6px;border-radius:99px;background:rgba(118,118,128,.16)}
+.screen .bar i{border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.screen .lockmsg{display:inline-flex;align-items:center;gap:5px;font:600 13px var(--ig-font);color:var(--ig-text2);background:rgba(118,118,128,.12);padding:6px 10px;border-radius:99px}
+.lockmsg svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* result sheet over the desk */
+.rsheet{width:min(420px,100%);max-height:calc(100% - 8px);overflow:auto;display:flex;flex-direction:column;gap:14px;text-align:center}
+.screen .result-head{font:900 clamp(38px,10vw,50px)/1 var(--ig-font);letter-spacing:-.045em;background:linear-gradient(160deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:2px}
+.screen .result-head.lose{background:linear-gradient(160deg,#8e8e93,#3a3a3c);-webkit-background-clip:text;background-clip:text}
+.rsub{color:var(--ig-text2);font-size:15px;font-weight:500;line-height:1.35}
+.rsheet .ig-card{display:flex;flex-direction:column;gap:8px;text-align:left;box-shadow:none;background:rgba(255,255,255,.6)}
+.screen .unlock{background:linear-gradient(160deg,rgba(255,204,0,.16),rgba(255,255,255,.7));border:1px solid rgba(255,170,0,.4);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.screen .unlock .lbl{font:700 12px var(--ig-font);letter-spacing:.06em;text-transform:uppercase;color:#b07800}
+.screen .unlock .big{font:800 20px var(--ig-font);color:var(--ig-text);letter-spacing:-.02em}
+.screen .unlock .muted{font:500 14px var(--ig-font);color:var(--ig-text2)}
+/* HUD keeps its own look; only the icon buttons get line icons */
+.hbtn{display:inline-grid;place-items:center;font-family:var(--ig-font)}
+.hbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:360px){ .ig-mode small{display:none} }
 </style>
 
 <canvas id="c" aria-label="Pen fight table"></canvas>
 
 
 <!-- MENU -->
-<div id="menu" class="screen" hidden>
-  <div class="page">
-    <button class="icon-btn" id="sndBtn" aria-label="Sound on or off">♪</button>
-    <a class="icon-btn" id="homeBtn" href="../" aria-label="All games" style="right:auto;left:10px;top:10px;display:flex;align-items:center;justify-content:center;text-decoration:none">🏠</a>
-    <div>
-      <h1 class="title">Pen Fight<small>3D</small></h1>
-      <div class="tag">the back-bench classic, now in 3D</div>
+<div id="menu" class="screen lightpg" hidden>
+  <div class="ig-col pcol">
+    <div class="ig-topbar">
+      <a class="ig-navback" id="homeBtn" href="../" title="All games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
+      <button class="ig-iconbtn" id="sndBtn" aria-label="Sound on or off"></button>
     </div>
-    <div class="card">
-      <div class="lbl" id="mNextLbl">Match 1</div>
-      <div class="big" id="mNextArena">Classroom Desk</div>
-      <div class="muted" id="mNextOpp">vs Aarav · Reynolds 045</div>
-      <div class="tag" id="mNextTaunt" style="margin-top:0"></div>
+    <div class="ig-hero">
+      <div class="ig-appicon"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="o" d="M6 58 L94 58 L86 86 L14 86Z" fill="#c98a4a"/>
+<path class="o" d="M14 86 L86 86 L86 93 L14 93Z" fill="#7a4a22"/>
+<path d="M22 66 L80 66 M18 76 L84 76" stroke="#a8692f" stroke-width="2" opacity=".7"/>
+<g transform="rotate(-10 46 72)"><rect class="o" x="20" y="67" width="46" height="9" rx="4.5" fill="#1d46a8"/><path class="o" d="M66 67.5 L78 71.5 L66 75.5Z" fill="#f3e2c0"/><rect class="o" x="20" y="67" width="12" height="9" rx="4" fill="#163f8f"/><rect x="34" y="68.5" width="22" height="2" rx="1" fill="#fff" opacity=".5"/></g>
+<g transform="rotate(32 66 30)"><rect class="o" x="44" y="26" width="44" height="9" rx="4.5" fill="#b3122f"/><path class="o" d="M88 26.5 L99 30.5 L88 34.5Z" fill="#f3e2c0"/><rect class="o" x="44" y="26" width="12" height="9" rx="4" fill="#8a1620"/><rect x="58" y="27.5" width="22" height="2" rx="1" fill="#fff" opacity=".5"/></g>
+<path d="M30 50 Q36 34 48 26" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 4" stroke-linecap="round"/>
+<path class="o" d="M60 56 l3 -7 2 6 6 -3 -3 6 6 3 -7 1 0 6 -5 -4 -4 4 0 -6 -6 -2 6 -3Z" fill="#ffcc00"/></svg></div>
+      <h1 class="ig-title">Pen Fight</h1>
+      <div class="ig-tagline">The back-bench classic, now in 3D.</div>
     </div>
-    <div class="card">
-      <div class="lbl">Your pen</div>
-      <div class="row">
-        <div class="grow"><div class="big" id="mPenName">Reynolds 045</div><div class="muted" id="mPenSub">Fine Carbure</div></div>
-        <button class="btn ghost small" id="penBtn">Change pen</button>
+    <div class="ig-playrow">
+      <button class="ig-cta" id="playBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span><b>Play</b><small><span id="mNextLbl">Match 1</span> · <span id="mNextArena">Classroom Desk</span></small></span></button>
+    </div>
+    <div class="ig-modes">
+      <button class="ig-mode" id="mpBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ac8fa,#0a60ff)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/></svg></span><b>Online</b><small>Up to 4 players</small></button>
+      <button class="ig-mode" id="penBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#ffcf4a,#ff8a00)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1-4.5L15.8 4.7a2.1 2.1 0 0 1 3 3L8.5 18z"/><path d="M13.8 6.8l3 3"/></svg></span><b>Pencil Box</b><small>Change your pen</small></button>
+    </div>
+    <div class="ig-card nextcard">
+      <div class="ig-eyebrow">Up next</div>
+      <div class="nx-opp" id="mNextOpp">vs Aarav · Reynolds 045</div>
+      <div class="nx-taunt" id="mNextTaunt"></div>
+      <div class="nx-pen">
+        <div class="nx-pentxt"><div class="ig-eyebrow">Your pen</div><div class="nx-penname" id="mPenName">Reynolds 045</div><div class="nx-pensub" id="mPenSub">Fine Carbure</div></div>
+        <div class="nx-penimg" id="mPenImg"></div>
       </div>
-      <div id="mPenImg"></div>
     </div>
-    <button class="btn play" id="playBtn">Play</button>
-    <button class="btn alt" id="mpBtn">Multiplayer · up to 4</button>
-    <div class="row" style="justify-content:space-between">
-      <div class="rec"><div><b id="mW">0</b><span>Wins</span></div><div><b id="mL">0</b><span>Losses</span></div></div>
-      <div class="grow" style="max-width:190px">
-        <div class="lbl" id="mNextPenLbl" style="margin-bottom:5px">Next pen</div>
-        <div class="progress"><i id="mNextBar" style="width:0"></i></div>
-      </div>
+    <div class="ig-card statcard">
+      <div class="ig-stats"><div><b id="mW">0</b><span>Wins</span></div><div><b id="mL">0</b><span>Losses</span></div></div>
+      <div class="nx-prog"><div class="nx-proglbl" id="mNextPenLbl">Next pen</div><div class="progress"><i id="mNextBar" style="width:0"></i></div></div>
     </div>
-    <button class="btn ghost" id="howBtn">How to play</button>
+    <div class="ig-list">
+      <button class="ig-row" id="howBtn"><span class="ig-tile" style="--tile:linear-gradient(160deg,#5ee28a,#11998e)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4"/><path d="M12 16.8v.2"/></svg></span><span class="ig-grow">How to Play<small>Flick, aim and the first-shot rule</small></span></button>
+    </div>
   </div>
 </div>
 
 <!-- HOW TO PLAY -->
-<div id="howto" class="screen" hidden>
-  <div class="page">
-    <button class="icon-btn" id="howClose" aria-label="Back">✕</button>
-    <div class="title" style="font-size:44px">How to play</div>
-    <div class="card">
+<div id="howto" class="screen lightpg" hidden>
+  <div class="ig-col pcol">
+    <div class="ig-topbar"><button class="ig-iconbtn" id="howClose" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">How to Play</div><div style="width:44px"></div></div>
+    <div class="ig-card">
       <ol class="how">
         <li>Press on your pen and pull back, like a slingshot.</li>
         <li>Pull a little for a soft tap, pull far for a hard hit.</li>
@@ -202,32 +300,29 @@ input{font-family:var(--f-ui);user-select:text;-webkit-user-select:text}
         <li>No direct kills: on your first shot of a round, knocking a pen off doesn't count.</li>
       </ol>
     </div>
-    <button class="btn" id="howOk">Got it</button>
+    <button class="ig-btn" id="howOk">Got it</button>
   </div>
 </div>
 
 <!-- PENS -->
-<div id="pens" class="screen" hidden>
-  <div class="page">
-    <button class="icon-btn" id="pensClose" aria-label="Back">✕</button>
-    <div>
-      <div class="title" style="font-size:44px">Pencil box</div>
-      <div class="tag">Win matches to unlock smoother pens</div>
-    </div>
+<div id="pens" class="screen lightpg" hidden>
+  <div class="ig-col pcol">
+    <div class="ig-topbar"><button class="ig-iconbtn" id="pensClose" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Pencil Box</div><div style="width:44px"></div></div>
+    <div class="subtag">Win matches to unlock smoother pens.</div>
     <div class="penlist" id="penList"></div>
   </div>
 </div>
 
 <!-- RESULT -->
-<div id="result" class="screen" hidden>
-  <div class="page">
+<div id="result" class="screen scrim" hidden>
+  <div class="ig-sheet rsheet">
     <div class="result-head" id="rHead">You won!</div>
-    <div class="muted" id="rSub">2–1 against Aarav</div>
+    <div class="rsub" id="rSub">2–1 against Aarav</div>
     <div id="rUnlock"></div>
-    <div class="card" id="rProg">
-      <div class="lbl" id="rNextLbl">Next pen</div>
+    <div class="ig-card" id="rProg">
+      <div class="nx-proglbl" id="rNextLbl">Next pen</div>
       <div class="progress"><i id="rNextBar" style="width:0"></i></div>
-      <div class="muted" id="rNextTxt"></div>
+      <div class="rsub" id="rNextTxt"></div>
     </div>
     <div class="btns">
       <button class="btn ghost" id="rMenu">Menu</button>
@@ -237,50 +332,49 @@ input{font-family:var(--f-ui);user-select:text;-webkit-user-select:text}
 </div>
 
 <!-- MULTIPLAYER: room list -->
-<div id="mp" class="screen" hidden>
-  <div class="page">
-    <button class="icon-btn" id="mpClose" aria-label="Back">✕</button>
-    <div>
-      <div class="title" style="font-size:44px">Multiplayer</div>
-      <div class="tag">Up to 4 players on one desk</div>
+<div id="mp" class="screen lightpg" hidden>
+  <div class="ig-col pcol">
+    <div class="ig-topbar"><button class="ig-iconbtn" id="mpClose" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="ig-navtitle">Online</div><div style="width:44px"></div></div>
+    <div class="subtag">Up to 4 players on one desk.</div>
+    <div class="ig-card fcard">
+      <div class="ig-eyebrow">Your name</div>
+      <input class="ig-field" id="mpName" maxlength="18" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Your name">
     </div>
-    <div class="card">
-      <div class="lbl">Your name</div>
-      <div class="field"><input id="mpName" maxlength="18" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Your name"></div>
-    </div>
-    <button class="btn play" id="mpCreate">Create room</button>
+    <button class="ig-btn bigbtn" id="mpCreate">Create room</button>
     <div class="errmsg" id="mpMsg" hidden></div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between"><div class="lbl">Open rooms</div><div class="netline" id="mpNet">Connecting…</div></div>
+    <div class="ig-card fcard">
+      <div class="row" style="justify-content:space-between"><div class="ig-eyebrow">Open rooms</div><div class="netline" id="mpNet">Connecting…</div></div>
       <div class="rooms" id="mpRooms"></div>
     </div>
-    <div class="card">
-      <div class="lbl">Or join with a code</div>
-      <div class="field"><input id="mpCode" class="code-in" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" aria-label="Room code"><button class="btn small" id="mpJoin">Join</button></div>
+    <div class="ig-card fcard">
+      <div class="ig-eyebrow">Or join with a code</div>
+      <div class="field"><input id="mpCode" class="ig-field code-in" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" aria-label="Room code"><button class="ig-btn" id="mpJoin">Join</button></div>
     </div>
   </div>
 </div>
 
 <!-- MULTIPLAYER: inside a room -->
-<div id="room" class="screen" hidden>
-  <div class="page">
-    <div>
-      <div class="lbl">Room code</div>
-      <div class="title" id="rmCode" style="font-size:58px;letter-spacing:.08em">····</div>
+<div id="room" class="screen lightpg" hidden>
+  <div class="ig-col pcol">
+    <div class="ig-topbar"><div style="width:44px"></div><div class="ig-navtitle">Room</div><div style="width:44px"></div></div>
+    <div class="ig-card codecard">
+      <div class="ig-eyebrow">Room code</div>
+      <div class="rmcode" id="rmCode">····</div>
       <div class="netline" id="rmNet">Connecting…</div>
     </div>
-    <div class="card"><div class="lbl" id="rmCount">Players</div><div id="rmList"></div></div>
-    <div class="tag" id="rmWait" style="margin-top:0"></div>
-    <div class="btns"><button class="btn ghost" id="rmLeave">Leave</button><button class="btn" id="rmStart">Start</button></div>
-    <ol class="how">
-      <li>Take turns: one flick each.</li>
-      <li>Knocked off the desk? You're out for that round.</li>
-      <li>Last pen on the desk wins the round. First to 2 rounds wins.</li>
-      <li>No direct kills on your first shot of a round.</li>
-    </ol>
+    <div class="ig-card fcard"><div class="ig-eyebrow" id="rmCount">Players</div><div id="rmList"></div></div>
+    <div class="subtag" id="rmWait"></div>
+    <div class="btns"><button class="ig-btn secondary" id="rmLeave">Leave</button><button class="ig-btn" id="rmStart">Start</button></div>
+    <div class="ig-card">
+      <ol class="how">
+        <li>Take turns: one flick each.</li>
+        <li>Knocked off the desk? You're out for that round.</li>
+        <li>Last pen on the desk wins the round. First to 2 rounds wins.</li>
+        <li>No direct kills on your first shot of a round.</li>
+      </ol>
+    </div>
   </div>
 </div>
-
 <!-- HUD -->
 <div id="hud" hidden>
   <div class="topbar">
@@ -1095,7 +1189,8 @@ function updateHud() {
   $('#sideYou').classList.toggle('turn', turn === 0 && (phase === 'aim'));
   $('#sideOpp').classList.toggle('turn', turn === 1 && (phase === 'ai'));
 }
-function sndIcon() { $('#sndBtn').textContent = $('#hSnd').textContent = save.sound ? '♪' : '✕♪'; }
+const SND_ON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>', SND_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg>';
+function sndIcon() { $('#sndBtn').innerHTML = $('#hSnd').innerHTML = save.sound ? SND_ON : SND_OFF; }
 
 /* =====================================================================
    MATCH FLOW
@@ -1887,7 +1982,7 @@ function renderPens() {
   $('#penList').innerHTML = PENS.map(p => {
     const u = unlocked(p), sel = save.sel === p.id;
     const stats = penStats(p).map(([k, v]) => `<span>${k}</span><div class="bar"><i style="width:${Math.round(clamp(v, 0.05, 1) * 100)}%"></i></div>`).join('');
-    const act = !u ? `<span class="lockmsg">🔒 ${p.wins} wins</span>` : sel ? `<button class="btn small" disabled>In hand</button>` : `<button class="btn ghost small" data-use="${p.id}">Use</button>`;
+    const act = !u ? `<span class="lockmsg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${p.wins} win${p.wins === 1 ? '' : 's'}</span>` : sel ? `<button class="btn small" disabled>In hand</button>` : `<button class="btn ghost small" data-use="${p.id}">Use</button>`;
     return `<div class="pencard${sel ? ' sel' : ''}${u ? '' : ' locked'}"><div><div class="nm">${p.name}</div><div class="sub">${p.sub}</div></div>${act}${penPic(p)}<div class="stats">${stats}</div></div>`;
   }).join('');
   $('#penList').querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
